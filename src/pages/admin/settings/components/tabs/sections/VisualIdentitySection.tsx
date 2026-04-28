@@ -1,12 +1,14 @@
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { UploadCloud } from 'lucide-react'
+import { UploadCloud, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { UseFormReturn } from 'react-hook-form'
 import { SystemDataFormData } from '../../SystemDataSchema'
 
 export function VisualIdentitySection({ form }: { form: UseFormReturn<SystemDataFormData> }) {
   const logoUrl = form.watch('logo_url')
+  const bgImageUrl = form.watch('bg_image_url')
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -14,6 +16,16 @@ export function VisualIdentitySection({ form }: { form: UseFormReturn<SystemData
       const reader = new FileReader()
       reader.onloadend = () =>
         form.setValue('logo_url', reader.result as string, { shouldValidate: true })
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleBgImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () =>
+        form.setValue('bg_image_url', reader.result as string, { shouldValidate: true })
       reader.readAsDataURL(file)
     }
   }
@@ -92,12 +104,45 @@ export function VisualIdentitySection({ form }: { form: UseFormReturn<SystemData
           </div>
 
           <div className="space-y-3 pt-4 border-t border-border/50">
+            <Label>Imagem de Fundo (Opcional)</Label>
+            <div className="flex items-center gap-4">
+              <div className="h-24 w-40 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center bg-slate-100 dark:bg-slate-900 overflow-hidden relative group">
+                {bgImageUrl ? (
+                  <>
+                    <img src={bgImageUrl} alt="Background" className="h-full w-full object-cover" />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => form.setValue('bg_image_url', '', { shouldValidate: true })}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <UploadCloud className="h-8 w-8 text-slate-300" />
+                )}
+              </div>
+              <div className="flex-1 space-y-2">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleBgImageUpload}
+                  className="cursor-pointer"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Usada em telas de login, manutenção e temas específicos. Recomendado: 1920x1080px.
+                </p>
+              </div>
+            </div>
+
             <FormField
               control={form.control}
               name="bg_image_url"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>URL da Imagem de Fundo (Opcional)</FormLabel>
+                <FormItem className="mt-2">
+                  <FormLabel className="text-xs">Ou cole uma URL</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
@@ -105,9 +150,6 @@ export function VisualIdentitySection({ form }: { form: UseFormReturn<SystemData
                       placeholder="https://exemplo.com/fundo.jpg"
                     />
                   </FormControl>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Usada em telas de login, manutenção e temas específicos.
-                  </p>
                   <FormMessage />
                 </FormItem>
               )}

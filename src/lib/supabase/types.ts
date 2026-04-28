@@ -42,6 +42,59 @@ export type Database = {
         }
         Relationships: []
       }
+      athlete_attribute_values: {
+        Row: {
+          attribute_id: string | null
+          data_registro: string
+          id: string
+          user_id: string | null
+          valor: string | null
+        }
+        Insert: {
+          attribute_id?: string | null
+          data_registro?: string
+          id?: string
+          user_id?: string | null
+          valor?: string | null
+        }
+        Update: {
+          attribute_id?: string | null
+          data_registro?: string
+          id?: string
+          user_id?: string | null
+          valor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'athlete_attribute_values_attribute_id_fkey'
+            columns: ['attribute_id']
+            isOneToOne: false
+            referencedRelation: 'athlete_attributes'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      athlete_attributes: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string | null
+          tipo_dado: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome?: string | null
+          tipo_dado?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string | null
+          tipo_dado?: string | null
+        }
+        Relationships: []
+      }
       athlete_categories: {
         Row: {
           active_from: string | null
@@ -209,6 +262,9 @@ export type Database = {
           due_day: number | null
           due_month: number | null
           id: string
+          reminder_days_after: number | null
+          reminder_days_before: number | null
+          reminders_enabled: boolean | null
           tenant_id: string | null
           updated_at: string | null
         }
@@ -219,6 +275,9 @@ export type Database = {
           due_day?: number | null
           due_month?: number | null
           id?: string
+          reminder_days_after?: number | null
+          reminder_days_before?: number | null
+          reminders_enabled?: boolean | null
           tenant_id?: string | null
           updated_at?: string | null
         }
@@ -229,6 +288,9 @@ export type Database = {
           due_day?: number | null
           due_month?: number | null
           id?: string
+          reminder_days_after?: number | null
+          reminder_days_before?: number | null
+          reminders_enabled?: boolean | null
           tenant_id?: string | null
           updated_at?: string | null
         }
@@ -266,6 +328,72 @@ export type Database = {
           total_generated?: number | null
         }
         Relationships: []
+      }
+      billing_registration_config: {
+        Row: {
+          athlete_registration_amount: number | null
+          club_registration_amount: number | null
+          created_at: string
+          id: string
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          athlete_registration_amount?: number | null
+          club_registration_amount?: number | null
+          created_at?: string
+          id?: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          athlete_registration_amount?: number | null
+          club_registration_amount?: number | null
+          created_at?: string
+          id?: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      billing_reminders_log: {
+        Row: {
+          athlete_id: string | null
+          charge_id: string | null
+          id: string
+          reminder_type: string | null
+          sent_at: string
+        }
+        Insert: {
+          athlete_id?: string | null
+          charge_id?: string | null
+          id?: string
+          reminder_type?: string | null
+          sent_at?: string
+        }
+        Update: {
+          athlete_id?: string | null
+          charge_id?: string | null
+          id?: string
+          reminder_type?: string | null
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'billing_reminders_log_athlete_id_fkey'
+            columns: ['athlete_id']
+            isOneToOne: false
+            referencedRelation: 'athletes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'billing_reminders_log_charge_id_fkey'
+            columns: ['charge_id']
+            isOneToOne: false
+            referencedRelation: 'financial_charges'
+            referencedColumns: ['id']
+          },
+        ]
       }
       blog_comments: {
         Row: {
@@ -539,6 +667,39 @@ export type Database = {
             referencedColumns: ['id']
           },
         ]
+      }
+      email_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          flow_type: string | null
+          id: string
+          provider: string | null
+          recipient_email: string | null
+          status: string | null
+          subject: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          flow_type?: string | null
+          id?: string
+          provider?: string | null
+          recipient_email?: string | null
+          status?: string | null
+          subject?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          flow_type?: string | null
+          id?: string
+          provider?: string | null
+          recipient_email?: string | null
+          status?: string | null
+          subject?: string | null
+        }
+        Relationships: []
       }
       event_photos: {
         Row: {
@@ -1201,6 +1362,45 @@ export type Database = {
           },
         ]
       }
+      registration_payments: {
+        Row: {
+          created_at: string
+          data_pagamento: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          metodo_pagamento: string | null
+          payment_intent_id: string | null
+          status: string | null
+          tenant_id: string | null
+          valor: number | null
+        }
+        Insert: {
+          created_at?: string
+          data_pagamento?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metodo_pagamento?: string | null
+          payment_intent_id?: string | null
+          status?: string | null
+          tenant_id?: string | null
+          valor?: number | null
+        }
+        Update: {
+          created_at?: string
+          data_pagamento?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metodo_pagamento?: string | null
+          payment_intent_id?: string | null
+          status?: string | null
+          tenant_id?: string | null
+          valor?: number | null
+        }
+        Relationships: []
+      }
       rule_versions: {
         Row: {
           content: string | null
@@ -1298,6 +1498,102 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      stripe_config: {
+        Row: {
+          card_fee_fixed: number | null
+          card_fee_percentage: number | null
+          created_at: string
+          id: string
+          pass_fees_to_customer: boolean | null
+          pix_enabled: boolean | null
+          public_key: string | null
+          secret_key: string | null
+          tenant_id: string | null
+          updated_at: string
+          webhook_secret: string | null
+        }
+        Insert: {
+          card_fee_fixed?: number | null
+          card_fee_percentage?: number | null
+          created_at?: string
+          id?: string
+          pass_fees_to_customer?: boolean | null
+          pix_enabled?: boolean | null
+          public_key?: string | null
+          secret_key?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+          webhook_secret?: string | null
+        }
+        Update: {
+          card_fee_fixed?: number | null
+          card_fee_percentage?: number | null
+          created_at?: string
+          id?: string
+          pass_fees_to_customer?: boolean | null
+          pix_enabled?: boolean | null
+          public_key?: string | null
+          secret_key?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+          webhook_secret?: string | null
+        }
+        Relationships: []
+      }
+      stripe_payments: {
+        Row: {
+          atleta_id: string | null
+          charge_id: string | null
+          data_criacao: string
+          data_pagamento: string | null
+          id: string
+          metodo_pagamento: string | null
+          payment_intent_id: string | null
+          status: string | null
+          tenant_id: string | null
+          valor: number | null
+        }
+        Insert: {
+          atleta_id?: string | null
+          charge_id?: string | null
+          data_criacao?: string
+          data_pagamento?: string | null
+          id?: string
+          metodo_pagamento?: string | null
+          payment_intent_id?: string | null
+          status?: string | null
+          tenant_id?: string | null
+          valor?: number | null
+        }
+        Update: {
+          atleta_id?: string | null
+          charge_id?: string | null
+          data_criacao?: string
+          data_pagamento?: string | null
+          id?: string
+          metodo_pagamento?: string | null
+          payment_intent_id?: string | null
+          status?: string | null
+          tenant_id?: string | null
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'stripe_payments_atleta_id_fkey'
+            columns: ['atleta_id']
+            isOneToOne: false
+            referencedRelation: 'athletes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'stripe_payments_charge_id_fkey'
+            columns: ['charge_id']
+            isOneToOne: false
+            referencedRelation: 'financial_charges'
+            referencedColumns: ['id']
+          },
+        ]
       }
       system_data: {
         Row: {
@@ -1425,6 +1721,105 @@ export type Database = {
           two_factor_auth?: boolean | null
           two_factor_method?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      whatsapp_config: {
+        Row: {
+          account_sid: string | null
+          api_provider: string | null
+          auth_token: string | null
+          created_at: string
+          empresa_id: string | null
+          id: string
+          is_active: boolean | null
+          is_production: boolean | null
+          phone_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_sid?: string | null
+          api_provider?: string | null
+          auth_token?: string | null
+          created_at?: string
+          empresa_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_production?: boolean | null
+          phone_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_sid?: string | null
+          api_provider?: string | null
+          auth_token?: string | null
+          created_at?: string
+          empresa_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_production?: boolean | null
+          phone_number?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_logs: {
+        Row: {
+          cliente_id: string | null
+          created_at: string
+          empresa_id: string | null
+          id: string
+          resposta_api: Json | null
+          status: string | null
+          telefone: string | null
+          tipo_mensagem: string | null
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string
+          empresa_id?: string | null
+          id?: string
+          resposta_api?: Json | null
+          status?: string | null
+          telefone?: string | null
+          tipo_mensagem?: string | null
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string
+          empresa_id?: string | null
+          id?: string
+          resposta_api?: Json | null
+          status?: string | null
+          telefone?: string | null
+          tipo_mensagem?: string | null
+        }
+        Relationships: []
+      }
+      whatsapp_templates: {
+        Row: {
+          conteudo: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          tipo_mensagem: string | null
+          updated_at: string
+        }
+        Insert: {
+          conteudo?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          tipo_mensagem?: string | null
+          updated_at?: string
+        }
+        Update: {
+          conteudo?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          tipo_mensagem?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1584,6 +1979,17 @@ export const Constants = {
 //   duration_months: integer (nullable, default: 12)
 //   status: text (nullable, default: 'active'::text)
 //   created_at: timestamp with time zone (nullable, default: now())
+// Table: athlete_attribute_values
+//   id: uuid (not null, default: gen_random_uuid())
+//   user_id: uuid (nullable)
+//   attribute_id: uuid (nullable)
+//   valor: text (nullable)
+//   data_registro: timestamp with time zone (not null, default: now())
+// Table: athlete_attributes
+//   id: uuid (not null, default: gen_random_uuid())
+//   nome: text (nullable)
+//   tipo_dado: text (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: athlete_categories
 //   id: uuid (not null, default: gen_random_uuid())
 //   athlete_id: uuid (nullable)
@@ -1630,6 +2036,9 @@ export const Constants = {
 //   days_before_generation: integer (nullable)
 //   created_at: timestamp with time zone (nullable, default: now())
 //   updated_at: timestamp with time zone (nullable, default: now())
+//   reminders_enabled: boolean (nullable, default: false)
+//   reminder_days_before: integer (nullable, default: 3)
+//   reminder_days_after: integer (nullable, default: 5)
 // Table: billing_logs
 //   id: uuid (not null, default: gen_random_uuid())
 //   tenant_id: uuid (nullable, default: '00000000-0000-0000-0000-000000000001'::uuid)
@@ -1639,6 +2048,19 @@ export const Constants = {
 //   total_duplicates_avoided: integer (nullable, default: 0)
 //   error_message: text (nullable)
 //   created_at: timestamp with time zone (nullable, default: now())
+// Table: billing_registration_config
+//   id: uuid (not null, default: gen_random_uuid())
+//   tenant_id: uuid (nullable, default: '00000000-0000-0000-0000-000000000001'::uuid)
+//   athlete_registration_amount: numeric (nullable, default: 150.0)
+//   club_registration_amount: numeric (nullable, default: 500.0)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
+// Table: billing_reminders_log
+//   id: uuid (not null, default: gen_random_uuid())
+//   charge_id: uuid (nullable)
+//   athlete_id: uuid (nullable)
+//   reminder_type: text (nullable)
+//   sent_at: timestamp with time zone (not null, default: now())
 // Table: blog_comments
 //   id: uuid (not null, default: gen_random_uuid())
 //   post_id: uuid (nullable)
@@ -1710,6 +2132,15 @@ export const Constants = {
 //   start_date: date (nullable)
 //   spots: integer (nullable)
 //   image_url: text (nullable)
+// Table: email_logs
+//   id: uuid (not null, default: gen_random_uuid())
+//   recipient_email: text (nullable)
+//   subject: text (nullable)
+//   flow_type: text (nullable)
+//   status: text (nullable)
+//   provider: text (nullable)
+//   error_message: text (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: event_photos
 //   id: uuid (not null, default: gen_random_uuid())
 //   event_id: uuid (nullable)
@@ -1875,6 +2306,17 @@ export const Constants = {
 //   world_ranking: integer (nullable)
 //   points: integer (nullable, default: 0)
 //   updated_at: timestamp with time zone (nullable, default: now())
+// Table: registration_payments
+//   id: uuid (not null, default: gen_random_uuid())
+//   tenant_id: uuid (nullable, default: '00000000-0000-0000-0000-000000000001'::uuid)
+//   payment_intent_id: text (nullable)
+//   entity_type: text (nullable)
+//   entity_id: uuid (nullable)
+//   valor: numeric (nullable)
+//   status: text (nullable)
+//   metodo_pagamento: text (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
+//   data_pagamento: timestamp with time zone (nullable)
 // Table: rule_versions
 //   id: uuid (not null, default: gen_random_uuid())
 //   rule_id: uuid (nullable)
@@ -1899,6 +2341,29 @@ export const Constants = {
 //   is_published: boolean (nullable, default: false)
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
+// Table: stripe_config
+//   id: uuid (not null, default: gen_random_uuid())
+//   tenant_id: uuid (nullable, default: '00000000-0000-0000-0000-000000000001'::uuid)
+//   public_key: text (nullable)
+//   secret_key: text (nullable)
+//   webhook_secret: text (nullable)
+//   pix_enabled: boolean (nullable, default: false)
+//   pass_fees_to_customer: boolean (nullable, default: false)
+//   card_fee_percentage: numeric (nullable, default: 0)
+//   card_fee_fixed: numeric (nullable, default: 0)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
+// Table: stripe_payments
+//   id: uuid (not null, default: gen_random_uuid())
+//   tenant_id: uuid (nullable, default: '00000000-0000-0000-0000-000000000001'::uuid)
+//   payment_intent_id: text (nullable)
+//   atleta_id: uuid (nullable)
+//   charge_id: uuid (nullable)
+//   valor: numeric (nullable)
+//   status: text (nullable)
+//   metodo_pagamento: text (nullable)
+//   data_criacao: timestamp with time zone (not null, default: now())
+//   data_pagamento: timestamp with time zone (nullable)
 // Table: system_data
 //   id: uuid (not null, default: '00000000-0000-0000-0000-000000000001'::uuid)
 //   logo_url: text (nullable)
@@ -1940,10 +2405,43 @@ export const Constants = {
 //   quote_footer_text: text (nullable)
 //   records_per_page: integer (nullable, default: 50)
 //   business_hours: jsonb (nullable, default: '{}'::jsonb)
+// Table: whatsapp_config
+//   id: uuid (not null, default: gen_random_uuid())
+//   empresa_id: uuid (nullable)
+//   api_provider: text (nullable)
+//   account_sid: text (nullable)
+//   auth_token: text (nullable)
+//   phone_number: text (nullable)
+//   is_active: boolean (nullable, default: false)
+//   is_production: boolean (nullable, default: false)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
+// Table: whatsapp_logs
+//   id: uuid (not null, default: gen_random_uuid())
+//   empresa_id: uuid (nullable)
+//   cliente_id: uuid (nullable)
+//   telefone: text (nullable)
+//   tipo_mensagem: text (nullable)
+//   status: text (nullable)
+//   resposta_api: jsonb (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
+// Table: whatsapp_templates
+//   id: uuid (not null, default: gen_random_uuid())
+//   tipo_mensagem: text (nullable)
+//   conteudo: text (nullable)
+//   is_active: boolean (nullable, default: true)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 
 // --- CONSTRAINTS ---
 // Table: affiliation_plans
 //   PRIMARY KEY affiliation_plans_pkey: PRIMARY KEY (id)
+// Table: athlete_attribute_values
+//   FOREIGN KEY athlete_attribute_values_attribute_id_fkey: FOREIGN KEY (attribute_id) REFERENCES athlete_attributes(id) ON DELETE CASCADE
+//   PRIMARY KEY athlete_attribute_values_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY athlete_attribute_values_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+// Table: athlete_attributes
+//   PRIMARY KEY athlete_attributes_pkey: PRIMARY KEY (id)
 // Table: athlete_categories
 //   FOREIGN KEY athlete_categories_athlete_id_fkey: FOREIGN KEY (athlete_id) REFERENCES athletes(id) ON DELETE CASCADE
 //   FOREIGN KEY athlete_categories_category_id_fkey: FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
@@ -1964,6 +2462,12 @@ export const Constants = {
 // Table: billing_logs
 //   PRIMARY KEY billing_logs_pkey: PRIMARY KEY (id)
 //   CHECK billing_logs_status_check: CHECK ((status = ANY (ARRAY['success'::text, 'error'::text])))
+// Table: billing_registration_config
+//   PRIMARY KEY billing_registration_config_pkey: PRIMARY KEY (id)
+// Table: billing_reminders_log
+//   FOREIGN KEY billing_reminders_log_athlete_id_fkey: FOREIGN KEY (athlete_id) REFERENCES athletes(id) ON DELETE CASCADE
+//   FOREIGN KEY billing_reminders_log_charge_id_fkey: FOREIGN KEY (charge_id) REFERENCES financial_charges(id) ON DELETE CASCADE
+//   PRIMARY KEY billing_reminders_log_pkey: PRIMARY KEY (id)
 // Table: blog_comments
 //   PRIMARY KEY blog_comments_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY blog_comments_post_id_fkey: FOREIGN KEY (post_id) REFERENCES blog_posts(id) ON DELETE CASCADE
@@ -1982,6 +2486,8 @@ export const Constants = {
 // Table: courses
 //   FOREIGN KEY courses_club_id_fkey: FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE
 //   PRIMARY KEY courses_pkey: PRIMARY KEY (id)
+// Table: email_logs
+//   PRIMARY KEY email_logs_pkey: PRIMARY KEY (id)
 // Table: event_photos
 //   FOREIGN KEY event_photos_event_id_fkey: FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
 //   PRIMARY KEY event_photos_pkey: PRIMARY KEY (id)
@@ -2029,6 +2535,8 @@ export const Constants = {
 //   FOREIGN KEY rankings_athlete_id_fkey: FOREIGN KEY (athlete_id) REFERENCES athletes(id) ON DELETE CASCADE
 //   UNIQUE rankings_athlete_id_key: UNIQUE (athlete_id)
 //   PRIMARY KEY rankings_pkey: PRIMARY KEY (id)
+// Table: registration_payments
+//   PRIMARY KEY registration_payments_pkey: PRIMARY KEY (id)
 // Table: rule_versions
 //   FOREIGN KEY rule_versions_created_by_fkey: FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL
 //   PRIMARY KEY rule_versions_pkey: PRIMARY KEY (id)
@@ -2037,8 +2545,20 @@ export const Constants = {
 //   PRIMARY KEY rules_pkey: PRIMARY KEY (id)
 // Table: sections
 //   PRIMARY KEY sections_pkey: PRIMARY KEY (id)
+// Table: stripe_config
+//   PRIMARY KEY stripe_config_pkey: PRIMARY KEY (id)
+// Table: stripe_payments
+//   FOREIGN KEY stripe_payments_atleta_id_fkey: FOREIGN KEY (atleta_id) REFERENCES athletes(id) ON DELETE CASCADE
+//   FOREIGN KEY stripe_payments_charge_id_fkey: FOREIGN KEY (charge_id) REFERENCES financial_charges(id) ON DELETE CASCADE
+//   PRIMARY KEY stripe_payments_pkey: PRIMARY KEY (id)
 // Table: system_data
 //   PRIMARY KEY system_data_pkey: PRIMARY KEY (id)
+// Table: whatsapp_config
+//   PRIMARY KEY whatsapp_config_pkey: PRIMARY KEY (id)
+// Table: whatsapp_logs
+//   PRIMARY KEY whatsapp_logs_pkey: PRIMARY KEY (id)
+// Table: whatsapp_templates
+//   PRIMARY KEY whatsapp_templates_pkey: PRIMARY KEY (id)
 
 // --- ROW LEVEL SECURITY POLICIES ---
 // Table: affiliation_plans
@@ -2046,6 +2566,14 @@ export const Constants = {
 //     USING: true
 //   Policy "plans_select" (SELECT, PERMISSIVE) roles={public}
 //     USING: true
+// Table: athlete_attribute_values
+//   Policy "athlete_attribute_values_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: athlete_attributes
+//   Policy "athlete_attributes_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: athlete_categories
 //   Policy "Enable delete for authenticated users" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -2074,6 +2602,14 @@ export const Constants = {
 // Table: billing_logs
 //   Policy "billing_logs_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
+// Table: billing_registration_config
+//   Policy "billing_registration_config_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: billing_reminders_log
+//   Policy "billing_reminders_log_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: blog_comments
 //   Policy "Enable all access for authenticated users" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -2124,6 +2660,10 @@ export const Constants = {
 //   Policy "Enable read access for all users" (SELECT, PERMISSIVE) roles={public}
 //     USING: true
 //   Policy "Enable update for authenticated users" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: email_logs
+//   Policy "email_logs_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
 // Table: event_photos
@@ -2251,6 +2791,10 @@ export const Constants = {
 //     USING: true
 //   Policy "rankings_select" (SELECT, PERMISSIVE) roles={public}
 //     USING: true
+// Table: registration_payments
+//   Policy "registration_payments_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: rule_versions
 //   Policy "rule_versions_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -2267,12 +2811,32 @@ export const Constants = {
 //     WITH CHECK: true
 //   Policy "Enable read access for all users" (SELECT, PERMISSIVE) roles={public}
 //     USING: (is_published = true)
+// Table: stripe_config
+//   Policy "stripe_config_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: stripe_payments
+//   Policy "stripe_payments_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: system_data
 //   Policy "system_data_insert" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: true
 //   Policy "system_data_select" (SELECT, PERMISSIVE) roles={public}
 //     USING: true
 //   Policy "system_data_update" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: whatsapp_config
+//   Policy "whatsapp_config_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: whatsapp_logs
+//   Policy "whatsapp_logs_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: whatsapp_templates
+//   Policy "whatsapp_templates_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
 

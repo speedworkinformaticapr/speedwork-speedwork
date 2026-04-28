@@ -120,11 +120,15 @@ export const SystemDataProvider = ({ children }: { children: ReactNode }) => {
         ) {
           const tenant_id = '00000000-0000-0000-0000-000000000001'
 
-          const { data: stripeConfig } = await supabase
+          const { data: stripeConfig, error: fetchStripeError } = await supabase
             .from('stripe_config')
             .select('id')
             .eq('tenant_id', tenant_id)
-            .single()
+            .maybeSingle()
+
+          if (fetchStripeError) {
+            console.error('Error fetching stripe config:', fetchStripeError)
+          }
 
           if (stripeConfig) {
             const { error: stripeUpdateError } = await supabase
@@ -148,7 +152,11 @@ export const SystemDataProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
-      toast({ title: 'Sucesso', description: 'Configurações atualizadas com sucesso.' })
+      toast({
+        title: 'Configurações Salvas',
+        description: 'Todos os dados foram persistidos com sucesso.',
+        variant: 'default',
+      })
       return true
     } catch (err: any) {
       console.error('Error updating system data:', err)
