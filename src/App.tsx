@@ -1,29 +1,263 @@
-/* Main App Component - Handles routing (using react-router-dom), query client and other providers - use this file to add all routes */
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import Index from './pages/Index'
-import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
-
-// ONLY IMPORT AND RENDER WORKING PAGES, NEVER ADD PLACEHOLDER COMPONENTS OR PAGES IN THIS FILE
-// AVOID REMOVING ANY CONTEXT PROVIDERS FROM THIS FILE (e.g. TooltipProvider, Toaster, Sonner)
+import AuthLayout from './components/AuthLayout'
+import Index from './pages/Index'
+import Courses from './pages/Courses'
+import Tournaments from './pages/Tournaments'
+import Ranking from './pages/Ranking'
+import Rules from './pages/Rules'
+import About from './pages/About'
+import Contact from './pages/Contact'
+import BlogList from './pages/blog/BlogList'
+import BlogPost from './pages/blog/BlogPost'
+import AdminBlogList from './pages/admin/blog/AdminBlogList'
+import AdminBlogForm from './pages/admin/blog/AdminBlogForm'
+import Profile from './pages/Profile'
+import AthleteProfile from './pages/athlete/AthleteProfile'
+import NotFound from './pages/NotFound'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import RegisterClub from './pages/RegisterClub'
+import EmailConfirmation from './pages/EmailConfirmation'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
+import Store from './pages/store/Store'
+import Cart from './pages/store/Cart'
+import Checkout from './pages/store/Checkout'
+import Orders from './pages/store/Orders'
+import Gallery from './pages/Gallery'
+import AdminGallery from './pages/admin/gallery/AdminGallery'
+import AdminDashboard from './pages/admin/dashboard/AdminDashboard'
+import AdminPageList from './pages/admin/pages/AdminPageList'
+import AdminPageForm from './pages/admin/pages/AdminPageForm'
+import AdminSectionsList from './pages/admin/sections/AdminSectionsList'
+import AdminSectionForm from './pages/admin/sections/AdminSectionForm'
+import PublicPage from './pages/PublicPage'
+import ClubDashboard from './pages/club/dashboard/ClubDashboard'
+import AdminLayout from './components/admin/AdminLayout'
+import AdminMaintenance from './pages/admin/settings/AdminMaintenance'
+import AdminUsers from './pages/admin/business/AdminUsers'
+import AdminAthleteAttributes from './pages/admin/business/AdminAthleteAttributes'
+import AdminAthleteEvaluations from './pages/admin/business/AdminAthleteEvaluations'
+import AdminAthleteCategories from './pages/admin/business/AdminAthleteCategories'
+import AdminCourses from './pages/admin/business/AdminCourses'
+import AdminTournaments from './pages/admin/business/AdminTournaments'
+import AdminRanking from './pages/admin/business/AdminRanking'
+import AdminRules from './pages/admin/business/AdminRules'
+import AdminFinancialCategories from './pages/admin/financial/AdminFinancialCategories'
+import AdminFinancialPayments from './pages/admin/financial/AdminFinancialPayments'
+import AdminFinancialPartners from './pages/admin/financial/AdminFinancialPartners'
+import AdminFinancialSettings from './pages/admin/financial/AdminFinancialSettings'
+import AdminBillingLogs from './pages/admin/financial/AdminBillingLogs'
+import AdminRegistrationPayments from './pages/admin/financial/AdminRegistrationPayments'
+import AdminStripeConfig from './pages/admin/financial/AdminStripeConfig'
+import AdminStripePayments from './pages/admin/financial/AdminStripePayments'
+import AdminEcommerceGroups from './pages/admin/ecommerce/AdminEcommerceGroups'
+import AdminEcommerceProducts from './pages/admin/ecommerce/AdminEcommerceProducts'
+import AdminStoreEditor from './pages/admin/ecommerce/AdminStoreEditor'
+import AdminAbandonedCarts from './pages/admin/ecommerce/AdminAbandonedCarts'
+import AdminCheckoutConfig from './pages/admin/ecommerce/AdminCheckoutConfig'
+import AdminOrders from './pages/admin/ecommerce/AdminOrders'
+import AdminLogistics from './pages/admin/ecommerce/AdminLogistics'
+import AdminAthleteScouting from './pages/admin/business/AdminAthleteScouting'
+import AdminSystemData from './pages/admin/settings/AdminSystemData'
+import AdminMedia from './pages/admin/settings/AdminMedia'
+import AdminHeroCarousel from './pages/admin/settings/AdminHeroCarousel'
+import AdminAnalytics from './pages/admin/settings/AdminAnalytics'
+import AdminPublishLogs from './pages/admin/settings/AdminPublishLogs'
+import AdminWhatsApp from './pages/admin/whatsapp/AdminWhatsApp'
+import AdminEmail from './pages/admin/email/AdminEmail'
+import AdminAppointmentsManager from './pages/admin/appointments/AdminAppointmentsManager'
+import AdminQuotes from './pages/admin/quotes/AdminQuotes'
+import AdminServices from './pages/admin/services/AdminServices'
+import AdminAppointments from './pages/admin/appointments/AdminAppointments'
+import AdminAppointmentsDashboard from './pages/admin/appointments/AdminAppointmentsDashboard'
+import StaffDashboard from './pages/staff/dashboard/StaffDashboard'
+import ClientQuotes from './pages/client/quotes/ClientQuotes'
+import ClientDashboard from './pages/client/dashboard/ClientDashboard'
+import Scheduling from './pages/Scheduling'
+import { AuthProvider } from './hooks/use-auth'
+import { TranslationProvider } from './hooks/use-translation'
+import { SystemDataProvider } from './hooks/use-system-data'
+import { MaintenanceGuard } from './components/MaintenanceGuard'
+import { AccessibilityWidget } from './components/AccessibilityWidget'
+import { ThemeProvider } from './components/theme-provider'
+import { FloatingWidgets } from './components/FloatingWidgets'
+import { CookieConsent } from './components/CookieConsent'
+import { RoleGuard } from './components/RoleGuard'
 
 const App = () => (
-  <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES MUST BE ADDED HERE */}
-        </Route>
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </TooltipProvider>
-  </BrowserRouter>
+  <AuthProvider>
+    <TranslationProvider>
+      <SystemDataProvider>
+        <ThemeProvider>
+          <BrowserRouter>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <AccessibilityWidget />
+              <Routes>
+                <Route
+                  element={
+                    <MaintenanceGuard>
+                      <Layout />
+                    </MaintenanceGuard>
+                  }
+                >
+                  <Route path="/" element={<Index />} />
+                  <Route path="/courses" element={<Courses />} />
+                  <Route path="/tournaments" element={<Tournaments />} />
+                  <Route path="/ranking" element={<Ranking />} />
+                  <Route path="/rules" element={<Rules />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/sobre" element={<About />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/contato" element={<Contact />} />
+                  <Route path="/blog" element={<BlogList />} />
+                  <Route path="/blog/:id" element={<BlogPost />} />
+
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/athlete/:id" element={<AthleteProfile />} />
+                  <Route path="/store" element={<Store />} />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/orders" element={<Orders />} />
+                  <Route path="/gallery" element={<Gallery />} />
+                  <Route
+                    path="/club/dashboard"
+                    element={
+                      <RoleGuard allowedRoles={['club', 'admin', 'master']}>
+                        <ClubDashboard />
+                      </RoleGuard>
+                    }
+                  />
+
+                  <Route
+                    path="/staff/dashboard"
+                    element={
+                      <RoleGuard allowedRoles={['staff', 'admin', 'master']}>
+                        <StaffDashboard />
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/client/quotes"
+                    element={
+                      <RoleGuard allowedRoles={['client', 'admin', 'master']}>
+                        <ClientQuotes />
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/client/dashboard"
+                    element={
+                      <RoleGuard allowedRoles={['client', 'admin', 'master']}>
+                        <ClientDashboard />
+                      </RoleGuard>
+                    }
+                  />
+                  <Route path="/scheduling" element={<Scheduling />} />
+
+                  <Route path="/:slug" element={<PublicPage />} />
+                </Route>
+
+                <Route
+                  element={
+                    <RoleGuard allowedRoles={['admin', 'master']}>
+                      <AdminLayout />
+                    </RoleGuard>
+                  }
+                >
+                  <Route path="/admin/quotes" element={<AdminQuotes />} />
+                  <Route path="/admin/services" element={<AdminServices />} />
+                  <Route path="/admin/whatsapp" element={<AdminWhatsApp />} />
+                  <Route path="/admin/email" element={<AdminEmail />} />
+                  <Route path="/admin/appointments" element={<AdminAppointments />} />
+                  <Route path="/admin/appointments/manage" element={<AdminAppointmentsManager />} />
+                  <Route
+                    path="/admin/appointments-dashboard"
+                    element={<AdminAppointmentsDashboard />}
+                  />
+                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                  <Route path="/admin/pages" element={<AdminPageList />} />
+                  <Route path="/admin/pages/new" element={<AdminPageForm />} />
+                  <Route path="/admin/pages/:id/edit" element={<AdminPageForm />} />
+                  <Route path="/admin/sections" element={<AdminSectionsList />} />
+                  <Route path="/admin/sections/new" element={<AdminSectionForm />} />
+                  <Route path="/admin/sections/:id/edit" element={<AdminSectionForm />} />
+                  <Route path="/admin/blog" element={<AdminBlogList />} />
+                  <Route path="/admin/blog/new" element={<AdminBlogForm />} />
+                  <Route path="/admin/blog/:id/edit" element={<AdminBlogForm />} />
+                  <Route path="/admin/gallery" element={<AdminGallery />} />
+                  <Route path="/admin/settings/maintenance" element={<AdminMaintenance />} />
+                  <Route path="/admin/settings/system-data" element={<AdminSystemData />} />
+                  <Route path="/admin/settings/media" element={<AdminMedia />} />
+                  <Route path="/admin/settings/hero-carousel" element={<AdminHeroCarousel />} />
+                  <Route path="/admin/settings/analytics" element={<AdminAnalytics />} />
+                  <Route path="/admin/settings/publish-logs" element={<AdminPublishLogs />} />
+
+                  <Route path="/admin/users" element={<AdminUsers />} />
+                  <Route path="/admin/athlete-attributes" element={<AdminAthleteAttributes />} />
+                  <Route path="/admin/athlete-evaluations" element={<AdminAthleteEvaluations />} />
+                  <Route path="/admin/athlete-scouting" element={<AdminAthleteScouting />} />
+                  <Route path="/admin/athlete-scouting/:id" element={<AdminAthleteScouting />} />
+                  <Route path="/admin/athlete-categories" element={<AdminAthleteCategories />} />
+                  <Route path="/admin/courses" element={<AdminCourses />} />
+                  <Route path="/admin/tournaments" element={<AdminTournaments />} />
+                  <Route path="/admin/ranking" element={<AdminRanking />} />
+                  <Route path="/admin/rules" element={<AdminRules />} />
+                  <Route
+                    path="/admin/financial/categories"
+                    element={<AdminFinancialCategories />}
+                  />
+                  <Route path="/admin/financial/payments" element={<AdminFinancialPayments />} />
+                  <Route path="/admin/financial/partners" element={<AdminFinancialPartners />} />
+                  <Route path="/admin/financial/settings" element={<AdminFinancialSettings />} />
+                  <Route path="/admin/financial/billing-logs" element={<AdminBillingLogs />} />
+                  <Route
+                    path="/admin/financial/registration-payments"
+                    element={<AdminRegistrationPayments />}
+                  />
+                  <Route path="/admin/financial/stripe-config" element={<AdminStripeConfig />} />
+                  <Route
+                    path="/admin/financial/stripe-payments"
+                    element={<AdminStripePayments />}
+                  />
+                  <Route path="/admin/ecommerce/groups" element={<AdminEcommerceGroups />} />
+                  <Route path="/admin/ecommerce/products" element={<AdminEcommerceProducts />} />
+                  <Route path="/admin/ecommerce/store-editor" element={<AdminStoreEditor />} />
+                  <Route
+                    path="/admin/ecommerce/abandoned-carts"
+                    element={<AdminAbandonedCarts />}
+                  />
+                  <Route
+                    path="/admin/ecommerce/checkout-config"
+                    element={<AdminCheckoutConfig />}
+                  />
+                  <Route path="/admin/ecommerce/orders" element={<AdminOrders />} />
+                  <Route path="/admin/ecommerce/logistics" element={<AdminLogistics />} />
+                </Route>
+
+                <Route element={<AuthLayout />}>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/email-confirmation" element={<EmailConfirmation />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <FloatingWidgets />
+              <CookieConsent />
+            </TooltipProvider>
+          </BrowserRouter>
+        </ThemeProvider>
+      </SystemDataProvider>
+    </TranslationProvider>
+  </AuthProvider>
 )
 
 export default App

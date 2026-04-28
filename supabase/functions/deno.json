@@ -1,0 +1,6 @@
+{
+  "_versions": {
+    "delete-user-soft": 3,
+    "process-registration-payment": 1
+  }
+}

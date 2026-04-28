@@ -1,0 +1,3 @@
+ALTER TABLE public.appointments
+ADD COLUMN IF NOT EXISTS executed_minutes INT DEFAULT 0,
+ADD COLUMN IF NOT EXISTS last_started_at TIMESTAMPTZ;

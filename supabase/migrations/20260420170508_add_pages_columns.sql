@@ -1,0 +1,3 @@
+ALTER TABLE public.pages
+ADD COLUMN IF NOT EXISTS submenus JSONB DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0;

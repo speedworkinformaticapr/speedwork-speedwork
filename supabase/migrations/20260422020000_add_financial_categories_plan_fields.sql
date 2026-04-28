@@ -1,0 +1,7 @@
+DO $$
+BEGIN
+  ALTER TABLE public.financial_categories
+    ADD COLUMN IF NOT EXISTS price NUMERIC DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS duration_months INTEGER DEFAULT 1,
+    ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
+END $$;
