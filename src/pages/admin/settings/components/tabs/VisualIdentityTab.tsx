@@ -7,12 +7,53 @@ import { LayoutSettingsSection } from './sections/LayoutSettingsSection'
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 export function VisualIdentityTab({ form }: { form: UseFormReturn<SystemDataFormData> }) {
   const watchWhatsapp = form.watch('whatsapp_enabled')
 
   return (
     <div className="space-y-8 animate-fade-in">
+      <div className="space-y-4 pt-4 border-b pb-6 border-border/50">
+        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+          Tema Visual Global
+        </h3>
+        <FormField
+          control={form.control}
+          name="active_theme"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Selecione o Tema da Plataforma</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value || 'system'}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um tema" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="system">Padrão (Claro/Escuro)</SelectItem>
+                  <SelectItem value="dark-tech">Dark Tech Premium</SelectItem>
+                  <SelectItem value="gradient">Gradient Momentum</SelectItem>
+                  <SelectItem value="corporate">Corporate Elegance</SelectItem>
+                  <SelectItem value="neon">Neon Edge</SelectItem>
+                  <SelectItem value="minimal">Minimal Zen</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                O tema escolhido será aplicado globalmente para todos os usuários da plataforma.
+              </p>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
       <VisualIdentitySection form={form} />
       <CompanyDataSection form={form} />
       <LayoutSettingsSection form={form} />

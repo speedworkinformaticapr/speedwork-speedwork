@@ -21,7 +21,7 @@ export function VisualIdentitySection({ form }: { form: UseFormReturn<SystemData
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-        Logo e Plataforma
+        Logo, Plataforma e Imagem de Fundo
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
@@ -69,24 +69,76 @@ export function VisualIdentitySection({ form }: { form: UseFormReturn<SystemData
             )}
           />
         </div>
-        <div className="flex flex-col space-y-3 p-4 border rounded-xl bg-slate-50/50 dark:bg-slate-900/50">
-          <Label>Logo da Plataforma</Label>
-          <div className="flex items-center gap-4">
-            <div className="h-24 w-24 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center bg-white dark:bg-slate-950 overflow-hidden">
-              {logoUrl ? (
-                <img src={logoUrl} alt="Logo" className="h-full w-full object-contain p-2" />
-              ) : (
-                <UploadCloud className="h-8 w-8 text-slate-300" />
+        <div className="flex flex-col space-y-6 p-4 border rounded-xl bg-slate-50/50 dark:bg-slate-900/50">
+          <div className="space-y-3">
+            <Label>Logo da Plataforma</Label>
+            <div className="flex items-center gap-4">
+              <div className="h-24 w-24 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center bg-white dark:bg-slate-950 overflow-hidden">
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Logo" className="h-full w-full object-contain p-2" />
+                ) : (
+                  <UploadCloud className="h-8 w-8 text-slate-300" />
+                )}
+              </div>
+              <div className="flex-1 space-y-2">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="cursor-pointer"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-4 border-t border-border/50">
+            <FormField
+              control={form.control}
+              name="bg_image_url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>URL da Imagem de Fundo (Opcional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={field.value || ''}
+                      placeholder="https://exemplo.com/fundo.jpg"
+                    />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Usada em telas de login, manutenção e temas específicos.
+                  </p>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
-            <div className="flex-1 space-y-2">
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="cursor-pointer"
-              />
-            </div>
+            />
+          </div>
+
+          <div className="space-y-3 pt-4 border-t border-border/50">
+            <FormField
+              control={form.control}
+              name="bg_opacity"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex justify-between">
+                    <span>Opacidade do Fundo (%)</span>
+                    <span className="text-muted-foreground">{field.value || 100}%</span>
+                  </FormLabel>
+                  <FormControl>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="1"
+                      className="w-full accent-primary"
+                      value={field.value || 100}
+                      onChange={(e) => field.onChange(parseInt(e.target.value, 10))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
         </div>
       </div>

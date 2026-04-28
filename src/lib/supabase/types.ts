@@ -1301,6 +1301,7 @@ export type Database = {
       }
       system_data: {
         Row: {
+          active_theme: string | null
           address_city: string | null
           address_complement: string | null
           address_number: string | null
@@ -1308,6 +1309,7 @@ export type Database = {
           address_street: string | null
           address_zip: string | null
           ai_context: string | null
+          bg_image_url: string | null
           bg_opacity: number | null
           browser_icon_url: string | null
           cnpj: string | null
@@ -1337,6 +1339,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          active_theme?: string | null
           address_city?: string | null
           address_complement?: string | null
           address_number?: string | null
@@ -1344,6 +1347,7 @@ export type Database = {
           address_street?: string | null
           address_zip?: string | null
           ai_context?: string | null
+          bg_image_url?: string | null
           bg_opacity?: number | null
           browser_icon_url?: string | null
           cnpj?: string | null
@@ -1373,6 +1377,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          active_theme?: string | null
           address_city?: string | null
           address_complement?: string | null
           address_number?: string | null
@@ -1380,6 +1385,7 @@ export type Database = {
           address_street?: string | null
           address_zip?: string | null
           ai_context?: string | null
+          bg_image_url?: string | null
           bg_opacity?: number | null
           browser_icon_url?: string | null
           cnpj?: string | null
@@ -1916,6 +1922,8 @@ export const Constants = {
 //   two_factor_method: text (nullable, default: 'email'::text)
 //   integrations: jsonb (nullable, default: '{}'::jsonb)
 //   terms: jsonb (nullable, default: '{"uso": "", "lgpd": "", "cookies": ""}'::jsonb)
+//   bg_image_url: text (nullable)
+//   active_theme: text (nullable, default: 'system'::text)
 
 // --- CONSTRAINTS ---
 // Table: affiliation_plans
