@@ -27,6 +27,7 @@ export const systemDataSchema = z.object({
   show_contact_bar: z.boolean().optional().nullable(),
   session_lifetime: z.coerce.number().optional().nullable(),
   ai_context: z.string().optional().nullable(),
+  active_theme: z.string().optional().nullable(),
   language: z.string().optional().nullable(),
   two_factor_auth: z.boolean().optional().nullable(),
   two_factor_method: z.string().optional().nullable(),

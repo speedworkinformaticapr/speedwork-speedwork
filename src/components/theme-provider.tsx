@@ -3,7 +3,15 @@ import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
 import { useSystemData } from '@/hooks/use-system-data'
 
-type Theme = 'dark' | 'light' | 'system'
+export type Theme =
+  | 'dark'
+  | 'light'
+  | 'system'
+  | 'dark-tech'
+  | 'gradient'
+  | 'corporate'
+  | 'neon'
+  | 'minimal'
 
 type ThemeProviderProps = {
   children: React.ReactNode
@@ -33,6 +41,9 @@ export function ThemeProvider({
   const { data: systemData } = useSystemData()
 
   const getInitialTheme = (): Theme => {
+    if (systemData?.active_theme && systemData.active_theme !== 'system') {
+      return systemData.active_theme as Theme
+    }
     const stored = localStorage.getItem(storageKey) as Theme
     if (stored) return stored
     return systemData?.dark_mode ? 'dark' : 'light'
@@ -40,24 +51,36 @@ export function ThemeProvider({
 
   const [theme, setTheme] = useState<Theme>(getInitialTheme)
 
-  // Sincroniza com as configurações globais caso não haja tema salvo
   useEffect(() => {
-    if (!localStorage.getItem(storageKey) && systemData) {
+    if (systemData?.active_theme && systemData.active_theme !== 'system') {
+      setTheme(systemData.active_theme as Theme)
+    } else if (!localStorage.getItem(storageKey) && systemData) {
       setTheme(systemData.dark_mode ? 'dark' : 'light')
     }
-  }, [systemData?.dark_mode, storageKey])
+  }, [systemData?.active_theme, systemData?.dark_mode, storageKey])
 
-  // Restaura o tema salvo no perfil do usuário ao fazer login
   useEffect(() => {
-    if (user?.user_metadata?.theme && user.user_metadata.theme !== theme) {
+    if (
+      user?.user_metadata?.theme &&
+      user.user_metadata.theme !== theme &&
+      (!systemData?.active_theme || systemData.active_theme === 'system')
+    ) {
       setTheme(user.user_metadata.theme as Theme)
       localStorage.setItem(storageKey, user.user_metadata.theme)
     }
-  }, [user, storageKey, theme])
+  }, [user, storageKey, theme, systemData?.active_theme])
 
   useEffect(() => {
     const root = window.document.documentElement
-    root.classList.remove('light', 'dark')
+    root.classList.remove(
+      'light',
+      'dark',
+      'theme-dark-tech',
+      'theme-gradient',
+      'theme-corporate',
+      'theme-neon',
+      'theme-minimal',
+    )
 
     if (theme === 'system') {
       const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -67,7 +90,14 @@ export function ThemeProvider({
       return
     }
 
-    root.classList.add(theme)
+    if (theme === 'light' || theme === 'dark') {
+      root.classList.add(theme)
+    } else {
+      root.classList.add(`theme-${theme}`)
+      if (theme === 'dark-tech' || theme === 'neon') {
+        root.classList.add('dark')
+      }
+    }
   }, [theme])
 
   const value = {

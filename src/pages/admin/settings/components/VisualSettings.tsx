@@ -7,6 +7,13 @@ import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 
 export default function VisualSettings() {
@@ -19,6 +26,7 @@ export default function VisualSettings() {
     show_contact_bar: true,
     session_lifetime: 24,
     ai_context: '',
+    active_theme: 'system',
   })
 
   useEffect(() => {
@@ -31,6 +39,7 @@ export default function VisualSettings() {
         show_contact_bar: data.show_contact_bar ?? true,
         session_lifetime: data.session_lifetime ?? 24,
         ai_context: data.ai_context ?? '',
+        active_theme: data.active_theme ?? 'system',
       })
     }
   }, [data])
@@ -63,6 +72,29 @@ export default function VisualSettings() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
+            <div className="space-y-2 mb-6 border-b pb-6 border-border/50">
+              <Label>Tema Visual Global</Label>
+              <Select
+                value={formData.active_theme}
+                onValueChange={(val) => handleChange('active_theme', val)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um tema" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="system">Padrão (Claro/Escuro)</SelectItem>
+                  <SelectItem value="dark-tech">Dark Tech Premium</SelectItem>
+                  <SelectItem value="gradient">Gradient Momentum</SelectItem>
+                  <SelectItem value="corporate">Corporate Elegance</SelectItem>
+                  <SelectItem value="neon">Neon Edge</SelectItem>
+                  <SelectItem value="minimal">Minimal Zen</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                O tema escolhido será aplicado globalmente para todos os usuários da plataforma.
+              </p>
+            </div>
+
             <Label className="flex justify-between">
               <span>Opacidade da Imagem de Fundo (0-100%)</span>
               <span className="text-muted-foreground">{formData.bg_opacity}%</span>

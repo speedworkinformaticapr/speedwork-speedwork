@@ -34,6 +34,7 @@ export interface SystemData {
   show_contact_bar?: boolean
   session_lifetime?: number
   ai_context?: string
+  active_theme?: string
   dark_mode?: boolean
   language?: string
   libras_enabled?: boolean
