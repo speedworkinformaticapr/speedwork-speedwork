@@ -1312,6 +1312,7 @@ export type Database = {
           bg_image_url: string | null
           bg_opacity: number | null
           browser_icon_url: string | null
+          business_hours: Json | null
           cnpj: string | null
           dark_mode: boolean | null
           email: string | null
@@ -1323,7 +1324,10 @@ export type Database = {
           menu_logo_size: number | null
           mobile: string | null
           phone: string | null
+          platform_name: string | null
+          quote_footer_text: string | null
           razao_social: string | null
+          records_per_page: number | null
           responsible_cpf: string | null
           responsible_email: string | null
           responsible_name: string | null
@@ -1350,6 +1354,7 @@ export type Database = {
           bg_image_url?: string | null
           bg_opacity?: number | null
           browser_icon_url?: string | null
+          business_hours?: Json | null
           cnpj?: string | null
           dark_mode?: boolean | null
           email?: string | null
@@ -1361,7 +1366,10 @@ export type Database = {
           menu_logo_size?: number | null
           mobile?: string | null
           phone?: string | null
+          platform_name?: string | null
+          quote_footer_text?: string | null
           razao_social?: string | null
+          records_per_page?: number | null
           responsible_cpf?: string | null
           responsible_email?: string | null
           responsible_name?: string | null
@@ -1388,6 +1396,7 @@ export type Database = {
           bg_image_url?: string | null
           bg_opacity?: number | null
           browser_icon_url?: string | null
+          business_hours?: Json | null
           cnpj?: string | null
           dark_mode?: boolean | null
           email?: string | null
@@ -1399,7 +1408,10 @@ export type Database = {
           menu_logo_size?: number | null
           mobile?: string | null
           phone?: string | null
+          platform_name?: string | null
+          quote_footer_text?: string | null
           razao_social?: string | null
+          records_per_page?: number | null
           responsible_cpf?: string | null
           responsible_email?: string | null
           responsible_name?: string | null
@@ -1924,6 +1936,10 @@ export const Constants = {
 //   terms: jsonb (nullable, default: '{"uso": "", "lgpd": "", "cookies": ""}'::jsonb)
 //   bg_image_url: text (nullable)
 //   active_theme: text (nullable, default: 'system'::text)
+//   platform_name: text (nullable)
+//   quote_footer_text: text (nullable)
+//   records_per_page: integer (nullable, default: 50)
+//   business_hours: jsonb (nullable, default: '{}'::jsonb)
 
 // --- CONSTRAINTS ---
 // Table: affiliation_plans
