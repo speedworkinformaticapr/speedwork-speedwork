@@ -12,6 +12,8 @@ export type Theme =
   | 'corporate'
   | 'neon'
   | 'minimal'
+  | 'nature'
+  | 'skip'
 
 type ThemeProviderProps = {
   children: React.ReactNode
@@ -80,6 +82,8 @@ export function ThemeProvider({
       'theme-corporate',
       'theme-neon',
       'theme-minimal',
+      'theme-nature',
+      'theme-skip',
     )
 
     if (theme === 'system') {
@@ -94,7 +98,7 @@ export function ThemeProvider({
       root.classList.add(theme)
     } else {
       root.classList.add(`theme-${theme}`)
-      if (theme === 'dark-tech' || theme === 'neon') {
+      if (theme === 'dark-tech' || theme === 'neon' || theme === 'skip') {
         root.classList.add('dark')
       }
     }

@@ -167,6 +167,54 @@
     --radius: 0.75rem;
     font-family: 'Inter', sans-serif;
   }
+
+  .theme-nature {
+    --background: 120 20% 98%;
+    --foreground: 140 30% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 140 30% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 140 30% 15%;
+    --primary: 142 71% 29%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 140 20% 90%;
+    --secondary-foreground: 140 30% 15%;
+    --muted: 140 20% 90%;
+    --muted-foreground: 140 10% 45%;
+    --accent: 140 20% 90%;
+    --accent-foreground: 140 30% 15%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 140 20% 85%;
+    --input: 140 20% 85%;
+    --ring: 142 71% 29%;
+    --radius: 1rem;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .theme-skip {
+    --background: 240 10% 4%;
+    --foreground: 0 0% 100%;
+    --card: 240 10% 6%;
+    --card-foreground: 0 0% 100%;
+    --popover: 240 10% 6%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 20% 15%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 20% 15%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 20% 15%;
+    --input: 240 20% 15%;
+    --ring: 262 83% 58%;
+    --radius: 0.5rem;
+    font-family: 'Inter', sans-serif;
+  }
 }
 
 @layer base {
@@ -296,6 +344,37 @@
   .theme-minimal textarea,
   .theme-minimal select {
     background-color: #f0f0f0;
+  }
+
+  /* Nature Overrides */
+  .theme-nature .bg-primary {
+    background-color: #15803d !important;
+    color: #ffffff !important;
+  }
+  .theme-nature .bg-primary:hover {
+    background-color: #166534 !important;
+  }
+  .theme-nature .bg-card,
+  .theme-nature .card {
+    border: 1px solid #bbf7d0 !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+    background-color: #ffffff !important;
+  }
+
+  /* Skip Overrides */
+  .theme-skip .bg-primary {
+    background-color: #7c3aed !important;
+    color: #ffffff !important;
+  }
+  .theme-skip .bg-primary:hover {
+    background-color: #6d28d9 !important;
+    box-shadow: 0 0 15px rgba(124, 58, 237, 0.5);
+  }
+  .theme-skip .bg-card,
+  .theme-skip .card {
+    border: 1px solid #333 !important;
+    box-shadow: 0 8px 32px rgba(124, 58, 237, 0.1) !important;
+    background-color: #0d0d0d !important;
   }
 }
 
