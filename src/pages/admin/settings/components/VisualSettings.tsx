@@ -88,6 +88,8 @@ export default function VisualSettings() {
                   <SelectItem value="corporate">Corporate Elegance</SelectItem>
                   <SelectItem value="neon">Neon Edge</SelectItem>
                   <SelectItem value="minimal">Minimal Zen</SelectItem>
+                  <SelectItem value="nature">Nature</SelectItem>
+                  <SelectItem value="skip">Skip Theme</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
