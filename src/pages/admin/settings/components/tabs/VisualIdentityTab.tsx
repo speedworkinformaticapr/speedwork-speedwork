@@ -43,6 +43,8 @@ export function VisualIdentityTab({ form }: { form: UseFormReturn<SystemDataForm
                   <SelectItem value="corporate">Corporate Elegance</SelectItem>
                   <SelectItem value="neon">Neon Edge</SelectItem>
                   <SelectItem value="minimal">Minimal Zen</SelectItem>
+                  <SelectItem value="nature">Natureza Viva</SelectItem>
+                  <SelectItem value="skip">Skip Design</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground mt-1">
