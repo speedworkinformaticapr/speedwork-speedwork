@@ -75,6 +75,8 @@ import AdminQuotes from './pages/admin/quotes/AdminQuotes'
 import AdminServices from './pages/admin/services/AdminServices'
 import AdminAppointments from './pages/admin/appointments/AdminAppointments'
 import AdminAppointmentsDashboard from './pages/admin/appointments/AdminAppointmentsDashboard'
+import QuoteForm from './pages/admin/quotes/QuoteForm'
+import QuoteView from './pages/admin/quotes/QuoteView'
 import StaffDashboard from './pages/staff/dashboard/StaffDashboard'
 import ClientQuotes from './pages/client/quotes/ClientQuotes'
 import ClientDashboard from './pages/client/dashboard/ClientDashboard'
@@ -172,6 +174,9 @@ const App = () => (
                   }
                 >
                   <Route path="/admin/quotes" element={<AdminQuotes />} />
+                  <Route path="/admin/quotes/new" element={<QuoteForm />} />
+                  <Route path="/admin/quotes/:id/edit" element={<QuoteForm />} />
+                  <Route path="/admin/quotes/:id" element={<QuoteView />} />
                   <Route path="/admin/services" element={<AdminServices />} />
                   <Route path="/admin/whatsapp" element={<AdminWhatsApp />} />
                   <Route path="/admin/email" element={<AdminEmail />} />
