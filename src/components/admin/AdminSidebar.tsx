@@ -108,6 +108,16 @@ const navItems = [
     ],
   },
   {
+    title: 'Gestão Comercial',
+    icon: Briefcase,
+    items: [
+      { title: 'Dashboard Comercial', url: '/admin/commercial/dashboard' },
+      { title: 'Orçamentos', url: '/admin/quotes' },
+      { title: 'Pedidos', url: '/admin/commercial/pedidos' },
+      { title: 'Contratos', url: '/admin/commercial/contratos' },
+    ],
+  },
+  {
     title: 'Gestão de Negócio',
     icon: Briefcase,
     items: [

@@ -552,6 +552,42 @@ export type Database = {
         }
         Relationships: []
       }
+      clientes: {
+        Row: {
+          cpf_cnpj: string | null
+          created_at: string | null
+          email: string | null
+          endereco: string | null
+          id: string
+          nome: string
+          telefone: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          cpf_cnpj?: string | null
+          created_at?: string | null
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome: string
+          telefone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          cpf_cnpj?: string | null
+          created_at?: string | null
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome?: string
+          telefone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       clubs: {
         Row: {
           address: string | null
@@ -605,6 +641,84 @@ export type Database = {
           verified?: boolean | null
         }
         Relationships: []
+      }
+      contratos: {
+        Row: {
+          cliente_id: string | null
+          created_at: string | null
+          data_cancelamento: string | null
+          data_fim: string | null
+          data_inicio: string | null
+          data_proxima_cobranca: string | null
+          duracao_ciclo: string | null
+          id: string
+          motivo_cancelamento: string | null
+          numero_contrato: string | null
+          observacoes: string | null
+          renovacao_automatica: boolean | null
+          responsavel_id: string | null
+          status: string | null
+          tipo_contrato: string | null
+          updated_at: string | null
+          user_id: string | null
+          valor_ciclo: number | null
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string | null
+          data_cancelamento?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          data_proxima_cobranca?: string | null
+          duracao_ciclo?: string | null
+          id?: string
+          motivo_cancelamento?: string | null
+          numero_contrato?: string | null
+          observacoes?: string | null
+          renovacao_automatica?: boolean | null
+          responsavel_id?: string | null
+          status?: string | null
+          tipo_contrato?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          valor_ciclo?: number | null
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string | null
+          data_cancelamento?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          data_proxima_cobranca?: string | null
+          duracao_ciclo?: string | null
+          id?: string
+          motivo_cancelamento?: string | null
+          numero_contrato?: string | null
+          observacoes?: string | null
+          renovacao_automatica?: boolean | null
+          responsavel_id?: string | null
+          status?: string | null
+          tipo_contrato?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          valor_ciclo?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'contratos_cliente_id_fkey'
+            columns: ['cliente_id']
+            isOneToOne: false
+            referencedRelation: 'clientes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'contratos_responsavel_id_fkey'
+            columns: ['responsavel_id']
+            isOneToOne: false
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
       }
       courses: {
         Row: {
@@ -1016,6 +1130,48 @@ export type Database = {
         }
         Relationships: []
       }
+      lancamentos_financeiros: {
+        Row: {
+          categoria: string | null
+          created_at: string | null
+          data_lancamento: string | null
+          descricao: string | null
+          id: string
+          referencia_id: string | null
+          referencia_tipo: string | null
+          tipo: string | null
+          updated_at: string | null
+          user_id: string | null
+          valor: number | null
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string | null
+          data_lancamento?: string | null
+          descricao?: string | null
+          id?: string
+          referencia_id?: string | null
+          referencia_tipo?: string | null
+          tipo?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          valor?: number | null
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string | null
+          data_lancamento?: string | null
+          descricao?: string | null
+          id?: string
+          referencia_id?: string | null
+          referencia_tipo?: string | null
+          tipo?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          valor?: number | null
+        }
+        Relationships: []
+      }
       maintenance_config: {
         Row: {
           bg_color: string
@@ -1137,6 +1293,7 @@ export type Database = {
           orcamento_id: string | null
           produto_id: string | null
           quantidade: number
+          user_id: string | null
           valor_total: number
           valor_unitario: number
         }
@@ -1146,6 +1303,7 @@ export type Database = {
           orcamento_id?: string | null
           produto_id?: string | null
           quantidade?: number
+          user_id?: string | null
           valor_total?: number
           valor_unitario?: number
         }
@@ -1155,6 +1313,7 @@ export type Database = {
           orcamento_id?: string | null
           produto_id?: string | null
           quantidade?: number
+          user_id?: string | null
           valor_total?: number
           valor_unitario?: number
         }
@@ -1194,6 +1353,7 @@ export type Database = {
           subtotal: number | null
           total: number | null
           updated_at: string
+          user_id: string | null
           valor_impostos: number | null
         }
         Insert: {
@@ -1214,6 +1374,7 @@ export type Database = {
           subtotal?: number | null
           total?: number | null
           updated_at?: string
+          user_id?: string | null
           valor_impostos?: number | null
         }
         Update: {
@@ -1234,6 +1395,7 @@ export type Database = {
           subtotal?: number | null
           total?: number | null
           updated_at?: string
+          user_id?: string | null
           valor_impostos?: number | null
         }
         Relationships: [
@@ -1241,14 +1403,21 @@ export type Database = {
             foreignKeyName: 'orcamentos_cliente_id_fkey'
             columns: ['cliente_id']
             isOneToOne: false
-            referencedRelation: 'profiles'
+            referencedRelation: 'clientes'
             referencedColumns: ['id']
           },
           {
             foreignKeyName: 'orcamentos_pedido_id_fkey'
             columns: ['pedido_id']
             isOneToOne: false
-            referencedRelation: 'orders'
+            referencedRelation: 'pedidos'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'orcamentos_responsavel_id_fkey'
+            columns: ['responsavel_id']
+            isOneToOne: false
+            referencedRelation: 'usuarios'
             referencedColumns: ['id']
           },
         ]
@@ -1377,6 +1546,142 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      pedido_itens: {
+        Row: {
+          descricao: string | null
+          id: string
+          pedido_id: string | null
+          produto_id: string | null
+          quantidade: number | null
+          user_id: string | null
+          valor_total: number | null
+          valor_unitario: number | null
+        }
+        Insert: {
+          descricao?: string | null
+          id?: string
+          pedido_id?: string | null
+          produto_id?: string | null
+          quantidade?: number | null
+          user_id?: string | null
+          valor_total?: number | null
+          valor_unitario?: number | null
+        }
+        Update: {
+          descricao?: string | null
+          id?: string
+          pedido_id?: string | null
+          produto_id?: string | null
+          quantidade?: number | null
+          user_id?: string | null
+          valor_total?: number | null
+          valor_unitario?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'pedido_itens_pedido_id_fkey'
+            columns: ['pedido_id']
+            isOneToOne: false
+            referencedRelation: 'pedidos'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'pedido_itens_produto_id_fkey'
+            columns: ['produto_id']
+            isOneToOne: false
+            referencedRelation: 'products'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      pedidos: {
+        Row: {
+          cliente_id: string | null
+          created_at: string | null
+          data_entrega_prevista: string | null
+          data_entrega_real: string | null
+          data_pagamento: string | null
+          data_pedido: string | null
+          forma_pagamento: string | null
+          id: string
+          motivo_cancelamento: string | null
+          numero_pedido: string | null
+          observacoes: string | null
+          orcamento_id: string | null
+          rastreamento: string | null
+          responsavel_id: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+          valor_pago: number | null
+          valor_total: number | null
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string | null
+          data_entrega_prevista?: string | null
+          data_entrega_real?: string | null
+          data_pagamento?: string | null
+          data_pedido?: string | null
+          forma_pagamento?: string | null
+          id?: string
+          motivo_cancelamento?: string | null
+          numero_pedido?: string | null
+          observacoes?: string | null
+          orcamento_id?: string | null
+          rastreamento?: string | null
+          responsavel_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          valor_pago?: number | null
+          valor_total?: number | null
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string | null
+          data_entrega_prevista?: string | null
+          data_entrega_real?: string | null
+          data_pagamento?: string | null
+          data_pedido?: string | null
+          forma_pagamento?: string | null
+          id?: string
+          motivo_cancelamento?: string | null
+          numero_pedido?: string | null
+          observacoes?: string | null
+          orcamento_id?: string | null
+          rastreamento?: string | null
+          responsavel_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          valor_pago?: number | null
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'pedidos_cliente_id_fkey'
+            columns: ['cliente_id']
+            isOneToOne: false
+            referencedRelation: 'clientes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'pedidos_orcamento_id_fkey'
+            columns: ['orcamento_id']
+            isOneToOne: false
+            referencedRelation: 'orcamentos'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'pedidos_responsavel_id_fkey'
+            columns: ['responsavel_id']
+            isOneToOne: false
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
       }
       products: {
         Row: {
@@ -1847,6 +2152,39 @@ export type Database = {
         }
         Relationships: []
       }
+      usuarios: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          nome: string | null
+          role: string | null
+          senha: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          nome?: string | null
+          role?: string | null
+          senha?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          nome?: string | null
+          role?: string | null
+          senha?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       whatsapp_config: {
         Row: {
           account_sid: string | null
@@ -2223,6 +2561,16 @@ export const Constants = {
 //   max_age: integer (nullable)
 //   icon: text (nullable)
 //   status: text (nullable, default: 'active'::text)
+// Table: clientes
+//   id: uuid (not null, default: gen_random_uuid())
+//   user_id: uuid (nullable, default: auth.uid())
+//   nome: text (not null)
+//   email: text (nullable)
+//   telefone: text (nullable)
+//   cpf_cnpj: text (nullable)
+//   endereco: text (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+//   updated_at: timestamp with time zone (nullable, default: now())
 // Table: clubs
 //   id: uuid (not null, default: gen_random_uuid())
 //   name: text (not null)
@@ -2239,6 +2587,25 @@ export const Constants = {
 //   email: text (nullable)
 //   status: text (nullable, default: 'active'::text)
 //   financial_status: text (nullable, default: 'normal'::text)
+// Table: contratos
+//   id: uuid (not null, default: gen_random_uuid())
+//   user_id: uuid (nullable, default: auth.uid())
+//   numero_contrato: text (nullable)
+//   cliente_id: uuid (nullable)
+//   responsavel_id: uuid (nullable)
+//   tipo_contrato: text (nullable)
+//   data_inicio: date (nullable)
+//   data_fim: date (nullable)
+//   duracao_ciclo: text (nullable)
+//   valor_ciclo: numeric (nullable)
+//   status: text (nullable)
+//   renovacao_automatica: boolean (nullable, default: false)
+//   data_proxima_cobranca: date (nullable)
+//   data_cancelamento: date (nullable)
+//   motivo_cancelamento: text (nullable)
+//   observacoes: text (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+//   updated_at: timestamp with time zone (nullable, default: now())
 // Table: courses
 //   id: uuid (not null, default: gen_random_uuid())
 //   club_id: uuid (nullable)
@@ -2342,6 +2709,18 @@ export const Constants = {
 //   is_published: boolean (nullable, default: true)
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
+// Table: lancamentos_financeiros
+//   id: uuid (not null, default: gen_random_uuid())
+//   user_id: uuid (nullable, default: auth.uid())
+//   tipo: text (nullable)
+//   descricao: text (nullable)
+//   valor: numeric (nullable)
+//   data_lancamento: date (nullable)
+//   categoria: text (nullable)
+//   referencia_id: uuid (nullable)
+//   referencia_tipo: text (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+//   updated_at: timestamp with time zone (nullable, default: now())
 // Table: maintenance_config
 //   id: uuid (not null, default: gen_random_uuid())
 //   is_active: boolean (not null, default: false)
@@ -2382,6 +2761,7 @@ export const Constants = {
 //   valor_unitario: numeric (not null, default: 0)
 //   valor_total: numeric (not null, default: 0)
 //   descricao: text (nullable)
+//   user_id: uuid (nullable, default: auth.uid())
 // Table: orcamentos
 //   id: uuid (not null, default: gen_random_uuid())
 //   numero_orcamento: text (nullable)
@@ -2401,6 +2781,7 @@ export const Constants = {
 //   pedido_id: uuid (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
+//   user_id: uuid (nullable, default: auth.uid())
 // Table: order_items
 //   id: uuid (not null, default: gen_random_uuid())
 //   order_id: uuid (nullable)
@@ -2429,6 +2810,35 @@ export const Constants = {
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
 //   display_order: integer (not null, default: 0)
+// Table: pedido_itens
+//   id: uuid (not null, default: gen_random_uuid())
+//   user_id: uuid (nullable, default: auth.uid())
+//   pedido_id: uuid (nullable)
+//   produto_id: uuid (nullable)
+//   quantidade: integer (nullable)
+//   valor_unitario: numeric (nullable)
+//   valor_total: numeric (nullable)
+//   descricao: text (nullable)
+// Table: pedidos
+//   id: uuid (not null, default: gen_random_uuid())
+//   user_id: uuid (nullable, default: auth.uid())
+//   numero_pedido: text (nullable)
+//   cliente_id: uuid (nullable)
+//   orcamento_id: uuid (nullable)
+//   responsavel_id: uuid (nullable)
+//   data_pedido: date (nullable)
+//   data_entrega_prevista: date (nullable)
+//   data_entrega_real: date (nullable)
+//   status: text (nullable)
+//   valor_total: numeric (nullable)
+//   forma_pagamento: text (nullable)
+//   data_pagamento: date (nullable)
+//   valor_pago: numeric (nullable)
+//   rastreamento: text (nullable)
+//   observacoes: text (nullable)
+//   motivo_cancelamento: text (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+//   updated_at: timestamp with time zone (nullable, default: now())
 // Table: products
 //   id: uuid (not null, default: gen_random_uuid())
 //   name: text (not null)
@@ -2555,6 +2965,15 @@ export const Constants = {
 //   quote_footer_text: text (nullable)
 //   records_per_page: integer (nullable, default: 50)
 //   business_hours: jsonb (nullable, default: '{}'::jsonb)
+// Table: usuarios
+//   id: uuid (not null, default: gen_random_uuid())
+//   user_id: uuid (nullable, default: auth.uid())
+//   email: text (nullable)
+//   senha: text (nullable)
+//   nome: text (nullable)
+//   role: text (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+//   updated_at: timestamp with time zone (nullable, default: now())
 // Table: whatsapp_config
 //   id: uuid (not null, default: gen_random_uuid())
 //   empresa_id: uuid (nullable)
@@ -2631,8 +3050,17 @@ export const Constants = {
 //   UNIQUE cart_items_user_id_product_id_key: UNIQUE (user_id, product_id)
 // Table: categories
 //   PRIMARY KEY categories_pkey: PRIMARY KEY (id)
+// Table: clientes
+//   PRIMARY KEY clientes_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY clientes_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: clubs
 //   PRIMARY KEY clubs_pkey: PRIMARY KEY (id)
+// Table: contratos
+//   FOREIGN KEY contratos_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+//   UNIQUE contratos_numero_contrato_key: UNIQUE (numero_contrato)
+//   PRIMARY KEY contratos_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY contratos_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id)
+//   FOREIGN KEY contratos_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: courses
 //   FOREIGN KEY courses_club_id_fkey: FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE
 //   PRIMARY KEY courses_pkey: PRIMARY KEY (id)
@@ -2658,6 +3086,11 @@ export const Constants = {
 //   FOREIGN KEY google_ads_cache_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: hero_carousel
 //   PRIMARY KEY hero_carousel_pkey: PRIMARY KEY (id)
+// Table: lancamentos_financeiros
+//   PRIMARY KEY lancamentos_financeiros_pkey: PRIMARY KEY (id)
+//   CHECK lancamentos_financeiros_referencia_tipo_check: CHECK ((referencia_tipo = ANY (ARRAY['orcamento'::text, 'pedido'::text, 'contrato'::text])))
+//   CHECK lancamentos_financeiros_tipo_check: CHECK ((tipo = ANY (ARRAY['entrada'::text, 'saida'::text])))
+//   FOREIGN KEY lancamentos_financeiros_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: maintenance_config
 //   PRIMARY KEY maintenance_config_pkey: PRIMARY KEY (id)
 // Table: media_items
@@ -2669,11 +3102,13 @@ export const Constants = {
 //   FOREIGN KEY orcamento_itens_orcamento_id_fkey: FOREIGN KEY (orcamento_id) REFERENCES orcamentos(id) ON DELETE CASCADE
 //   PRIMARY KEY orcamento_itens_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY orcamento_itens_produto_id_fkey: FOREIGN KEY (produto_id) REFERENCES products(id) ON DELETE SET NULL
+//   FOREIGN KEY orcamento_itens_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id)
 // Table: orcamentos
-//   FOREIGN KEY orcamentos_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES profiles(id) ON DELETE CASCADE
-//   FOREIGN KEY orcamentos_pedido_id_fkey: FOREIGN KEY (pedido_id) REFERENCES orders(id) ON DELETE SET NULL
+//   FOREIGN KEY orcamentos_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+//   FOREIGN KEY orcamentos_pedido_id_fkey: FOREIGN KEY (pedido_id) REFERENCES pedidos(id)
 //   PRIMARY KEY orcamentos_pkey: PRIMARY KEY (id)
-//   FOREIGN KEY orcamentos_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES auth.users(id) ON DELETE SET NULL
+//   FOREIGN KEY orcamentos_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id)
+//   FOREIGN KEY orcamentos_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id)
 // Table: order_items
 //   FOREIGN KEY order_items_order_id_fkey: FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
 //   PRIMARY KEY order_items_pkey: PRIMARY KEY (id)
@@ -2685,6 +3120,18 @@ export const Constants = {
 // Table: pages
 //   PRIMARY KEY pages_pkey: PRIMARY KEY (id)
 //   UNIQUE pages_slug_key: UNIQUE (slug)
+// Table: pedido_itens
+//   FOREIGN KEY pedido_itens_pedido_id_fkey: FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE
+//   PRIMARY KEY pedido_itens_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY pedido_itens_produto_id_fkey: FOREIGN KEY (produto_id) REFERENCES products(id)
+//   FOREIGN KEY pedido_itens_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+// Table: pedidos
+//   FOREIGN KEY pedidos_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+//   UNIQUE pedidos_numero_pedido_key: UNIQUE (numero_pedido)
+//   FOREIGN KEY pedidos_orcamento_id_fkey: FOREIGN KEY (orcamento_id) REFERENCES orcamentos(id)
+//   PRIMARY KEY pedidos_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY pedidos_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id)
+//   FOREIGN KEY pedidos_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: products
 //   PRIMARY KEY products_pkey: PRIMARY KEY (id)
 // Table: profiles
@@ -2712,6 +3159,10 @@ export const Constants = {
 //   PRIMARY KEY stripe_payments_pkey: PRIMARY KEY (id)
 // Table: system_data
 //   PRIMARY KEY system_data_pkey: PRIMARY KEY (id)
+// Table: usuarios
+//   UNIQUE usuarios_email_key: UNIQUE (email)
+//   PRIMARY KEY usuarios_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY usuarios_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: whatsapp_config
 //   PRIMARY KEY whatsapp_config_pkey: PRIMARY KEY (id)
 // Table: whatsapp_logs
@@ -2801,6 +3252,15 @@ export const Constants = {
 //   Policy "Enable update for authenticated users" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+// Table: clientes
+//   Policy "clientes_delete" (DELETE, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
+//   Policy "clientes_insert" (INSERT, PERMISSIVE) roles={public}
+//     WITH CHECK: (user_id = auth.uid())
+//   Policy "clientes_select" (SELECT, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
+//   Policy "clientes_update" (UPDATE, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
 // Table: clubs
 //   Policy "Enable delete for authenticated users" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -2811,6 +3271,15 @@ export const Constants = {
 //   Policy "Enable update for authenticated users" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+// Table: contratos
+//   Policy "contratos_delete" (DELETE, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
+//   Policy "contratos_insert" (INSERT, PERMISSIVE) roles={public}
+//     WITH CHECK: (user_id = auth.uid())
+//   Policy "contratos_select" (SELECT, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
+//   Policy "contratos_update" (UPDATE, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
 // Table: courses
 //   Policy "Enable delete for authenticated users" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -2885,6 +3354,15 @@ export const Constants = {
 //   Policy "hero_carousel_update" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+// Table: lancamentos_financeiros
+//   Policy "lancamentos_financeiros_delete" (DELETE, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
+//   Policy "lancamentos_financeiros_insert" (INSERT, PERMISSIVE) roles={public}
+//     WITH CHECK: (user_id = auth.uid())
+//   Policy "lancamentos_financeiros_select" (SELECT, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
+//   Policy "lancamentos_financeiros_update" (UPDATE, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
 // Table: maintenance_config
 //   Policy "Enable insert for authenticated users" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: true
@@ -2911,10 +3389,26 @@ export const Constants = {
 //   Policy "orcamento_itens_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+//   Policy "orcamento_itens_delete" (DELETE, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
+//   Policy "orcamento_itens_insert" (INSERT, PERMISSIVE) roles={public}
+//     WITH CHECK: (user_id = auth.uid())
+//   Policy "orcamento_itens_select" (SELECT, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
+//   Policy "orcamento_itens_update" (UPDATE, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
 // Table: orcamentos
 //   Policy "orcamentos_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+//   Policy "orcamentos_delete" (DELETE, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
+//   Policy "orcamentos_insert" (INSERT, PERMISSIVE) roles={public}
+//     WITH CHECK: (user_id = auth.uid())
+//   Policy "orcamentos_select" (SELECT, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
+//   Policy "orcamentos_update" (UPDATE, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
 // Table: order_items
 //   Policy "Enable delete for authenticated users" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -2938,6 +3432,24 @@ export const Constants = {
 //     WITH CHECK: true
 //   Policy "Enable read access for all users" (SELECT, PERMISSIVE) roles={public}
 //     USING: (is_published = true)
+// Table: pedido_itens
+//   Policy "pedido_itens_delete" (DELETE, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
+//   Policy "pedido_itens_insert" (INSERT, PERMISSIVE) roles={public}
+//     WITH CHECK: (user_id = auth.uid())
+//   Policy "pedido_itens_select" (SELECT, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
+//   Policy "pedido_itens_update" (UPDATE, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
+// Table: pedidos
+//   Policy "pedidos_delete" (DELETE, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
+//   Policy "pedidos_insert" (INSERT, PERMISSIVE) roles={public}
+//     WITH CHECK: (user_id = auth.uid())
+//   Policy "pedidos_select" (SELECT, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
+//   Policy "pedidos_update" (UPDATE, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
 // Table: products
 //   Policy "Enable delete for authenticated users" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -2994,6 +3506,15 @@ export const Constants = {
 //   Policy "system_data_update" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+// Table: usuarios
+//   Policy "usuarios_delete" (DELETE, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
+//   Policy "usuarios_insert" (INSERT, PERMISSIVE) roles={public}
+//     WITH CHECK: (user_id = auth.uid())
+//   Policy "usuarios_select" (SELECT, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
+//   Policy "usuarios_update" (UPDATE, PERMISSIVE) roles={public}
+//     USING: (user_id = auth.uid())
 // Table: whatsapp_config
 //   Policy "whatsapp_config_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -3233,7 +3754,15 @@ export const Constants = {
 //   CREATE INDEX idx_billing_logs_tenant ON public.billing_logs USING btree (tenant_id)
 // Table: cart_items
 //   CREATE UNIQUE INDEX cart_items_user_id_product_id_key ON public.cart_items USING btree (user_id, product_id)
+// Table: contratos
+//   CREATE UNIQUE INDEX contratos_numero_contrato_key ON public.contratos USING btree (numero_contrato)
+// Table: orcamentos
+//   CREATE UNIQUE INDEX orcamentos_numero_orcamento_key ON public.orcamentos USING btree (numero_orcamento)
 // Table: pages
 //   CREATE UNIQUE INDEX pages_slug_key ON public.pages USING btree (slug)
+// Table: pedidos
+//   CREATE UNIQUE INDEX pedidos_numero_pedido_key ON public.pedidos USING btree (numero_pedido)
 // Table: rankings
 //   CREATE UNIQUE INDEX rankings_athlete_id_key ON public.rankings USING btree (athlete_id)
+// Table: usuarios
+//   CREATE UNIQUE INDEX usuarios_email_key ON public.usuarios USING btree (email)

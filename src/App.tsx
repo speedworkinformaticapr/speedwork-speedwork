@@ -75,6 +75,13 @@ import AdminQuotes from './pages/admin/quotes/AdminQuotes'
 import AdminServices from './pages/admin/services/AdminServices'
 import AdminAppointments from './pages/admin/appointments/AdminAppointments'
 import AdminAppointmentsDashboard from './pages/admin/appointments/AdminAppointmentsDashboard'
+import AdminPedidosList from './pages/admin/commercial/AdminPedidosList'
+import AdminPedidoForm from './pages/admin/commercial/AdminPedidoForm'
+import AdminPedidoView from './pages/admin/commercial/AdminPedidoView'
+import AdminContratosList from './pages/admin/commercial/AdminContratosList'
+import AdminContratoForm from './pages/admin/commercial/AdminContratoForm'
+import AdminContratoView from './pages/admin/commercial/AdminContratoView'
+import AdminCommercialDashboard from './pages/admin/commercial/AdminCommercialDashboard'
 import QuoteForm from './pages/admin/quotes/QuoteForm'
 import QuoteView from './pages/admin/quotes/QuoteView'
 import StaffDashboard from './pages/staff/dashboard/StaffDashboard'
@@ -177,6 +184,21 @@ const App = () => (
                   <Route path="/admin/quotes/new" element={<QuoteForm />} />
                   <Route path="/admin/quotes/:id/edit" element={<QuoteForm />} />
                   <Route path="/admin/quotes/:id" element={<QuoteView />} />
+                  <Route
+                    path="/admin/commercial/dashboard"
+                    element={<AdminCommercialDashboard />}
+                  />
+                  <Route path="/admin/commercial/pedidos" element={<AdminPedidosList />} />
+                  <Route path="/admin/commercial/pedidos/new" element={<AdminPedidoForm />} />
+                  <Route path="/admin/commercial/pedidos/:id/edit" element={<AdminPedidoForm />} />
+                  <Route path="/admin/commercial/pedidos/:id" element={<AdminPedidoView />} />
+                  <Route path="/admin/commercial/contratos" element={<AdminContratosList />} />
+                  <Route path="/admin/commercial/contratos/new" element={<AdminContratoForm />} />
+                  <Route
+                    path="/admin/commercial/contratos/:id/edit"
+                    element={<AdminContratoForm />}
+                  />
+                  <Route path="/admin/commercial/contratos/:id" element={<AdminContratoView />} />
                   <Route path="/admin/services" element={<AdminServices />} />
                   <Route path="/admin/whatsapp" element={<AdminWhatsApp />} />
                   <Route path="/admin/email" element={<AdminEmail />} />
