@@ -24,7 +24,7 @@ export default function AdminPedidoView() {
       .single()
     const { data: i } = await supabase
       .from('pedido_itens')
-      .select('*, products(name)')
+      .select('*, products(name), services(title)')
       .eq('pedido_id', id)
     setPedido(p)
     setItens(i || [])
@@ -92,14 +92,21 @@ export default function AdminPedidoView() {
         <div className="border p-4 rounded bg-muted/10">
           <h3 className="font-bold mb-4">Itens</h3>
           {itens.map((i, idx) => (
-            <div key={idx} className="flex justify-between py-2 border-b last:border-0">
-              <span>
-                {i.quantidade}x {i.products?.name}
-              </span>
-              <strong>R$ {i.valor_total.toFixed(2)}</strong>
+            <div key={idx} className="flex justify-between py-2 border-b last:border-0 text-sm">
+              <div>
+                <div className="font-medium">
+                  {i.tipo_item === 'servico' ? i.services?.title : i.products?.name}
+                </div>
+                <div className="text-muted-foreground text-xs">
+                  {i.tipo_item === 'servico'
+                    ? `${i.tempo_estimado}h a R$ ${i.valor_unitario.toFixed(2)}/h ${i.quantidade > 1 ? `(x${i.quantidade})` : ''}`
+                    : `${i.quantidade}x R$ ${i.valor_unitario.toFixed(2)}`}
+                </div>
+              </div>
+              <strong className="ml-4">R$ {(i.valor_total || 0).toFixed(2)}</strong>
             </div>
           ))}
-          <div className="text-right text-xl font-bold mt-4">
+          <div className="text-right text-xl font-bold mt-4 pt-4 border-t border-border/50">
             Total: R$ {pedido.valor_total.toFixed(2)}
           </div>
         </div>

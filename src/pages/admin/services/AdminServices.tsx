@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { supabase } from '@/lib/supabase/client'
 import {
   Dialog,
   DialogContent,
@@ -32,75 +33,41 @@ type Service = {
   id: string
   title: string
   description: string
-  costValue: number
-  saleValue: number
-  execTime: string
-  marginTime: number
-  addTime: string
+  cost_value: number
+  sale_value: number
+  exec_time: string
+  margin_time: number
+  add_time: string
 }
 
-const MOCK_SERVICES: Service[] = [
-  {
-    id: '1',
-    title: 'Consultoria de Campo',
-    description: 'Análise completa do gramado',
-    costValue: 100,
-    saleValue: 250,
-    execTime: '04:00:00',
-    marginTime: 10,
-    addTime: '01:00:00',
-  },
-  {
-    id: '2',
-    title: 'Treinamento Tático',
-    description: 'Treino para equipes',
-    costValue: 150,
-    saleValue: 300,
-    execTime: '03:00:00',
-    marginTime: 0,
-    addTime: '00:00:00',
-  },
-  {
-    id: '3',
-    title: 'Manutenção Preventiva',
-    description: 'Ajustes no campo',
-    costValue: 200,
-    saleValue: 500,
-    execTime: '08:00:00',
-    marginTime: 20,
-    addTime: '02:00:00',
-  },
-  {
-    id: '4',
-    title: 'Auditoria de Regras',
-    description: 'Verificação de conformidade',
-    costValue: 80,
-    saleValue: 200,
-    execTime: '02:00:00',
-    marginTime: 15,
-    addTime: '00:30:00',
-  },
-  {
-    id: '5',
-    title: 'Gestão de Evento',
-    description: 'Organização de torneio',
-    costValue: 1000,
-    saleValue: 2500,
-    execTime: '24:00:00',
-    marginTime: 10,
-    addTime: '04:00:00',
-  },
-]
-
 export default function AdminServices() {
-  const [services, setServices] = useState<Service[]>(MOCK_SERVICES)
+  const [services, setServices] = useState<Service[]>([])
   const [open, setOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState('title_asc')
   const [formData, setFormData] = useState<Partial<Service>>({})
   const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
+
+  useEffect(() => {
+    loadServices()
+  }, [])
+
+  const loadServices = async () => {
+    setIsLoading(true)
+    const { data, error } = await supabase
+      .from('services' as any)
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (error) {
+      toast({ title: 'Erro', description: 'Falha ao carregar serviços.', variant: 'destructive' })
+    } else {
+      setServices(data || [])
+    }
+    setIsLoading(false)
+  }
 
   const maskTime = (v: string) => {
     v = v.replace(/\D/g, '')
@@ -114,6 +81,7 @@ export default function AdminServices() {
 
   const calcAddTime = (execTime = '00:00:00', margin = 0) => {
     const [h, m, s] = execTime.split(':').map((n) => parseInt(n || '0', 10))
+    if (isNaN(h) || isNaN(m) || isNaN(s)) return '00:00:00'
     const added = Math.round((h * 3600 + m * 60 + s) * (margin / 100))
     return `${Math.floor(added / 3600)
       .toString()
@@ -122,34 +90,74 @@ export default function AdminServices() {
       .padStart(2, '0')}:${(added % 60).toString().padStart(2, '0')}`
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.title) {
       return toast({ title: 'Atenção', description: 'Título obrigatório.', variant: 'destructive' })
     }
     setIsSaving(true)
-    setTimeout(() => {
-      if (editingId) {
-        setServices(
-          services.map((s) => (s.id === editingId ? ({ ...s, ...formData } as Service) : s)),
-        )
-      } else {
-        setServices([...services, { ...formData, id: Date.now().toString() } as Service])
-      }
+
+    const payload = {
+      title: formData.title,
+      description: formData.description || '',
+      cost_value: formData.cost_value || 0,
+      sale_value: formData.sale_value || 0,
+      exec_time: formData.exec_time || '00:00:00',
+      margin_time: formData.margin_time || 0,
+      add_time: formData.add_time || '00:00:00',
+    }
+
+    let error
+    if (editingId) {
+      const res = await supabase
+        .from('services' as any)
+        .update(payload)
+        .eq('id', editingId)
+      error = res.error
+    } else {
+      const res = await supabase.from('services' as any).insert([payload])
+      error = res.error
+    }
+
+    setIsSaving(false)
+
+    if (error) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' })
+    } else {
       toast({ title: 'Sucesso', description: 'Serviço salvo!' })
       setOpen(false)
-      setIsSaving(false)
-    }, 400)
+      loadServices()
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Deseja realmente excluir este serviço?')) return
+    const { error } = await supabase
+      .from('services' as any)
+      .delete()
+      .eq('id', id)
+    if (error) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' })
+    } else {
+      toast({ title: 'Sucesso', description: 'Serviço excluído.' })
+      setServices(services.filter((s) => s.id !== id))
+    }
   }
 
   const openNew = () => {
     setFormData({
-      costValue: 0,
-      saleValue: 0,
-      execTime: '00:00:00',
-      marginTime: 0,
-      addTime: '00:00:00',
+      cost_value: 0,
+      sale_value: 0,
+      exec_time: '00:00:00',
+      margin_time: 0,
+      add_time: '00:00:00',
     })
     setEditingId(null)
+    setOpen(true)
+  }
+
+  const handleEdit = (s: Service) => {
+    setFormData(s)
+    setEditingId(s.id)
     setOpen(true)
   }
 
@@ -160,10 +168,10 @@ export default function AdminServices() {
     return res.sort((a, b) => {
       if (sortBy === 'title_asc') return a.title.localeCompare(b.title)
       if (sortBy === 'title_desc') return b.title.localeCompare(a.title)
-      if (sortBy === 'price_asc') return a.saleValue - b.saleValue
-      if (sortBy === 'price_desc') return b.saleValue - a.saleValue
-      if (sortBy === 'margin_asc') return a.marginTime - b.marginTime
-      return b.marginTime - a.marginTime
+      if (sortBy === 'price_asc') return a.sale_value - b.sale_value
+      if (sortBy === 'price_desc') return b.sale_value - a.sale_value
+      if (sortBy === 'margin_asc') return a.margin_time - b.margin_time
+      return b.margin_time - a.margin_time
     })
   }, [services, searchTerm, sortBy])
 
@@ -173,7 +181,7 @@ export default function AdminServices() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Catálogo de Serviços</h1>
           <p className="text-muted-foreground mt-1">
-            Gerencie os serviços para orçamentos e agendamentos.
+            Gerencie os serviços com valor por hora para orçamentos e pedidos.
           </p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -204,50 +212,50 @@ export default function AdminServices() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label>V. Custo (R$)</Label>
+                <Label>Custo (R$ / hora)</Label>
                 <Input
                   type="number"
                   min="0"
                   step="0.01"
-                  value={formData.costValue || 0}
-                  onChange={(e) => setFormData({ ...formData, costValue: Number(e.target.value) })}
+                  value={formData.cost_value || 0}
+                  onChange={(e) => setFormData({ ...formData, cost_value: Number(e.target.value) })}
                 />
               </div>
               <div className="grid gap-2">
-                <Label>V. Venda (R$)</Label>
+                <Label>Venda (R$ / hora)</Label>
                 <Input
                   type="number"
                   min="0"
                   step="0.01"
-                  value={formData.saleValue || 0}
-                  onChange={(e) => setFormData({ ...formData, saleValue: Number(e.target.value) })}
+                  value={formData.sale_value || 0}
+                  onChange={(e) => setFormData({ ...formData, sale_value: Number(e.target.value) })}
                 />
               </div>
               <div className="grid gap-2">
-                <Label>T. Execução</Label>
+                <Label>T. Execução Padrão</Label>
                 <Input
                   placeholder="00:00:00"
-                  value={formData.execTime || ''}
+                  value={formData.exec_time || ''}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      execTime: maskTime(e.target.value),
-                      addTime: calcAddTime(maskTime(e.target.value), formData.marginTime),
+                      exec_time: maskTime(e.target.value),
+                      add_time: calcAddTime(maskTime(e.target.value), formData.margin_time),
                     })
                   }
                 />
               </div>
               <div className="grid gap-2">
-                <Label>% Margem</Label>
+                <Label>% Margem de Tempo</Label>
                 <Input
                   type="number"
                   min="0"
-                  value={formData.marginTime || 0}
+                  value={formData.margin_time || 0}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      marginTime: Number(e.target.value),
-                      addTime: calcAddTime(formData.execTime, Number(e.target.value)),
+                      margin_time: Number(e.target.value),
+                      add_time: calcAddTime(formData.exec_time, Number(e.target.value)),
                     })
                   }
                 />
@@ -286,8 +294,8 @@ export default function AdminServices() {
           <SelectContent>
             <SelectItem value="title_asc">Título (A-Z)</SelectItem>
             <SelectItem value="title_desc">Título (Z-A)</SelectItem>
-            <SelectItem value="price_asc">Menor Preço de Venda</SelectItem>
-            <SelectItem value="price_desc">Maior Preço de Venda</SelectItem>
+            <SelectItem value="price_asc">Menor Valor Hora</SelectItem>
+            <SelectItem value="price_desc">Maior Valor Hora</SelectItem>
             <SelectItem value="margin_asc">Menor Margem (%)</SelectItem>
             <SelectItem value="margin_desc">Maior Margem (%)</SelectItem>
           </SelectContent>
@@ -299,73 +307,80 @@ export default function AdminServices() {
           <TableHeader>
             <TableRow className="bg-muted/40 hover:bg-muted/40 border-border/50">
               <TableHead className="font-semibold h-12">Título do Serviço</TableHead>
-              <TableHead className="font-semibold h-12">V. Custo</TableHead>
-              <TableHead className="font-semibold h-12">V. Venda</TableHead>
-              <TableHead className="font-semibold h-12">T. Execução</TableHead>
+              <TableHead className="font-semibold h-12">Custo / h</TableHead>
+              <TableHead className="font-semibold h-12">Venda / h</TableHead>
+              <TableHead className="font-semibold h-12">T. Execução Padrão</TableHead>
               <TableHead className="font-semibold h-12">Margem/Acrés.</TableHead>
               <TableHead className="text-right font-semibold h-12 pr-6">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((s) => (
-              <TableRow
-                key={s.id}
-                className="hover:bg-muted/30 border-border/50 transition-colors group"
-              >
-                <TableCell className="font-medium py-4">
-                  <div className="flex flex-col">
-                    <span>{s.title}</span>
-                    <span className="text-xs text-muted-foreground truncate max-w-[200px] mt-0.5">
-                      {s.description}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-muted-foreground py-4">
-                  R$ {s.costValue.toFixed(2)}
-                </TableCell>
-                <TableCell className="font-bold text-[#1B7D3A] dark:text-green-500 py-4">
-                  R$ {s.saleValue.toFixed(2)}
-                </TableCell>
-                <TableCell className="py-4">
-                  <span className="bg-secondary/50 px-2 py-1 rounded text-xs font-medium">
-                    {s.execTime}
-                  </span>
-                </TableCell>
-                <TableCell className="text-muted-foreground py-4">
-                  <span className="text-foreground font-medium">{s.marginTime}%</span>{' '}
-                  <span className="text-xs">(+{s.addTime})</span>
-                </TableCell>
-                <TableCell className="text-right py-4 pr-4">
-                  <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(s)}
-                      className="h-8 w-8 hover:text-blue-600"
-                    >
-                      <Edit className="w-4 h-4 text-blue-500" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setServices(services.filter((x) => x.id !== s.id))}
-                      className="h-8 w-8 hover:text-red-600"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </Button>
-                  </div>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-12">
+                  Carregando serviços...
                 </TableCell>
               </TableRow>
-            ))}
-            {filtered.length === 0 && (
+            ) : filtered.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
                   <div className="flex flex-col items-center justify-center">
                     <Search className="w-8 h-8 mb-3 opacity-20" />
-                    <p>Nenhum serviço encontrado com os filtros atuais.</p>
+                    <p>Nenhum serviço encontrado.</p>
                   </div>
                 </TableCell>
               </TableRow>
+            ) : (
+              filtered.map((s) => (
+                <TableRow
+                  key={s.id}
+                  className="hover:bg-muted/30 border-border/50 transition-colors group"
+                >
+                  <TableCell className="font-medium py-4">
+                    <div className="flex flex-col">
+                      <span>{s.title}</span>
+                      <span className="text-xs text-muted-foreground truncate max-w-[200px] mt-0.5">
+                        {s.description}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground py-4">
+                    R$ {(s.cost_value || 0).toFixed(2)}
+                  </TableCell>
+                  <TableCell className="font-bold text-[#1B7D3A] dark:text-green-500 py-4">
+                    R$ {(s.sale_value || 0).toFixed(2)}
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <span className="bg-secondary/50 px-2 py-1 rounded text-xs font-medium">
+                      {s.exec_time || '00:00:00'}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground py-4">
+                    <span className="text-foreground font-medium">{s.margin_time || 0}%</span>{' '}
+                    <span className="text-xs">(+{s.add_time || '00:00:00'})</span>
+                  </TableCell>
+                  <TableCell className="text-right py-4 pr-4">
+                    <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(s)}
+                        className="h-8 w-8 hover:text-blue-600"
+                      >
+                        <Edit className="w-4 h-4 text-blue-500" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(s.id)}
+                        className="h-8 w-8 hover:text-red-600"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
             )}
           </TableBody>
         </Table>

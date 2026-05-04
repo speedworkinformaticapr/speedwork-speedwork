@@ -29,7 +29,7 @@ export default function QuoteView() {
       setQuote(q)
       const { data: it } = await supabase
         .from('orcamento_itens')
-        .select('*, products(name)')
+        .select('*, products(name), services(title)')
         .eq('orcamento_id', id)
       setItems(it || [])
     }
@@ -199,19 +199,39 @@ export default function QuoteView() {
             <table className="w-full text-left text-sm">
               <thead className="border-b">
                 <tr>
-                  <th className="pb-3 font-medium">Produto / Serviço</th>
-                  <th className="pb-3 font-medium text-center">Quantidade</th>
-                  <th className="pb-3 font-medium text-right">Valor Unitário</th>
-                  <th className="pb-3 font-medium text-right">Total do Item</th>
+                  <th className="pb-3 font-medium">Item</th>
+                  <th className="pb-3 font-medium text-center">Tipo</th>
+                  <th className="pb-3 font-medium text-center">Tempo/Qtd</th>
+                  <th className="pb-3 font-medium text-right">Valor Base</th>
+                  <th className="pb-3 font-medium text-right">Total</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((it) => (
                   <tr key={it.id} className="border-b last:border-0">
-                    <td className="py-3">{it.products?.name || it.descricao || 'Item genérico'}</td>
-                    <td className="py-3 text-center">{it.quantidade}</td>
+                    <td className="py-3">
+                      <div className="font-medium">
+                        {it.tipo_item === 'servico' ? it.services?.title : it.products?.name}
+                      </div>
+                      {it.descricao && (
+                        <div className="text-xs text-muted-foreground">{it.descricao}</div>
+                      )}
+                    </td>
+                    <td className="py-3 text-center text-sm">
+                      <Badge variant="outline">
+                        {it.tipo_item === 'servico' ? 'Serviço' : 'Produto'}
+                      </Badge>
+                    </td>
+                    <td className="py-3 text-center">
+                      {it.tipo_item === 'servico'
+                        ? `${it.tempo_estimado}h ${it.quantidade > 1 ? `(x${it.quantidade})` : ''}`
+                        : it.quantidade}
+                    </td>
                     <td className="py-3 text-right">
                       R$ {Number(it.valor_unitario).toFixed(2).replace('.', ',')}
+                      <span className="text-xs text-muted-foreground block">
+                        {it.tipo_item === 'servico' ? 'por hora' : 'unitário'}
+                      </span>
                     </td>
                     <td className="py-3 text-right font-medium">
                       R$ {Number(it.valor_total).toFixed(2).replace('.', ',')}

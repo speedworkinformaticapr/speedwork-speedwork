@@ -23,6 +23,7 @@ export default function AdminPedidoForm() {
   const [clientes, setClientes] = useState<any[]>([])
   const [orcamentos, setOrcamentos] = useState<any[]>([])
   const [produtos, setProdutos] = useState<any[]>([])
+  const [servicos, setServicos] = useState<any[]>([])
 
   const [formData, setFormData] = useState({
     cliente_id: '',
@@ -48,6 +49,10 @@ export default function AdminPedidoForm() {
       .from('products')
       .select('id, name, price')
       .then(({ data }) => setProdutos(data || []))
+    supabase
+      .from('services' as any)
+      .select('id, title, sale_value')
+      .then(({ data }) => setServicos(data || []))
 
     if (id) {
       supabase
@@ -80,17 +85,50 @@ export default function AdminPedidoForm() {
   }
 
   const addItem = () =>
-    setItems([...itens, { produto_id: '', quantidade: 1, valor_unitario: 0, valor_total: 0 }])
+    setItems([
+      ...itens,
+      {
+        tipo_item: 'produto',
+        produto_id: null,
+        servico_id: null,
+        quantidade: 1,
+        tempo_estimado: 0,
+        valor_unitario: 0,
+        valor_total: 0,
+      },
+    ])
 
   const updateItem = (index: number, field: string, value: any) => {
     const newItems = [...itens]
     newItems[index][field] = value
-    if (field === 'produto_id') {
+
+    if (field === 'tipo_item') {
+      newItems[index].produto_id = null
+      newItems[index].servico_id = null
+      newItems[index].valor_unitario = 0
+      newItems[index].quantidade = 1
+      newItems[index].tempo_estimado = 0
+    }
+
+    if (field === 'produto_id' && newItems[index].tipo_item === 'produto') {
       const prod = produtos.find((p) => p.id === value)
       if (prod) newItems[index].valor_unitario = prod.price || 0
     }
-    newItems[index].valor_total =
-      (newItems[index].quantidade || 0) * (newItems[index].valor_unitario || 0)
+    if (field === 'servico_id' && newItems[index].tipo_item === 'servico') {
+      const serv = servicos.find((s) => s.id === value)
+      if (serv) newItems[index].valor_unitario = serv.sale_value || 0
+    }
+
+    const qtd = Number(newItems[index].quantidade) || 0
+    const valUnit = Number(newItems[index].valor_unitario) || 0
+
+    if (newItems[index].tipo_item === 'servico') {
+      const tempo = Number(newItems[index].tempo_estimado) || 0
+      newItems[index].valor_total = tempo * valUnit * qtd
+    } else {
+      newItems[index].valor_total = qtd * valUnit
+    }
+
     setItems(newItems)
   }
 
@@ -190,44 +228,84 @@ export default function AdminPedidoForm() {
           </Button>
         </div>
         {itens.map((item, idx) => (
-          <div key={idx} className="flex gap-4 items-end border p-4 rounded bg-muted/20">
-            <div className="flex-1 space-y-2">
-              <Label>Produto</Label>
+          <div key={idx} className="flex flex-wrap gap-4 items-end border p-4 rounded bg-muted/20">
+            <div className="w-full md:w-32 space-y-2">
+              <Label>Tipo</Label>
               <Select
-                value={item.produto_id}
-                onValueChange={(v) => updateItem(idx, 'produto_id', v)}
+                value={item.tipo_item || 'produto'}
+                onValueChange={(v) => updateItem(idx, 'tipo_item', v)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {produtos.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="produto">Peça/Produto</SelectItem>
+                  <SelectItem value="servico">Serviço</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-24 space-y-2">
+
+            <div className="flex-1 min-w-[200px] space-y-2">
+              <Label>{item.tipo_item === 'servico' ? 'Serviço' : 'Produto'}</Label>
+              <Select
+                value={item.tipo_item === 'servico' ? item.servico_id || '' : item.produto_id || ''}
+                onValueChange={(v) =>
+                  updateItem(idx, item.tipo_item === 'servico' ? 'servico_id' : 'produto_id', v)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {item.tipo_item === 'servico'
+                    ? servicos.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.title}
+                        </SelectItem>
+                      ))
+                    : produtos.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {item.tipo_item === 'servico' && (
+              <div className="w-full md:w-24 space-y-2">
+                <Label>Tempo (h)</Label>
+                <Input
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  value={item.tempo_estimado || ''}
+                  onChange={(e) => updateItem(idx, 'tempo_estimado', e.target.value)}
+                />
+              </div>
+            )}
+
+            <div className="w-full md:w-20 space-y-2">
               <Label>Qtd</Label>
               <Input
                 type="number"
-                value={item.quantidade}
+                min="1"
+                value={item.quantidade || 1}
                 onChange={(e) => updateItem(idx, 'quantidade', +e.target.value)}
               />
             </div>
-            <div className="w-32 space-y-2">
-              <Label>Unitário R$</Label>
+            <div className="w-full md:w-28 space-y-2">
+              <Label>{item.tipo_item === 'servico' ? 'Valor/h R$' : 'Unitário R$'}</Label>
               <Input
                 type="number"
-                value={item.valor_unitario}
+                step="0.01"
+                value={item.valor_unitario || ''}
                 onChange={(e) => updateItem(idx, 'valor_unitario', +e.target.value)}
               />
             </div>
-            <div className="w-32 space-y-2">
+            <div className="w-full md:w-28 space-y-2">
               <Label>Total R$</Label>
-              <Input readOnly value={item.valor_total.toFixed(2)} />
+              <Input readOnly value={(item.valor_total || 0).toFixed(2)} />
             </div>
             <Button
               variant="ghost"
