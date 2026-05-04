@@ -9,6 +9,18 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Plus, Search, Eye, Edit, Copy, Trash, RefreshCw } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
+export const MOCK_CATALOG_SERVICES = [
+  { id: 's1', name: 'Consultoria Esportiva', price: 150.0 },
+  { id: 's2', name: 'Treinamento Personalizado', price: 200.0 },
+  { id: 's3', name: 'Avaliação Física', price: 100.0 },
+]
+
+export const MOCK_CATALOG_PRODUCTS = [
+  { id: 'p1', name: 'Bola de Footgolf Profissional', price: 250.0 },
+  { id: 'p2', name: 'Camisa Polo Oficial', price: 120.0 },
+  { id: 'p3', name: 'Chuteira Society', price: 300.0 },
+]
+
 export default function AdminQuotes() {
   const [quotes, setQuotes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
