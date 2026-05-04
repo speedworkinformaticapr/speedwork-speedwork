@@ -36,11 +36,11 @@ ALTER TABLE public.orcamento_itens DROP CONSTRAINT IF EXISTS orcamento_itens_orc
 
 -- We migrate existing data to avoid FK errors
 INSERT INTO public.clientes (id, nome, email)
-SELECT id, name, email FROM public.profiles
+SELECT id, COALESCE(name, 'Cliente sem nome'), email FROM public.profiles
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.usuarios (id, email, nome, role)
-SELECT id, email, name, role FROM public.profiles
+SELECT id, email, COALESCE(name, 'Usuário sem nome'), role FROM public.profiles
 ON CONFLICT (id) DO NOTHING;
 
 -- Re-add the FKs safely
