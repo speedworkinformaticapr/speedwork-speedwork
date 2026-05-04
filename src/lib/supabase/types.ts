@@ -1130,6 +1130,129 @@ export type Database = {
         }
         Relationships: []
       }
+      orcamento_itens: {
+        Row: {
+          descricao: string | null
+          id: string
+          orcamento_id: string | null
+          produto_id: string | null
+          quantidade: number
+          valor_total: number
+          valor_unitario: number
+        }
+        Insert: {
+          descricao?: string | null
+          id?: string
+          orcamento_id?: string | null
+          produto_id?: string | null
+          quantidade?: number
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Update: {
+          descricao?: string | null
+          id?: string
+          orcamento_id?: string | null
+          produto_id?: string | null
+          quantidade?: number
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'orcamento_itens_orcamento_id_fkey'
+            columns: ['orcamento_id']
+            isOneToOne: false
+            referencedRelation: 'orcamentos'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'orcamento_itens_produto_id_fkey'
+            columns: ['produto_id']
+            isOneToOne: false
+            referencedRelation: 'products'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      orcamentos: {
+        Row: {
+          cliente_id: string | null
+          created_at: string
+          data_conversao: string | null
+          data_emissao: string
+          data_validade: string | null
+          desconto_percentual: number | null
+          desconto_valor: number | null
+          id: string
+          motivo_rejeicao: string | null
+          numero_orcamento: string | null
+          observacoes: string | null
+          pedido_id: string | null
+          responsavel_id: string | null
+          status: string
+          subtotal: number | null
+          total: number | null
+          updated_at: string
+          valor_impostos: number | null
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string
+          data_conversao?: string | null
+          data_emissao: string
+          data_validade?: string | null
+          desconto_percentual?: number | null
+          desconto_valor?: number | null
+          id?: string
+          motivo_rejeicao?: string | null
+          numero_orcamento?: string | null
+          observacoes?: string | null
+          pedido_id?: string | null
+          responsavel_id?: string | null
+          status?: string
+          subtotal?: number | null
+          total?: number | null
+          updated_at?: string
+          valor_impostos?: number | null
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string
+          data_conversao?: string | null
+          data_emissao?: string
+          data_validade?: string | null
+          desconto_percentual?: number | null
+          desconto_valor?: number | null
+          id?: string
+          motivo_rejeicao?: string | null
+          numero_orcamento?: string | null
+          observacoes?: string | null
+          pedido_id?: string | null
+          responsavel_id?: string | null
+          status?: string
+          subtotal?: number | null
+          total?: number | null
+          updated_at?: string
+          valor_impostos?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'orcamentos_cliente_id_fkey'
+            columns: ['cliente_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'orcamentos_pedido_id_fkey'
+            columns: ['pedido_id']
+            isOneToOne: false
+            referencedRelation: 'orders'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       order_items: {
         Row: {
           id: string
@@ -2251,6 +2374,33 @@ export const Constants = {
 //   type: text (not null, default: 'system'::text)
 //   is_read: boolean (not null, default: false)
 //   created_at: timestamp with time zone (not null, default: now())
+// Table: orcamento_itens
+//   id: uuid (not null, default: gen_random_uuid())
+//   orcamento_id: uuid (nullable)
+//   produto_id: uuid (nullable)
+//   quantidade: integer (not null, default: 1)
+//   valor_unitario: numeric (not null, default: 0)
+//   valor_total: numeric (not null, default: 0)
+//   descricao: text (nullable)
+// Table: orcamentos
+//   id: uuid (not null, default: gen_random_uuid())
+//   numero_orcamento: text (nullable)
+//   cliente_id: uuid (nullable)
+//   responsavel_id: uuid (nullable)
+//   data_emissao: date (not null)
+//   data_validade: date (nullable)
+//   status: text (not null, default: 'rascunho'::text)
+//   subtotal: numeric (nullable, default: 0)
+//   desconto_percentual: numeric (nullable, default: 0)
+//   desconto_valor: numeric (nullable, default: 0)
+//   valor_impostos: numeric (nullable, default: 0)
+//   total: numeric (nullable, default: 0)
+//   observacoes: text (nullable)
+//   motivo_rejeicao: text (nullable)
+//   data_conversao: date (nullable)
+//   pedido_id: uuid (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: order_items
 //   id: uuid (not null, default: gen_random_uuid())
 //   order_id: uuid (nullable)
@@ -2515,6 +2665,15 @@ export const Constants = {
 // Table: notifications
 //   PRIMARY KEY notifications_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY notifications_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+// Table: orcamento_itens
+//   FOREIGN KEY orcamento_itens_orcamento_id_fkey: FOREIGN KEY (orcamento_id) REFERENCES orcamentos(id) ON DELETE CASCADE
+//   PRIMARY KEY orcamento_itens_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY orcamento_itens_produto_id_fkey: FOREIGN KEY (produto_id) REFERENCES products(id) ON DELETE SET NULL
+// Table: orcamentos
+//   FOREIGN KEY orcamentos_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES profiles(id) ON DELETE CASCADE
+//   FOREIGN KEY orcamentos_pedido_id_fkey: FOREIGN KEY (pedido_id) REFERENCES orders(id) ON DELETE SET NULL
+//   PRIMARY KEY orcamentos_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY orcamentos_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES auth.users(id) ON DELETE SET NULL
 // Table: order_items
 //   FOREIGN KEY order_items_order_id_fkey: FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
 //   PRIMARY KEY order_items_pkey: PRIMARY KEY (id)
@@ -2748,6 +2907,14 @@ export const Constants = {
 //     WITH CHECK: (auth.uid() = user_id)
 //   Policy "Users can view own notifications" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: (auth.uid() = user_id)
+// Table: orcamento_itens
+//   Policy "orcamento_itens_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: orcamentos
+//   Policy "orcamentos_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: order_items
 //   Policy "Enable delete for authenticated users" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -2869,6 +3036,19 @@ export const Constants = {
 //       RETURN OLD;
 //     END IF;
 //     RETURN NULL;
+//   END;
+//   $function$
+//
+// FUNCTION generate_numero_orcamento()
+//   CREATE OR REPLACE FUNCTION public.generate_numero_orcamento()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//   AS $function$
+//   BEGIN
+//       IF NEW.numero_orcamento IS NULL OR NEW.numero_orcamento = '' THEN
+//           NEW.numero_orcamento := 'ORC-' || nextval('orcamento_numero_seq')::TEXT;
+//       END IF;
+//       RETURN NEW;
 //   END;
 //   $function$
 //
@@ -3032,6 +3212,8 @@ export const Constants = {
 // Table: event_registrations
 //   on_event_registration_update_count: CREATE TRIGGER on_event_registration_update_count AFTER INSERT OR DELETE ON public.event_registrations FOR EACH ROW EXECUTE FUNCTION update_event_participants()
 //   trigger_notify_event_registration: CREATE TRIGGER trigger_notify_event_registration AFTER INSERT ON public.event_registrations FOR EACH ROW EXECUTE FUNCTION notify_event_registration()
+// Table: orcamentos
+//   trg_generate_numero_orcamento: CREATE TRIGGER trg_generate_numero_orcamento BEFORE INSERT ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION generate_numero_orcamento()
 // Table: orders
 //   trigger_notify_order_payment: CREATE TRIGGER trigger_notify_order_payment AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION notify_order_payment()
 // Table: sections

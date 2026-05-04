@@ -21,7 +21,7 @@ export default function QuoteView() {
   const load = async () => {
     const { data: q } = await supabase
       .from('orcamentos')
-      .select('*, profiles!orcamentos_cliente_id_fkey(name, email)')
+      .select('*, clientes!orcamentos_cliente_id_fkey(nome, email)')
       .eq('id', id)
       .single()
 
@@ -52,12 +52,14 @@ export default function QuoteView() {
   const handleConvert = async () => {
     try {
       const { data: order, error } = await supabase
-        .from('orders')
+        .from('pedidos')
         .insert({
-          user_id: quote.cliente_id,
-          athlete_id: quote.cliente_id,
-          total_price: quote.total,
-          status: 'pending',
+          cliente_id: quote.cliente_id,
+          orcamento_id: quote.id,
+          responsavel_id: quote.responsavel_id,
+          valor_total: quote.total,
+          status: 'pendente',
+          data_pedido: new Date().toISOString().split('T')[0],
         })
         .select()
         .single()
@@ -168,8 +170,8 @@ export default function QuoteView() {
         <CardContent className="grid gap-6 md:grid-cols-3">
           <div>
             <p className="text-muted-foreground text-sm">Cliente</p>
-            <p className="font-medium text-base">{quote.profiles?.name || 'Não informado'}</p>
-            <p className="text-sm text-muted-foreground">{quote.profiles?.email}</p>
+            <p className="font-medium text-base">{quote.clientes?.nome || 'Não informado'}</p>
+            <p className="text-sm text-muted-foreground">{quote.clientes?.email}</p>
           </div>
           <div>
             <p className="text-muted-foreground text-sm">Data de Emissão</p>

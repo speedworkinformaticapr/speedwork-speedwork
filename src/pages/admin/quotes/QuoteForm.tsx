@@ -37,8 +37,8 @@ export default function QuoteForm() {
 
   useEffect(() => {
     supabase
-      .from('profiles')
-      .select('id, name')
+      .from('clientes')
+      .select('id, nome')
       .then((res) => setClients(res.data || []))
     supabase
       .from('products')
@@ -141,7 +141,7 @@ export default function QuoteForm() {
               <SelectContent>
                 {clients.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
-                    {c.name || 'Cliente Sem Nome'}
+                    {c.nome || 'Cliente Sem Nome'}
                   </SelectItem>
                 ))}
               </SelectContent>
