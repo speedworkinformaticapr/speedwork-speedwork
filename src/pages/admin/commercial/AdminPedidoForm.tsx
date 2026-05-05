@@ -50,7 +50,7 @@ export default function AdminPedidoForm() {
       .then(({ data }) => setOrcamentos(data || []))
     supabase
       .from('products')
-      .select('id, name, price')
+      .select('id, name, price, stock')
       .then(({ data }) => setProdutos(data || []))
     supabase
       .from('services' as any)
@@ -148,6 +148,38 @@ export default function AdminPedidoForm() {
   const handleSave = async (status: string) => {
     if (!formData.cliente_id)
       return toast({ title: 'Erro', description: 'Cliente obrigatório.', variant: 'destructive' })
+
+    const cliente = clientes.find((c) => c.id === formData.cliente_id)
+    if (cliente && status === 'confirmado') {
+      const { data: overdue } = await supabase
+        .from('financial_charges')
+        .select('id')
+        .eq('client_name', cliente.nome)
+        .in('status', ['pendente', 'atrasado'])
+        .lt('due_date', new Date().toISOString().split('T')[0])
+        .limit(1)
+
+      if (overdue && overdue.length > 0) {
+        return toast({
+          title: 'Bloqueado',
+          description: `O cliente ${cliente.nome} possui pendências financeiras. Regularize antes de confirmar o pedido.`,
+          variant: 'destructive',
+        })
+      }
+
+      for (const item of itens) {
+        if (item.tipo_item === 'produto' && item.produto_id) {
+          const prod = produtos.find((p) => p.id === item.produto_id)
+          if (prod && (prod.stock || 0) < item.quantidade) {
+            return toast({
+              title: 'Estoque Insuficiente',
+              description: `O produto "${prod.name}" tem apenas ${prod.stock || 0} em estoque (tentou vender ${item.quantidade}).`,
+              variant: 'destructive',
+            })
+          }
+        }
+      }
+    }
 
     const pedidoData = {
       ...formData,

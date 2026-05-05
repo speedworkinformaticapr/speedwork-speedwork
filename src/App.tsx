@@ -53,6 +53,7 @@ import AdminFinancialPartners from './pages/admin/financial/AdminFinancialPartne
 import AdminFinancialSettings from './pages/admin/financial/AdminFinancialSettings'
 import AdminBillingLogs from './pages/admin/financial/AdminBillingLogs'
 import AdminRegistrationPayments from './pages/admin/financial/AdminRegistrationPayments'
+import AdminFinancialDashboard from './pages/admin/financial/AdminFinancialDashboard'
 import AdminStripeConfig from './pages/admin/financial/AdminStripeConfig'
 import AdminStripePayments from './pages/admin/financial/AdminStripePayments'
 import AdminEcommerceGroups from './pages/admin/ecommerce/AdminEcommerceGroups'
@@ -248,6 +249,7 @@ const App = () => (
                     path="/admin/financial/registration-payments"
                     element={<AdminRegistrationPayments />}
                   />
+                  <Route path="/admin/financial/dashboard" element={<AdminFinancialDashboard />} />
                   <Route path="/admin/financial/stripe-config" element={<AdminStripeConfig />} />
                   <Route
                     path="/admin/financial/stripe-payments"

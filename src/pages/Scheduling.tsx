@@ -70,9 +70,27 @@ export default function Scheduling() {
     const d = docStr.replace(/\D/g, '')
     if (d.length !== 11 && d.length !== 14)
       return toast({ title: 'Erro', description: 'Documento inválido', variant: 'destructive' })
-    const { data } = await supabase.from('profiles').select('*').eq('document', d).maybeSingle()
+
+    const { data } = await supabase.from('profiles').select('*').eq('cpf_cnpj', d).maybeSingle()
+
     if (data) {
       if (data.status === 'active' || !data.status) {
+        const { data: overdue } = await supabase
+          .from('financial_charges')
+          .select('id')
+          .eq('client_name', data.name)
+          .in('status', ['pendente', 'atrasado'])
+          .lt('due_date', new Date().toISOString().split('T')[0])
+          .limit(1)
+
+        if (overdue && overdue.length > 0) {
+          return toast({
+            title: 'Acesso Bloqueado',
+            description: 'Existem pendências financeiras em seu nome. Regularize para agendar.',
+            variant: 'destructive',
+          })
+        }
+
         setClient(data)
         setStep(3)
         toast({ title: 'Sucesso', description: `Olá ${data.name}!` })
@@ -157,7 +175,7 @@ export default function Scheduling() {
       const { data: prof } = await supabase
         .from('profiles')
         .select('id, autoriza_whatsapp, telefone_whatsapp')
-        .eq('document', dStr)
+        .eq('cpf_cnpj', dStr)
         .maybeSingle()
 
       if (prof?.autoriza_whatsapp && prof?.telefone_whatsapp) {
