@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
-import { Check, X, ArrowLeft, Send, ShoppingCart, Info } from 'lucide-react'
+import { Check, X, ArrowLeft, Send, ShoppingCart, Info, Printer } from 'lucide-react'
 
 export default function QuoteView() {
   const { id } = useParams()
@@ -60,11 +60,29 @@ export default function QuoteView() {
           valor_total: quote.total,
           status: 'pendente',
           data_pedido: new Date().toISOString().split('T')[0],
+          veiculo_placa: quote.veiculo_placa,
+          veiculo_modelo: quote.veiculo_modelo,
+          veiculo_km: quote.veiculo_km,
         })
         .select()
         .single()
 
       if (error) throw error
+
+      if (items.length > 0) {
+        const orderItems = items.map((item) => ({
+          pedido_id: order.id,
+          produto_id: item.produto_id,
+          servico_id: item.servico_id,
+          quantidade: item.quantidade,
+          valor_unitario: item.valor_unitario,
+          valor_total: item.valor_total,
+          descricao: item.descricao,
+          tipo_item: item.tipo_item,
+          tempo_estimado: item.tempo_estimado,
+        }))
+        await supabase.from('pedido_itens').insert(orderItems)
+      }
 
       await updateStatus('convertido', {
         data_conversao: new Date().toISOString().split('T')[0],
@@ -105,7 +123,10 @@ export default function QuoteView() {
           <h1 className="text-2xl font-bold">Orçamento {quote.numero_orcamento}</h1>
           <Badge className={getStatusColor(quote.status)}>{quote.status}</Badge>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 print:hidden">
+          <Button variant="outline" onClick={() => window.print()}>
+            <Printer className="w-4 h-4 mr-2" /> Imprimir / PDF
+          </Button>
           {quote.status === 'rascunho' && (
             <>
               <Button variant="outline" onClick={() => navigate(`/admin/quotes/${id}/edit`)}>
@@ -161,6 +182,30 @@ export default function QuoteView() {
             </p>
           </div>
         </div>
+      )}
+
+      {(quote.veiculo_placa || quote.veiculo_modelo) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Dados do Veículo</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-6 md:grid-cols-3">
+            <div>
+              <p className="text-muted-foreground text-sm">Placa</p>
+              <p className="font-medium text-base">{quote.veiculo_placa || '-'}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-sm">Modelo</p>
+              <p className="font-medium text-base">{quote.veiculo_modelo || '-'}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-sm">Quilometragem</p>
+              <p className="font-medium text-base">
+                {quote.veiculo_km ? `${quote.veiculo_km} km` : '-'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <Card>

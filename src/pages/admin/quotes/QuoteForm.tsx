@@ -30,6 +30,9 @@ export default function QuoteForm() {
     desconto_percentual: 0,
     desconto_valor: 0,
     valor_impostos: 0,
+    veiculo_placa: '',
+    veiculo_modelo: '',
+    veiculo_km: '',
   })
   const [items, setItems] = useState<any[]>([])
   const [clients, setClients] = useState<any[]>([])
@@ -203,6 +206,39 @@ export default function QuoteForm() {
               type="date"
               value={data.data_validade}
               onChange={(e) => setData({ ...data, data_validade: e.target.value })}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Dados do Veículo (Opcional - Contexto Oficina/GridCar)</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-3">
+          <div className="space-y-2">
+            <Label>Placa</Label>
+            <Input
+              placeholder="Ex: ABC1D23"
+              value={data.veiculo_placa || ''}
+              onChange={(e) => setData({ ...data, veiculo_placa: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Modelo</Label>
+            <Input
+              placeholder="Ex: Hyundai HB20"
+              value={data.veiculo_modelo || ''}
+              onChange={(e) => setData({ ...data, veiculo_modelo: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Quilometragem (KM)</Label>
+            <Input
+              type="number"
+              placeholder="Ex: 45000"
+              value={data.veiculo_km || ''}
+              onChange={(e) => setData({ ...data, veiculo_km: e.target.value })}
             />
           </div>
         </CardContent>

@@ -1293,6 +1293,9 @@ export type Database = {
           orcamento_id: string | null
           produto_id: string | null
           quantidade: number
+          servico_id: string | null
+          tempo_estimado: number | null
+          tipo_item: string | null
           user_id: string | null
           valor_total: number
           valor_unitario: number
@@ -1303,6 +1306,9 @@ export type Database = {
           orcamento_id?: string | null
           produto_id?: string | null
           quantidade?: number
+          servico_id?: string | null
+          tempo_estimado?: number | null
+          tipo_item?: string | null
           user_id?: string | null
           valor_total?: number
           valor_unitario?: number
@@ -1313,6 +1319,9 @@ export type Database = {
           orcamento_id?: string | null
           produto_id?: string | null
           quantidade?: number
+          servico_id?: string | null
+          tempo_estimado?: number | null
+          tipo_item?: string | null
           user_id?: string | null
           valor_total?: number
           valor_unitario?: number
@@ -1330,6 +1339,13 @@ export type Database = {
             columns: ['produto_id']
             isOneToOne: false
             referencedRelation: 'products'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'orcamento_itens_servico_id_fkey'
+            columns: ['servico_id']
+            isOneToOne: false
+            referencedRelation: 'services'
             referencedColumns: ['id']
           },
         ]
@@ -1554,6 +1570,9 @@ export type Database = {
           pedido_id: string | null
           produto_id: string | null
           quantidade: number | null
+          servico_id: string | null
+          tempo_estimado: number | null
+          tipo_item: string | null
           user_id: string | null
           valor_total: number | null
           valor_unitario: number | null
@@ -1564,6 +1583,9 @@ export type Database = {
           pedido_id?: string | null
           produto_id?: string | null
           quantidade?: number | null
+          servico_id?: string | null
+          tempo_estimado?: number | null
+          tipo_item?: string | null
           user_id?: string | null
           valor_total?: number | null
           valor_unitario?: number | null
@@ -1574,6 +1596,9 @@ export type Database = {
           pedido_id?: string | null
           produto_id?: string | null
           quantidade?: number | null
+          servico_id?: string | null
+          tempo_estimado?: number | null
+          tipo_item?: string | null
           user_id?: string | null
           valor_total?: number | null
           valor_unitario?: number | null
@@ -1591,6 +1616,13 @@ export type Database = {
             columns: ['produto_id']
             isOneToOne: false
             referencedRelation: 'products'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'pedido_itens_servico_id_fkey'
+            columns: ['servico_id']
+            isOneToOne: false
+            referencedRelation: 'services'
             referencedColumns: ['id']
           },
         ]
@@ -1924,6 +1956,45 @@ export type Database = {
           is_published?: boolean | null
           type?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      services: {
+        Row: {
+          add_time: string | null
+          cost_value: number | null
+          created_at: string | null
+          description: string | null
+          exec_time: string | null
+          id: string
+          margin_time: number | null
+          sale_value: number | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          add_time?: string | null
+          cost_value?: number | null
+          created_at?: string | null
+          description?: string | null
+          exec_time?: string | null
+          id?: string
+          margin_time?: number | null
+          sale_value?: number | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          add_time?: string | null
+          cost_value?: number | null
+          created_at?: string | null
+          description?: string | null
+          exec_time?: string | null
+          id?: string
+          margin_time?: number | null
+          sale_value?: number | null
+          title?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -2762,6 +2833,9 @@ export const Constants = {
 //   valor_total: numeric (not null, default: 0)
 //   descricao: text (nullable)
 //   user_id: uuid (nullable, default: auth.uid())
+//   servico_id: uuid (nullable)
+//   tipo_item: text (nullable, default: 'produto'::text)
+//   tempo_estimado: numeric (nullable, default: 0)
 // Table: orcamentos
 //   id: uuid (not null, default: gen_random_uuid())
 //   numero_orcamento: text (nullable)
@@ -2819,6 +2893,9 @@ export const Constants = {
 //   valor_unitario: numeric (nullable)
 //   valor_total: numeric (nullable)
 //   descricao: text (nullable)
+//   servico_id: uuid (nullable)
+//   tipo_item: text (nullable, default: 'produto'::text)
+//   tempo_estimado: numeric (nullable, default: 0)
 // Table: pedidos
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (nullable, default: auth.uid())
@@ -2901,6 +2978,17 @@ export const Constants = {
 //   is_published: boolean (nullable, default: false)
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
+// Table: services
+//   id: uuid (not null, default: gen_random_uuid())
+//   title: text (not null)
+//   description: text (nullable)
+//   cost_value: numeric (nullable, default: 0)
+//   sale_value: numeric (nullable, default: 0)
+//   exec_time: text (nullable)
+//   margin_time: numeric (nullable, default: 0)
+//   add_time: text (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+//   updated_at: timestamp with time zone (nullable, default: now())
 // Table: stripe_config
 //   id: uuid (not null, default: gen_random_uuid())
 //   tenant_id: uuid (nullable, default: '00000000-0000-0000-0000-000000000001'::uuid)
@@ -3102,6 +3190,7 @@ export const Constants = {
 //   FOREIGN KEY orcamento_itens_orcamento_id_fkey: FOREIGN KEY (orcamento_id) REFERENCES orcamentos(id) ON DELETE CASCADE
 //   PRIMARY KEY orcamento_itens_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY orcamento_itens_produto_id_fkey: FOREIGN KEY (produto_id) REFERENCES products(id) ON DELETE SET NULL
+//   FOREIGN KEY orcamento_itens_servico_id_fkey: FOREIGN KEY (servico_id) REFERENCES services(id) ON DELETE SET NULL
 //   FOREIGN KEY orcamento_itens_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id)
 // Table: orcamentos
 //   FOREIGN KEY orcamentos_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
@@ -3124,6 +3213,7 @@ export const Constants = {
 //   FOREIGN KEY pedido_itens_pedido_id_fkey: FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE
 //   PRIMARY KEY pedido_itens_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY pedido_itens_produto_id_fkey: FOREIGN KEY (produto_id) REFERENCES products(id)
+//   FOREIGN KEY pedido_itens_servico_id_fkey: FOREIGN KEY (servico_id) REFERENCES services(id) ON DELETE SET NULL
 //   FOREIGN KEY pedido_itens_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: pedidos
 //   FOREIGN KEY pedidos_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
@@ -3151,6 +3241,8 @@ export const Constants = {
 //   PRIMARY KEY rules_pkey: PRIMARY KEY (id)
 // Table: sections
 //   PRIMARY KEY sections_pkey: PRIMARY KEY (id)
+// Table: services
+//   PRIMARY KEY services_pkey: PRIMARY KEY (id)
 // Table: stripe_config
 //   PRIMARY KEY stripe_config_pkey: PRIMARY KEY (id)
 // Table: stripe_payments
@@ -3490,6 +3582,12 @@ export const Constants = {
 //     WITH CHECK: true
 //   Policy "Enable read access for all users" (SELECT, PERMISSIVE) roles={public}
 //     USING: (is_published = true)
+// Table: services
+//   Policy "services_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+//   Policy "services_select_public" (SELECT, PERMISSIVE) roles={public}
+//     USING: true
 // Table: stripe_config
 //   Policy "stripe_config_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true

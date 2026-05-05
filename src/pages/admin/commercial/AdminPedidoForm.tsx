@@ -32,6 +32,9 @@ export default function AdminPedidoForm() {
     data_entrega_prevista: '',
     forma_pagamento: 'pix',
     observacoes: '',
+    veiculo_placa: '',
+    veiculo_modelo: '',
+    veiculo_km: '',
   })
   const [itens, setItems] = useState<any[]>([])
 
@@ -76,7 +79,15 @@ export default function AdminPedidoForm() {
   const handleOrcamentoSelect = async (orcId: string) => {
     setFormData({ ...formData, orcamento_id: orcId })
     const { data: orc } = await supabase.from('orcamentos').select('*').eq('id', orcId).single()
-    if (orc) setFormData((p) => ({ ...p, cliente_id: orc.cliente_id }))
+    if (orc) {
+      setFormData((p) => ({
+        ...p,
+        cliente_id: orc.cliente_id,
+        veiculo_placa: orc.veiculo_placa || '',
+        veiculo_modelo: orc.veiculo_modelo || '',
+        veiculo_km: orc.veiculo_km || '',
+      }))
+    }
     const { data: oItems } = await supabase
       .from('orcamento_itens')
       .select('*')
@@ -168,7 +179,7 @@ export default function AdminPedidoForm() {
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold">{id ? 'Editar Pedido' : 'Novo Pedido'}</h1>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Importar Orçamento Aprovado</Label>
           <Select onValueChange={handleOrcamentoSelect} value={formData.orcamento_id}>
@@ -216,6 +227,39 @@ export default function AdminPedidoForm() {
             type="date"
             value={formData.data_entrega_prevista}
             onChange={(e) => setFormData({ ...formData, data_entrega_prevista: e.target.value })}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border p-4 rounded-lg bg-card">
+        <div className="col-span-1 md:col-span-3">
+          <h3 className="font-semibold text-sm text-muted-foreground uppercase">
+            Dados do Veículo (Oficina/GridCar)
+          </h3>
+        </div>
+        <div className="space-y-2">
+          <Label>Placa</Label>
+          <Input
+            placeholder="Ex: ABC1D23"
+            value={formData.veiculo_placa || ''}
+            onChange={(e) => setFormData({ ...formData, veiculo_placa: e.target.value })}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Modelo</Label>
+          <Input
+            placeholder="Ex: Hyundai HB20"
+            value={formData.veiculo_modelo || ''}
+            onChange={(e) => setFormData({ ...formData, veiculo_modelo: e.target.value })}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Quilometragem (KM)</Label>
+          <Input
+            type="number"
+            placeholder="Ex: 45000"
+            value={formData.veiculo_km || ''}
+            onChange={(e) => setFormData({ ...formData, veiculo_km: e.target.value })}
           />
         </div>
       </div>

@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/hooks/use-toast'
-import { createFinancialEntry } from '@/services/financial'
+import { Printer } from 'lucide-react'
 
 export default function AdminPedidoView() {
   const { id } = useParams()
@@ -31,31 +31,8 @@ export default function AdminPedidoView() {
   }
 
   const changeStatus = async (status: string) => {
+    // Triggers automáticas do banco cuidarão do financeiro e do estoque!
     await supabase.from('pedidos').update({ status }).eq('id', id)
-
-    if (status === 'confirmado') {
-      await createFinancialEntry({
-        tipo: 'entrada',
-        descricao: `Pedido Confirmado ${pedido.numero_pedido}`,
-        valor: pedido.valor_total,
-        data_lancamento: new Date().toISOString(),
-        categoria: 'Pedido Confirmado',
-        referencia_id: pedido.id,
-        referencia_tipo: 'pedido',
-        user_id: pedido.responsavel_id,
-      })
-    } else if (status === 'cancelado') {
-      await createFinancialEntry({
-        tipo: 'saida',
-        descricao: `Pedido Cancelado ${pedido.numero_pedido}`,
-        valor: pedido.valor_total,
-        data_lancamento: new Date().toISOString(),
-        categoria: 'Pedido Cancelado',
-        referencia_id: pedido.id,
-        referencia_tipo: 'pedido',
-        user_id: pedido.responsavel_id,
-      })
-    }
     toast({ title: 'Status Atualizado' })
     load()
   }
@@ -69,12 +46,36 @@ export default function AdminPedidoView() {
           <h1 className="text-3xl font-bold">Pedido {pedido.numero_pedido}</h1>
           <p className="text-muted-foreground">Cliente: {pedido.clientes?.nome}</p>
         </div>
-        <Badge variant="outline" className="text-lg py-1 px-4">
-          {pedido.status.toUpperCase()}
-        </Badge>
+        <div className="flex items-center gap-4 print:hidden">
+          <Button variant="outline" onClick={() => window.print()}>
+            <Printer className="w-4 h-4 mr-2" /> Imprimir / PDF
+          </Button>
+          <Badge variant="outline" className="text-lg py-1 px-4">
+            {pedido.status.toUpperCase()}
+          </Badge>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-8">
+      {(pedido.veiculo_placa || pedido.veiculo_modelo) && (
+        <div className="grid grid-cols-3 gap-4 p-4 rounded-lg bg-card border">
+          <div>
+            <p className="text-muted-foreground text-sm">Placa</p>
+            <p className="font-medium text-base">{pedido.veiculo_placa || '-'}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground text-sm">Modelo</p>
+            <p className="font-medium text-base">{pedido.veiculo_modelo || '-'}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground text-sm">Quilometragem</p>
+            <p className="font-medium text-base">
+              {pedido.veiculo_km ? `${pedido.veiculo_km} km` : '-'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="space-y-4">
           <div>
             <strong className="text-muted-foreground">Data do Pedido:</strong>{' '}
@@ -112,7 +113,7 @@ export default function AdminPedidoView() {
         </div>
       </div>
 
-      <div className="flex justify-end gap-4 pt-8 border-t">
+      <div className="flex justify-end gap-4 pt-8 border-t print:hidden">
         <Button variant="outline" onClick={() => navigate(-1)}>
           Voltar
         </Button>
