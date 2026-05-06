@@ -80,6 +80,7 @@ const navItems = [
     icon: Wallet,
     items: [
       { title: 'Categorias de Associados', url: '/admin/financial/categories' },
+      { title: 'Plano de Contas', url: '/admin/financial/chart-of-accounts' },
       { title: 'Configurações', url: '/admin/financial/settings' },
       { title: 'Controle de Pagamentos', url: '/admin/financial/payments' },
     ],

@@ -25,9 +25,12 @@ export default function AdminPedidoForm() {
   const [produtos, setProdutos] = useState<any[]>([])
   const [servicos, setServicos] = useState<any[]>([])
 
+  const [planoContas, setPlanoContas] = useState<any[]>([])
+
   const [formData, setFormData] = useState({
     cliente_id: '',
     orcamento_id: '',
+    conta_id: '',
     data_pedido: new Date().toISOString().split('T')[0],
     data_entrega_prevista: '',
     forma_pagamento: 'pix',
@@ -39,6 +42,11 @@ export default function AdminPedidoForm() {
   const [itens, setItems] = useState<any[]>([])
 
   useEffect(() => {
+    supabase
+      .from('plano_contas')
+      .select('id, codigo_estrutural, nome')
+      .order('codigo_estrutural')
+      .then(({ data }) => setPlanoContas(data || []))
     supabase
       .from('clientes')
       .select('id, nome')
@@ -181,13 +189,14 @@ export default function AdminPedidoForm() {
       }
     }
 
-    const pedidoData = {
+    const pedidoData: any = {
       ...formData,
       responsavel_id: user?.id,
       valor_total: subtotal,
       status,
       numero_pedido: formData.numero_pedido || `PED-${Date.now()}`,
     }
+    if (!pedidoData.conta_id) pedidoData.conta_id = null
 
     let pid = id
     if (id) {
@@ -260,6 +269,24 @@ export default function AdminPedidoForm() {
             value={formData.data_entrega_prevista}
             onChange={(e) => setFormData({ ...formData, data_entrega_prevista: e.target.value })}
           />
+        </div>
+        <div className="space-y-2">
+          <Label>Conta Financeira (DRE)</Label>
+          <Select
+            value={formData.conta_id || ''}
+            onValueChange={(v) => setFormData({ ...formData, conta_id: v })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione a conta" />
+            </SelectTrigger>
+            <SelectContent>
+              {planoContas.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.codigo_estrutural} - {c.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

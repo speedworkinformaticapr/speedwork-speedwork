@@ -20,8 +20,11 @@ export default function AdminContratoForm() {
   const { user } = useAuth()
   const [clientes, setClientes] = useState<any[]>([])
 
+  const [planoContas, setPlanoContas] = useState<any[]>([])
+
   const [form, setForm] = useState({
     cliente_id: '',
+    conta_id: '',
     tipo_contrato: 'assinatura',
     data_inicio: new Date().toISOString().split('T')[0],
     duracao_ciclo: 'mensal',
@@ -31,6 +34,11 @@ export default function AdminContratoForm() {
   })
 
   useEffect(() => {
+    supabase
+      .from('plano_contas')
+      .select('id, codigo_estrutural, nome')
+      .order('codigo_estrutural')
+      .then(({ data }) => setPlanoContas(data || []))
     supabase
       .from('clientes')
       .select('id, nome')
@@ -47,13 +55,14 @@ export default function AdminContratoForm() {
   const handleSave = async (status: string) => {
     if (!form.cliente_id)
       return toast({ title: 'Erro', description: 'Cliente obrigatório', variant: 'destructive' })
-    const payload = {
+    const payload: any = {
       ...form,
       status,
       responsavel_id: user?.id,
       numero_contrato: (form as any).numero_contrato || `CTR-${Date.now()}`,
       data_proxima_cobranca: (form as any).data_proxima_cobranca || form.data_inicio,
     }
+    if (!payload.conta_id) payload.conta_id = null
 
     if (id) await supabase.from('contratos').update(payload).eq('id', id)
     else await supabase.from('contratos').insert([payload])
@@ -116,6 +125,24 @@ export default function AdminContratoForm() {
             value={form.valor_ciclo}
             onChange={(e) => setForm({ ...form, valor_ciclo: +e.target.value })}
           />
+        </div>
+        <div className="space-y-2">
+          <Label>Conta Financeira (DRE)</Label>
+          <Select
+            value={form.conta_id || ''}
+            onValueChange={(v) => setForm({ ...form, conta_id: v })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione a conta" />
+            </SelectTrigger>
+            <SelectContent>
+              {planoContas.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.codigo_estrutural} - {c.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
       <div className="flex justify-end gap-4 mt-8">

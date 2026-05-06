@@ -42,6 +42,51 @@ export type Database = {
         }
         Relationships: []
       }
+      appointments: {
+        Row: {
+          client_name: string
+          created_at: string
+          date: string
+          end_time: string
+          executed_minutes: number | null
+          id: string
+          last_started_at: string | null
+          notes: string | null
+          service_name: string
+          start_time: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_name: string
+          created_at?: string
+          date: string
+          end_time: string
+          executed_minutes?: number | null
+          id?: string
+          last_started_at?: string | null
+          notes?: string | null
+          service_name: string
+          start_time: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          client_name?: string
+          created_at?: string
+          date?: string
+          end_time?: string
+          executed_minutes?: number | null
+          id?: string
+          last_started_at?: string | null
+          notes?: string | null
+          service_name?: string
+          start_time?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       athlete_attribute_values: {
         Row: {
           attribute_id: string | null
@@ -1771,31 +1816,46 @@ export type Database = {
       }
       profiles: {
         Row: {
+          autoriza_whatsapp: boolean | null
+          cpf_cnpj: string | null
           created_at: string | null
+          document: string | null
           email: string | null
           financial_status: string | null
           id: string
           name: string | null
+          phone: string | null
           role: string | null
           status: string | null
+          telefone_whatsapp: string | null
         }
         Insert: {
+          autoriza_whatsapp?: boolean | null
+          cpf_cnpj?: string | null
           created_at?: string | null
+          document?: string | null
           email?: string | null
           financial_status?: string | null
           id: string
           name?: string | null
+          phone?: string | null
           role?: string | null
           status?: string | null
+          telefone_whatsapp?: string | null
         }
         Update: {
+          autoriza_whatsapp?: boolean | null
+          cpf_cnpj?: string | null
           created_at?: string | null
+          document?: string | null
           email?: string | null
           financial_status?: string | null
           id?: string
           name?: string | null
+          phone?: string | null
           role?: string | null
           status?: string | null
+          telefone_whatsapp?: string | null
         }
         Relationships: []
       }
@@ -2529,6 +2589,19 @@ export const Constants = {
 //   duration_months: integer (nullable, default: 12)
 //   status: text (nullable, default: 'active'::text)
 //   created_at: timestamp with time zone (nullable, default: now())
+// Table: appointments
+//   id: uuid (not null, default: gen_random_uuid())
+//   date: date (not null)
+//   start_time: time without time zone (not null)
+//   end_time: time without time zone (not null)
+//   service_name: text (not null)
+//   client_name: text (not null)
+//   status: text (not null, default: 'Pendente'::text)
+//   notes: text (nullable)
+//   executed_minutes: integer (nullable, default: 0)
+//   last_started_at: timestamp with time zone (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: athlete_attribute_values
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (nullable)
@@ -2958,6 +3031,11 @@ export const Constants = {
 //   created_at: timestamp with time zone (nullable, default: now())
 //   status: text (nullable, default: 'active'::text)
 //   financial_status: text (nullable, default: 'normal'::text)
+//   document: text (nullable)
+//   phone: text (nullable)
+//   cpf_cnpj: text (nullable)
+//   autoriza_whatsapp: boolean (nullable, default: false)
+//   telefone_whatsapp: text (nullable)
 // Table: rankings
 //   id: uuid (not null, default: gen_random_uuid())
 //   athlete_id: uuid (nullable)
@@ -3117,6 +3195,8 @@ export const Constants = {
 // --- CONSTRAINTS ---
 // Table: affiliation_plans
 //   PRIMARY KEY affiliation_plans_pkey: PRIMARY KEY (id)
+// Table: appointments
+//   PRIMARY KEY appointments_pkey: PRIMARY KEY (id)
 // Table: athlete_attribute_values
 //   FOREIGN KEY athlete_attribute_values_attribute_id_fkey: FOREIGN KEY (attribute_id) REFERENCES athlete_attributes(id) ON DELETE CASCADE
 //   PRIMARY KEY athlete_attribute_values_pkey: PRIMARY KEY (id)
@@ -3291,6 +3371,12 @@ export const Constants = {
 //   Policy "plans_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //   Policy "plans_select" (SELECT, PERMISSIVE) roles={public}
+//     USING: true
+// Table: appointments
+//   Policy "appointments_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+//   Policy "appointments_select_public" (SELECT, PERMISSIVE) roles={public}
 //     USING: true
 // Table: athlete_attribute_values
 //   Policy "athlete_attribute_values_all" (ALL, PERMISSIVE) roles={authenticated}

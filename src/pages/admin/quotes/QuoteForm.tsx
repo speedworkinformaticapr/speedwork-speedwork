@@ -21,8 +21,11 @@ export default function QuoteForm() {
   const navigate = useNavigate()
   const { toast } = useToast()
 
+  const [planoContas, setPlanoContas] = useState<any[]>([])
+
   const [data, setData] = useState({
     cliente_id: '',
+    conta_id: '',
     data_emissao: new Date().toISOString().split('T')[0],
     data_validade: '',
     status: 'rascunho',
@@ -40,6 +43,11 @@ export default function QuoteForm() {
   const [services, setServices] = useState<any[]>([])
 
   useEffect(() => {
+    supabase
+      .from('plano_contas')
+      .select('id, codigo_estrutural, nome')
+      .order('codigo_estrutural')
+      .then((res) => setPlanoContas(res.data || []))
     supabase
       .from('clientes')
       .select('id, nome')
@@ -137,7 +145,8 @@ export default function QuoteForm() {
     if (data.data_validade && data.data_validade < data.data_emissao)
       return toast({ title: 'Data de validade inválida', variant: 'destructive' })
 
-    const payload = { ...data, subtotal, total, status }
+    const payload: any = { ...data, subtotal, total, status }
+    if (!payload.conta_id) payload.conta_id = null
 
     let orcId = id
     if (id) {
@@ -207,6 +216,24 @@ export default function QuoteForm() {
               value={data.data_validade}
               onChange={(e) => setData({ ...data, data_validade: e.target.value })}
             />
+          </div>
+          <div className="space-y-2">
+            <Label>Conta Financeira (DRE)</Label>
+            <Select
+              value={data.conta_id || ''}
+              onValueChange={(v) => setData({ ...data, conta_id: v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a conta" />
+              </SelectTrigger>
+              <SelectContent>
+                {planoContas.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.codigo_estrutural} - {c.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>

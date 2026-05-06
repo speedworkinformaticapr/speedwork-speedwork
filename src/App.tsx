@@ -47,6 +47,7 @@ import AdminCourses from './pages/admin/business/AdminCourses'
 import AdminTournaments from './pages/admin/business/AdminTournaments'
 import AdminRanking from './pages/admin/business/AdminRanking'
 import AdminRules from './pages/admin/business/AdminRules'
+import AdminChartOfAccounts from './pages/admin/financial/AdminChartOfAccounts'
 import AdminFinancialCategories from './pages/admin/financial/AdminFinancialCategories'
 import AdminFinancialPayments from './pages/admin/financial/AdminFinancialPayments'
 import AdminFinancialPartners from './pages/admin/financial/AdminFinancialPartners'
@@ -240,6 +241,10 @@ const App = () => (
                   <Route
                     path="/admin/financial/categories"
                     element={<AdminFinancialCategories />}
+                  />
+                  <Route
+                    path="/admin/financial/chart-of-accounts"
+                    element={<AdminChartOfAccounts />}
                   />
                   <Route path="/admin/financial/payments" element={<AdminFinancialPayments />} />
                   <Route path="/admin/financial/partners" element={<AdminFinancialPartners />} />

@@ -36,6 +36,7 @@ Deno.serve(async (req: Request) => {
           referencia_id: contrato.id,
           referencia_tipo: 'contrato',
           user_id: contrato.responsavel_id,
+          conta_id: contrato.conta_id || null,
         })
       }
 
