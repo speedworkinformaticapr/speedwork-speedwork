@@ -39,7 +39,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.handle_pedido_financeiro_estoque()
  RETURNS trigger
@@ -74,7 +74,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$function$
+$function$;
 
 ALTER TABLE public.plano_contas ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "plano_contas_all" ON public.plano_contas;
