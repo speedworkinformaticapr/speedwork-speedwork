@@ -11,19 +11,19 @@ import { Quote, ArrowRight, CheckCircle2 } from 'lucide-react'
 export function SectionRenderer({ section }: { section: any }) {
   const { type, data } = section
 
+  if (!data) return null
+
   if (type === 'hero') {
+    const bgImage = data.image || data.backgroundImage
     return (
       <section className="relative py-28 md:py-48 flex items-center justify-center overflow-hidden w-full">
-        {data.backgroundImage && (
+        {bgImage && (
           <div className="absolute inset-0 z-0">
-            <img
-              src={data.backgroundImage}
-              className="w-full h-full object-cover"
-              alt="Hero background"
-            />
+            <img src={bgImage} className="w-full h-full object-cover" alt="Hero background" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-black/40 backdrop-blur-[2px]" />
           </div>
         )}
+        {!bgImage && <div className="absolute inset-0 z-0 bg-primary" />}
         <div className="relative z-10 container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-7xl font-extrabold text-white mb-6 drop-shadow-lg tracking-tight">
             {data.title}
@@ -31,12 +31,12 @@ export function SectionRenderer({ section }: { section: any }) {
           <p className="text-xl md:text-2xl text-gray-200 mb-10 max-w-3xl mx-auto drop-shadow">
             {data.subtitle}
           </p>
-          {data.buttonText && (
+          {(data.buttonText || data.link || data.buttonLink) && (
             <Link
-              to={data.buttonLink || '#'}
-              className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-4 rounded-full font-bold text-lg hover:bg-primary/90 hover:scale-105 transition-all shadow-xl"
+              to={data.link || data.buttonLink || '#'}
+              className="inline-flex items-center gap-2 bg-white text-primary px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 hover:scale-105 transition-all shadow-xl"
             >
-              {data.buttonText} <ArrowRight className="w-5 h-5" />
+              {data.buttonText || 'Saiba mais'} <ArrowRight className="w-5 h-5" />
             </Link>
           )}
         </div>
@@ -87,7 +87,8 @@ export function SectionRenderer({ section }: { section: any }) {
     )
   }
 
-  if (type === 'galeria') {
+  if (type === 'galeria' || type === 'carrossel' || type === 'banners') {
+    const items = data.items || data.images || []
     return (
       <section className="py-24 w-full bg-background">
         <div className="container mx-auto px-4">
@@ -96,20 +97,27 @@ export function SectionRenderer({ section }: { section: any }) {
               {data.title}
             </h2>
           )}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {(data.images || []).map((url: string, i: number) => (
-              <div
-                key={i}
-                className="aspect-square rounded-3xl overflow-hidden shadow-md hover:shadow-2xl transition-all cursor-pointer group"
-              >
-                <img
-                  src={url}
-                  alt={`Gallery item ${i}`}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                />
-              </div>
-            ))}
-          </div>
+          {data.image && (
+            <div className="w-full max-w-5xl mx-auto rounded-3xl overflow-hidden shadow-2xl mb-12">
+              <img src={data.image} alt="Banner" className="w-full h-auto object-cover" />
+            </div>
+          )}
+          {items.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              {items.map((item: any, i: number) => (
+                <div
+                  key={i}
+                  className="aspect-square rounded-3xl overflow-hidden shadow-md hover:shadow-2xl transition-all cursor-pointer group"
+                >
+                  <img
+                    src={item.image || item}
+                    alt={`Gallery item ${i}`}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     )
@@ -135,12 +143,12 @@ export function SectionRenderer({ section }: { section: any }) {
           <p className="text-xl md:text-2xl text-white/90 mb-12 max-w-3xl mx-auto font-light">
             {data.subtitle}
           </p>
-          {data.buttonText && (
+          {(data.buttonText || data.link || data.buttonLink) && (
             <Link
-              to={data.buttonLink || '#'}
+              to={data.link || data.buttonLink || '#'}
               className="inline-block bg-white text-gray-900 px-10 py-5 rounded-full font-bold text-xl hover:bg-gray-100 hover:scale-105 transition-all shadow-2xl"
             >
-              {data.buttonText}
+              {data.buttonText || 'Acessar'}
             </Link>
           )}
         </div>
@@ -148,7 +156,7 @@ export function SectionRenderer({ section }: { section: any }) {
     )
   }
 
-  if (type === 'testimonials') {
+  if (type === 'testimonials' || type === 'depoimentos') {
     return (
       <section className="py-24 bg-muted/10 w-full border-y border-muted">
         <div className="container mx-auto px-4">
@@ -165,13 +173,13 @@ export function SectionRenderer({ section }: { section: any }) {
               >
                 <Quote className="absolute top-8 right-8 w-12 h-12 text-primary/10" />
                 <p className="text-lg md:text-xl text-foreground/80 mb-8 italic leading-relaxed relative z-10">
-                  "{item.text}"
+                  "{item.text || item.description}"
                 </p>
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-lg">
-                    {item.author.charAt(0)}
+                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-lg uppercase">
+                    {(item.author || item.title || 'A').charAt(0)}
                   </div>
-                  <p className="font-bold text-primary text-lg">{item.author}</p>
+                  <p className="font-bold text-primary text-lg">{item.author || item.title}</p>
                 </div>
               </div>
             ))}
@@ -198,14 +206,31 @@ export function SectionRenderer({ section }: { section: any }) {
                 className="bg-card border rounded-2xl px-6 py-2 shadow-sm"
               >
                 <AccordionTrigger className="text-left text-lg md:text-xl font-semibold hover:no-underline hover:text-primary transition-colors py-4">
-                  {item.question}
+                  {item.question || item.title}
                 </AccordionTrigger>
                 <AccordionContent className="text-base md:text-lg text-muted-foreground leading-relaxed pb-6">
-                  {item.answer}
+                  {item.answer || item.description}
                 </AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
+        </div>
+      </section>
+    )
+  }
+
+  if (type === 'texto') {
+    return (
+      <section className="py-24 w-full bg-background">
+        <div className="container mx-auto px-4 max-w-4xl">
+          {data.title && (
+            <h2 className="text-3xl md:text-5xl font-bold text-primary mb-8 tracking-tight">
+              {data.title}
+            </h2>
+          )}
+          <div className="prose prose-lg max-w-none text-muted-foreground whitespace-pre-wrap">
+            {data.subtitle}
+          </div>
         </div>
       </section>
     )

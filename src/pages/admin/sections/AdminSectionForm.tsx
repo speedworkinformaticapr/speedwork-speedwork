@@ -23,24 +23,24 @@ export default function AdminSectionForm() {
 
   const [section, setSection] = useState({
     type: 'hero',
-    is_active: false,
-    content: {} as any,
+    is_published: false,
+    data: {} as any,
   })
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     if (id) {
       supabase
-        .from('page_sections')
+        .from('sections')
         .select('*')
         .eq('id', id)
         .single()
         .then(({ data }) => {
           if (data) {
             setSection({
-              type: data.content?.type || 'hero',
-              is_active: data.is_active || false,
-              content: data.content || {},
+              type: data.type || 'hero',
+              is_published: data.is_published || false,
+              data: data.data || {},
             })
           }
         })
@@ -48,24 +48,24 @@ export default function AdminSectionForm() {
   }, [id])
 
   const updateData = (newData: any) =>
-    setSection((s) => ({ ...s, content: { ...s.content, ...newData } }))
+    setSection((s) => ({ ...s, data: { ...s.data, ...newData } }))
 
   const save = async () => {
     setIsSaving(true)
     try {
       const payload = {
-        title: section.content.name || section.type,
-        is_active: section.is_active,
-        content: { ...section.content, type: section.type },
+        type: section.type,
+        is_published: section.is_published,
+        data: section.data,
       }
 
       if (id) {
-        const { error } = await supabase.from('page_sections').update(payload).eq('id', id)
+        const { error } = await supabase.from('sections').update(payload).eq('id', id)
         if (error) throw error
         toast({ title: 'Sucesso', description: 'Dobra atualizada com sucesso!' })
         navigate('/admin/sections')
       } else {
-        const { error } = await supabase.from('page_sections').insert(payload)
+        const { error } = await supabase.from('sections').insert(payload)
         if (error) throw error
         toast({ title: 'Sucesso', description: 'Dobra criada com sucesso!' })
         navigate('/admin/sections')
@@ -94,20 +94,25 @@ export default function AdminSectionForm() {
       <div className="grid gap-6">
         <div className="bg-card p-6 rounded-xl border grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Status</Label>
+            <Label>Status Global</Label>
             <div className="flex items-center gap-2 h-10">
               <Switch
-                checked={section.is_active}
-                onCheckedChange={(c) => setSection({ ...section, is_active: c })}
+                checked={section.is_published}
+                onCheckedChange={(c) => setSection({ ...section, is_published: c })}
               />
-              <span>{section.is_active ? 'Visível' : 'Oculto'}</span>
+              <span>{section.is_published ? 'Visível (Publicada)' : 'Oculto (Rascunho)'}</span>
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Se oculta, não aparecerá em nenhuma página.
+            </p>
           </div>
           <div className="space-y-2">
             <Label>Tipo de Dobra</Label>
             <Select
               value={section.type}
-              onValueChange={(v) => setSection({ ...section, type: v, content: {} })}
+              onValueChange={(v) =>
+                setSection({ ...section, type: v, data: { name: section.data.name } })
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -139,10 +144,11 @@ export default function AdminSectionForm() {
             Configuração - {section.type.toUpperCase()}
           </h2>
           <div className="space-y-2">
-            <Label>Nome de Identificação (Uso Interno) *</Label>
+            <Label>Nome de Identificação (Uso Interno na Biblioteca) *</Label>
             <Input
-              value={section.content.name || ''}
+              value={section.data.name || ''}
               onChange={(e) => updateData({ name: e.target.value })}
+              placeholder="Ex: Hero Principal da Home"
             />
           </div>
 
@@ -154,14 +160,14 @@ export default function AdminSectionForm() {
               <div className="space-y-2">
                 <Label>Título Principal</Label>
                 <Input
-                  value={section.content.title || ''}
+                  value={section.data.title || ''}
                   onChange={(e) => updateData({ title: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
                 <Label>Subtítulo / Descrição</Label>
                 <Textarea
-                  value={section.content.subtitle || ''}
+                  value={section.data.subtitle || ''}
                   onChange={(e) => updateData({ subtitle: e.target.value })}
                 />
               </div>
@@ -175,8 +181,10 @@ export default function AdminSectionForm() {
             <div className="space-y-2">
               <Label>Imagem (URL)</Label>
               <Input
-                value={section.content.image || ''}
-                onChange={(e) => updateData({ image: e.target.value })}
+                value={section.data.image || section.data.backgroundImage || ''}
+                onChange={(e) =>
+                  updateData({ image: e.target.value, backgroundImage: e.target.value })
+                }
               />
             </div>
           )}
@@ -186,15 +194,15 @@ export default function AdminSectionForm() {
               <div className="space-y-2">
                 <Label>Texto do Botão</Label>
                 <Input
-                  value={section.content.buttonText || ''}
+                  value={section.data.buttonText || ''}
                   onChange={(e) => updateData({ buttonText: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
                 <Label>Link do Botão</Label>
                 <Input
-                  value={section.content.link || ''}
-                  onChange={(e) => updateData({ link: e.target.value })}
+                  value={section.data.link || section.data.buttonLink || ''}
+                  onChange={(e) => updateData({ link: e.target.value, buttonLink: e.target.value })}
                 />
               </div>
             </div>
@@ -212,9 +220,9 @@ export default function AdminSectionForm() {
                 className="font-mono text-xs"
                 placeholder='[{"title": "Item 1", "description": "Desc"}]'
                 value={
-                  typeof section.content.items === 'string'
-                    ? section.content.items
-                    : JSON.stringify(section.content.items || [], null, 2)
+                  typeof section.data.items === 'string'
+                    ? section.data.items
+                    : JSON.stringify(section.data.items || [], null, 2)
                 }
                 onChange={(e) => {
                   try {

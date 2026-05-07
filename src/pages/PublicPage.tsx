@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { BlockRenderer } from '@/components/blocks/BlockRenderer'
+import { SectionRenderer } from '@/components/sections/SectionRenderer'
 import { useSeo } from '@/hooks/use-seo'
 import { PageHero } from '@/components/PageHero'
 import { FileText } from 'lucide-react'
@@ -36,6 +37,7 @@ export default function PublicPage() {
   const { slug } = useParams()
   const navigate = useNavigate()
   const [page, setPage] = useState<any>(null)
+  const [globalSections, setGlobalSections] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -60,6 +62,10 @@ export default function PublicPage() {
           return
         }
       }
+
+      // Load all global sections so we can render them properly
+      const { data: sections } = await supabase.from('sections').select('*')
+      if (sections) setGlobalSections(sections)
 
       setPage(data)
       setLoading(false)
@@ -100,7 +106,39 @@ export default function PublicPage() {
     return <StaticComponent />
   }
 
-  // Otherwise, it's a completely custom CMS page, so we render its blocks.
+  const visibleBlocks = page.blocks?.filter((b: any) => !b.isHidden) || []
+  const hasNewSections = visibleBlocks.some((b: any) => !!b.section_id)
+
+  // If the page contains any new modular global sections, we render it full-width by default
+  // allowing each Dobra to fully manage its own layout.
+  if (hasNewSections) {
+    return (
+      <main className="min-h-screen font-sans bg-background">
+        <div className="flex flex-col">
+          {visibleBlocks.map((block: any, i: number) => {
+            if (block.section_id) {
+              const globalSection = globalSections.find((s) => s.id === block.section_id)
+              if (!globalSection || !globalSection.is_published) return null
+              return <SectionRenderer key={block.id || i} section={globalSection} />
+            }
+            // Fallback for legacy blocks mixed in
+            return (
+              <div key={block.id || i} className="container mx-auto px-4 max-w-4xl my-12">
+                <BlockRenderer block={block} />
+              </div>
+            )
+          })}
+          {visibleBlocks.length === 0 && (
+            <div className="container mx-auto px-4 py-32 text-center text-muted-foreground border-2 border-dashed rounded-3xl bg-muted/5 mt-12">
+              Conteúdo em construção. Volte em breve!
+            </div>
+          )}
+        </div>
+      </main>
+    )
+  }
+
+  // Legacy rendering for pages fully built with old blocks format (keeps the PageHero layout)
   return (
     <main className="min-h-screen bg-gray-50 pb-20 font-sans">
       <PageHero
@@ -115,12 +153,10 @@ export default function PublicPage() {
         style={{ animationDelay: '200ms' }}
       >
         <div className="flex flex-col gap-6">
-          {page.blocks
-            ?.filter((b: any) => !b.isHidden)
-            .map((block: any, i: number) => (
-              <BlockRenderer key={block.id || i} block={block} />
-            ))}
-          {(!page.blocks || page.blocks.filter((b: any) => !b.isHidden).length === 0) && (
+          {visibleBlocks.map((block: any, i: number) => (
+            <BlockRenderer key={block.id || i} block={block} />
+          ))}
+          {visibleBlocks.length === 0 && (
             <div className="text-center py-32 border-2 border-dashed rounded-3xl text-muted-foreground bg-muted/5">
               Conteúdo em construção. Volte em breve!
             </div>

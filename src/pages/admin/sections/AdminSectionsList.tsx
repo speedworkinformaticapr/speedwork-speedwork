@@ -80,7 +80,10 @@ export default function AdminSectionsList() {
     <div className="p-8 max-w-5xl mx-auto animate-fade-in-up">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-primary">Gerenciar Dobras</h1>
+          <h1 className="text-3xl font-bold text-primary">Biblioteca de Dobras</h1>
+          <p className="text-muted-foreground mt-1">
+            Crie seções modulares globais para reutilizar em qualquer página do site.
+          </p>
         </div>
         <Button asChild>
           <Link to="/admin/sections/new">
@@ -89,28 +92,34 @@ export default function AdminSectionsList() {
         </Button>
       </div>
 
-      <div className="bg-card rounded-xl border shadow-sm">
+      <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Tipo de Dobra</TableHead>
-              <TableHead>Nome</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Nome Interno / Título</TableHead>
+              <TableHead>Status Global</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sections.map((s) => (
               <TableRow key={s.id}>
-                <TableCell className="font-bold uppercase text-primary">{s.type}</TableCell>
-                <TableCell>{s.data?.title || s.data?.name || 'Sem nome'}</TableCell>
+                <TableCell className="font-bold uppercase text-primary text-xs tracking-wider">
+                  {s.type}
+                </TableCell>
+                <TableCell className="font-medium">
+                  {s.data?.name || s.data?.title || 'Sem nome definido'}
+                </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Switch
                       checked={s.is_published}
                       onCheckedChange={() => togglePublish(s.id, s.is_published)}
                     />
-                    <span className="text-sm">{s.is_published ? 'Visível' : 'Oculto'}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {s.is_published ? 'Visível' : 'Oculto'}
+                    </span>
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
@@ -127,8 +136,8 @@ export default function AdminSectionsList() {
             ))}
             {sections.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-10">
-                  Nenhuma dobra configurada.
+                <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
+                  Nenhuma dobra configurada na biblioteca. Crie sua primeira seção!
                 </TableCell>
               </TableRow>
             )}
@@ -141,7 +150,8 @@ export default function AdminSectionsList() {
           <AlertDialogHeader>
             <AlertDialogTitle>Tem certeza que deseja excluir?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. A dobra será permanentemente removida.
+              Esta ação não pode ser desfeita. A dobra será permanentemente removida da biblioteca
+              (e consequentemente de todas as páginas que a utilizam).
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

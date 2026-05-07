@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
@@ -29,13 +29,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Save, ArrowLeft, Plus, Trash2, GripVertical, EyeOff, Eye } from 'lucide-react'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import {
+  Save,
+  ArrowLeft,
+  Plus,
+  Trash2,
+  GripVertical,
+  EyeOff,
+  Eye,
+  ExternalLink,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function AdminPageForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
+
   const [page, setPage] = useState({
     title: '',
     slug: '',
@@ -46,11 +57,20 @@ export default function AdminPageForm() {
     meta_keywords: '',
     is_published: false,
   })
+
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedBlockType, setSelectedBlockType] = useState('hero')
   const [isSaving, setIsSaving] = useState(false)
+  const [globalSections, setGlobalSections] = useState<any[]>([])
 
   useEffect(() => {
+    supabase
+      .from('sections')
+      .select('id, type, data, is_published')
+      .then(({ data }) => {
+        setGlobalSections(data || [])
+      })
+
     if (id) {
       supabase
         .from('pages')
@@ -144,15 +164,49 @@ export default function AdminPageForm() {
     }
   }
 
-  const addBlock = () => {
+  const addExistingSection = (sectionId: string) => {
     const newBlock = {
       id: Math.random().toString(36).substring(2),
-      type: selectedBlockType,
+      section_id: sectionId,
       isHidden: false,
-      data: {},
     }
     setPage((p) => ({ ...p, blocks: [...(p.blocks || []), newBlock] }))
     setIsModalOpen(false)
+    toast({ title: 'Sucesso', description: 'Dobra adicionada da biblioteca.' })
+  }
+
+  const createAndAddNewSection = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sections')
+        .insert({
+          type: selectedBlockType,
+          is_published: true,
+          data: {
+            name: `Nova Dobra - ${selectedBlockType.toUpperCase()} (Criada em ${page.title || 'Página'})`,
+          },
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      if (data) {
+        const newBlock = {
+          id: Math.random().toString(36).substring(2),
+          section_id: data.id,
+          isHidden: false,
+        }
+        setPage((p) => ({ ...p, blocks: [...(p.blocks || []), newBlock] }))
+        setGlobalSections((prev) => [data, ...prev])
+        setIsModalOpen(false)
+        toast({
+          title: 'Sucesso',
+          description: 'Nova dobra criada na biblioteca e adicionada à página!',
+        })
+      }
+    } catch (err: any) {
+      toast({ title: 'Erro', description: err.message, variant: 'destructive' })
+    }
   }
 
   const toggleBlockVisibility = (index: number) => {
@@ -167,6 +221,7 @@ export default function AdminPageForm() {
 
   const handleDragStart = (e: React.DragEvent, index: number) =>
     e.dataTransfer.setData('dragIndex', index.toString())
+
   const handleDrop = (e: React.DragEvent, dropIndex: number) => {
     const dragIndex = parseInt(e.dataTransfer.getData('dragIndex'))
     if (dragIndex === dropIndex) return
@@ -188,6 +243,13 @@ export default function AdminPageForm() {
 
   const removeSubmenu = (index: number) => {
     setPage((p) => ({ ...p, submenus: (p.submenus || []).filter((_, i) => i !== index) }))
+  }
+
+  const getSectionDetails = (block: any) => {
+    if (block.section_id) {
+      return globalSections.find((s) => s.id === block.section_id)
+    }
+    return null
   }
 
   return (
@@ -308,45 +370,92 @@ export default function AdminPageForm() {
 
       <div className="bg-card p-6 rounded-xl border">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold">Dobras (Seções)</h2>
+          <div>
+            <h2 className="text-xl font-bold">Dobras da Página</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Adicione seções da biblioteca ou crie novas. Arraste para reordenar.
+            </p>
+          </div>
           <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
             <DialogTrigger asChild>
               <Button>
-                <Plus className="w-4 h-4 mr-2" /> Adicionar Dobras
+                <Plus className="w-4 h-4 mr-2" /> Adicionar Dobra
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Selecionar Tipo de Dobra</DialogTitle>
+                <DialogTitle>Adicionar Dobra à Página</DialogTitle>
               </DialogHeader>
-              <div className="py-4">
-                <Select value={selectedBlockType} onValueChange={setSelectedBlockType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[
-                      'Hero',
-                      'CTA',
-                      'FAQ',
-                      'Cards',
-                      'Depoimentos',
-                      'Contadores',
-                      'Carrossel',
-                      'Banners',
-                      'Equipe',
-                      'Texto',
-                    ].map((t) => (
-                      <SelectItem key={t.toLowerCase()} value={t.toLowerCase()}>
-                        {t}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button onClick={addBlock} className="w-full">
-                Adicionar
-              </Button>
+
+              <Tabs defaultValue="library" className="mt-4">
+                <TabsList className="w-full grid grid-cols-2">
+                  <TabsTrigger value="library">Da Biblioteca (Existentes)</TabsTrigger>
+                  <TabsTrigger value="new">Criar Nova Dobra</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="library" className="pt-4 space-y-4">
+                  <div className="max-h-[300px] overflow-y-auto pr-2 space-y-2">
+                    {globalSections.length === 0 ? (
+                      <p className="text-center py-8 text-muted-foreground">
+                        Nenhuma dobra na biblioteca.
+                      </p>
+                    ) : (
+                      globalSections.map((section) => (
+                        <div
+                          key={section.id}
+                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                        >
+                          <div>
+                            <p className="font-bold">
+                              {section.data?.name || section.data?.title || 'Sem Nome'}
+                            </p>
+                            <p className="text-xs text-muted-foreground uppercase">
+                              {section.type} • {section.is_published ? 'Pública' : 'Oculta Global'}
+                            </p>
+                          </div>
+                          <Button size="sm" onClick={() => addExistingSection(section.id)}>
+                            Selecionar
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="new" className="pt-4 space-y-4">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Selecione o Tipo da Nova Dobra</Label>
+                      <Select value={selectedBlockType} onValueChange={setSelectedBlockType}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o tipo..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[
+                            'Hero',
+                            'CTA',
+                            'FAQ',
+                            'Cards',
+                            'Depoimentos',
+                            'Contadores',
+                            'Carrossel',
+                            'Banners',
+                            'Equipe',
+                            'Texto',
+                          ].map((t) => (
+                            <SelectItem key={t.toLowerCase()} value={t.toLowerCase()}>
+                              {t}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button onClick={createAndAddNewSection} className="w-full">
+                      Criar Dobra e Adicionar
+                    </Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </DialogContent>
           </Dialog>
         </div>
@@ -355,60 +464,85 @@ export default function AdminPageForm() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-16">Ordem</TableHead>
-              <TableHead>Tipo de Dobra</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Nome</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {page.blocks?.map((block, i) => (
-              <TableRow
-                key={block.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, i)}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => handleDrop(e, i)}
-                className={cn(
-                  'cursor-move hover:bg-muted/30 transition-colors',
-                  block.isHidden ? 'opacity-60 bg-muted/20 grayscale-[0.5]' : '',
-                )}
-              >
-                <TableCell>
-                  <GripVertical className="w-5 h-5 text-muted-foreground" />
-                </TableCell>
-                <TableCell className="font-medium uppercase">
-                  <div className="flex items-center gap-2">
-                    {block.type}
-                    {block.isHidden && (
-                      <span className="text-[10px] bg-background text-muted-foreground px-2 py-0.5 rounded-full font-bold tracking-wider uppercase border border-border shadow-sm">
-                        Oculto
-                      </span>
+            {page.blocks?.map((block, i) => {
+              const details = getSectionDetails(block)
+              const typeLabel = details?.type || block.type || 'Desconhecido'
+              const nameLabel =
+                details?.data?.name || details?.data?.title || block.data?.name || 'Local/Legado'
+
+              return (
+                <TableRow
+                  key={block.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, i)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => handleDrop(e, i)}
+                  className={cn(
+                    'cursor-move hover:bg-muted/30 transition-colors',
+                    block.isHidden ? 'opacity-60 bg-muted/20 grayscale-[0.5]' : '',
+                  )}
+                >
+                  <TableCell>
+                    <GripVertical className="w-5 h-5 text-muted-foreground" />
+                  </TableCell>
+                  <TableCell className="font-medium uppercase text-xs">{typeLabel}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{nameLabel}</span>
+                      {block.isHidden && (
+                        <span className="text-[10px] bg-background text-muted-foreground px-2 py-0.5 rounded-full font-bold tracking-wider uppercase border border-border shadow-sm">
+                          Oculta aqui
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {block.section_id && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        asChild
+                        title="Editar Configuração da Dobra (Abre em nova aba)"
+                      >
+                        <Link to={`/admin/sections/${block.section_id}/edit`} target="_blank">
+                          <ExternalLink className="w-4 h-4" />
+                        </Link>
+                      </Button>
                     )}
-                  </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => toggleBlockVisibility(i)}
-                    title={block.isHidden ? 'Mostrar' : 'Ocultar'}
-                  >
-                    {block.isHidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeBlock(i)}
-                    title="Excluir"
-                  >
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => toggleBlockVisibility(i)}
+                      title={block.isHidden ? 'Mostrar na página' : 'Ocultar da página'}
+                    >
+                      {block.isHidden ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeBlock(i)}
+                      title="Remover desta página"
+                    >
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
             {!page.blocks?.length && (
               <TableRow>
-                <TableCell colSpan={3} className="text-center py-6">
-                  Nenhuma dobra adicionada.
+                <TableCell colSpan={4} className="text-center py-6">
+                  Nenhuma dobra adicionada nesta página.
                 </TableCell>
               </TableRow>
             )}
