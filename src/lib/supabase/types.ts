@@ -690,6 +690,7 @@ export type Database = {
       contratos: {
         Row: {
           cliente_id: string | null
+          conta_id: string | null
           created_at: string | null
           data_cancelamento: string | null
           data_fim: string | null
@@ -710,6 +711,7 @@ export type Database = {
         }
         Insert: {
           cliente_id?: string | null
+          conta_id?: string | null
           created_at?: string | null
           data_cancelamento?: string | null
           data_fim?: string | null
@@ -730,6 +732,7 @@ export type Database = {
         }
         Update: {
           cliente_id?: string | null
+          conta_id?: string | null
           created_at?: string | null
           data_cancelamento?: string | null
           data_fim?: string | null
@@ -754,6 +757,13 @@ export type Database = {
             columns: ['cliente_id']
             isOneToOne: false
             referencedRelation: 'clientes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'contratos_conta_id_fkey'
+            columns: ['conta_id']
+            isOneToOne: false
+            referencedRelation: 'plano_contas'
             referencedColumns: ['id']
           },
           {
@@ -1178,6 +1188,7 @@ export type Database = {
       lancamentos_financeiros: {
         Row: {
           categoria: string | null
+          conta_id: string | null
           created_at: string | null
           data_lancamento: string | null
           descricao: string | null
@@ -1191,6 +1202,7 @@ export type Database = {
         }
         Insert: {
           categoria?: string | null
+          conta_id?: string | null
           created_at?: string | null
           data_lancamento?: string | null
           descricao?: string | null
@@ -1204,6 +1216,7 @@ export type Database = {
         }
         Update: {
           categoria?: string | null
+          conta_id?: string | null
           created_at?: string | null
           data_lancamento?: string | null
           descricao?: string | null
@@ -1215,7 +1228,15 @@ export type Database = {
           user_id?: string | null
           valor?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'lancamentos_financeiros_conta_id_fkey'
+            columns: ['conta_id']
+            isOneToOne: false
+            referencedRelation: 'plano_contas'
+            referencedColumns: ['id']
+          },
+        ]
       }
       maintenance_config: {
         Row: {
@@ -1398,6 +1419,7 @@ export type Database = {
       orcamentos: {
         Row: {
           cliente_id: string | null
+          conta_id: string | null
           created_at: string
           data_conversao: string | null
           data_emissao: string
@@ -1422,6 +1444,7 @@ export type Database = {
         }
         Insert: {
           cliente_id?: string | null
+          conta_id?: string | null
           created_at?: string
           data_conversao?: string | null
           data_emissao: string
@@ -1446,6 +1469,7 @@ export type Database = {
         }
         Update: {
           cliente_id?: string | null
+          conta_id?: string | null
           created_at?: string
           data_conversao?: string | null
           data_emissao?: string
@@ -1474,6 +1498,13 @@ export type Database = {
             columns: ['cliente_id']
             isOneToOne: false
             referencedRelation: 'clientes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'orcamentos_conta_id_fkey'
+            columns: ['conta_id']
+            isOneToOne: false
+            referencedRelation: 'plano_contas'
             referencedColumns: ['id']
           },
           {
@@ -1684,6 +1715,7 @@ export type Database = {
       pedidos: {
         Row: {
           cliente_id: string | null
+          conta_id: string | null
           created_at: string | null
           data_entrega_prevista: string | null
           data_entrega_real: string | null
@@ -1708,6 +1740,7 @@ export type Database = {
         }
         Insert: {
           cliente_id?: string | null
+          conta_id?: string | null
           created_at?: string | null
           data_entrega_prevista?: string | null
           data_entrega_real?: string | null
@@ -1732,6 +1765,7 @@ export type Database = {
         }
         Update: {
           cliente_id?: string | null
+          conta_id?: string | null
           created_at?: string | null
           data_entrega_prevista?: string | null
           data_entrega_real?: string | null
@@ -1763,6 +1797,13 @@ export type Database = {
             referencedColumns: ['id']
           },
           {
+            foreignKeyName: 'pedidos_conta_id_fkey'
+            columns: ['conta_id']
+            isOneToOne: false
+            referencedRelation: 'plano_contas'
+            referencedColumns: ['id']
+          },
+          {
             foreignKeyName: 'pedidos_orcamento_id_fkey'
             columns: ['orcamento_id']
             isOneToOne: false
@@ -1774,6 +1815,47 @@ export type Database = {
             columns: ['responsavel_id']
             isOneToOne: false
             referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      plano_contas: {
+        Row: {
+          codigo_estrutural: string
+          conta_pai_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          natureza: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          codigo_estrutural: string
+          conta_pai_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          natureza: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          codigo_estrutural?: string
+          conta_pai_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          natureza?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'plano_contas_conta_pai_id_fkey'
+            columns: ['conta_pai_id']
+            isOneToOne: false
+            referencedRelation: 'plano_contas'
             referencedColumns: ['id']
           },
         ]
@@ -2768,6 +2850,7 @@ export const Constants = {
 //   observacoes: text (nullable)
 //   created_at: timestamp with time zone (nullable, default: now())
 //   updated_at: timestamp with time zone (nullable, default: now())
+//   conta_id: uuid (nullable)
 // Table: courses
 //   id: uuid (not null, default: gen_random_uuid())
 //   club_id: uuid (nullable)
@@ -2883,6 +2966,7 @@ export const Constants = {
 //   referencia_tipo: text (nullable)
 //   created_at: timestamp with time zone (nullable, default: now())
 //   updated_at: timestamp with time zone (nullable, default: now())
+//   conta_id: uuid (nullable)
 // Table: maintenance_config
 //   id: uuid (not null, default: gen_random_uuid())
 //   is_active: boolean (not null, default: false)
@@ -2950,6 +3034,7 @@ export const Constants = {
 //   veiculo_placa: text (nullable)
 //   veiculo_modelo: text (nullable)
 //   veiculo_km: text (nullable)
+//   conta_id: uuid (nullable)
 // Table: order_items
 //   id: uuid (not null, default: gen_random_uuid())
 //   order_id: uuid (nullable)
@@ -3013,6 +3098,16 @@ export const Constants = {
 //   veiculo_placa: text (nullable)
 //   veiculo_modelo: text (nullable)
 //   veiculo_km: text (nullable)
+//   conta_id: uuid (nullable)
+// Table: plano_contas
+//   id: uuid (not null, default: gen_random_uuid())
+//   codigo_estrutural: text (not null)
+//   nome: text (not null)
+//   natureza: text (not null)
+//   conta_pai_id: uuid (nullable)
+//   is_active: boolean (not null, default: true)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: products
 //   id: uuid (not null, default: gen_random_uuid())
 //   name: text (not null)
@@ -3249,6 +3344,7 @@ export const Constants = {
 //   PRIMARY KEY clubs_pkey: PRIMARY KEY (id)
 // Table: contratos
 //   FOREIGN KEY contratos_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+//   FOREIGN KEY contratos_conta_id_fkey: FOREIGN KEY (conta_id) REFERENCES plano_contas(id) ON DELETE SET NULL
 //   UNIQUE contratos_numero_contrato_key: UNIQUE (numero_contrato)
 //   PRIMARY KEY contratos_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY contratos_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id)
@@ -3279,6 +3375,7 @@ export const Constants = {
 // Table: hero_carousel
 //   PRIMARY KEY hero_carousel_pkey: PRIMARY KEY (id)
 // Table: lancamentos_financeiros
+//   FOREIGN KEY lancamentos_financeiros_conta_id_fkey: FOREIGN KEY (conta_id) REFERENCES plano_contas(id) ON DELETE SET NULL
 //   PRIMARY KEY lancamentos_financeiros_pkey: PRIMARY KEY (id)
 //   CHECK lancamentos_financeiros_referencia_tipo_check: CHECK ((referencia_tipo = ANY (ARRAY['orcamento'::text, 'pedido'::text, 'contrato'::text])))
 //   CHECK lancamentos_financeiros_tipo_check: CHECK ((tipo = ANY (ARRAY['entrada'::text, 'saida'::text])))
@@ -3298,6 +3395,7 @@ export const Constants = {
 //   FOREIGN KEY orcamento_itens_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id)
 // Table: orcamentos
 //   FOREIGN KEY orcamentos_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+//   FOREIGN KEY orcamentos_conta_id_fkey: FOREIGN KEY (conta_id) REFERENCES plano_contas(id) ON DELETE SET NULL
 //   FOREIGN KEY orcamentos_pedido_id_fkey: FOREIGN KEY (pedido_id) REFERENCES pedidos(id)
 //   PRIMARY KEY orcamentos_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY orcamentos_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id)
@@ -3321,11 +3419,16 @@ export const Constants = {
 //   FOREIGN KEY pedido_itens_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: pedidos
 //   FOREIGN KEY pedidos_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+//   FOREIGN KEY pedidos_conta_id_fkey: FOREIGN KEY (conta_id) REFERENCES plano_contas(id) ON DELETE SET NULL
 //   UNIQUE pedidos_numero_pedido_key: UNIQUE (numero_pedido)
 //   FOREIGN KEY pedidos_orcamento_id_fkey: FOREIGN KEY (orcamento_id) REFERENCES orcamentos(id)
 //   PRIMARY KEY pedidos_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY pedidos_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id)
 //   FOREIGN KEY pedidos_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+// Table: plano_contas
+//   FOREIGN KEY plano_contas_conta_pai_id_fkey: FOREIGN KEY (conta_pai_id) REFERENCES plano_contas(id) ON DELETE CASCADE
+//   CHECK plano_contas_natureza_check: CHECK ((natureza = ANY (ARRAY['receita'::text, 'despesa'::text])))
+//   PRIMARY KEY plano_contas_pkey: PRIMARY KEY (id)
 // Table: products
 //   PRIMARY KEY products_pkey: PRIMARY KEY (id)
 // Table: profiles
@@ -3652,6 +3755,10 @@ export const Constants = {
 //     USING: (user_id = auth.uid())
 //   Policy "pedidos_update" (UPDATE, PERMISSIVE) roles={public}
 //     USING: (user_id = auth.uid())
+// Table: plano_contas
+//   Policy "plano_contas_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: products
 //   Policy "Enable delete for authenticated users" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -3804,19 +3911,17 @@ export const Constants = {
 //   BEGIN
 //     IF NEW.status = 'aprovado' AND (OLD.status IS NULL OR OLD.status <> 'aprovado') THEN
 //       INSERT INTO public.lancamentos_financeiros (
-//         tipo, descricao, valor, data_lancamento, categoria, referencia_id, referencia_tipo, user_id
+//         tipo, descricao, valor, data_lancamento, categoria, referencia_id, referencia_tipo, user_id, conta_id
 //       ) VALUES (
-//         'entrada', 'Orçamento Aprovado ' || COALESCE(NEW.numero_orcamento, ''), NEW.total, NEW.data_emissao, 'Orçamento Aprovado', NEW.id, 'orcamento', NEW.responsavel_id
+//         'entrada', 'Orçamento Aprovado ' || COALESCE(NEW.numero_orcamento, ''), NEW.total, NEW.data_emissao, 'Orçamento Aprovado', NEW.id, 'orcamento', NEW.responsavel_id, NEW.conta_id
 //       );
 //     ELSIF NEW.status = 'rejeitado' AND (OLD.status IS NULL OR OLD.status <> 'rejeitado') THEN
-//       -- Apenas para registro, valor 0
 //       INSERT INTO public.lancamentos_financeiros (
-//         tipo, descricao, valor, data_lancamento, categoria, referencia_id, referencia_tipo, user_id
+//         tipo, descricao, valor, data_lancamento, categoria, referencia_id, referencia_tipo, user_id, conta_id
 //       ) VALUES (
-//         'saida', 'Orçamento Rejeitado ' || COALESCE(NEW.numero_orcamento, ''), 0, NEW.data_emissao, 'Orçamento Rejeitado', NEW.id, 'orcamento', NEW.responsavel_id
+//         'saida', 'Orçamento Rejeitado ' || COALESCE(NEW.numero_orcamento, ''), 0, NEW.data_emissao, 'Orçamento Rejeitado', NEW.id, 'orcamento', NEW.responsavel_id, NEW.conta_id
 //       );
 //     ELSIF NEW.status = 'convertido' AND (OLD.status IS NULL OR OLD.status <> 'convertido') THEN
-//       -- Update previous entry if exists to point to the new pedido
 //       UPDATE public.lancamentos_financeiros
 //       SET referencia_tipo = 'pedido', referencia_id = NEW.pedido_id
 //       WHERE referencia_id = NEW.id AND referencia_tipo = 'orcamento';
@@ -3835,27 +3940,22 @@ export const Constants = {
 //     item RECORD;
 //   BEGIN
 //     IF NEW.status = 'confirmado' AND (OLD.status IS NULL OR OLD.status <> 'confirmado') THEN
-//       -- Financeiro: Lançamento de Entrada
 //       INSERT INTO public.lancamentos_financeiros (
-//         tipo, descricao, valor, data_lancamento, categoria, referencia_id, referencia_tipo, user_id
+//         tipo, descricao, valor, data_lancamento, categoria, referencia_id, referencia_tipo, user_id, conta_id
 //       ) VALUES (
-//         'entrada', 'Pedido Confirmado ' || COALESCE(NEW.numero_pedido, ''), NEW.valor_total, COALESCE(NEW.data_pedido, NOW()::date), 'Pedido Confirmado', NEW.id, 'pedido', NEW.responsavel_id
+//         'entrada', 'Pedido Confirmado ' || COALESCE(NEW.numero_pedido, ''), NEW.valor_total, COALESCE(NEW.data_pedido, NOW()::date), 'Pedido Confirmado', NEW.id, 'pedido', NEW.responsavel_id, NEW.conta_id
 //       );
-//       -- Estoque: Baixa de Produtos
 //       FOR item IN SELECT produto_id, quantidade FROM public.pedido_itens WHERE pedido_id = NEW.id AND tipo_item = 'produto' AND produto_id IS NOT NULL LOOP
 //         UPDATE public.products SET stock = GREATEST(COALESCE(stock, 0) - item.quantidade, 0) WHERE id = item.produto_id;
 //       END LOOP;
 //     ELSIF NEW.status = 'entregue' AND (OLD.status IS NULL OR OLD.status <> 'entregue') THEN
-//       -- Atualiza categoria do lançamento
 //       UPDATE public.lancamentos_financeiros SET categoria = 'Pedido Entregue' WHERE referencia_id = NEW.id AND referencia_tipo = 'pedido';
 //     ELSIF NEW.status = 'cancelado' AND (OLD.status IS NULL OR OLD.status <> 'cancelado') THEN
-//       -- Financeiro: Lançamento de Saída (Estorno)
 //       INSERT INTO public.lancamentos_financeiros (
-//         tipo, descricao, valor, data_lancamento, categoria, referencia_id, referencia_tipo, user_id
+//         tipo, descricao, valor, data_lancamento, categoria, referencia_id, referencia_tipo, user_id, conta_id
 //       ) VALUES (
-//         'saida', 'Pedido Cancelado ' || COALESCE(NEW.numero_pedido, ''), NEW.valor_total, NOW()::date, 'Pedido Cancelado', NEW.id, 'pedido', NEW.responsavel_id
+//         'saida', 'Pedido Cancelado ' || COALESCE(NEW.numero_pedido, ''), NEW.valor_total, NOW()::date, 'Pedido Cancelado', NEW.id, 'pedido', NEW.responsavel_id, NEW.conta_id
 //       );
-//       -- Estoque: Estorno se estava confirmado/producao/enviado/entregue
 //       IF OLD.status IN ('confirmado', 'producao', 'enviado', 'entregue') THEN
 //         FOR item IN SELECT produto_id, quantidade FROM public.pedido_itens WHERE pedido_id = NEW.id AND tipo_item = 'produto' AND produto_id IS NOT NULL LOOP
 //           UPDATE public.products SET stock = COALESCE(stock, 0) + item.quantidade WHERE id = item.produto_id;
