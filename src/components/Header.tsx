@@ -61,19 +61,6 @@ export default function Header() {
     return names[role] || role
   }
 
-  const navLinks = [
-    { title: 'Início', path: '/' },
-    { title: 'Cursos', path: '/courses' },
-    { title: 'Torneios', path: '/tournaments' },
-    { title: 'Ranking', path: '/ranking' },
-    { title: 'Regras', path: '/rules' },
-    { title: 'Sobre', path: '/about' },
-    { title: 'Contato', path: '/contact' },
-    { title: 'Loja', path: '/store' },
-    { title: 'Galeria', path: '/gallery' },
-    { title: 'Blog', path: '/blog' },
-  ]
-
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background shadow-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -93,32 +80,21 @@ export default function Header() {
 
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center gap-6">
-          {navLinks.map((link) => (
-            <Link
-              key={link.path}
-              to={link.path}
-              className={cn(
-                'text-sm font-medium uppercase transition-colors hover:text-primary',
-                location.pathname === link.path ? 'text-primary' : 'text-muted-foreground',
-              )}
-            >
-              {link.title}
-            </Link>
-          ))}
-
-          {pages.map((page) => (
-            <Link
-              key={page.slug}
-              to={`/${page.slug}`}
-              className={cn(
-                'text-sm font-medium uppercase transition-colors hover:text-primary flex items-center gap-1',
-                location.pathname === `/${page.slug}` ? 'text-primary' : 'text-muted-foreground',
-              )}
-            >
-              <FileText className="h-4 w-4" />
-              <span>{page.title}</span>
-            </Link>
-          ))}
+          {pages.map((page) => {
+            const path = page.slug === 'inicio' || page.slug === 'home' ? '/' : `/${page.slug}`
+            return (
+              <Link
+                key={page.slug}
+                to={path}
+                className={cn(
+                  'text-sm font-medium uppercase transition-colors hover:text-primary flex items-center gap-1',
+                  location.pathname === path ? 'text-primary' : 'text-muted-foreground',
+                )}
+              >
+                <span>{page.title}</span>
+              </Link>
+            )
+          })}
 
           {/* Portal de Serviços Dropdown */}
           <DropdownMenu>
@@ -308,28 +284,19 @@ export default function Header() {
       {isMobileMenuOpen && (
         <div className="lg:hidden border-t bg-background p-4 space-y-4 max-h-[calc(100vh-4rem)] overflow-y-auto">
           <nav className="flex flex-col gap-3">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className="text-sm font-medium uppercase hover:text-primary"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {link.title}
-              </Link>
-            ))}
-
-            {pages.map((page) => (
-              <Link
-                key={page.slug}
-                to={`/${page.slug}`}
-                className="text-sm font-medium uppercase hover:text-primary flex items-center gap-2"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <FileText className="h-4 w-4" />
-                {page.title}
-              </Link>
-            ))}
+            {pages.map((page) => {
+              const path = page.slug === 'inicio' || page.slug === 'home' ? '/' : `/${page.slug}`
+              return (
+                <Link
+                  key={page.slug}
+                  to={path}
+                  className="text-sm font-medium uppercase hover:text-primary flex items-center gap-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {page.title}
+                </Link>
+              )
+            })}
 
             <div className="border-t pt-3 mt-2">
               <p className="text-sm font-bold uppercase mb-3 text-muted-foreground">

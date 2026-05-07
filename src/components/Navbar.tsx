@@ -46,11 +46,6 @@ import { supabase } from '@/lib/supabase/client'
 import { useSystemData } from '@/hooks/use-system-data'
 import { MapPin, Instagram, Facebook, Youtube } from 'lucide-react'
 
-const FIXED_LINKS_END = [
-  { key: 'nav.blog', label: 'Blog', path: '/blog', icon: FileText },
-  { key: 'shop.title', label: 'Loja', path: '/store', icon: ShoppingBag },
-]
-
 export function Navbar() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -86,7 +81,7 @@ export function Navbar() {
           published.map((p: any) => ({
             key: `page-${p.slug}`,
             label: p.title,
-            path: `/${p.slug}`,
+            path: p.slug === 'inicio' || p.slug === 'home' ? '/' : `/${p.slug}`,
             icon: getIconForSlug(p.slug),
             isDynamic: true,
             submenus: p.submenus || [],
@@ -99,18 +94,7 @@ export function Navbar() {
 
   const isShopEnabled = !allPages.find((p) => p.slug === 'store' && p.is_published === false)
 
-  const ALL_LINKS = [
-    ...dynamicLinks,
-    ...FIXED_LINKS_END.filter((fixedLink) => {
-      const isInDynamic = dynamicLinks.some((dl) => dl.path === fixedLink.path)
-      if (isInDynamic) return false
-
-      const pageDef = allPages.find((p) => `/${p.slug}` === fixedLink.path)
-      if (pageDef) return pageDef.is_published
-
-      return true
-    }),
-  ]
+  const ALL_LINKS = [...dynamicLinks]
 
   useEffect(() => {
     if (user) {
