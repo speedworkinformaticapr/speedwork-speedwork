@@ -126,10 +126,6 @@ export function Footer() {
                 'Eleve o seu jogo, viva a paixão pelo esporte. Junte-se à revolução!'}
               "
             </p>
-
-            <div className="flex items-center gap-2 text-sm font-semibold text-primary/90 bg-white/5 inline-flex px-3 py-1.5 rounded-full w-fit mt-auto">
-              <span className="text-lg leading-none">🇧🇷</span> {t('footer.proudly')}
-            </div>
           </div>
 
           <div className="flex flex-col md:items-center">
