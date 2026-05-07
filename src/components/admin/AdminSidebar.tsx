@@ -202,7 +202,15 @@ export function AdminSidebar() {
           }
         : null
 
-    const baseItems = customPagesItem ? [...navItems, customPagesItem] : [...navItems]
+    const filteredNavItems = navItems.filter((item) => {
+      if (userRoles.includes('master')) return true
+      if (item.title === 'Configurações' || item.title === 'Integrações') return false
+      return true
+    })
+
+    const baseItems = customPagesItem
+      ? [...filteredNavItems, customPagesItem]
+      : [...filteredNavItems]
 
     const dashboardItem = baseItems.find((item) => item.title === 'Dashboard')
     const otherItems = baseItems.filter((item) => item.title !== 'Dashboard')
@@ -220,7 +228,7 @@ export function AdminSidebar() {
     processedOtherItems.sort((a, b) => a.title.localeCompare(b.title))
 
     return dashboardItem ? [dashboardItem, ...processedOtherItems] : processedOtherItems
-  }, [dynamicPages])
+  }, [dynamicPages, userRoles])
 
   const [openSection, setOpenSection] = useState<string | null>(() => {
     return (

@@ -6,6 +6,32 @@ import { useSeo } from '@/hooks/use-seo'
 import { PageHero } from '@/components/PageHero'
 import { FileText } from 'lucide-react'
 
+// Import system core pages so they can be managed via the CMS slug
+import Courses from '@/pages/Courses'
+import Tournaments from '@/pages/Tournaments'
+import Ranking from '@/pages/Ranking'
+import Rules from '@/pages/Rules'
+import About from '@/pages/About'
+import Contact from '@/pages/Contact'
+import Store from '@/pages/store/Store'
+import Gallery from '@/pages/Gallery'
+import BlogList from '@/pages/blog/BlogList'
+
+// Map predefined slugs to their specific React components
+const STATIC_PAGES: Record<string, React.FC> = {
+  courses: Courses,
+  tournaments: Tournaments,
+  ranking: Ranking,
+  rules: Rules,
+  about: About,
+  sobre: About,
+  contact: Contact,
+  contato: Contact,
+  store: Store,
+  gallery: Gallery,
+  blog: BlogList,
+}
+
 export default function PublicPage() {
   const { slug } = useParams()
   const navigate = useNavigate()
@@ -21,7 +47,7 @@ export default function PublicPage() {
         .single()
 
       if (error || !data) {
-        navigate('/not-found')
+        navigate('/not-found', { replace: true })
         return
       }
 
@@ -30,7 +56,7 @@ export default function PublicPage() {
           data: { user },
         } = await supabase.auth.getUser()
         if (!user) {
-          navigate('/not-found')
+          navigate('/not-found', { replace: true })
           return
         }
       }
@@ -67,6 +93,14 @@ export default function PublicPage() {
 
   if (!page) return null
 
+  // If the page exists in the CMS and maps to a native static application component,
+  // we render the application component directly.
+  const StaticComponent = STATIC_PAGES[slug as string]
+  if (StaticComponent) {
+    return <StaticComponent />
+  }
+
+  // Otherwise, it's a completely custom CMS page, so we render its blocks.
   return (
     <main className="min-h-screen bg-gray-50 pb-20 font-sans">
       <PageHero

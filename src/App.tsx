@@ -5,13 +5,6 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import Layout from './components/Layout'
 import AuthLayout from './components/AuthLayout'
 import Index from './pages/Index'
-import Courses from './pages/Courses'
-import Tournaments from './pages/Tournaments'
-import Ranking from './pages/Ranking'
-import Rules from './pages/Rules'
-import About from './pages/About'
-import Contact from './pages/Contact'
-import BlogList from './pages/blog/BlogList'
 import BlogPost from './pages/blog/BlogPost'
 import AdminBlogList from './pages/admin/blog/AdminBlogList'
 import AdminBlogForm from './pages/admin/blog/AdminBlogForm'
@@ -24,11 +17,9 @@ import RegisterClub from './pages/RegisterClub'
 import EmailConfirmation from './pages/EmailConfirmation'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
-import Store from './pages/store/Store'
 import Cart from './pages/store/Cart'
 import Checkout from './pages/store/Checkout'
 import Orders from './pages/store/Orders'
-import Gallery from './pages/Gallery'
 import AdminGallery from './pages/admin/gallery/AdminGallery'
 import AdminDashboard from './pages/admin/dashboard/AdminDashboard'
 import AdminPageList from './pages/admin/pages/AdminPageList'
@@ -119,24 +110,13 @@ const App = () => (
                   }
                 >
                   <Route path="/" element={<Index />} />
-                  <Route path="/courses" element={<Courses />} />
-                  <Route path="/tournaments" element={<Tournaments />} />
-                  <Route path="/ranking" element={<Ranking />} />
-                  <Route path="/rules" element={<Rules />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/sobre" element={<About />} />
-                  <Route path="/contact" element={<Contact />} />
-                  <Route path="/contato" element={<Contact />} />
-                  <Route path="/blog" element={<BlogList />} />
                   <Route path="/blog/:id" element={<BlogPost />} />
 
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/athlete/:id" element={<AthleteProfile />} />
-                  <Route path="/store" element={<Store />} />
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/orders" element={<Orders />} />
-                  <Route path="/gallery" element={<Gallery />} />
                   <Route
                     path="/club/dashboard"
                     element={

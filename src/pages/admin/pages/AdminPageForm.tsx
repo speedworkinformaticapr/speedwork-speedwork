@@ -79,6 +79,39 @@ export default function AdminPageForm() {
         variant: 'destructive',
       })
 
+    const reservedSlugs = [
+      'admin',
+      'login',
+      'register',
+      'profile',
+      'cart',
+      'checkout',
+      'orders',
+      'scheduling',
+      'club',
+      'staff',
+      'client',
+    ]
+    if (reservedSlugs.includes(page.slug.toLowerCase())) {
+      return toast({
+        title: 'Slug Inválido',
+        description:
+          'Esta rota é reservada pelo sistema e não pode ser utilizada para páginas customizadas.',
+        variant: 'destructive',
+      })
+    }
+
+    const invalidSubmenus = (page.submenus || []).some(
+      (sub) => !sub.url.startsWith('/') && !sub.url.startsWith('http'),
+    )
+    if (invalidSubmenus) {
+      return toast({
+        title: 'Atenção',
+        description: 'As URLs dos submenus devem começar com / ou http.',
+        variant: 'destructive',
+      })
+    }
+
     setIsSaving(true)
     try {
       const payload = {
