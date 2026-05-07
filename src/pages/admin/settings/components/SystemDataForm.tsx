@@ -15,6 +15,7 @@ import { TermsTab } from './tabs/TermsTab'
 import { QuotesOrdersTab } from './tabs/QuotesOrdersTab'
 import { BusinessHoursTab } from './tabs/BusinessHoursTab'
 import { SystemPreferencesTab } from './tabs/SystemPreferencesTab'
+import { FooterSettingsTab } from './tabs/FooterSettingsTab'
 
 export default function SystemDataForm() {
   const { data, loading, updateData } = useSystemData()
@@ -276,6 +277,9 @@ export default function SystemDataForm() {
             >
               Preferências do Sistema
             </TabsTrigger>
+            <TabsTrigger value="footer" className="flex-1 text-sm md:text-base whitespace-nowrap">
+              Rodapé / Textos
+            </TabsTrigger>
           </TabsList>
           <div className="mt-6">
             <TabsContent value="visual">
@@ -295,6 +299,9 @@ export default function SystemDataForm() {
             </TabsContent>
             <TabsContent value="preferences">
               <SystemPreferencesTab form={form} />
+            </TabsContent>
+            <TabsContent value="footer">
+              <FooterSettingsTab form={form} />
             </TabsContent>
           </div>
         </Tabs>

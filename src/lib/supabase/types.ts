@@ -51,11 +51,13 @@ export type Database = {
           executed_minutes: number | null
           id: string
           last_started_at: string | null
+          link_pagamento: string | null
           notes: string | null
           service_name: string
           start_time: string
           status: string
           updated_at: string
+          whatsapp_enviado: boolean | null
         }
         Insert: {
           client_name: string
@@ -65,11 +67,13 @@ export type Database = {
           executed_minutes?: number | null
           id?: string
           last_started_at?: string | null
+          link_pagamento?: string | null
           notes?: string | null
           service_name: string
           start_time: string
           status?: string
           updated_at?: string
+          whatsapp_enviado?: boolean | null
         }
         Update: {
           client_name?: string
@@ -79,37 +83,55 @@ export type Database = {
           executed_minutes?: number | null
           id?: string
           last_started_at?: string | null
+          link_pagamento?: string | null
           notes?: string | null
           service_name?: string
           start_time?: string
           status?: string
           updated_at?: string
+          whatsapp_enviado?: boolean | null
         }
         Relationships: []
       }
       athlete_attribute_values: {
         Row: {
+          athlete_id: string | null
           attribute_id: string | null
+          avaliador_id: string | null
           data_registro: string
           id: string
+          observacoes: string | null
           user_id: string | null
           valor: string | null
         }
         Insert: {
+          athlete_id?: string | null
           attribute_id?: string | null
+          avaliador_id?: string | null
           data_registro?: string
           id?: string
+          observacoes?: string | null
           user_id?: string | null
           valor?: string | null
         }
         Update: {
+          athlete_id?: string | null
           attribute_id?: string | null
+          avaliador_id?: string | null
           data_registro?: string
           id?: string
+          observacoes?: string | null
           user_id?: string | null
           valor?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: 'athlete_attribute_values_athlete_id_fkey'
+            columns: ['athlete_id']
+            isOneToOne: false
+            referencedRelation: 'athletes'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'athlete_attribute_values_attribute_id_fkey'
             columns: ['attribute_id']
@@ -121,22 +143,28 @@ export type Database = {
       }
       athlete_attributes: {
         Row: {
+          ativo: boolean | null
           created_at: string
           id: string
           nome: string | null
           tipo_dado: string | null
+          unidade_medida: string | null
         }
         Insert: {
+          ativo?: boolean | null
           created_at?: string
           id?: string
           nome?: string | null
           tipo_dado?: string | null
+          unidade_medida?: string | null
         }
         Update: {
+          ativo?: boolean | null
           created_at?: string
           id?: string
           nome?: string | null
           tipo_dado?: string | null
+          unidade_medida?: string | null
         }
         Relationships: []
       }
@@ -1868,81 +1896,140 @@ export type Database = {
           category: string | null
           created_at: string
           description: string | null
+          dimensions: string | null
           id: string
           image_url: string | null
           name: string
           price: number | null
           rating: number | null
+          sku: string | null
           stock: number | null
+          subcategory: string | null
         }
         Insert: {
           category?: string | null
           created_at?: string
           description?: string | null
+          dimensions?: string | null
           id?: string
           image_url?: string | null
           name: string
           price?: number | null
           rating?: number | null
+          sku?: string | null
           stock?: number | null
+          subcategory?: string | null
         }
         Update: {
           category?: string | null
           created_at?: string
           description?: string | null
+          dimensions?: string | null
           id?: string
           image_url?: string | null
           name?: string
           price?: number | null
           rating?: number | null
+          sku?: string | null
           stock?: number | null
+          subcategory?: string | null
         }
         Relationships: []
       }
       profiles: {
         Row: {
+          address: string | null
           autoriza_whatsapp: boolean | null
+          birth_date: string | null
+          club_id: string | null
           cpf_cnpj: string | null
           created_at: string | null
           document: string | null
+          documento_identidade: string | null
           email: string | null
           financial_status: string | null
+          gender: string | null
           id: string
+          is_athlete: boolean | null
+          is_club: boolean | null
           name: string | null
+          nationality: string | null
+          naturalness: string | null
+          numero_registro_federativo: string | null
+          observacoes: string | null
           phone: string | null
+          photo_url: string | null
+          rg: string | null
           role: string | null
           status: string | null
           telefone_whatsapp: string | null
+          tipo_usuario: string | null
         }
         Insert: {
+          address?: string | null
           autoriza_whatsapp?: boolean | null
+          birth_date?: string | null
+          club_id?: string | null
           cpf_cnpj?: string | null
           created_at?: string | null
           document?: string | null
+          documento_identidade?: string | null
           email?: string | null
           financial_status?: string | null
+          gender?: string | null
           id: string
+          is_athlete?: boolean | null
+          is_club?: boolean | null
           name?: string | null
+          nationality?: string | null
+          naturalness?: string | null
+          numero_registro_federativo?: string | null
+          observacoes?: string | null
           phone?: string | null
+          photo_url?: string | null
+          rg?: string | null
           role?: string | null
           status?: string | null
           telefone_whatsapp?: string | null
+          tipo_usuario?: string | null
         }
         Update: {
+          address?: string | null
           autoriza_whatsapp?: boolean | null
+          birth_date?: string | null
+          club_id?: string | null
           cpf_cnpj?: string | null
           created_at?: string | null
           document?: string | null
+          documento_identidade?: string | null
           email?: string | null
           financial_status?: string | null
+          gender?: string | null
           id?: string
+          is_athlete?: boolean | null
+          is_club?: boolean | null
           name?: string | null
+          nationality?: string | null
+          naturalness?: string | null
+          numero_registro_federativo?: string | null
+          observacoes?: string | null
           phone?: string | null
+          photo_url?: string | null
+          rg?: string | null
           role?: string | null
           status?: string | null
           telefone_whatsapp?: string | null
+          tipo_usuario?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'profiles_club_id_fkey'
+            columns: ['club_id']
+            isOneToOne: false
+            referencedRelation: 'clubs'
+            referencedColumns: ['id']
+          },
+        ]
       }
       rankings: {
         Row: {
@@ -2687,17 +2774,24 @@ export const Constants = {
 //   last_started_at: timestamp with time zone (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
+//   link_pagamento: text (nullable)
+//   whatsapp_enviado: boolean (nullable, default: false)
 // Table: athlete_attribute_values
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (nullable)
 //   attribute_id: uuid (nullable)
 //   valor: text (nullable)
 //   data_registro: timestamp with time zone (not null, default: now())
+//   athlete_id: uuid (nullable)
+//   observacoes: text (nullable)
+//   avaliador_id: uuid (nullable)
 // Table: athlete_attributes
 //   id: uuid (not null, default: gen_random_uuid())
 //   nome: text (nullable)
 //   tipo_dado: text (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
+//   ativo: boolean (nullable, default: true)
+//   unidade_medida: text (nullable)
 // Table: athlete_categories
 //   id: uuid (not null, default: gen_random_uuid())
 //   athlete_id: uuid (nullable)
@@ -3122,6 +3216,9 @@ export const Constants = {
 //   stock: integer (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
 //   rating: numeric (nullable, default: 5.0)
+//   subcategory: text (nullable)
+//   sku: text (nullable)
+//   dimensions: text (nullable)
 // Table: profiles
 //   id: uuid (not null)
 //   email: text (nullable)
@@ -3135,6 +3232,20 @@ export const Constants = {
 //   cpf_cnpj: text (nullable)
 //   autoriza_whatsapp: boolean (nullable, default: false)
 //   telefone_whatsapp: text (nullable)
+//   birth_date: date (nullable)
+//   gender: text (nullable)
+//   address: text (nullable)
+//   nationality: text (nullable)
+//   naturalness: text (nullable)
+//   rg: text (nullable)
+//   documento_identidade: text (nullable)
+//   observacoes: text (nullable)
+//   tipo_usuario: text (nullable)
+//   is_athlete: boolean (nullable, default: false)
+//   is_club: boolean (nullable, default: false)
+//   photo_url: text (nullable)
+//   numero_registro_federativo: text (nullable)
+//   club_id: uuid (nullable)
 // Table: rankings
 //   id: uuid (not null, default: gen_random_uuid())
 //   athlete_id: uuid (nullable)
@@ -3297,7 +3408,9 @@ export const Constants = {
 // Table: appointments
 //   PRIMARY KEY appointments_pkey: PRIMARY KEY (id)
 // Table: athlete_attribute_values
+//   FOREIGN KEY athlete_attribute_values_athlete_id_fkey: FOREIGN KEY (athlete_id) REFERENCES athletes(id) ON DELETE CASCADE
 //   FOREIGN KEY athlete_attribute_values_attribute_id_fkey: FOREIGN KEY (attribute_id) REFERENCES athlete_attributes(id) ON DELETE CASCADE
+//   FOREIGN KEY athlete_attribute_values_avaliador_id_fkey: FOREIGN KEY (avaliador_id) REFERENCES auth.users(id) ON DELETE SET NULL
 //   PRIMARY KEY athlete_attribute_values_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY athlete_attribute_values_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: athlete_attributes
@@ -3436,6 +3549,7 @@ export const Constants = {
 // Table: products
 //   PRIMARY KEY products_pkey: PRIMARY KEY (id)
 // Table: profiles
+//   FOREIGN KEY profiles_club_id_fkey: FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE SET NULL
 //   FOREIGN KEY profiles_id_fkey: FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
 //   PRIMARY KEY profiles_pkey: PRIMARY KEY (id)
 // Table: rankings
@@ -3513,6 +3627,10 @@ export const Constants = {
 //   Policy "Enable read access for all users" (SELECT, PERMISSIVE) roles={public}
 //     USING: true
 //   Policy "Enable update for authenticated users" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: audit_logs
+//   Policy "audit_logs_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
 // Table: billing_configuration
@@ -3846,13 +3964,6 @@ export const Constants = {
 //   Policy "whatsapp_templates_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
-
-// --- WARNING: TABLES WITH RLS ENABLED BUT NO POLICIES ---
-// These tables have Row Level Security enabled but NO policies defined.
-// This means ALL queries (SELECT, INSERT, UPDATE, DELETE) will return ZERO rows
-// for non-superuser roles (including the anon and authenticated roles used by the app).
-// You MUST create RLS policies for these tables to allow data access.
-//   - audit_logs
 
 // --- DATABASE FUNCTIONS ---
 // FUNCTION audit_trigger_func()

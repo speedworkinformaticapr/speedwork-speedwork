@@ -170,9 +170,9 @@ export function Navbar() {
                   href={systemData.integrations.instagram}
                   target="_blank"
                   rel="noreferrer"
-                  className="hover:text-white/80"
+                  className="hover:text-white/80 transition-colors"
                 >
-                  <Instagram className="w-3.5 h-3.5" />
+                  <Instagram className="w-4 h-4" />
                 </a>
               )}
               {systemData?.integrations?.facebook && (
@@ -180,9 +180,9 @@ export function Navbar() {
                   href={systemData.integrations.facebook}
                   target="_blank"
                   rel="noreferrer"
-                  className="hover:text-white/80"
+                  className="hover:text-white/80 transition-colors"
                 >
-                  <Facebook className="w-3.5 h-3.5" />
+                  <Facebook className="w-4 h-4" />
                 </a>
               )}
               {systemData?.integrations?.youtube && (
@@ -190,14 +190,11 @@ export function Navbar() {
                   href={systemData.integrations.youtube}
                   target="_blank"
                   rel="noreferrer"
-                  className="hover:text-white/80"
+                  className="hover:text-white/80 transition-colors"
                 >
-                  <Youtube className="w-3.5 h-3.5" />
+                  <Youtube className="w-4 h-4" />
                 </a>
               )}
-              <span className="uppercase border-l border-white/20 pl-4 ml-2">
-                {systemData.slogan || 'Bem-vindo ao Footgolf PR'}
-              </span>
             </div>
           </div>
         </div>
@@ -212,20 +209,22 @@ export function Navbar() {
               className="w-auto object-contain transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-[#1B7D3A] flex items-center justify-center text-white transition-transform duration-500 group-hover:rotate-12 shadow-lg shadow-[#1B7D3A]/20 shrink-0">
-              <Dribbble className="w-6 h-6" />
-            </div>
+            <>
+              <div className="w-10 h-10 rounded-full bg-[#1B7D3A] flex items-center justify-center text-white transition-transform duration-500 group-hover:rotate-12 shadow-lg shadow-[#1B7D3A]/20 shrink-0">
+                <Dribbble className="w-6 h-6" />
+              </div>
+              <div className="flex flex-col justify-center">
+                <span className="font-montserrat font-black text-xl md:text-2xl tracking-tight text-foreground leading-none uppercase">
+                  {systemData?.platform_name || 'FOOTGOLF PR'}
+                </span>
+                {systemData?.razao_social && (
+                  <span className="text-[9px] md:text-[10px] text-muted-foreground font-semibold tracking-widest mt-1 leading-none truncate max-w-[150px] md:max-w-[200px]">
+                    {systemData.razao_social}
+                  </span>
+                )}
+              </div>
+            </>
           )}
-          <div className="flex flex-col justify-center">
-            <span className="font-montserrat font-black text-xl md:text-2xl tracking-tight text-foreground leading-none uppercase">
-              {systemData?.platform_name || 'FOOTGOLF PR'}
-            </span>
-            {systemData?.razao_social && (
-              <span className="text-[9px] md:text-[10px] text-muted-foreground font-semibold tracking-widest mt-1 leading-none truncate max-w-[150px] md:max-w-[200px]">
-                {systemData.razao_social}
-              </span>
-            )}
-          </div>
         </Link>
 
         {/* Desktop Nav */}
@@ -372,20 +371,22 @@ export function Navbar() {
                         className="w-auto object-contain transition-transform duration-500 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-xl bg-[#1B7D3A] flex items-center justify-center text-white shadow-lg shadow-[#1B7D3A]/20 shrink-0">
-                        <Dribbble className="w-5 h-5" />
-                      </div>
+                      <>
+                        <div className="w-8 h-8 rounded-xl bg-[#1B7D3A] flex items-center justify-center text-white shadow-lg shadow-[#1B7D3A]/20 shrink-0">
+                          <Dribbble className="w-5 h-5" />
+                        </div>
+                        <div className="flex flex-col justify-center">
+                          <span className="font-montserrat font-black text-lg tracking-tight text-foreground leading-none uppercase">
+                            {systemData?.platform_name || 'FOOTGOLF PR'}
+                          </span>
+                          {systemData?.razao_social && (
+                            <span className="text-[9px] text-muted-foreground font-semibold tracking-widest mt-1 leading-none truncate max-w-[140px]">
+                              {systemData.razao_social}
+                            </span>
+                          )}
+                        </div>
+                      </>
                     )}
-                    <div className="flex flex-col justify-center">
-                      <span className="font-montserrat font-black text-lg tracking-tight text-foreground leading-none uppercase">
-                        {systemData?.platform_name || 'FOOTGOLF PR'}
-                      </span>
-                      {systemData?.razao_social && (
-                        <span className="text-[9px] text-muted-foreground font-semibold tracking-widest mt-1 leading-none truncate max-w-[140px]">
-                          {systemData.razao_social}
-                        </span>
-                      )}
-                    </div>
                   </Link>
                   <LanguageSwitcher />
                 </div>
