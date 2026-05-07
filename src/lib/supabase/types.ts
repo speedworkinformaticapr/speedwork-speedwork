@@ -1617,6 +1617,7 @@ export type Database = {
           meta_keywords: string | null
           meta_title: string | null
           slug: string
+          submenus: Json | null
           title: string
           updated_at: string
         }
@@ -1630,6 +1631,7 @@ export type Database = {
           meta_keywords?: string | null
           meta_title?: string | null
           slug: string
+          submenus?: Json | null
           title: string
           updated_at?: string
         }
@@ -1643,6 +1645,7 @@ export type Database = {
           meta_keywords?: string | null
           meta_title?: string | null
           slug?: string
+          submenus?: Json | null
           title?: string
           updated_at?: string
         }
@@ -3063,6 +3066,7 @@ export const Constants = {
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
 //   display_order: integer (not null, default: 0)
+//   submenus: jsonb (nullable, default: '[]'::jsonb)
 // Table: pedido_itens
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (nullable, default: auth.uid())

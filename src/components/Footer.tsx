@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { useTranslation } from '@/hooks/use-translation'
 import { useSystemData } from '@/hooks/use-system-data'
+import { useAuth } from '@/hooks/use-auth'
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,7 @@ export function Footer() {
   const { toast } = useToast()
   const { t } = useTranslation()
   const { data: systemData } = useSystemData()
+  const { user } = useAuth()
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault()
@@ -37,13 +39,21 @@ export function Footer() {
       )
     }
 
+    const userName = user?.user_metadata?.name || user?.email || 'Usuário'
+    const companyName = systemData?.platform_name || systemData?.razao_social || 'FootgolfPR'
+    const companyEmail = systemData?.email || 'contato@footgolfpr.com.br'
+    const companyCnpj = systemData?.cnpj || '00.000.000/0000-00'
+    const currentDate = new Date().toLocaleDateString('pt-BR')
+
     const parsedContent = content
-      .replace(
-        /{{company_name}}/g,
-        systemData?.platform_name || systemData?.razao_social || 'FootgolfPR',
-      )
-      .replace(/{{company_email}}/g, systemData?.email || 'contato@footgolfpr.com.br')
-      .replace(/{{company_cnpj}}/g, systemData?.cnpj || '00.000.000/0000-00')
+      .replace(/{{company_name}}/gi, companyName)
+      .replace(/{{empresa_nome}}/gi, companyName)
+      .replace(/{{company_email}}/gi, companyEmail)
+      .replace(/{{empresa_email}}/gi, companyEmail)
+      .replace(/{{company_cnpj}}/gi, companyCnpj)
+      .replace(/{{empresa_cnpj}}/gi, companyCnpj)
+      .replace(/{{cliente_nome}}/gi, userName)
+      .replace(/{{data_atual}}/gi, currentDate)
       .replace(/\n/g, '<br>')
 
     return (
