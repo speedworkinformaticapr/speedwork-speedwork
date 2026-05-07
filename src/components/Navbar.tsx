@@ -228,9 +228,60 @@ export function Navbar() {
         </Link>
 
         {/* Desktop Nav */}
+        <nav className="hidden lg:flex items-center justify-center flex-1 px-4 gap-1">
+          {ALL_LINKS.map((link, index) => (
+            <div key={`desktop-nav-${index}`} className="relative group">
+              <Button
+                asChild
+                variant="ghost"
+                className={cn(
+                  'font-bold uppercase tracking-wider text-xs px-3 h-10 transition-colors',
+                  location.pathname === link.path
+                    ? 'bg-[#1B7D3A]/10 text-[#1B7D3A]'
+                    : 'hover:bg-muted/80 text-foreground',
+                )}
+              >
+                <Link to={link.path}>
+                  <link.icon className="w-4 h-4 mr-2" />
+                  {link.isDynamic ? link.label : link.key ? t(link.key) : link.label}
+                </Link>
+              </Button>
+              {link.submenus && link.submenus.length > 0 && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-background border border-border/50 shadow-xl rounded-xl p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  {link.submenus.map((sub: any, i: number) =>
+                    sub.url.startsWith('http') ? (
+                      <a
+                        key={`sub-${i}`}
+                        href={sub.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block px-3 py-2 text-sm font-medium text-muted-foreground hover:text-[#1B7D3A] hover:bg-[#1B7D3A]/5 rounded-md transition-colors"
+                      >
+                        {sub.label}
+                      </a>
+                    ) : (
+                      <Link
+                        key={`sub-${i}`}
+                        to={sub.url}
+                        className={cn(
+                          'block px-3 py-2 text-sm font-medium rounded-md transition-colors',
+                          location.pathname === sub.url
+                            ? 'text-[#1B7D3A] bg-[#1B7D3A]/5'
+                            : 'text-muted-foreground hover:text-[#1B7D3A] hover:bg-[#1B7D3A]/5',
+                        )}
+                      >
+                        {sub.label}
+                      </Link>
+                    ),
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </nav>
 
         {/* Desktop Right */}
-        <div className="hidden lg:flex items-center gap-3">
+        <div className="hidden lg:flex items-center gap-3 shrink-0">
           <LanguageSwitcher />
           {user ? (
             <div className="flex items-center gap-2 pl-2 border-l border-border/50">
