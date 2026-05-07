@@ -50,12 +50,12 @@ export default function AdminAthleteEvaluations() {
         .from('athlete_attribute_values')
         .select(`
         *,
-        athlete_attributes(name, unidade_medida),
+        athlete_attributes(nome, unidade_medida),
         athletes(name)
       `)
         .order('data_registro', { ascending: false }),
-      supabase.from('athlete_attributes').select('id, name').eq('ativo', true).order('name'),
-      supabase.from('athletes').select('id, name').order('name'),
+      supabase.from('athlete_attributes').select('id, nome').eq('ativo', true).order('nome'),
+      supabase.from('athletes').select('id, name, user_id').order('name'),
     ])
 
     if (evalsRes.error) {
@@ -82,8 +82,10 @@ export default function AdminAthleteEvaluations() {
 
   const handleSave = async () => {
     try {
+      const selectedAthlete = athletes.find((a) => a.id === formData.athlete_id)
       const payload = {
         ...formData,
+        user_id: selectedAthlete?.user_id || null,
         avaliador_id: user?.id,
       }
 
@@ -192,7 +194,7 @@ export default function AdminAthleteEvaluations() {
                   <TableCell className="font-medium">
                     {ev.athletes?.name || 'Desconhecido'}
                   </TableCell>
-                  <TableCell>{ev.athlete_attributes?.name || 'Desconhecido'}</TableCell>
+                  <TableCell>{ev.athlete_attributes?.nome || 'Desconhecido'}</TableCell>
                   <TableCell>
                     {ev.valor} {ev.athlete_attributes?.unidade_medida || ''}
                   </TableCell>
@@ -248,7 +250,7 @@ export default function AdminAthleteEvaluations() {
                 <SelectContent>
                   {attributes.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
-                      {a.name}
+                      {a.nome}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -61,6 +61,20 @@ export default function AdminEcommerceProducts() {
   const [page, setPage] = useState(1)
   const [itemToDelete, setItemToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+
+  const [formData, setFormData] = useState({
+    name: '',
+    category: '',
+    subcategory: '',
+    price: '',
+    stock: '',
+    sku: '',
+    dimensions: '',
+    image_url: '',
+  })
 
   const { data: systemData } = useSystemData()
   const itemsPerPage = systemData?.records_per_page || 50
@@ -142,6 +156,75 @@ export default function AdminEcommerceProducts() {
     }
   }
 
+  const handleOpenModal = (product?: any) => {
+    if (product) {
+      setEditingId(product.id)
+      setFormData({
+        name: product.name || '',
+        category: product.category || '',
+        subcategory: product.subcategory || '',
+        price: product.price?.toString() || '',
+        stock: product.stock?.toString() || '',
+        sku: product.sku || '',
+        dimensions: product.dimensions || '',
+        image_url: product.image_url || '',
+      })
+    } else {
+      setEditingId(null)
+      setFormData({
+        name: '',
+        category: '',
+        subcategory: '',
+        price: '',
+        stock: '',
+        sku: '',
+        dimensions: '',
+        image_url: '',
+      })
+    }
+    setIsModalOpen(true)
+  }
+
+  const handleSaveProduct = async () => {
+    if (!formData.name || !formData.price) {
+      toast({
+        title: 'Atenção',
+        description: 'Nome e Preço são obrigatórios.',
+        variant: 'destructive',
+      })
+      return
+    }
+    setIsSaving(true)
+    try {
+      const payload = {
+        name: formData.name,
+        category: formData.category,
+        subcategory: formData.subcategory,
+        price: parseFloat(formData.price) || 0,
+        stock: parseInt(formData.stock) || 0,
+        sku: formData.sku,
+        dimensions: formData.dimensions,
+        image_url: formData.image_url,
+      }
+
+      if (editingId) {
+        const { error } = await supabase.from('products').update(payload).eq('id', editingId)
+        if (error) throw error
+        toast({ title: 'Sucesso', description: 'Produto atualizado com sucesso!' })
+      } else {
+        const { error } = await supabase.from('products').insert([payload])
+        if (error) throw error
+        toast({ title: 'Sucesso', description: 'Produto cadastrado com sucesso!' })
+      }
+      setIsModalOpen(false)
+      fetchProducts()
+    } catch (err: any) {
+      toast({ title: 'Erro ao salvar', description: err.message, variant: 'destructive' })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   return (
     <div className="p-6 space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -149,24 +232,29 @@ export default function AdminEcommerceProducts() {
           <h1 className="text-3xl font-bold tracking-tight">Produtos do E-commerce</h1>
           <p className="text-muted-foreground">Gerencie o inventário e os detalhes de venda.</p>
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" /> Novo Produto
-            </Button>
-          </DialogTrigger>
+        <Button onClick={() => handleOpenModal()}>
+          <Plus className="w-4 h-4 mr-2" /> Novo Produto
+        </Button>
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Cadastrar Novo Produto</DialogTitle>
+              <DialogTitle>{editingId ? 'Editar Produto' : 'Cadastrar Novo Produto'}</DialogTitle>
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
               <div className="space-y-2 md:col-span-2">
                 <Label>Nome do Produto</Label>
-                <Input placeholder="Ex: Bola Oficial Footgolf Pro" />
+                <Input
+                  placeholder="Ex: Bola Oficial Footgolf Pro"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Grupo Principal</Label>
-                <Select>
+                <Select
+                  value={formData.category}
+                  onValueChange={(val) => setFormData({ ...formData, category: val })}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione..." />
                   </SelectTrigger>
@@ -178,46 +266,61 @@ export default function AdminEcommerceProducts() {
               </div>
               <div className="space-y-2">
                 <Label>Subgrupo</Label>
-                <Input placeholder="Ex: Bolas" />
+                <Input
+                  placeholder="Ex: Bolas"
+                  value={formData.subcategory}
+                  onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Preço de Venda (R$)</Label>
-                <Input type="number" placeholder="0.00" />
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Estoque Inicial</Label>
-                <Input type="number" placeholder="0" />
+                <Input
+                  type="number"
+                  placeholder="0"
+                  value={formData.stock}
+                  onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Código SKU</Label>
-                <Input placeholder="Ex: BOLA-PRO-01" />
+                <Input
+                  placeholder="Ex: BOLA-PRO-01"
+                  value={formData.sku}
+                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Peso e Dimensões (Frete)</Label>
-                <Input placeholder="Ex: 0.5kg - 20x20x20cm" />
+                <Input
+                  placeholder="Ex: 0.5kg - 20x20x20cm"
+                  value={formData.dimensions}
+                  onChange={(e) => setFormData({ ...formData, dimensions: e.target.value })}
+                />
               </div>
               <div className="space-y-2 md:col-span-2">
-                <Label>Imagens (Upload Múltiplo)</Label>
-                <div className="border-2 border-dashed rounded-lg p-8 text-center text-muted-foreground hover:bg-muted/50 cursor-pointer">
-                  Arraste as imagens aqui ou clique para buscar
-                </div>
+                <Label>URL da Imagem</Label>
+                <Input
+                  placeholder="https://..."
+                  value={formData.image_url}
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                />
               </div>
               <Button
                 className="md:col-span-2 mt-2"
-                onClick={() => {
-                  try {
-                    // Aqui seria feita a validação e integração com o Supabase
-                    toast({ title: 'Sucesso', description: 'Produto salvo com sucesso.' })
-                  } catch (err: any) {
-                    toast({
-                      title: 'Erro ao salvar',
-                      description: err.message || 'Erro inesperado.',
-                      variant: 'destructive',
-                    })
-                  }
-                }}
+                onClick={handleSaveProduct}
+                disabled={isSaving}
               >
-                Publicar Produto
+                {isSaving ? 'Salvando...' : 'Publicar Produto'}
               </Button>
             </div>
           </DialogContent>
@@ -293,7 +396,7 @@ export default function AdminEcommerceProducts() {
                       <Switch checked={true} />
                     </TableCell>
                     <TableCell className="text-right space-x-1">
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenModal(product)}>
                         <Edit className="w-4 h-4 text-blue-500" />
                       </Button>
                       <Button variant="ghost" size="icon" onClick={() => handleDelete(product.id)}>
