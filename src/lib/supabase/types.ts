@@ -1323,6 +1323,7 @@ export type Database = {
           description: string | null
           file_name: string
           id: string
+          name: string | null
           tags: string[] | null
           title: string | null
           type: string
@@ -1333,6 +1334,7 @@ export type Database = {
           description?: string | null
           file_name: string
           id?: string
+          name?: string | null
           tags?: string[] | null
           title?: string | null
           type: string
@@ -1343,6 +1345,7 @@ export type Database = {
           description?: string | null
           file_name?: string
           id?: string
+          name?: string | null
           tags?: string[] | null
           title?: string | null
           type?: string
@@ -3088,6 +3091,7 @@ export const Constants = {
 //   description: text (nullable)
 //   tags: _text (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
+//   name: text (nullable)
 // Table: notifications
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (not null)

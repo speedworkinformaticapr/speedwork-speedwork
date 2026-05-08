@@ -61,11 +61,26 @@ export default function AdminBlogList() {
 
   const loadPosts = async () => {
     setLoading(true)
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('blog_posts')
-      .select('*, author:profiles(name)')
+      .select('*')
       .order('created_at', { ascending: false })
-    setPosts(data || [])
+
+    if (data) {
+      const authorIds = Array.from(new Set(data.map((p) => p.author_id).filter(Boolean)))
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', authorIds)
+
+      const postsWithAuthors = data.map((post) => ({
+        ...post,
+        author: profiles?.find((p) => p.id === post.author_id) || null,
+      }))
+      setPosts(postsWithAuthors)
+    } else {
+      setPosts([])
+    }
     setLoading(false)
   }
 

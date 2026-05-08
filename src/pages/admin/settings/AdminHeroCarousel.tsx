@@ -414,11 +414,18 @@ export default function AdminHeroCarousel() {
                       </div>
                     </>
                   ) : (
-                    <img src={item.url} alt={item.name} className="w-full h-full object-cover" />
+                    <img
+                      src={item.url}
+                      alt={item.name || item.title || 'Mídia'}
+                      className="w-full h-full object-cover"
+                    />
                   )}
                   <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2 transform translate-y-full group-hover:translate-y-0 transition-transform">
-                    <p className="text-xs text-white truncate" title={item.name}>
-                      {item.name}
+                    <p
+                      className="text-xs text-white truncate"
+                      title={item.name || item.title || item.file_name}
+                    >
+                      {item.name || item.title || item.file_name}
                     </p>
                   </div>
                 </div>

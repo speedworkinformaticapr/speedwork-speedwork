@@ -239,8 +239,11 @@ export default function AdminMedia() {
                     </div>
                   </div>
                   <div className="p-2 bg-card text-xs">
-                    <p className="font-semibold truncate" title={item.title}>
-                      {item.title}
+                    <p
+                      className="font-semibold truncate"
+                      title={item.name || item.title || item.file_name}
+                    >
+                      {item.name || item.title || item.file_name}
                     </p>
                     <p className="text-muted-foreground truncate" title={item.file_name}>
                       {item.file_name}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Save, ArrowLeft } from 'lucide-react'
+import { Save, ArrowLeft, Image as ImageIcon, Library } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -13,8 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase/client'
+import { getMedia, type MediaItem } from '@/services/media'
 
 export default function AdminBlogForm() {
   const { id } = useParams()
@@ -62,6 +64,27 @@ export default function AdminBlogForm() {
   }, [id])
 
   const [isSaving, setIsSaving] = useState(false)
+  const [isMediaSelectorOpen, setIsMediaSelectorOpen] = useState(false)
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
+  const [loadingMedia, setLoadingMedia] = useState(false)
+
+  const handleOpenMediaSelector = async () => {
+    setLoadingMedia(true)
+    setIsMediaSelectorOpen(true)
+    try {
+      const items = await getMedia('image')
+      setMediaItems(items)
+    } catch (error) {
+      toast({ title: 'Erro', description: 'Erro ao carregar mídias', variant: 'destructive' })
+    } finally {
+      setLoadingMedia(false)
+    }
+  }
+
+  const handleSelectMedia = (item: MediaItem) => {
+    setPost({ ...post, image_url: item.url })
+    setIsMediaSelectorOpen(false)
+  }
 
   const save = async () => {
     if (!post.title) {
@@ -196,12 +219,24 @@ export default function AdminBlogForm() {
               />
             </div>
             <div className="space-y-2">
-              <Label>URL da Imagem de Destaque</Label>
-              <Input
-                value={post.image_url}
-                onChange={(e) => setPost({ ...post, image_url: e.target.value })}
-                placeholder="https://..."
-              />
+              <Label>Imagem de Destaque</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={post.image_url}
+                  onChange={(e) => setPost({ ...post, image_url: e.target.value })}
+                  placeholder="https://..."
+                  className="flex-1"
+                />
+                <Button type="button" variant="outline" onClick={handleOpenMediaSelector}>
+                  <Library className="h-4 w-4 mr-2" />
+                  Biblioteca
+                </Button>
+              </div>
+              {post.image_url && (
+                <div className="mt-2 rounded-lg border overflow-hidden w-full max-w-xs">
+                  <img src={post.image_url} alt="Destaque" className="w-full h-auto object-cover" />
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Data/Hora Publicação</Label>
@@ -233,6 +268,48 @@ export default function AdminBlogForm() {
           </div>
         </div>
       </div>
+
+      <Dialog open={isMediaSelectorOpen} onOpenChange={setIsMediaSelectorOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Selecionar Imagem da Biblioteca</DialogTitle>
+          </DialogHeader>
+          {loadingMedia ? (
+            <div className="flex justify-center p-12">
+              <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4">
+              {mediaItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="group relative border rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all aspect-video bg-muted flex items-center justify-center"
+                  onClick={() => handleSelectMedia(item)}
+                >
+                  <img
+                    src={item.url}
+                    alt={item.name || item.title || item.file_name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2 transform translate-y-full group-hover:translate-y-0 transition-transform">
+                    <p
+                      className="text-xs text-white truncate"
+                      title={item.name || item.title || item.file_name}
+                    >
+                      {item.name || item.title || item.file_name}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {mediaItems.length === 0 && (
+                <div className="col-span-full text-center p-12 text-muted-foreground border-2 border-dashed rounded-lg">
+                  Nenhuma imagem encontrada na biblioteca.
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
