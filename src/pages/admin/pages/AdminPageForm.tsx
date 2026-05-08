@@ -432,19 +432,20 @@ export default function AdminPageForm() {
                         </SelectTrigger>
                         <SelectContent>
                           {[
-                            'Hero',
-                            'CTA',
-                            'FAQ',
-                            'Cards',
-                            'Depoimentos',
-                            'Contadores',
-                            'Carrossel',
-                            'Banners',
-                            'Equipe',
-                            'Texto',
+                            { value: 'hero_page', label: 'Hero Page (Sobre/Cabeçalho)' },
+                            { value: 'split_content', label: 'Texto e Imagem (História)' },
+                            {
+                              value: 'features_grid',
+                              label: 'Grid de Cards (Missão/Visão/Valores)',
+                            },
+                            { value: 'text', label: 'Texto Simples (Rich Text)' },
+                            { value: 'image', label: 'Imagem Simples' },
+                            { value: 'video', label: 'Vídeo' },
+                            { value: 'gallery', label: 'Galeria' },
+                            { value: 'cta', label: 'Chamada para Ação (CTA)' },
                           ].map((t) => (
-                            <SelectItem key={t.toLowerCase()} value={t.toLowerCase()}>
-                              {t}
+                            <SelectItem key={t.value} value={t.value}>
+                              {t.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
