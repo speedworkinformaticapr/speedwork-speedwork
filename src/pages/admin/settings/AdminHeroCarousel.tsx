@@ -48,19 +48,22 @@ export default function AdminHeroCarousel() {
 
   const defaultForm = {
     title: '',
-    subtitle: '',
+    description: '',
     media_type: 'image',
-    image_url: '',
+    media_url: '',
     link_url: '',
     button_text: '',
-    order_index: 0,
-    is_active: true,
+    display_order: 0,
+    is_published: true,
   }
   const [form, setForm] = useState(defaultForm)
 
   const fetchSlides = async () => {
     setLoading(true)
-    const { data } = await supabase.from('hero_carousel').select('*').order('order_index')
+    const { data, error } = await supabase.from('hero_carousel').select('*').order('display_order')
+    if (error) {
+      toast.error('Erro ao carregar os slides.')
+    }
     setSlides(data || [])
     setLoading(false)
   }
@@ -76,23 +79,46 @@ export default function AdminHeroCarousel() {
   }
 
   const handleSave = async () => {
-    if (!form.image_url) return toast.error('A URL da mídia é obrigatória.')
+    if (!form.media_url) return toast.error('A URL da mídia é obrigatória.')
     setLoading(true)
     try {
       if (editingSlide) {
-        await supabase
+        const { error } = await supabase
           .from('hero_carousel')
-          .update({ ...form, updated_at: new Date().toISOString() })
+          .update({
+            title: form.title,
+            description: form.description,
+            media_type: form.media_type,
+            media_url: form.media_url,
+            link_url: form.link_url,
+            button_text: form.button_text,
+            display_order: form.display_order,
+            is_published: form.is_published,
+            updated_at: new Date().toISOString(),
+          })
           .eq('id', editingSlide.id)
+        if (error) throw error
         toast.success('Slide atualizado com sucesso!')
       } else {
-        await supabase.from('hero_carousel').insert([form])
+        const { error } = await supabase.from('hero_carousel').insert([
+          {
+            title: form.title,
+            description: form.description,
+            media_type: form.media_type,
+            media_url: form.media_url,
+            link_url: form.link_url,
+            button_text: form.button_text,
+            display_order: form.display_order,
+            is_published: form.is_published,
+          },
+        ])
+        if (error) throw error
         toast.success('Slide criado com sucesso!')
       }
       setIsModalOpen(false)
       fetchSlides()
-    } catch (error) {
-      toast.error('Erro ao salvar slide.')
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao salvar slide.')
     } finally {
       setLoading(false)
     }
@@ -115,9 +141,9 @@ export default function AdminHeroCarousel() {
     if (!file) return
     setUploading(true)
     try {
-      const mediaItem = await uploadMedia(file)
+      const mediaItem = await uploadMedia(file, { name: file.name, title: file.name })
       const isVideo = file.type.startsWith('video/')
-      setForm({ ...form, image_url: mediaItem.url, media_type: isVideo ? 'local_video' : 'image' })
+      setForm({ ...form, media_url: mediaItem.url, media_type: isVideo ? 'local_video' : 'image' })
       toast.success('Arquivo enviado com sucesso!')
     } catch (error: any) {
       toast.error(error.message || 'Erro ao enviar arquivo')
@@ -143,7 +169,7 @@ export default function AdminHeroCarousel() {
     const isVideo = item.type.startsWith('video/')
     setForm({
       ...form,
-      image_url: item.url,
+      media_url: item.url,
       media_type: isVideo ? 'local_video' : 'image',
     })
     setIsMediaSelectorOpen(false)
@@ -184,17 +210,17 @@ export default function AdminHeroCarousel() {
             ) : (
               slides.map((slide) => (
                 <TableRow key={slide.id}>
-                  <TableCell>{slide.order_index}</TableCell>
+                  <TableCell>{slide.display_order}</TableCell>
                   <TableCell>
                     {slide.media_type === 'image' ? (
                       <img
-                        src={slide.image_url}
+                        src={slide.media_url}
                         alt="Preview"
                         className="w-20 h-12 object-cover rounded shadow-sm"
                       />
                     ) : slide.media_type === 'local_video' ? (
                       <video
-                        src={slide.image_url}
+                        src={slide.media_url}
                         className="w-20 h-12 object-cover rounded shadow-sm"
                         muted
                       />
@@ -207,9 +233,9 @@ export default function AdminHeroCarousel() {
                   <TableCell className="font-medium">{slide.title || 'Sem título'}</TableCell>
                   <TableCell>
                     <span
-                      className={`px-2 py-1 text-xs rounded-full ${slide.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}
+                      className={`px-2 py-1 text-xs rounded-full ${slide.is_published ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}
                     >
-                      {slide.is_active ? 'Ativo' : 'Oculto'}
+                      {slide.is_published ? 'Publicado' : 'Oculto'}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
@@ -275,8 +301,8 @@ export default function AdminHeroCarousel() {
               <Label>Ordem de Exibição</Label>
               <Input
                 type="number"
-                value={form.order_index}
-                onChange={(e) => setForm({ ...form, order_index: Number(e.target.value) })}
+                value={form.display_order}
+                onChange={(e) => setForm({ ...form, display_order: Number(e.target.value) })}
               />
             </div>
 
@@ -307,19 +333,19 @@ export default function AdminHeroCarousel() {
                 </div>
                 <Input
                   placeholder="Ou cole a URL..."
-                  value={form.image_url}
-                  onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+                  value={form.media_url}
+                  onChange={(e) => setForm({ ...form, media_url: e.target.value })}
                 />
-                {form.image_url &&
+                {form.media_url &&
                   (form.media_type === 'image' ? (
                     <img
-                      src={form.image_url}
+                      src={form.media_url}
                       alt="Preview"
                       className="h-32 object-cover mx-auto mt-2 rounded"
                     />
                   ) : (
                     <video
-                      src={form.image_url}
+                      src={form.media_url}
                       className="h-32 object-cover mx-auto mt-2 rounded"
                       controls
                     />
@@ -330,8 +356,8 @@ export default function AdminHeroCarousel() {
                 <Label>URL do Vídeo ({form.media_type === 'youtube' ? 'YouTube' : 'Vimeo'})</Label>
                 <Input
                   placeholder="https://..."
-                  value={form.image_url}
-                  onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+                  value={form.media_url}
+                  onChange={(e) => setForm({ ...form, media_url: e.target.value })}
                 />
               </div>
             )}
@@ -339,22 +365,22 @@ export default function AdminHeroCarousel() {
             <div className="col-span-2 space-y-2">
               <Label>Título</Label>
               <Input
-                value={form.title}
+                value={form.title || ''}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
               />
             </div>
             <div className="col-span-2 space-y-2">
-              <Label>Subtítulo</Label>
+              <Label>Descrição (Subtítulo)</Label>
               <Input
-                value={form.subtitle || ''}
-                onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
+                value={form.description || ''}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
               />
             </div>
             <div className="col-span-2 md:col-span-1 space-y-2">
               <Label>Texto do Botão</Label>
               <Input
                 placeholder="Ex: Saiba Mais"
-                value={form.button_text}
+                value={form.button_text || ''}
                 onChange={(e) => setForm({ ...form, button_text: e.target.value })}
               />
             </div>
@@ -362,7 +388,7 @@ export default function AdminHeroCarousel() {
               <Label>URL do Link</Label>
               <Input
                 placeholder="/tournaments"
-                value={form.link_url}
+                value={form.link_url || ''}
                 onChange={(e) => setForm({ ...form, link_url: e.target.value })}
               />
             </div>
@@ -372,8 +398,8 @@ export default function AdminHeroCarousel() {
                 <p className="text-sm text-muted-foreground">Exibir slide na página inicial</p>
               </div>
               <Switch
-                checked={form.is_active}
-                onCheckedChange={(val) => setForm({ ...form, is_active: val })}
+                checked={form.is_published}
+                onCheckedChange={(val) => setForm({ ...form, is_published: val })}
               />
             </div>
           </div>

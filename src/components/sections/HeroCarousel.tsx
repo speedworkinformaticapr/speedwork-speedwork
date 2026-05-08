@@ -20,8 +20,8 @@ export function HeroCarousel() {
       const { data } = await supabase
         .from('hero_carousel')
         .select('*')
-        .eq('is_active', true)
-        .order('order_index', { ascending: true })
+        .eq('is_published', true)
+        .order('display_order', { ascending: true })
       if (data) setSlides(data)
     }
     fetchSlides()
@@ -51,6 +51,7 @@ export function HeroCarousel() {
   if (!slides || slides.length === 0) return null
 
   const getEmbedUrl = (type: string, url: string) => {
+    if (!url) return ''
     if (type === 'youtube') {
       const videoId = url.match(
         /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&]{11})/,
@@ -71,13 +72,13 @@ export function HeroCarousel() {
           <div key={slide.id} className="relative flex-[0_0_100%] min-w-0 h-[60vh] md:h-[80vh]">
             {slide.media_type === 'image' ? (
               <img
-                src={slide.image_url}
+                src={slide.media_url}
                 alt={slide.title || 'Slide'}
                 className="w-full h-full object-cover"
               />
             ) : slide.media_type === 'local_video' ? (
               <video
-                src={slide.image_url}
+                src={slide.media_url}
                 autoPlay
                 loop
                 muted
@@ -86,7 +87,7 @@ export function HeroCarousel() {
               />
             ) : (
               <iframe
-                src={getEmbedUrl(slide.media_type, slide.image_url)}
+                src={getEmbedUrl(slide.media_type, slide.media_url)}
                 className="w-full h-full object-cover pointer-events-none"
                 allow="autoplay; fullscreen; picture-in-picture"
               />
@@ -98,9 +99,9 @@ export function HeroCarousel() {
                     {slide.title}
                   </h2>
                 )}
-                {slide.subtitle && (
+                {slide.description && (
                   <p className="text-lg md:text-2xl text-white/90 mb-8 drop-shadow-md font-medium">
-                    {slide.subtitle}
+                    {slide.description}
                   </p>
                 )}
                 {slide.button_text && slide.link_url && (
