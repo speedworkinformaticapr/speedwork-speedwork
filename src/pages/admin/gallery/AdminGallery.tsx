@@ -80,8 +80,8 @@ export default function AdminGallery() {
   return (
     <div className="container mx-auto py-12 px-4 max-w-3xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">{t('adminGallery.title')}</h1>
-        <p className="text-gray-600 mt-2">{t('adminGallery.desc')}</p>
+        <h1 className="text-3xl font-bold tracking-tight text-primary">Galeria de Fotos</h1>
+        <p className="text-muted-foreground mt-1">{t('adminGallery.desc')}</p>
       </div>
 
       <Tabs defaultValue="existing" className="w-full">

@@ -262,7 +262,7 @@ export default function AdminFinancialSettings() {
   return (
     <div className="p-6 space-y-6 max-w-[800px] mx-auto w-full">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Regras de Cobrança</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-primary">Regras de Cobrança</h1>
         <p className="text-muted-foreground mt-1">
           Configure a automação de geração e réguas de notificações de cobranças.
         </p>

@@ -179,7 +179,7 @@ export default function AdminServices() {
     <div className="p-6 max-w-6xl mx-auto animate-fade-in-up">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Catálogo de Serviços</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-primary">Catálogo de Serviços</h1>
           <p className="text-muted-foreground mt-1">
             Gerencie os serviços com valor por hora para orçamentos e pedidos.
           </p>

@@ -157,7 +157,7 @@ const navItems = [
       { title: 'Ranking', url: '/admin/ranking', icon: Trophy },
       { title: 'Regras', url: '/admin/rules', icon: Scale },
       { title: 'Scouting de Atletas', url: '/admin/athlete-scouting', icon: Target },
-      { title: 'Serviços', url: '/admin/services', icon: Wrench },
+      { title: 'Catálogo de Serviços', url: '/admin/services', icon: Wrench },
       { title: 'Torneios', url: '/admin/tournaments', icon: Flag },
     ],
   },
