@@ -4188,6 +4188,64 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION sync_profile_to_usuarios()
+//   CREATE OR REPLACE FUNCTION public.sync_profile_to_usuarios()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//   AS $function$
+//   BEGIN
+//     -- Prevent infinite recursion
+//     IF pg_trigger_depth() > 1 THEN
+//       RETURN NEW;
+//     END IF;
+//
+//     IF TG_OP = 'INSERT' THEN
+//       IF NEW.email IS NOT NULL THEN
+//         INSERT INTO public.usuarios (user_id, email, nome, role)
+//         VALUES (NEW.id, NEW.email, NEW.name, NEW.role)
+//         ON CONFLICT (email) DO UPDATE
+//         SET user_id = EXCLUDED.user_id, nome = EXCLUDED.nome, role = EXCLUDED.role;
+//       END IF;
+//     ELSIF TG_OP = 'UPDATE' THEN
+//       IF NEW.email IS NOT NULL THEN
+//         UPDATE public.usuarios
+//         SET email = NEW.email, nome = NEW.name, role = NEW.role
+//         WHERE user_id = NEW.id OR email = OLD.email;
+//       END IF;
+//     END IF;
+//     RETURN NEW;
+//   END;
+//   $function$
+//
+// FUNCTION sync_usuarios_to_profiles()
+//   CREATE OR REPLACE FUNCTION public.sync_usuarios_to_profiles()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//   AS $function$
+//   BEGIN
+//     -- Prevent infinite recursion
+//     IF pg_trigger_depth() > 1 THEN
+//       RETURN NEW;
+//     END IF;
+//
+//     IF TG_OP = 'INSERT' THEN
+//       IF NEW.user_id IS NOT NULL THEN
+//         INSERT INTO public.profiles (id, email, name, role)
+//         VALUES (NEW.user_id, NEW.email, NEW.nome, NEW.role)
+//         ON CONFLICT (id) DO UPDATE
+//         SET email = EXCLUDED.email, name = EXCLUDED.name, role = EXCLUDED.role;
+//       END IF;
+//     ELSIF TG_OP = 'UPDATE' THEN
+//       IF NEW.user_id IS NOT NULL THEN
+//         UPDATE public.profiles
+//         SET email = NEW.email, name = NEW.nome, role = NEW.role
+//         WHERE id = NEW.user_id;
+//       END IF;
+//     END IF;
+//     RETURN NEW;
+//   END;
+//   $function$
+//
 // FUNCTION update_event_participants()
 //   CREATE OR REPLACE FUNCTION public.update_event_participants()
 //    RETURNS trigger
@@ -4242,10 +4300,14 @@ export const Constants = {
 //   trigger_notify_order_payment: CREATE TRIGGER trigger_notify_order_payment AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION notify_order_payment()
 // Table: pedidos
 //   trg_pedido_financeiro_estoque: CREATE TRIGGER trg_pedido_financeiro_estoque AFTER UPDATE ON public.pedidos FOR EACH ROW EXECUTE FUNCTION handle_pedido_financeiro_estoque()
+// Table: profiles
+//   on_profile_sync_usuarios: CREATE TRIGGER on_profile_sync_usuarios AFTER INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION sync_profile_to_usuarios()
 // Table: sections
 //   sections_updated_at_trigger: CREATE TRIGGER sections_updated_at_trigger BEFORE UPDATE ON public.sections FOR EACH ROW EXECUTE FUNCTION update_sections_modtime()
 // Table: system_data
 //   audit_system_data: CREATE TRIGGER audit_system_data AFTER INSERT OR DELETE OR UPDATE ON public.system_data FOR EACH ROW EXECUTE FUNCTION audit_trigger_func()
+// Table: usuarios
+//   on_usuarios_sync_profiles: CREATE TRIGGER on_usuarios_sync_profiles AFTER INSERT OR UPDATE ON public.usuarios FOR EACH ROW EXECUTE FUNCTION sync_usuarios_to_profiles()
 
 // --- INDEXES ---
 // Table: athletes

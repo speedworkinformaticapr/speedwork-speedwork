@@ -3,7 +3,7 @@
     "calculate-athlete-statistics": 1,
     "cron-billing-reminders": 1,
     "cron-billing-trigger": 1,
-    "delete-user-soft": 1,
+    "delete-user-soft": 2,
     "enviar_whatsapp": 1,
     "generate-affiliation-billing": 1,
     "get-athlete-comparison": 1,

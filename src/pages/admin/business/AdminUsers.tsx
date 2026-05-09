@@ -169,7 +169,7 @@ export default function AdminUsers() {
   const itemsPerPage = systemData?.records_per_page || 50
 
   const loadData = async () => {
-    const { data } = await supabase.from('profiles').select('*').is('deleted_at', null)
+    const { data } = await supabase.from('profiles').select('*')
     setUsers(data || [])
   }
 

@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
     // Soft delete profile
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .update({ deleted_at: now, status: 'inactive' })
+      .update({ status: 'inactive' })
       .eq('id', target_user_id)
 
     if (profileError) throw profileError
@@ -61,14 +61,8 @@ Deno.serve(async (req) => {
     // Soft delete athlete
     await supabaseAdmin
       .from('athletes')
-      .update({ deleted_at: now, status: 'inactive' })
-      .eq('profile_id', target_user_id)
-
-    // Soft delete club
-    await supabaseAdmin
-      .from('clubs')
-      .update({ deleted_at: now, status: 'inactive' })
-      .eq('profile_id', target_user_id)
+      .update({ status: 'inactive' })
+      .eq('user_id', target_user_id)
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
