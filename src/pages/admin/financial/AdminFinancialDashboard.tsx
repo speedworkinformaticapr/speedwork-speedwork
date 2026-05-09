@@ -60,7 +60,7 @@ export default function AdminFinancialDashboard() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard Financeiro</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-primary">Dashboard Financeiro</h1>
         <p className="text-muted-foreground">
           Visão consolidada de fluxo de caixa (entradas vs. saídas).
         </p>

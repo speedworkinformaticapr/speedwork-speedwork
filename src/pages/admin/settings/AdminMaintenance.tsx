@@ -119,7 +119,7 @@ export default function AdminMaintenance() {
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-primary">Página de Manutenção</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-primary">Página de Manutenção</h1>
           <p className="text-muted-foreground mt-2">
             Configure a aparência e o conteúdo da página exibida quando o site estiver em
             manutenção.

@@ -77,7 +77,7 @@ export default function AdminAbandonedCarts() {
     <div className="p-6 space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Recuperação de Vendas</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-primary">Recuperação de Vendas</h1>
           <p className="text-muted-foreground">
             Acompanhe carrinhos ativos e recupere oportunidades perdidas.
           </p>

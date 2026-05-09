@@ -121,7 +121,8 @@ const navItems = [
     title: 'Financeiro',
     icon: Wallet,
     items: [
-      { title: 'Controle de Pagamentos', url: '/admin/financial/payments', icon: CreditCard },
+      { title: 'Fluxo de Caixa', url: '/admin/financial/payments', icon: CreditCard },
+      { title: 'Dashboard Financeiro', url: '/admin/financial/dashboard', icon: LineChart },
     ],
   },
   {
@@ -129,11 +130,15 @@ const navItems = [
     icon: ShoppingCart,
     items: [
       {
-        title: 'Carrinhos Abandonados',
+        title: 'Recuperação de Vendas',
         url: '/admin/ecommerce/abandoned-carts',
         icon: ShoppingBag,
       },
-      { title: 'Configurar Checkout', url: '/admin/ecommerce/checkout-config', icon: Settings2 },
+      {
+        title: 'Arquitetura de Checkout',
+        url: '/admin/ecommerce/checkout-config',
+        icon: Settings2,
+      },
       { title: 'Editor da Loja', url: '/admin/ecommerce/store-editor', icon: Store },
       { title: 'Gestão de Pedidos', url: '/admin/ecommerce/orders', icon: Package },
       { title: 'Grupos de Produtos', url: '/admin/ecommerce/groups', icon: Component },
@@ -146,7 +151,7 @@ const navItems = [
     icon: Briefcase,
     items: [
       { title: 'Atributos da Bio', url: '/admin/athlete-attributes', icon: ListPlus },
-      { title: 'Avaliações', url: '/admin/athlete-evaluations', icon: Star },
+      { title: 'Avaliações de Atletas', url: '/admin/athlete-evaluations', icon: Star },
       { title: 'Contratos', url: '/admin/commercial/contratos', icon: FileSignature },
       { title: 'Cursos', url: '/admin/courses', icon: GraduationCap },
       { title: 'Gerenciar Agendamentos', url: '/admin/appointments/manage', icon: CalendarClock },

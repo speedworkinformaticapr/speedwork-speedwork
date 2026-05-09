@@ -157,7 +157,7 @@ export default function AdminFinancialCategories() {
     <div className="p-6 space-y-6 max-w-[1200px] mx-auto w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Categorias de Cobrança</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-primary">Categorias de Cobrança</h1>
           <p className="text-muted-foreground mt-1">
             Gerencie planos e categorias de cobrança da plataforma.
           </p>

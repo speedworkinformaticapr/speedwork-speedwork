@@ -430,7 +430,7 @@ export default function AdminUsers() {
     <div className="p-6 space-y-6 max-w-[1200px] mx-auto w-full">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-primary">Gestão de Usuários</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-primary">Gestão de Usuários</h1>
           <p className="text-muted-foreground">Controle de perfis, permissões e status.</p>
         </div>
         <div className="flex gap-2">
