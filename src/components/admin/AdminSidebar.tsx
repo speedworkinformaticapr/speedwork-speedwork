@@ -51,15 +51,9 @@ const navItems = [
     items: [
       { title: 'Analytics', url: '/admin/settings/analytics' },
       { title: 'Dados do Sistema', url: '/admin/settings/system-data' },
+      { title: 'E-mail', url: '/admin/email' },
       { title: 'Manutenção', url: '/admin/settings/maintenance' },
       { title: 'Usuários do Sistema', url: '/admin/users' },
-    ],
-  },
-  {
-    title: 'Integrações',
-    icon: ExternalLink,
-    items: [
-      { title: 'E-mail', url: '/admin/email' },
       { title: 'WhatsApp', url: '/admin/whatsapp' },
     ],
   },
