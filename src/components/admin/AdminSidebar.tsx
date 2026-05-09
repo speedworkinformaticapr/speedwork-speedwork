@@ -175,13 +175,7 @@ export function AdminSidebar() {
   }
 
   const allNavItems = useMemo(() => {
-    const filteredNavItems = navItems.filter((item) => {
-      if (userRoles.includes('master')) return true
-      if (item.title === 'Configurações' || item.title === 'Integrações') return false
-      return true
-    })
-
-    const baseItems = [...filteredNavItems]
+    const baseItems = [...navItems]
 
     const dashboardItem = baseItems.find((item) => item.title === 'Dashboard')
     const otherItems = baseItems.filter((item) => item.title !== 'Dashboard')
