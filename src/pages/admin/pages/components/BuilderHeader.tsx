@@ -99,7 +99,9 @@ export function BuilderHeader() {
                 <Input
                   value={state.slug}
                   onChange={(e) =>
-                    setState({ slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })
+                    setState({
+                      slug: e.target.value.toLowerCase().replace(/^\/+/, '').replace(/\s+/g, '-'),
+                    })
                   }
                 />
               </div>
@@ -132,7 +134,10 @@ export function BuilderHeader() {
         <Button
           variant="secondary"
           size="sm"
-          onClick={() => window.open(`/${state.slug}`, '_blank')}
+          onClick={() => {
+            const cleanSlug = (state.slug || '').replace(/^\/+/, '')
+            window.open(`/${cleanSlug}`, '_blank')
+          }}
           disabled={!state.pageId}
         >
           <Eye className="w-4 h-4 mr-2" /> Preview
