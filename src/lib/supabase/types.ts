@@ -3249,11 +3249,11 @@ export const Constants = {
 //   observacoes: text (nullable)
 //   tipo_usuario: text (nullable)
 //   is_athlete: boolean (nullable, default: false)
-//   is_author: boolean (nullable, default: false)
 //   is_club: boolean (nullable, default: false)
 //   photo_url: text (nullable)
 //   numero_registro_federativo: text (nullable)
 //   club_id: uuid (nullable)
+//   is_author: boolean (nullable, default: false)
 // Table: rankings
 //   id: uuid (not null, default: gen_random_uuid())
 //   athlete_id: uuid (nullable)

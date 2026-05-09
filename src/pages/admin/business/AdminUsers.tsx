@@ -57,6 +57,7 @@ import {
 import { AIGenerateButton } from '@/components/AIGenerateButton'
 
 const ROLE_MAP: Record<string, string> = {
+  master: 'Master',
   admin: 'Admin',
   staff: 'Staff',
   club_admin: 'Clube',
