@@ -45,6 +45,7 @@ const navItems = [
     icon: LayoutDashboard,
     items: [
       { title: 'Administrativo', url: '/admin/dashboard' },
+      { title: 'Analytics', url: '/admin/settings/analytics' },
       { title: 'Comercial', url: '/admin/commercial/dashboard' },
       { title: 'Serviços', url: '/admin/appointments-dashboard' },
     ],
@@ -53,10 +54,12 @@ const navItems = [
     title: 'Configurações',
     icon: Settings,
     items: [
-      { title: 'Analytics', url: '/admin/settings/analytics' },
+      { title: 'Categorias de Associados', url: '/admin/financial/categories' },
       { title: 'Dados do Sistema', url: '/admin/settings/system-data' },
       { title: 'E-mail', url: '/admin/email' },
       { title: 'Manutenção', url: '/admin/settings/maintenance' },
+      { title: 'Plano de Contas', url: '/admin/financial/chart-of-accounts' },
+      { title: 'Regras de Cobrança', url: '/admin/financial/settings' },
       { title: 'Usuários do Sistema', url: '/admin/users' },
       { title: 'WhatsApp', url: '/admin/whatsapp' },
     ],
@@ -76,12 +79,7 @@ const navItems = [
   {
     title: 'Financeiro',
     icon: Wallet,
-    items: [
-      { title: 'Categorias de Associados', url: '/admin/financial/categories' },
-      { title: 'Plano de Contas', url: '/admin/financial/chart-of-accounts' },
-      { title: 'Configurações', url: '/admin/financial/settings' },
-      { title: 'Controle de Pagamentos', url: '/admin/financial/payments' },
-    ],
+    items: [{ title: 'Controle de Pagamentos', url: '/admin/financial/payments' }],
   },
   {
     title: 'Gestão de E-commerce',
