@@ -41,9 +41,13 @@ import { supabase } from '@/lib/supabase/client'
 
 const navItems = [
   {
-    title: 'Dashboard',
+    title: 'Dashboards',
     icon: LayoutDashboard,
-    url: '/admin/dashboard',
+    items: [
+      { title: 'Administrativo', url: '/admin/dashboard' },
+      { title: 'Comercial', url: '/admin/commercial/dashboard' },
+      { title: 'Serviços', url: '/admin/appointments-dashboard' },
+    ],
   },
   {
     title: 'Configurações',
@@ -93,36 +97,22 @@ const navItems = [
     ],
   },
   {
-    title: 'Portal de Serviços',
-    icon: Briefcase,
-    items: [
-      { title: 'Dashboard', url: '/admin/appointments-dashboard' },
-      { title: 'Painel de Agendamentos', url: '/admin/appointments' },
-      { title: 'Gerenciar Agendamentos', url: '/admin/appointments/manage' },
-      { title: 'Serviços', url: '/admin/services' },
-    ],
-  },
-  {
-    title: 'Gestão Comercial',
-    icon: Briefcase,
-    items: [
-      { title: 'Dashboard Comercial', url: '/admin/commercial/dashboard' },
-      { title: 'Orçamentos', url: '/admin/quotes' },
-      { title: 'Pedidos', url: '/admin/commercial/pedidos' },
-      { title: 'Contratos', url: '/admin/commercial/contratos' },
-    ],
-  },
-  {
     title: 'Gestão de Negócio',
     icon: Briefcase,
     items: [
-      { title: 'Scouting de Atletas', url: '/admin/athlete-scouting' },
       { title: 'Atributos da Bio', url: '/admin/athlete-attributes' },
       { title: 'Avaliações', url: '/admin/athlete-evaluations' },
+      { title: 'Contratos', url: '/admin/commercial/contratos' },
       { title: 'Cursos', url: '/admin/courses' },
+      { title: 'Gerenciar Agendamentos', url: '/admin/appointments/manage' },
       { title: 'Gestão de Categorias', url: '/admin/athlete-categories' },
+      { title: 'Orçamentos', url: '/admin/quotes' },
+      { title: 'Painel de Agendamentos', url: '/admin/appointments' },
+      { title: 'Pedidos', url: '/admin/commercial/pedidos' },
       { title: 'Ranking', url: '/admin/ranking' },
       { title: 'Regras', url: '/admin/rules' },
+      { title: 'Scouting de Atletas', url: '/admin/athlete-scouting' },
+      { title: 'Serviços', url: '/admin/services' },
       { title: 'Torneios', url: '/admin/tournaments' },
     ],
   },
@@ -171,8 +161,8 @@ export function AdminSidebar() {
   const allNavItems = useMemo(() => {
     const baseItems = [...navItems]
 
-    const dashboardItem = baseItems.find((item) => item.title === 'Dashboard')
-    const otherItems = baseItems.filter((item) => item.title !== 'Dashboard')
+    const dashboardItem = baseItems.find((item) => item.title === 'Dashboards')
+    const otherItems = baseItems.filter((item) => item.title !== 'Dashboards')
 
     const processedOtherItems = otherItems.map((item) => {
       if (item.items) {
