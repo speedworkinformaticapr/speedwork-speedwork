@@ -30,7 +30,7 @@ export default function AdminPageForm() {
               metaTitle: data.meta_title || '',
               metaDescription: data.meta_description || '',
               metaKeywords: data.meta_keywords || '',
-              blocks: data.blocks || [],
+              blocks: (data.blocks || []).sort((a: any, b: any) => (a.order || 0) - (b.order || 0)),
               status: 'idle',
             })
           }

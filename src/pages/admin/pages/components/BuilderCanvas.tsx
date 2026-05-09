@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import usePageBuilderStore from '@/stores/use-page-builder-store'
 import { cn } from '@/lib/utils'
-import { Trash2, GripVertical, Plus } from 'lucide-react'
+import { Trash2, GripVertical, Plus, ChevronUp, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/hooks/use-toast'
@@ -57,11 +57,38 @@ export function BuilderCanvas() {
     e.stopPropagation()
     setState((prev) => {
       const newBlocks = prev.blocks.filter((b) => b.id !== id)
+      newBlocks.forEach((b, i) => (b.order = i))
       return {
         blocks: newBlocks,
         selectedBlockId: prev.selectedBlockId === id ? null : prev.selectedBlockId,
       }
     })
+  }
+
+  const handleMoveUp = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
+    const blocks = [...state.blocks]
+    const index = blocks.findIndex((b) => b.id === id)
+    if (index > 0) {
+      const temp = blocks[index]
+      blocks[index] = blocks[index - 1]
+      blocks[index - 1] = temp
+      blocks.forEach((b, i) => (b.order = i))
+      setState({ blocks })
+    }
+  }
+
+  const handleMoveDown = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
+    const blocks = [...state.blocks]
+    const index = blocks.findIndex((b) => b.id === id)
+    if (index > -1 && index < blocks.length - 1) {
+      const temp = blocks[index]
+      blocks[index] = blocks[index + 1]
+      blocks[index + 1] = temp
+      blocks.forEach((b, i) => (b.order = i))
+      setState({ blocks })
+    }
   }
 
   if (state.status === 'loading') {
@@ -119,11 +146,29 @@ export function BuilderCanvas() {
               <div className="absolute left-0 top-0 bottom-0 w-8 flex items-center justify-center cursor-move opacity-0 group-hover:opacity-100 transition-opacity rounded-l-xl bg-muted/50">
                 <GripVertical className="w-4 h-4 text-muted-foreground" />
               </div>
-              <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute right-4 top-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 rounded-full shadow-sm"
+                  onClick={(e) => handleMoveUp(e, block.id)}
+                  disabled={block.order === 0}
+                >
+                  <ChevronUp className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 rounded-full shadow-sm"
+                  onClick={(e) => handleMoveDown(e, block.id)}
+                  disabled={block.order === state.blocks.length - 1}
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
                 <Button
                   variant="destructive"
                   size="icon"
-                  className="h-8 w-8 rounded-full shadow-sm"
+                  className="h-8 w-8 rounded-full shadow-sm ml-2"
                   onClick={(e) => handleRemove(e, block.id)}
                 >
                   <Trash2 className="w-4 h-4" />

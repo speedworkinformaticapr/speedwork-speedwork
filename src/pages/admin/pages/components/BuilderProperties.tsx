@@ -3,10 +3,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Button } from '@/components/ui/button'
 import { Settings, AlertCircle } from 'lucide-react'
-import { useState } from 'react'
-import { z } from 'zod'
+import { useState, useEffect } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export function BuilderProperties() {
@@ -14,8 +12,14 @@ export function BuilderProperties() {
 
   const selectedBlock = state.blocks.find((b) => b.id === state.selectedBlockId)
   const [jsonError, setJsonError] = useState<string | null>(null)
+  const [jsonText, setJsonText] = useState('')
 
-  const jsonSchema = z.record(z.any())
+  useEffect(() => {
+    if (selectedBlock) {
+      setJsonText(JSON.stringify(selectedBlock.data, null, 2))
+      setJsonError(null)
+    }
+  }, [selectedBlock?.id])
 
   const updateBlock = (updates: Partial<typeof selectedBlock>) => {
     if (!selectedBlock) return
@@ -25,17 +29,17 @@ export function BuilderProperties() {
   }
 
   const handleJsonChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value
+    setJsonText(val)
     try {
-      const parsed = JSON.parse(e.target.value)
-      jsonSchema.parse(parsed) // basic zod validation
+      const parsed = JSON.parse(val)
       setJsonError(null)
-      updateBlock({ data: parsed })
-    } catch (err: any) {
-      if (err instanceof SyntaxError) {
-        setJsonError('Formato JSON inválido')
-      } else {
-        setJsonError('Erro de validação (Zod)')
+      // Only update block data if it's a valid object
+      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+        updateBlock({ data: parsed })
       }
+    } catch (err: any) {
+      setJsonError('Formato JSON inválido')
     }
   }
 
@@ -70,13 +74,15 @@ export function BuilderProperties() {
                 disabled
                 className="bg-muted"
               />
-              <p className="text-xs text-muted-foreground">Reordene arrastando no canvas.</p>
+              <p className="text-xs text-muted-foreground">
+                Reordene usando as setas ou arrastando no canvas.
+              </p>
             </div>
 
             <div className="space-y-2">
               <Label>Conteúdo (JSON)</Label>
               <Textarea
-                defaultValue={JSON.stringify(selectedBlock.data, null, 2)}
+                value={jsonText}
                 onChange={handleJsonChange}
                 className="font-mono text-xs min-h-[300px] resize-y"
                 placeholder="{}"
