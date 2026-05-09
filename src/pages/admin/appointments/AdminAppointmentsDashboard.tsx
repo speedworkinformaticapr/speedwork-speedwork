@@ -113,13 +113,16 @@ export default function AdminAppointmentsDashboard() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto animate-fade-in-up">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <LayoutDashboard className="w-8 h-8 text-[#1B7D3A]" /> Dashboard de Agendamentos
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Visão geral e controle rápido de todos os agendamentos organizados por cliente e período.
-        </p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-primary">
+            Dashboard de Agendamentos
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Visão geral e controle rápido de todos os agendamentos organizados por cliente e
+            período.
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

@@ -349,8 +349,12 @@ export default function AdminDashboard() {
     <div className="w-full max-w-7xl mx-auto animate-fade-in-up space-y-8 pb-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-primary">{t('adminDashboard.title')}</h1>
-          <p className="text-muted-foreground">{t('adminDashboard.desc')}</p>
+          <h1 className="text-3xl font-bold tracking-tight text-primary">
+            Dashboard Administrativo
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Visão geral e métricas principais do sistema.
+          </p>
         </div>
         <div className="flex gap-2">
           <Button

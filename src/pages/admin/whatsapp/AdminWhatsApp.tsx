@@ -9,8 +9,7 @@ export default function AdminWhatsApp() {
 
   return (
     <div className="container py-8 max-w-6xl space-y-6 animate-fade-in-up">
-      <div className="flex items-center gap-3">
-        <MessageSquare className="w-8 h-8 text-green-600" />
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-primary">Gestão WhatsApp</h1>
           <p className="text-muted-foreground mt-1">

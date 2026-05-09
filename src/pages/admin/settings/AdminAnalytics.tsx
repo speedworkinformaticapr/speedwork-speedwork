@@ -245,10 +245,12 @@ export default function AdminAnalytics() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Analytics & Performance</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-primary">
+            Analytics & Performance
+          </h1>
+          <p className="text-muted-foreground mt-1">
             Gerencie suas integrações de métricas e acompanhe resultados.
           </p>
         </div>
