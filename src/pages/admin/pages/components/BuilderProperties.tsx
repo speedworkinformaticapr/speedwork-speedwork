@@ -1,51 +1,380 @@
+import { useState, useEffect, useCallback } from 'react'
 import usePageBuilderStore from '@/stores/use-page-builder-store'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Settings, AlertCircle } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { Settings, AlertCircle, Plus, Trash2, Save } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
+import { toast } from '@/hooks/use-toast'
+import { z } from 'zod'
+import { ELEMENT_CONFIGS, FieldType, FieldDef, ListDef } from './builder-config'
+
+const urlSchema = z.string().url().or(z.literal(''))
+const colorSchema = z
+  .string()
+  .regex(/^#([0-9A-F]{3}){1,2}$/i, 'Hex inválido')
+  .or(z.literal(''))
+const numberSchema = z.coerce.number().or(z.literal(''))
+
+function validateValue(type: FieldType, value: any) {
+  try {
+    if (type === 'url' && value) urlSchema.parse(value)
+    if (type === 'color' && value) colorSchema.parse(value)
+    if (type === 'number' && value) numberSchema.parse(value)
+    return null
+  } catch (e: any) {
+    return e.errors?.[0]?.message || 'Inválido'
+  }
+}
+
+function FieldRenderer({
+  field,
+  value,
+  onChange,
+  error,
+}: {
+  field: FieldDef
+  value: any
+  onChange: (v: any) => void
+  error?: string
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-semibold">{field.label}</Label>
+      {field.type === 'text' && (
+        <Input
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-8 text-xs"
+        />
+      )}
+      {field.type === 'textarea' && (
+        <Textarea
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          className="min-h-[80px] text-xs resize-y"
+        />
+      )}
+      {field.type === 'color' && (
+        <div className="flex gap-2">
+          <Input
+            type="color"
+            value={value || '#ffffff'}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-10 h-8 p-1 cursor-pointer"
+          />
+          <Input
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+            className="h-8 text-xs flex-1 uppercase"
+            placeholder="#000000"
+          />
+        </div>
+      )}
+      {field.type === 'url' && (
+        <Input
+          type="url"
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-8 text-xs"
+          placeholder="https://..."
+        />
+      )}
+      {field.type === 'number' && (
+        <Input
+          type="number"
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-8 text-xs"
+        />
+      )}
+      {field.type === 'boolean' && (
+        <div className="flex items-center h-8">
+          <Switch checked={!!value} onCheckedChange={onChange} />
+        </div>
+      )}
+      {field.type === 'select' && field.options && (
+        <Select value={value || ''} onValueChange={onChange}>
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue placeholder="Selecione..." />
+          </SelectTrigger>
+          <SelectContent>
+            {field.options.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+      {field.type === 'string_list' && (
+        <div className="space-y-2 mt-1">
+          {(value || []).map((item: string, idx: number) => (
+            <div key={idx} className="flex gap-2">
+              <Input
+                value={item || ''}
+                onChange={(e) => {
+                  const newArr = [...(value || [])]
+                  newArr[idx] = e.target.value
+                  onChange(newArr)
+                }}
+                className="h-8 text-xs"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={() => {
+                  const newArr = [...(value || [])]
+                  newArr.splice(idx, 1)
+                  onChange(newArr)
+                }}
+              >
+                <Trash2 className="w-4 h-4 text-destructive" />
+              </Button>
+            </div>
+          ))}
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full h-8 text-xs border-dashed"
+            onClick={() => onChange([...(value || []), ''])}
+          >
+            <Plus className="w-3 h-3 mr-1" /> Adicionar
+          </Button>
+        </div>
+      )}
+      {error && <span className="text-[10px] text-destructive block mt-1">{error}</span>}
+    </div>
+  )
+}
+
+function ListRenderer({
+  listDef,
+  items,
+  onChange,
+}: {
+  listDef: ListDef
+  items: any[]
+  onChange: (v: any[]) => void
+}) {
+  const isStringList = !listDef.fields
+
+  const handleAdd = () => {
+    if (isStringList) onChange([...(items || []), ''])
+    else onChange([...(items || []), {}])
+  }
+
+  const handleRemove = (idx: number) => {
+    const newItems = [...(items || [])]
+    newItems.splice(idx, 1)
+    onChange(newItems)
+  }
+
+  const handleUpdateItem = (idx: number, fieldName: string, value: any) => {
+    const newItems = [...(items || [])]
+    newItems[idx] = { ...newItems[idx], [fieldName]: value }
+    onChange(newItems)
+  }
+
+  const handleUpdateStringItem = (idx: number, value: string) => {
+    const newItems = [...(items || [])]
+    newItems[idx] = value
+    onChange(newItems)
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="font-semibold text-sm">{listDef.label}</Label>
+        <Button variant="outline" size="sm" onClick={handleAdd} className="h-7 text-xs px-2">
+          <Plus className="w-3 h-3 mr-1" /> Adicionar
+        </Button>
+      </div>
+
+      {(!items || items.length === 0) && (
+        <p className="text-xs text-muted-foreground italic">Nenhum item adicionado.</p>
+      )}
+
+      <Accordion type="multiple" className="w-full">
+        {(items || []).map((item, idx) => (
+          <AccordionItem
+            key={idx}
+            value={`item-${idx}`}
+            className="border rounded-md px-3 mb-2 bg-card"
+          >
+            <div className="flex items-center justify-between w-full h-10">
+              <AccordionTrigger className="hover:no-underline py-0 flex-1 justify-start text-xs font-medium truncate pr-4">
+                {isStringList
+                  ? item || `Item ${idx + 1}`
+                  : item.title || item.name || item.question || item.author || `Item ${idx + 1}`}
+              </AccordionTrigger>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-destructive shrink-0"
+                onClick={() => handleRemove(idx)}
+              >
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            </div>
+            <AccordionContent className="pb-3 pt-1 space-y-4">
+              {isStringList ? (
+                <div className="flex gap-2">
+                  <Input
+                    value={item || ''}
+                    onChange={(e) => handleUpdateStringItem(idx, e.target.value)}
+                    className="h-8 text-xs"
+                  />
+                </div>
+              ) : (
+                listDef.fields?.map((f) => (
+                  <FieldRenderer
+                    key={f.name}
+                    field={f}
+                    value={item[f.name]}
+                    onChange={(v) => handleUpdateItem(idx, f.name, v)}
+                  />
+                ))
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    </div>
+  )
+}
+
+function DynamicForm({ block, onUpdate }: { block: any; onUpdate: (data: any) => void }) {
+  const config = ELEMENT_CONFIGS[block.type]
+  const [formData, setFormData] = useState<any>(block.data || {})
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    setFormData(block.data || {})
+    setErrors({})
+  }, [block.id])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const hasErrors = Object.values(errors).some((err) => err !== '')
+      if (!hasErrors) onUpdate(formData)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [formData, errors])
+
+  const handleChange = (field: string, value: any, type: FieldType) => {
+    const err = validateValue(type, value)
+    setErrors((prev) => ({ ...prev, [field]: err || '' }))
+    setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  if (!config) {
+    return (
+      <div className="space-y-4">
+        <Alert variant="destructive" className="py-2 px-3">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="text-xs">
+            Elemento não suportado pelo form visual. Use o JSON abaixo.
+          </AlertDescription>
+        </Alert>
+        <Textarea
+          value={JSON.stringify(formData, null, 2)}
+          onChange={(e) => {
+            try {
+              const p = JSON.parse(e.target.value)
+              setFormData(p)
+              onUpdate(p)
+            } catch {
+              /* intentionally ignored */
+            }
+          }}
+          className="font-mono text-xs min-h-[300px]"
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6 animate-fade-in pb-4">
+      {config.sections.map((sec, i) => (
+        <div key={i} className="space-y-4 bg-card p-4 rounded-xl border shadow-sm">
+          <h4 className="font-bold text-sm border-b pb-2 text-primary">{sec.title}</h4>
+          <div className="space-y-4 pt-2">
+            {sec.fields.map((f) => (
+              <FieldRenderer
+                key={f.name}
+                field={f}
+                value={formData[f.name]}
+                error={errors[f.name]}
+                onChange={(v) => handleChange(f.name, v, f.type)}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {config.lists?.map((lst, i) => (
+        <div key={`list-${i}`} className="pt-2 bg-card p-4 rounded-xl border shadow-sm">
+          <ListRenderer
+            listDef={lst}
+            items={formData[lst.name] || []}
+            onChange={(v) => setFormData((prev) => ({ ...prev, [lst.name]: v }))}
+          />
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export function BuilderProperties() {
   const { state, setState } = usePageBuilderStore()
-
   const selectedBlock = state.blocks.find((b) => b.id === state.selectedBlockId)
-  const [jsonError, setJsonError] = useState<string | null>(null)
-  const [jsonText, setJsonText] = useState('')
 
-  useEffect(() => {
-    if (selectedBlock) {
-      setJsonText(JSON.stringify(selectedBlock.data, null, 2))
-      setJsonError(null)
-    }
-  }, [selectedBlock?.id])
+  const updateBlockData = useCallback(
+    (data: any) => {
+      if (!selectedBlock) return
+      setState((prev) => ({
+        blocks: prev.blocks.map((b) => (b.id === selectedBlock.id ? { ...b, data } : b)),
+      }))
+    },
+    [selectedBlock?.id, setState],
+  )
 
-  const updateBlock = (updates: Partial<typeof selectedBlock>) => {
+  const updateBlockProp = (updates: Partial<typeof selectedBlock>) => {
     if (!selectedBlock) return
     setState((prev) => ({
       blocks: prev.blocks.map((b) => (b.id === selectedBlock.id ? { ...b, ...updates } : b)),
     }))
   }
 
-  const handleJsonChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = e.target.value
-    setJsonText(val)
-    try {
-      const parsed = JSON.parse(val)
-      setJsonError(null)
-      // Only update block data if it's a valid object
-      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-        updateBlock({ data: parsed })
-      }
-    } catch (err: any) {
-      setJsonError('Formato JSON inválido')
-    }
+  const handleSave = () => {
+    toast({
+      title: 'Alterações salvas',
+      description: 'As propriedades da dobra foram atualizadas no Canvas.',
+      variant: 'default',
+    })
   }
 
   return (
-    <div className="w-full md:w-[300px] bg-muted/20 border-l flex flex-col h-full">
-      <div className="p-4 border-b bg-muted/40 font-semibold text-sm uppercase tracking-wider flex items-center gap-2">
+    <div className="w-full md:w-[320px] bg-muted/20 border-l flex flex-col h-full overflow-hidden">
+      <div className="p-4 border-b bg-muted/40 font-semibold text-sm uppercase tracking-wider flex items-center gap-2 shrink-0">
         <Settings className="w-4 h-4" />
         Propriedades
       </div>
@@ -55,52 +384,28 @@ export function BuilderProperties() {
             Selecione uma dobra no canvas para editar suas propriedades.
           </div>
         ) : (
-          <div className="space-y-6 animate-fade-in">
+          <div className="space-y-6">
             <div className="space-y-2">
               <Label>Nome de Identificação</Label>
               <Input
                 value={selectedBlock.name}
-                onChange={(e) => updateBlock({ name: e.target.value })}
+                onChange={(e) => updateBlockProp({ name: e.target.value })}
                 placeholder="Ex: Hero Principal"
+                className="h-8 text-xs"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Ordem</Label>
-              <Input
-                type="number"
-                value={selectedBlock.order}
-                readOnly
-                disabled
-                className="bg-muted"
-              />
-              <p className="text-xs text-muted-foreground">
-                Reordene usando as setas ou arrastando no canvas.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Conteúdo (JSON)</Label>
-              <Textarea
-                value={jsonText}
-                onChange={handleJsonChange}
-                className="font-mono text-xs min-h-[300px] resize-y"
-                placeholder="{}"
-              />
-              {jsonError && (
-                <Alert variant="destructive" className="mt-2 py-2 px-3">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-xs">{jsonError}</AlertDescription>
-                </Alert>
-              )}
-              <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-                Edite as propriedades deste bloco em formato JSON. Os campos variam conforme o tipo
-                do elemento.
-              </p>
-            </div>
+            <DynamicForm block={selectedBlock} onUpdate={updateBlockData} />
           </div>
         )}
       </ScrollArea>
+      {selectedBlock && (
+        <div className="p-4 border-t bg-background shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+          <Button onClick={handleSave} className="w-full shadow-sm">
+            <Save className="w-4 h-4 mr-2" /> Salvar Alterações
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
