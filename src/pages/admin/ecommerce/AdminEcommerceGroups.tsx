@@ -77,7 +77,7 @@ export default function AdminEcommerceGroups() {
     <div className="p-6 space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Grupos e Categorias</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Grupos de Produtos</h1>
           <p className="text-muted-foreground">Gerencie a hierarquia de produtos da sua loja.</p>
         </div>
         <Dialog>

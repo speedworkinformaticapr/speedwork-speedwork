@@ -238,7 +238,7 @@ export default function AdminRanking() {
   return (
     <div className="p-6 space-y-6 max-w-[1200px] mx-auto w-full animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold text-primary">Ranking de Atletas</h1>
+        <h1 className="text-3xl font-bold text-primary">Ranking</h1>
         <p className="text-muted-foreground">
           Gerencie a pontuação e status dos atletas no ranking oficial.
         </p>

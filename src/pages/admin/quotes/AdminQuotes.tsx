@@ -132,7 +132,7 @@ export default function AdminQuotes() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Gestão de Orçamentos</h1>
+        <h1 className="text-3xl font-bold">Orçamentos</h1>
         <Button onClick={() => navigate('/admin/quotes/new')}>
           <Plus className="mr-2 w-4 h-4" /> Novo Orçamento
         </Button>

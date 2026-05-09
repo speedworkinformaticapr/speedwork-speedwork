@@ -143,7 +143,7 @@ export default function AdminCourses() {
     <div className="p-6 space-y-6 max-w-[1200px] mx-auto w-full">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-primary">Módulo de Cursos</h1>
+          <h1 className="text-3xl font-bold text-primary">Cursos</h1>
           <p className="text-muted-foreground">Gerencie a agenda de cursos e capacitações.</p>
         </div>
         <Button onClick={() => handleOpen()}>

@@ -46,7 +46,7 @@ export default function AdminContratosList() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between">
-        <h1 className="text-3xl font-bold">Gestão de Contratos</h1>
+        <h1 className="text-3xl font-bold">Contratos</h1>
         <Button asChild>
           <Link to="/admin/commercial/contratos/new">
             <Plus className="w-4 h-4 mr-2" />

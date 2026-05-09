@@ -203,7 +203,7 @@ export default function AdminAppointments() {
     <div className="p-6 max-w-7xl mx-auto animate-fade-in-up space-y-6">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold flex items-center gap-3">
-          <CalendarDays className="w-8 h-8 text-primary" /> Gestão de Agendamentos
+          <CalendarDays className="w-8 h-8 text-primary" /> Painel de Agendamentos
         </h1>
         <p className="text-muted-foreground">
           Agende novos serviços e acompanhe sua agenda em tempo real.
