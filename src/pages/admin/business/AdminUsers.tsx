@@ -108,6 +108,7 @@ export default function AdminUsers() {
     documento_identidade: '',
     observacoes: '',
     photo_url: '',
+    is_author: false,
   })
 
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -211,6 +212,7 @@ export default function AdminUsers() {
         documento_identidade: u.rg || u.documento_identidade || '',
         observacoes: u.observacoes || '',
         photo_url: u.photo_url || '',
+        is_author: u.is_author || false,
       })
     } else {
       setEditingUser(null)
@@ -234,6 +236,7 @@ export default function AdminUsers() {
         documento_identidade: '',
         observacoes: '',
         photo_url: '',
+        is_author: false,
       })
     }
     setIsModalOpen(true)
@@ -269,6 +272,7 @@ export default function AdminUsers() {
         documento_identidade: formData.documento_identidade || null,
         observacoes: formData.observacoes || null,
         is_athlete: isAthlete,
+        is_author: formData.is_author,
         autoriza_whatsapp: formData.autoriza_whatsapp,
         telefone_whatsapp: formData.telefone_whatsapp,
         photo_url: formData.photo_url || null,
@@ -893,6 +897,18 @@ export default function AdminUsers() {
                 />
                 <Label htmlFor="autoriza_whatsapp" className="text-sm font-normal">
                   Autorizo receber mensagens via WhatsApp
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2 col-span-1 sm:col-span-2 mt-2">
+                <Checkbox
+                  disabled={viewOnly}
+                  id="is_author"
+                  checked={formData.is_author}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_author: !!checked })}
+                />
+                <Label htmlFor="is_author" className="text-sm font-normal">
+                  Este usuário é um Autor (pode escrever e ser vinculado a posts no Blog)
                 </Label>
               </div>
 

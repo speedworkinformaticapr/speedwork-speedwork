@@ -44,6 +44,7 @@ export default function AdminBlogForm() {
     supabase
       .from('profiles')
       .select('id, name')
+      .eq('is_author', true)
       .then(({ data }) => setAuthors(data || []))
     if (id) {
       supabase
@@ -100,6 +101,7 @@ export default function AdminBlogForm() {
     try {
       const payload = {
         ...post,
+        author_id: post.author_id || null,
         tags: post.tags
           ? post.tags
               .split(',')
@@ -227,13 +229,14 @@ export default function AdminBlogForm() {
             <div className="space-y-2">
               <Label>Autor</Label>
               <Select
-                value={post.author_id}
-                onValueChange={(v) => setPost({ ...post, author_id: v })}
+                value={post.author_id || 'unselected'}
+                onValueChange={(v) => setPost({ ...post, author_id: v === 'unselected' ? '' : v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="unselected">Nenhum</SelectItem>
                   {authors.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
                       {a.name}

@@ -1954,6 +1954,7 @@ export type Database = {
           gender: string | null
           id: string
           is_athlete: boolean | null
+          is_author: boolean | null
           is_club: boolean | null
           name: string | null
           nationality: string | null
@@ -1982,6 +1983,7 @@ export type Database = {
           gender?: string | null
           id: string
           is_athlete?: boolean | null
+          is_author?: boolean | null
           is_club?: boolean | null
           name?: string | null
           nationality?: string | null
@@ -2010,6 +2012,7 @@ export type Database = {
           gender?: string | null
           id?: string
           is_athlete?: boolean | null
+          is_author?: boolean | null
           is_club?: boolean | null
           name?: string | null
           nationality?: string | null
@@ -3246,6 +3249,7 @@ export const Constants = {
 //   observacoes: text (nullable)
 //   tipo_usuario: text (nullable)
 //   is_athlete: boolean (nullable, default: false)
+//   is_author: boolean (nullable, default: false)
 //   is_club: boolean (nullable, default: false)
 //   photo_url: text (nullable)
 //   numero_registro_federativo: text (nullable)
