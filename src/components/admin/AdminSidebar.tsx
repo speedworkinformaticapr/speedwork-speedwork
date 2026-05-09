@@ -174,43 +174,14 @@ export function AdminSidebar() {
     else window.location.href = '/'
   }
 
-  const [dynamicPages, setDynamicPages] = useState<any[]>([])
-
-  useEffect(() => {
-    supabase
-      .from('pages')
-      .select('title, slug, is_published, submenus')
-      .eq('is_published', true)
-      .order('display_order', { ascending: true })
-      .then(({ data }) => {
-        if (data) setDynamicPages(data)
-      })
-  }, [])
-
   const allNavItems = useMemo(() => {
-    const customPagesItem =
-      dynamicPages.length > 0
-        ? {
-            title: 'Páginas Customizadas',
-            icon: FileText,
-            items: dynamicPages
-              .map((p) => ({
-                title: p.title,
-                url: p.slug.startsWith('/') ? p.slug : `/${p.slug}`,
-              }))
-              .sort((a, b) => a.title.localeCompare(b.title)),
-          }
-        : null
-
     const filteredNavItems = navItems.filter((item) => {
       if (userRoles.includes('master')) return true
       if (item.title === 'Configurações' || item.title === 'Integrações') return false
       return true
     })
 
-    const baseItems = customPagesItem
-      ? [...filteredNavItems, customPagesItem]
-      : [...filteredNavItems]
+    const baseItems = [...filteredNavItems]
 
     const dashboardItem = baseItems.find((item) => item.title === 'Dashboard')
     const otherItems = baseItems.filter((item) => item.title !== 'Dashboard')
@@ -228,7 +199,7 @@ export function AdminSidebar() {
     processedOtherItems.sort((a, b) => a.title.localeCompare(b.title))
 
     return dashboardItem ? [dashboardItem, ...processedOtherItems] : processedOtherItems
-  }, [dynamicPages, userRoles])
+  }, [userRoles])
 
   const [openSection, setOpenSection] = useState<string | null>(() => {
     return (
