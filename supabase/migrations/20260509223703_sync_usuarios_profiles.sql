@@ -2,9 +2,10 @@ DO $DO$
 BEGIN
   -- 1. Backfill: usuarios to profiles
   INSERT INTO public.profiles (id, email, name, role)
-  SELECT user_id, email, nome, role
+  SELECT DISTINCT ON (user_id) user_id, email, nome, role
   FROM public.usuarios
   WHERE user_id IS NOT NULL
+  ORDER BY user_id
   ON CONFLICT (id) DO UPDATE
   SET name = COALESCE(public.profiles.name, EXCLUDED.name),
       role = COALESCE(public.profiles.role, EXCLUDED.role),
@@ -12,9 +13,10 @@ BEGIN
 
   -- 2. Backfill: profiles to usuarios (where missing)
   INSERT INTO public.usuarios (user_id, email, nome, role)
-  SELECT id, email, name, role
+  SELECT DISTINCT ON (email) id, email, name, role
   FROM public.profiles
   WHERE id IS NOT NULL AND email IS NOT NULL
+  ORDER BY email
   ON CONFLICT (email) DO UPDATE
   SET user_id = EXCLUDED.user_id, 
       nome = COALESCE(public.usuarios.nome, EXCLUDED.nome), 
