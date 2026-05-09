@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase/client'
 import { getMedia, type MediaItem } from '@/services/media'
+import { AIGenerateButton } from '@/components/AIGenerateButton'
 
 export default function AdminBlogForm() {
   const { id } = useParams()
@@ -144,28 +145,59 @@ export default function AdminBlogForm() {
         <div className="col-span-2 space-y-6">
           <div className="bg-card p-6 rounded-xl border space-y-4">
             <div className="space-y-2">
-              <Label>Título *</Label>
+              <div className="flex items-center justify-between">
+                <Label>Título *</Label>
+                <AIGenerateButton
+                  fieldContext="Título chamativo e engajador para postagem de blog"
+                  currentText={post.title}
+                  onGenerate={(text) => setPost({ ...post, title: text })}
+                  maxLength={100}
+                />
+              </div>
               <Input
                 value={post.title}
                 onChange={(e) => setPost({ ...post, title: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <Label>Resumo</Label>
+              <div className="flex items-center justify-between">
+                <Label>Resumo</Label>
+                <AIGenerateButton
+                  fieldContext="Resumo curto e atrativo para postagem de blog"
+                  currentText={post.summary}
+                  onGenerate={(text) => setPost({ ...post, summary: text })}
+                  maxLength={250}
+                />
+              </div>
               <Textarea
                 value={post.summary}
                 onChange={(e) => setPost({ ...post, summary: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <Label>Introdução</Label>
+              <div className="flex items-center justify-between">
+                <Label>Introdução</Label>
+                <AIGenerateButton
+                  fieldContext="Parágrafo de introdução persuasiva para o blog"
+                  currentText={post.introduction}
+                  onGenerate={(text) => setPost({ ...post, introduction: text })}
+                  maxLength={500}
+                />
+              </div>
               <Textarea
                 value={post.introduction}
                 onChange={(e) => setPost({ ...post, introduction: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <Label>Conteúdo (Editor Rico - HTML/Markdown)</Label>
+              <div className="flex items-center justify-between">
+                <Label>Conteúdo (Editor Rico - HTML/Markdown)</Label>
+                <AIGenerateButton
+                  fieldContext="Conteúdo completo e detalhado para postagem de blog usando formatação HTML/Markdown"
+                  currentText={post.content}
+                  onGenerate={(text) => setPost({ ...post, content: text })}
+                />
+              </div>
               <Textarea
                 rows={10}
                 value={post.content}
@@ -173,7 +205,15 @@ export default function AdminBlogForm() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Conclusão</Label>
+              <div className="flex items-center justify-between">
+                <Label>Conclusão</Label>
+                <AIGenerateButton
+                  fieldContext="Parágrafo de conclusão reflexivo e com chamada para ação"
+                  currentText={post.conclusion}
+                  onGenerate={(text) => setPost({ ...post, conclusion: text })}
+                  maxLength={500}
+                />
+              </div>
               <Textarea
                 value={post.conclusion}
                 onChange={(e) => setPost({ ...post, conclusion: e.target.value })}

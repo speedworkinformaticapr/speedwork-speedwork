@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { AIGenerateButton } from '@/components/AIGenerateButton'
 
 export default function AdminMaintenance() {
   const [config, setConfig] = useState<MaintenanceConfig | null>(null)
@@ -150,7 +151,15 @@ export default function AdminMaintenance() {
           <CardContent className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2">
-                <Label>Título Principal</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Título Principal</Label>
+                  <AIGenerateButton
+                    fieldContext="Título amigável para uma página de manutenção temporária"
+                    currentText={config.title}
+                    onGenerate={(text) => setConfig({ ...config, title: text })}
+                    maxLength={100}
+                  />
+                </div>
                 <Input
                   value={config.title}
                   onChange={(e) => setConfig({ ...config, title: e.target.value })}
@@ -160,7 +169,15 @@ export default function AdminMaintenance() {
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <Label>Mensagem Explicativa</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Mensagem Explicativa</Label>
+                  <AIGenerateButton
+                    fieldContext="Mensagem empática e profissional explicando que o site está passando por melhorias e voltará em breve"
+                    currentText={config.message}
+                    onGenerate={(text) => setConfig({ ...config, message: text })}
+                    maxLength={500}
+                  />
+                </div>
                 <Textarea
                   value={config.message}
                   onChange={(e) => setConfig({ ...config, message: e.target.value })}

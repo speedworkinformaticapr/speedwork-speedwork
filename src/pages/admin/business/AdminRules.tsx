@@ -42,6 +42,7 @@ import {
   Heading,
   Link as LinkIcon,
 } from 'lucide-react'
+import { AIGenerateButton } from '@/components/AIGenerateButton'
 
 export default function AdminRules() {
   const [items, setItems] = useState<any[]>([])
@@ -249,14 +250,29 @@ export default function AdminRules() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Título da Regra *</Label>
+              <div className="flex items-center justify-between">
+                <Label>Título da Regra *</Label>
+                <AIGenerateButton
+                  fieldContext="Título formal e descritivo para uma regra ou regulamento"
+                  currentText={formData.title}
+                  onGenerate={(text) => setFormData({ ...formData, title: text })}
+                  maxLength={100}
+                />
+              </div>
               <Input
                 value={formData.title || ''}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <Label>Descrição Completa</Label>
+              <div className="flex items-center justify-between">
+                <Label>Descrição Completa</Label>
+                <AIGenerateButton
+                  fieldContext="Texto detalhado e formal para um regulamento ou regra, utilizando formatação Markdown"
+                  currentText={formData.description}
+                  onGenerate={(text) => setFormData({ ...formData, description: text })}
+                />
+              </div>
               <div className="border rounded-md overflow-hidden flex flex-col focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
                 <div className="flex items-center gap-1 border-b bg-muted p-1">
                   <Button

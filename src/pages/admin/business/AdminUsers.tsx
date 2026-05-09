@@ -54,6 +54,7 @@ import {
   ArrowUpDown,
   Eye,
 } from 'lucide-react'
+import { AIGenerateButton } from '@/components/AIGenerateButton'
 
 const ROLE_MAP: Record<string, string> = {
   admin: 'Admin',
@@ -896,7 +897,17 @@ export default function AdminUsers() {
               </div>
 
               <div className="col-span-1 sm:col-span-2 space-y-2">
-                <Label>Observações</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Observações</Label>
+                  {!viewOnly && (
+                    <AIGenerateButton
+                      fieldContext={`Observações internas e profissionais sobre o usuário ${formData.name || ''} do tipo ${formData.tipo_usuario || formData.role}`}
+                      currentText={formData.observacoes}
+                      onGenerate={(text) => setFormData({ ...formData, observacoes: text })}
+                      maxLength={1000}
+                    />
+                  )}
+                </div>
                 <Textarea
                   disabled={viewOnly}
                   value={formData.observacoes}

@@ -15,6 +15,7 @@
     "stripe-webhook": 1,
     "sync-google-ads": 1,
     "validar_whatsapp_config": 1,
-    "cron-commercial-contracts": 2
+    "cron-commercial-contracts": 2,
+    "generate-ai-text": 1
   }
 }
