@@ -61,6 +61,11 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Força o padrão de cor e estilo do tema para todos os títulos de páginas no painel, removendo inconsistências */
+  main h1.text-3xl {
+    @apply text-primary tracking-tight !important;
+  }
 }
 
 @media print {

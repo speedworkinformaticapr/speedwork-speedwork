@@ -95,14 +95,14 @@ const navItems = [
     title: 'Configurações',
     icon: Settings,
     items: [
-      { title: 'Categorias de Associados', url: '/admin/financial/categories', icon: Tags },
+      { title: 'Categorias de Cobrança', url: '/admin/financial/categories', icon: Tags },
       { title: 'Dados do Sistema', url: '/admin/settings/system-data', icon: Database },
       { title: 'Gestão de E-mail', url: '/admin/email', icon: Mail },
-      { title: 'Manutenção', url: '/admin/settings/maintenance', icon: Wrench },
+      { title: 'Gestão WhatsApp', url: '/admin/whatsapp', icon: MessageSquare },
+      { title: 'Página de Manutenção', url: '/admin/settings/maintenance', icon: Wrench },
       { title: 'Plano de Contas', url: '/admin/financial/chart-of-accounts', icon: FileText },
       { title: 'Regras de Cobrança', url: '/admin/financial/settings', icon: Receipt },
-      { title: 'Usuários do Sistema', url: '/admin/users', icon: Users },
-      { title: 'Gestão WhatsApp', url: '/admin/whatsapp', icon: MessageSquare },
+      { title: 'Gestão de Usuários', url: '/admin/users', icon: Users },
     ],
   },
   {
@@ -110,7 +110,7 @@ const navItems = [
     icon: LayoutTemplate,
     items: [
       { title: 'Carrossel Principal', url: '/admin/settings/hero-carousel', icon: Images },
-      { title: 'Dobras (Seções)', url: '/admin/sections', icon: Layout },
+      { title: 'Biblioteca de Dobras', url: '/admin/sections', icon: Layout },
       { title: 'Galeria de Fotos', url: '/admin/gallery', icon: Image },
       { title: 'Gestão de Mídias', url: '/admin/settings/media', icon: Video },
       { title: 'Páginas & Rotas', url: '/admin/pages', icon: AppWindow },

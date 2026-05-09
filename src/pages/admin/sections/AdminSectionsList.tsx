@@ -80,7 +80,7 @@ export default function AdminSectionsList() {
     <div className="p-8 max-w-5xl mx-auto animate-fade-in-up">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-primary">Biblioteca de Dobras</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-primary">Biblioteca de Dobras</h1>
           <p className="text-muted-foreground mt-1">
             Crie seções modulares globais para reutilizar em qualquer página do site.
           </p>
