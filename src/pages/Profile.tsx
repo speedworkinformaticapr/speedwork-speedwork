@@ -43,7 +43,7 @@ export default function Profile() {
         const { data, error } = await supabase
           .from('athletes')
           .select('*')
-          .eq('profile_id', user.id)
+          .eq('user_id', user.id)
           .single()
 
         if (error) {
@@ -57,7 +57,7 @@ export default function Profile() {
             phone: data.phone || '',
             handicap: data.handicap || 0,
             category: data.category || '',
-            avatar_url: data.avatar_url || '',
+            avatar_url: data.photo_url || '',
           })
         }
       } catch (err) {
@@ -122,18 +122,15 @@ export default function Profile() {
       const { data: existingAthlete } = await supabase
         .from('athletes')
         .select('id')
-        .eq('profile_id', user.id)
+        .eq('user_id', user.id)
         .single()
 
       if (existingAthlete) {
-        await supabase
-          .from('athletes')
-          .update({ avatar_url: data.publicUrl })
-          .eq('profile_id', user.id)
+        await supabase.from('athletes').update({ photo_url: data.publicUrl }).eq('user_id', user.id)
       } else {
         await supabase.from('athletes').insert({
-          profile_id: user.id,
-          avatar_url: data.publicUrl,
+          user_id: user.id,
+          photo_url: data.publicUrl,
           email: user.email,
         })
       }
@@ -163,7 +160,7 @@ export default function Profile() {
       const { data: existingAthlete } = await supabase
         .from('athletes')
         .select('id')
-        .eq('profile_id', user.id)
+        .eq('user_id', user.id)
         .single()
 
       if (existingAthlete) {
@@ -174,12 +171,12 @@ export default function Profile() {
             cpf: profile.cpf,
             phone: profile.phone,
           })
-          .eq('profile_id', user.id)
+          .eq('user_id', user.id)
 
         if (error) throw error
       } else {
         const { error } = await supabase.from('athletes').insert({
-          profile_id: user.id,
+          user_id: user.id,
           name: profile.name,
           cpf: profile.cpf,
           phone: profile.phone,
