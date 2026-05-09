@@ -89,14 +89,21 @@ const navItems = [
         url: '/admin/appointments-dashboard',
         icon: CalendarDays,
       },
+      { title: 'Dashboard Financeiro', url: '/admin/financial/dashboard', icon: LineChart },
     ],
   },
   {
     title: 'Configurações',
     icon: Settings,
     items: [
+      {
+        title: 'Arquitetura de Checkout',
+        url: '/admin/ecommerce/checkout-config',
+        icon: Settings2,
+      },
       { title: 'Categorias de Cobrança', url: '/admin/financial/categories', icon: Tags },
       { title: 'Dados do Sistema', url: '/admin/settings/system-data', icon: Database },
+      { title: 'Editor da Loja', url: '/admin/ecommerce/store-editor', icon: Store },
       { title: 'Gestão de E-mail', url: '/admin/email', icon: Mail },
       { title: 'Gestão WhatsApp', url: '/admin/whatsapp', icon: MessageSquare },
       { title: 'Página de Manutenção', url: '/admin/settings/maintenance', icon: Wrench },
@@ -120,10 +127,7 @@ const navItems = [
   {
     title: 'Financeiro',
     icon: Wallet,
-    items: [
-      { title: 'Fluxo de Caixa', url: '/admin/financial/payments', icon: CreditCard },
-      { title: 'Dashboard Financeiro', url: '/admin/financial/dashboard', icon: LineChart },
-    ],
+    items: [{ title: 'Fluxo de Caixa', url: '/admin/financial/payments', icon: CreditCard }],
   },
   {
     title: 'Gestão de E-commerce',
@@ -134,12 +138,6 @@ const navItems = [
         url: '/admin/ecommerce/abandoned-carts',
         icon: ShoppingBag,
       },
-      {
-        title: 'Arquitetura de Checkout',
-        url: '/admin/ecommerce/checkout-config',
-        icon: Settings2,
-      },
-      { title: 'Editor da Loja', url: '/admin/ecommerce/store-editor', icon: Store },
       { title: 'Gestão de Pedidos', url: '/admin/ecommerce/orders', icon: Package },
       { title: 'Grupos de Produtos', url: '/admin/ecommerce/groups', icon: Component },
       { title: 'Logística e Fretes', url: '/admin/ecommerce/logistics', icon: Truck },

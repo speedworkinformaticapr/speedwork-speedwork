@@ -154,7 +154,7 @@ export default function AdminStoreEditor() {
     <div className="p-6 space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Editor da Vitrine</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Editor da Loja</h1>
           <p className="text-muted-foreground">
             Construa e personalize a página inicial da sua loja.
           </p>
