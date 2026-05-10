@@ -8,6 +8,7 @@ import { Settings, AlertCircle, Plus, Trash2, Save, Image as ImageIcon } from 'l
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AIGenerateButton } from '@/components/AIGenerateButton'
 import { MediaPicker } from '@/components/MediaPicker'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -77,11 +78,7 @@ function FieldRenderer({
         />
       )}
       {field.type === 'textarea' && (
-        <Textarea
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-          className="min-h-[80px] text-xs resize-y"
-        />
+        <RichTextEditor value={value || ''} onChange={onChange} minHeight="120px" />
       )}
       {field.type === 'color' && (
         <div className="flex gap-2">

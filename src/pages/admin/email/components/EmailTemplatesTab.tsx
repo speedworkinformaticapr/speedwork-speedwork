@@ -3,8 +3,8 @@ import { useSystemData } from '@/hooks/use-system-data'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import {
   Select,
   SelectContent,
@@ -221,15 +221,24 @@ export default function EmailTemplatesTab() {
                   </DialogContent>
                 </Dialog>
               </div>
-              <Textarea
-                className="font-mono text-sm min-h-[300px]"
+              <RichTextEditor
                 value={currentTemplate.body}
-                onChange={(e) =>
+                onChange={(v) =>
                   setTemplates((p) => ({
                     ...p,
-                    [selectedTemplate]: { ...p[selectedTemplate], body: e.target.value },
+                    [selectedTemplate]: { ...p[selectedTemplate], body: v },
                   }))
                 }
+                minHeight="300px"
+                variables={[
+                  { label: 'Nome do Usuário', value: '{{name}}' },
+                  { label: 'Link de Conf./Senha', value: '{{link}}' },
+                  { label: 'Data de Vencimento', value: '{{due_date}}' },
+                  { label: 'Valor', value: '{{amount}}' },
+                  { label: 'Nome do Evento', value: '{{event_name}}' },
+                  { label: 'Data do Evento', value: '{{event_date}}' },
+                  { label: 'Local do Evento', value: '{{event_location}}' },
+                ]}
               />
             </div>
           </div>

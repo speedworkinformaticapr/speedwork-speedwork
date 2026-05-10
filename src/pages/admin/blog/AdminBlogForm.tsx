@@ -3,8 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { Save, ArrowLeft, Image as ImageIcon, Library } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { Switch } from '@/components/ui/switch'
 import {
   Select,
@@ -171,9 +171,10 @@ export default function AdminBlogForm() {
                   maxLength={250}
                 />
               </div>
-              <Textarea
+              <RichTextEditor
                 value={post.summary}
-                onChange={(e) => setPost({ ...post, summary: e.target.value })}
+                onChange={(v) => setPost({ ...post, summary: v })}
+                minHeight="100px"
               />
             </div>
             <div className="space-y-2">
@@ -186,9 +187,10 @@ export default function AdminBlogForm() {
                   maxLength={500}
                 />
               </div>
-              <Textarea
+              <RichTextEditor
                 value={post.introduction}
-                onChange={(e) => setPost({ ...post, introduction: e.target.value })}
+                onChange={(v) => setPost({ ...post, introduction: v })}
+                minHeight="150px"
               />
             </div>
             <div className="space-y-2">
@@ -200,10 +202,10 @@ export default function AdminBlogForm() {
                   onGenerate={(text) => setPost({ ...post, content: text })}
                 />
               </div>
-              <Textarea
-                rows={10}
+              <RichTextEditor
                 value={post.content}
-                onChange={(e) => setPost({ ...post, content: e.target.value })}
+                onChange={(v) => setPost({ ...post, content: v })}
+                minHeight="300px"
               />
             </div>
             <div className="space-y-2">
@@ -216,9 +218,10 @@ export default function AdminBlogForm() {
                   maxLength={500}
                 />
               </div>
-              <Textarea
+              <RichTextEditor
                 value={post.conclusion}
-                onChange={(e) => setPost({ ...post, conclusion: e.target.value })}
+                onChange={(v) => setPost({ ...post, conclusion: v })}
+                minHeight="150px"
               />
             </div>
           </div>

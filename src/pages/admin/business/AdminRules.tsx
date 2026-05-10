@@ -31,18 +31,9 @@ import {
 } from '@/components/ui/alert-dialog'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
-import {
-  Edit2,
-  Plus,
-  Search,
-  Trash2,
-  Bold,
-  Italic,
-  List,
-  Heading,
-  Link as LinkIcon,
-} from 'lucide-react'
+import { Edit2, Plus, Search, Trash2 } from 'lucide-react'
 import { AIGenerateButton } from '@/components/AIGenerateButton'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 
 export default function AdminRules() {
   const [items, setItems] = useState<any[]>([])
@@ -136,42 +127,6 @@ export default function AdminRules() {
   }
 
   const filtered = items.filter((c) => c.title?.toLowerCase().includes(search.toLowerCase()))
-
-  const insertFormatting = (format: string) => {
-    const textArea = document.getElementById('rich-text-editor') as HTMLTextAreaElement
-    if (!textArea) return
-
-    const start = textArea.selectionStart
-    const end = textArea.selectionEnd
-    const text = formData.description || ''
-
-    let replacement = ''
-    switch (format) {
-      case 'bold':
-        replacement = `**${text.substring(start, end) || 'texto'}**`
-        break
-      case 'italic':
-        replacement = `*${text.substring(start, end) || 'texto'}*`
-        break
-      case 'h2':
-        replacement = `## ${text.substring(start, end) || 'Título'}`
-        break
-      case 'list':
-        replacement = `\n- ${text.substring(start, end) || 'item'}`
-        break
-      case 'link':
-        replacement = `[${text.substring(start, end) || 'texto'}](url)`
-        break
-    }
-
-    const newText = text.substring(0, start) + replacement + text.substring(end)
-    setFormData({ ...formData, description: newText })
-
-    setTimeout(() => {
-      textArea.focus()
-      textArea.setSelectionRange(start + replacement.length, start + replacement.length)
-    }, 10)
-  }
 
   return (
     <div className="p-6 space-y-6 max-w-[1200px] mx-auto w-full">
@@ -268,74 +223,17 @@ export default function AdminRules() {
               <div className="flex items-center justify-between">
                 <Label>Descrição Completa</Label>
                 <AIGenerateButton
-                  fieldContext="Texto detalhado e formal para um regulamento ou regra, utilizando formatação Markdown"
+                  fieldContext="Texto detalhado e formal para um regulamento ou regra"
                   currentText={formData.description}
                   onGenerate={(text) => setFormData({ ...formData, description: text })}
                 />
               </div>
-              <div className="border rounded-md overflow-hidden flex flex-col focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-                <div className="flex items-center gap-1 border-b bg-muted p-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-sm hover:bg-background"
-                    onClick={() => insertFormatting('bold')}
-                    title="Negrito"
-                  >
-                    <Bold className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-sm hover:bg-background"
-                    onClick={() => insertFormatting('italic')}
-                    title="Itálico"
-                  >
-                    <Italic className="h-4 w-4" />
-                  </Button>
-                  <div className="w-px h-4 bg-border mx-1" />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-sm hover:bg-background"
-                    onClick={() => insertFormatting('h2')}
-                    title="Título"
-                  >
-                    <Heading className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-sm hover:bg-background"
-                    onClick={() => insertFormatting('list')}
-                    title="Lista"
-                  >
-                    <List className="h-4 w-4" />
-                  </Button>
-                  <div className="w-px h-4 bg-border mx-1" />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-sm hover:bg-background"
-                    onClick={() => insertFormatting('link')}
-                    title="Link"
-                  >
-                    <LinkIcon className="h-4 w-4" />
-                  </Button>
-                </div>
-                <textarea
-                  id="rich-text-editor"
-                  className="w-full min-h-[250px] p-3 focus:outline-none resize-y text-sm font-mono bg-background"
-                  placeholder="Escreva a regra aqui... Suporta formatação estilo Markdown."
-                  value={formData.description || ''}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
-              </div>
+              <RichTextEditor
+                value={formData.description || ''}
+                onChange={(v) => setFormData({ ...formData, description: v })}
+                placeholder="Escreva a regra aqui..."
+                minHeight="250px"
+              />
             </div>
           </div>
           <DialogFooter>

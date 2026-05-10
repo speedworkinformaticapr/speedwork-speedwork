@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { Edit, Trash2, Plus, Search } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -206,9 +206,10 @@ export default function AdminServices() {
               </div>
               <div className="col-span-1 md:col-span-2 grid gap-2">
                 <Label>Descrição</Label>
-                <Textarea
+                <RichTextEditor
                   value={formData.description || ''}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(v) => setFormData({ ...formData, description: v })}
+                  minHeight="120px"
                 />
               </div>
               <div className="grid gap-2">

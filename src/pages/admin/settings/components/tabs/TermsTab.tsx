@@ -6,116 +6,7 @@ import { FileText } from 'lucide-react'
 import { UseFormReturn } from 'react-hook-form'
 import { SystemDataFormData } from '../SystemDataSchema'
 import { generateTermsPDF } from '@/lib/pdf-utils'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-
-function RichTextEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const editorRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (editorRef.current && !editorRef.current.innerHTML && value) {
-      editorRef.current.innerHTML = value
-    }
-  }, [])
-
-  const handleCommand = (command: string, arg?: string) => {
-    document.execCommand(command, false, arg)
-    onChange(editorRef.current?.innerHTML || '')
-  }
-
-  return (
-    <div className="border rounded-md overflow-hidden bg-background focus-within:ring-2 focus-within:ring-ring">
-      <div className="flex flex-wrap items-center gap-1 border-b p-1 bg-muted/50">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => handleCommand('bold')}
-          className="h-8 w-8 p-0 font-bold"
-        >
-          B
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => handleCommand('italic')}
-          className="h-8 w-8 p-0 italic"
-        >
-          I
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => handleCommand('underline')}
-          className="h-8 w-8 p-0 underline"
-        >
-          U
-        </Button>
-        <div className="w-px h-4 bg-border mx-1" />
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => handleCommand('justifyLeft')}
-          className="h-8 px-2 text-xs"
-        >
-          Esq
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => handleCommand('justifyCenter')}
-          className="h-8 px-2 text-xs"
-        >
-          Centro
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => handleCommand('justifyRight')}
-          className="h-8 px-2 text-xs"
-        >
-          Dir
-        </Button>
-        <div className="w-px h-4 bg-border mx-1" />
-        <Select
-          onValueChange={(val) => {
-            editorRef.current?.focus()
-            document.execCommand('insertText', false, val)
-            onChange(editorRef.current?.innerHTML || '')
-          }}
-        >
-          <SelectTrigger className="h-8 w-[160px] text-xs">
-            <SelectValue placeholder="Inserir Variável" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="{{cliente_nome}}">Nome do Cliente</SelectItem>
-            <SelectItem value="{{cliente_documento}}">Doc do Cliente</SelectItem>
-            <SelectItem value="{{empresa_nome}}">Nome da Empresa</SelectItem>
-            <SelectItem value="{{empresa_cnpj}}">CNPJ da Empresa</SelectItem>
-            <SelectItem value="{{data_atual}}">Data Atual</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div
-        ref={editorRef}
-        contentEditable
-        className="min-h-[200px] p-3 text-sm focus:outline-none prose dark:prose-invert max-w-none"
-        onBlur={(e) => onChange(e.currentTarget.innerHTML)}
-        onInput={(e) => onChange(e.currentTarget.innerHTML)}
-      />
-    </div>
-  )
-}
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 
 export function TermsTab({ form }: { form: UseFormReturn<SystemDataFormData> }) {
   return (
@@ -156,7 +47,17 @@ export function TermsTab({ form }: { form: UseFormReturn<SystemDataFormData> }) 
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <RichTextEditor value={field.value || ''} onChange={field.onChange} />
+                  <RichTextEditor
+                    value={field.value || ''}
+                    onChange={field.onChange}
+                    variables={[
+                      { label: 'Nome do Cliente', value: '{{cliente_nome}}' },
+                      { label: 'Doc do Cliente', value: '{{cliente_documento}}' },
+                      { label: 'Nome da Empresa', value: '{{empresa_nome}}' },
+                      { label: 'CNPJ da Empresa', value: '{{empresa_cnpj}}' },
+                      { label: 'Data Atual', value: '{{data_atual}}' },
+                    ]}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -189,7 +90,17 @@ export function TermsTab({ form }: { form: UseFormReturn<SystemDataFormData> }) 
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <RichTextEditor value={field.value || ''} onChange={field.onChange} />
+                  <RichTextEditor
+                    value={field.value || ''}
+                    onChange={field.onChange}
+                    variables={[
+                      { label: 'Nome do Cliente', value: '{{cliente_nome}}' },
+                      { label: 'Doc do Cliente', value: '{{cliente_documento}}' },
+                      { label: 'Nome da Empresa', value: '{{empresa_nome}}' },
+                      { label: 'CNPJ da Empresa', value: '{{empresa_cnpj}}' },
+                      { label: 'Data Atual', value: '{{data_atual}}' },
+                    ]}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -220,7 +131,17 @@ export function TermsTab({ form }: { form: UseFormReturn<SystemDataFormData> }) 
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <RichTextEditor value={field.value || ''} onChange={field.onChange} />
+                  <RichTextEditor
+                    value={field.value || ''}
+                    onChange={field.onChange}
+                    variables={[
+                      { label: 'Nome do Cliente', value: '{{cliente_nome}}' },
+                      { label: 'Doc do Cliente', value: '{{cliente_documento}}' },
+                      { label: 'Nome da Empresa', value: '{{empresa_nome}}' },
+                      { label: 'CNPJ da Empresa', value: '{{empresa_cnpj}}' },
+                      { label: 'Data Atual', value: '{{data_atual}}' },
+                    ]}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
