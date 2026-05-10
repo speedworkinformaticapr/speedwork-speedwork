@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Settings, AlertCircle, Plus, Trash2, Save } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AIGenerateButton } from '@/components/AIGenerateButton'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -56,7 +57,17 @@ function FieldRenderer({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs font-semibold">{field.label}</Label>
+      <div className="flex items-center justify-between">
+        <Label className="text-xs font-semibold">{field.label}</Label>
+        {(field.type === 'text' || field.type === 'textarea') && (
+          <AIGenerateButton
+            onGenerate={onChange}
+            fieldContext={`Preencha o campo "${field.label}" de forma criativa.`}
+            currentText={value || ''}
+            maxLength={field.type === 'text' ? 100 : 500}
+          />
+        )}
+      </div>
       {field.type === 'text' && (
         <Input
           value={value || ''}
