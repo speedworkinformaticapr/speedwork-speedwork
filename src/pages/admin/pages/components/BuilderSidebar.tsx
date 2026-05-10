@@ -43,8 +43,11 @@ export const BUILDER_ELEMENTS = [
 ]
 
 export function BuilderSidebar() {
-  const handleDragStart = (e: React.DragEvent, type: string) => {
-    e.dataTransfer.setData('application/react-builder-type', type)
+  const handleDragStart = (e: React.DragEvent, el: any) => {
+    e.dataTransfer.setData(
+      'application/json',
+      JSON.stringify({ action: 'add', type: el.type, name: el.label, defaultData: {} }),
+    )
     e.dataTransfer.effectAllowed = 'copy'
   }
 
@@ -58,7 +61,7 @@ export function BuilderSidebar() {
           <div
             key={el.type}
             draggable
-            onDragStart={(e) => handleDragStart(e, el.type)}
+            onDragStart={(e) => handleDragStart(e, el)}
             className="flex items-center gap-3 p-3 bg-background border rounded-lg cursor-grab hover:border-primary hover:shadow-sm transition-all group"
           >
             <GripVertical className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />

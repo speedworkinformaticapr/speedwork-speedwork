@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useCallback } from 'react'
 import {
   Accordion,
   AccordionItem,
@@ -11,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import {
   Quote,
   ArrowRight,
+  ArrowLeft,
   CheckCircle2,
   Play,
   Users,
@@ -18,11 +20,89 @@ import {
   DollarSign,
   ThumbsUp,
 } from 'lucide-react'
+import useEmblaCarousel from 'embla-carousel-react'
+import Autoplay from 'embla-carousel-autoplay'
+
+function MediaCarouselSection({ data }: { data: any }) {
+  const autoplay = data.autoplay
+    ? Autoplay({ delay: data.delay || 5000, stopOnInteraction: true })
+    : null
+  const plugins = autoplay ? [autoplay] : []
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, plugins)
+
+  const scrollPrev = useCallback(() => {
+    if (emblaApi) emblaApi.scrollPrev()
+  }, [emblaApi])
+
+  const scrollNext = useCallback(() => {
+    if (emblaApi) emblaApi.scrollNext()
+  }, [emblaApi])
+
+  const items = data.items || []
+
+  if (items.length === 0) return null
+
+  return (
+    <section className="relative w-full overflow-hidden bg-background group">
+      <div className="overflow-hidden" ref={emblaRef}>
+        <div className="flex">
+          {items.map((item: any, idx: number) => (
+            <div className="relative flex-[0_0_100%] min-w-0" key={idx}>
+              {item.type === 'video' ? (
+                <video
+                  src={item.url}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="w-full min-h-[400px] md:h-[600px] object-cover"
+                />
+              ) : (
+                <img
+                  src={item.url || `https://img.usecurling.com/p/1200/600?seed=${idx}`}
+                  alt={item.title || 'Carousel media'}
+                  className="w-full min-h-[400px] md:h-[600px] object-cover"
+                />
+              )}
+              {item.title && (
+                <div className="absolute bottom-0 left-0 w-full p-8 bg-gradient-to-t from-black/80 to-transparent">
+                  <h3 className="text-2xl md:text-4xl font-bold text-white drop-shadow-md">
+                    {item.title}
+                  </h3>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+      {items.length > 1 && (
+        <>
+          <button
+            onClick={scrollPrev}
+            className="absolute top-1/2 left-4 -translate-y-1/2 bg-black/30 text-white p-3 rounded-full z-10 hover:bg-black/60 transition-colors backdrop-blur-sm opacity-0 group-hover:opacity-100"
+          >
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <button
+            onClick={scrollNext}
+            className="absolute top-1/2 right-4 -translate-y-1/2 bg-black/30 text-white p-3 rounded-full z-10 hover:bg-black/60 transition-colors backdrop-blur-sm opacity-0 group-hover:opacity-100"
+          >
+            <ArrowRight className="w-6 h-6" />
+          </button>
+        </>
+      )}
+    </section>
+  )
+}
 
 export function SectionRenderer({ section }: { section: any }) {
   const { type, data } = section
 
   if (!data) return null
+
+  if (type === 'media_carousel') {
+    return <MediaCarouselSection data={data} />
+  }
 
   if (type === 'hero') {
     const bgImage = data.image || data.backgroundImage
