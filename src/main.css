@@ -58,6 +58,10 @@
   * {
     @apply border-border;
   }
+
+  .embla-transform-none > div {
+    transform: none !important;
+  }
   body {
     @apply bg-background text-foreground;
   }

@@ -2,25 +2,12 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase/client'
 
-export interface Profile {
-  id: string
-  email: string
-  name: string | null
-  role: string
-}
-
 interface AuthContextType {
   user: User | null
   session: Session | null
-  profile: Profile | null
+  profile: any | null
   roles: string[]
-  activeRole: string | null
-  setActiveRole: (role: string) => void
-  signUp: (
-    email: string,
-    password: string,
-    metaData?: any,
-  ) => Promise<{ user: User | null; session: Session | null; error: any }>
+  signUp: (email: string, password: string) => Promise<{ error: any }>
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signOut: () => Promise<{ error: any }>
   loading: boolean
@@ -37,83 +24,44 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const [profile, setProfile] = useState<any | null>(null)
   const [roles, setRoles] = useState<string[]>([])
-  const [activeRole, setActiveRoleState] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const setActiveRole = (role: string) => {
-    setActiveRoleState(role)
-    localStorage.setItem('activeRole', role)
-  }
-
   useEffect(() => {
-    const fetchProfileAndRoles = async (userId: string, userEmail?: string) => {
+    const fetchProfileAndRoles = async (currentUser: User) => {
       try {
-        const { data: profileData, error: profileError } = await supabase
+        const { data: profileData } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', userId)
-          .maybeSingle()
+          .eq('id', currentUser.id)
+          .single()
 
-        if (profileError) {
-          console.error('Error fetching profile:', profileError)
+        setProfile(profileData)
+
+        // Tenta buscar da tabela user_roles, ignora falha caso ela não exista
+        const { data: rolesData, error: rolesError } = await supabase
+          .from('user_roles' as any)
+          .select('role')
+          .eq('user_id', currentUser.id)
+
+        if (rolesError) {
+          console.warn(
+            'Tabela user_roles não encontrada ou erro na consulta. Ignorando e utilizando o role do profile.',
+          )
         }
 
-        if (profileData) {
-          setProfile(profileData as Profile)
-        } else {
-          setProfile(null)
-        }
+        const userRoles = rolesData?.map((r: any) => r.role) || []
 
-        let userRoles: string[] = []
-
-        // Combine roles from profiles tables to prevent lockouts
         if (profileData?.role && !userRoles.includes(profileData.role)) {
           userRoles.push(profileData.role)
         }
 
-        // Hardcoded admins to ensure they never lose access
-        const adminEmails = [
-          'ias2371@gmail.com',
-          'souzaivan31@gmail.com',
-          'admin@footgolfpr.com.br',
-        ]
-        const emailToCheck = profileData?.email || userEmail || ''
-
-        if (
-          adminEmails.includes(emailToCheck) &&
-          !userRoles.includes('master') &&
-          !userRoles.includes('admin')
-        ) {
-          userRoles.push('master')
-        }
-
-        if (userRoles.length === 0) {
-          userRoles = ['user']
-        }
-
-        // Deduplicate roles just in case
-        userRoles = Array.from(new Set(userRoles))
-
         setRoles(userRoles)
-
-        const savedRole = localStorage.getItem('activeRole')
-        if (savedRole && userRoles.includes(savedRole)) {
-          setActiveRoleState(savedRole)
-        } else {
-          // If 'master' or 'admin' is available, prefer it as default immediately
-          const defaultRole = userRoles.includes('master')
-            ? 'master'
-            : userRoles.includes('admin')
-              ? 'admin'
-              : userRoles[0]
-
-          setActiveRoleState(defaultRole)
-          localStorage.setItem('activeRole', defaultRole)
-        }
-      } catch (error) {
-        console.error('Error fetching profile and roles:', error)
+      } catch (err) {
+        console.error('Error fetching profile/roles:', err)
+      } finally {
+        setLoading(false)
       }
     }
 
@@ -122,13 +70,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfileAndRoles(session.user.id, session.user.email).finally(() => setLoading(false))
-      } else {
+      if (!session?.user) {
         setProfile(null)
         setRoles([])
-        setActiveRoleState(null)
-        localStorage.removeItem('activeRole')
         setLoading(false)
       }
     })
@@ -137,7 +81,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
-        fetchProfileAndRoles(session.user.id, session.user.email).finally(() => setLoading(false))
+        fetchProfileAndRoles(session.user)
       } else {
         setLoading(false)
       }
@@ -146,23 +90,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe()
   }, [])
 
-  const signUp = async (email: string, password: string, metaData?: any) => {
-    const { data, error } = await supabase.auth.signUp({
+  const signUp = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: metaData,
-      },
+      options: { emailRedirectTo: `${window.location.origin}/` },
     })
-    return { user: data?.user || null, session: data?.session || null, error }
+    return { error }
   }
-
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     return { error }
   }
-
   const signOut = async () => {
     const { error } = await supabase.auth.signOut()
     return { error }
@@ -170,18 +109,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        session,
-        profile,
-        roles,
-        activeRole,
-        setActiveRole,
-        signUp,
-        signIn,
-        signOut,
-        loading,
-      }}
+      value={{ user, session, profile, roles, signUp, signIn, signOut, loading }}
     >
       {children}
     </AuthContext.Provider>

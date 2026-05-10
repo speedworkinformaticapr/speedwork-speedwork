@@ -317,6 +317,43 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
         fields: [
           { name: 'autoplay', label: 'Reprodução Automática', type: 'boolean' },
           { name: 'delay', label: 'Tempo (ms)', type: 'number' },
+          {
+            name: 'transition',
+            label: 'Efeito de Transição',
+            type: 'select',
+            options: [
+              { label: 'Deslizar (Slide)', value: 'slide' },
+              { label: 'Esmaecer (Fade)', value: 'fade' },
+              { label: 'Aumentar (Scale)', value: 'scale' },
+              { label: 'Cubo (Cube)', value: 'cube' },
+              { label: 'Girar (Flip)', value: 'flip' },
+            ],
+          },
+        ],
+      },
+      {
+        title: 'Posicionamento do Texto',
+        fields: [
+          {
+            name: 'alignHorizontal',
+            label: 'Alinhamento Horizontal',
+            type: 'select',
+            options: [
+              { label: 'Esquerda', value: 'left' },
+              { label: 'Centro', value: 'center' },
+              { label: 'Direita', value: 'right' },
+            ],
+          },
+          {
+            name: 'alignVertical',
+            label: 'Alinhamento Vertical',
+            type: 'select',
+            options: [
+              { label: 'Topo', value: 'top' },
+              { label: 'Centro', value: 'center' },
+              { label: 'Base', value: 'bottom' },
+            ],
+          },
         ],
       },
     ],
@@ -335,7 +372,10 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
               { label: 'Vídeo', value: 'video' },
             ],
           },
-          { name: 'title', label: 'Título/Alt', type: 'text' },
+          { name: 'title', label: 'Título', type: 'text' },
+          { name: 'subtitle', label: 'Subtítulo', type: 'textarea' },
+          { name: 'buttonText', label: 'Texto do Botão', type: 'text' },
+          { name: 'buttonLink', label: 'Link do Botão', type: 'url' },
         ],
       },
     ],
