@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import {
   Accordion,
   AccordionItem,
@@ -24,10 +24,13 @@ import useEmblaCarousel from 'embla-carousel-react'
 import Autoplay from 'embla-carousel-autoplay'
 
 function MediaCarouselSection({ data }: { data: any }) {
-  const autoplay = data.autoplay
-    ? Autoplay({ delay: data.delay || 5000, stopOnInteraction: true })
-    : null
-  const plugins = autoplay ? [autoplay] : []
+  const delay = Number(data.delay) || 5000
+  const autoplayEnabled = !!data.autoplay
+
+  const plugins = useMemo(() => {
+    return autoplayEnabled ? [Autoplay({ delay, stopOnInteraction: true })] : []
+  }, [autoplayEnabled, delay])
+
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, plugins)
 
   const scrollPrev = useCallback(() => {

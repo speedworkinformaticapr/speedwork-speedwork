@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import Autoplay from 'embla-carousel-autoplay'
 import { supabase } from '@/lib/supabase/client'
@@ -9,9 +9,12 @@ import { cn } from '@/lib/utils'
 
 export function HeroCarousel() {
   const [slides, setSlides] = useState<any[]>([])
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [
-    Autoplay({ delay: 5000, stopOnInteraction: true, stopOnMouseEnter: true }),
-  ])
+
+  const plugins = useMemo(() => {
+    return [Autoplay({ delay: 5000, stopOnInteraction: true, stopOnMouseEnter: true })]
+  }, [])
+
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, plugins)
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [scrollSnaps, setScrollSnaps] = useState<number[]>([])
 
