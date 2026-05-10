@@ -16,7 +16,7 @@ export default function PublicPage() {
       setLoading(true)
 
       const [pageRes, sectionsRes] = await Promise.all([
-        supabase.from('pages').select('*').eq('slug', slug).eq('is_published', true).single(),
+        supabase.from('pages').select('*').eq('slug', slug).single(),
         supabase.from('sections').select('*'),
       ])
 

@@ -15,15 +15,69 @@ export default function Index() {
   })
 
   useEffect(() => {
-    supabase
-      .from('sections' as any)
-      .select('*')
-      .eq('is_published', true)
-      .order('display_order', { ascending: true })
-      .then(({ data }) => {
-        setSections(data || [])
-        setLoading(false)
-      })
+    async function loadHome() {
+      setLoading(true)
+
+      let { data: pageData } = await supabase
+        .from('pages')
+        .select('*')
+        .eq('slug', 'inicio')
+        .maybeSingle()
+
+      if (!pageData) {
+        const { data: homeData } = await supabase
+          .from('pages')
+          .select('*')
+          .eq('slug', 'home')
+          .maybeSingle()
+        pageData = homeData
+      }
+
+      if (!pageData) {
+        const { data: firstPage } = await supabase
+          .from('pages')
+          .select('*')
+          .order('display_order', { ascending: true })
+          .limit(1)
+          .maybeSingle()
+        pageData = firstPage
+      }
+
+      if (pageData && pageData.blocks) {
+        const { data: sectionsData } = await supabase.from('sections').select('*')
+
+        const renderableBlocks = (pageData.blocks as any[])
+          .filter((b: any) => !b.isHidden)
+          .map((block: any) => {
+            if (block.section_id) {
+              const section = (sectionsData || []).find((s) => s.id === block.section_id)
+              if (section) {
+                return {
+                  id: block.id || section.id,
+                  type: section.type,
+                  data: section.data,
+                  order: block.order || 0,
+                }
+              }
+            }
+            return block
+          })
+          .filter((b: any) => b && b.type)
+          .sort((a: any, b: any) => (a.order || 0) - (b.order || 0))
+
+        setSections(renderableBlocks)
+      } else {
+        const { data: sectionsFallback } = await supabase
+          .from('sections' as any)
+          .select('*')
+          .order('display_order', { ascending: true })
+        setSections(sectionsFallback || [])
+      }
+
+      setLoading(false)
+    }
+
+    loadHome()
   }, [])
 
   if (loading) {
@@ -54,8 +108,8 @@ export default function Index() {
   return (
     <main className="w-full min-h-screen bg-background flex flex-col animate-fade-in">
       <HeroCarousel />
-      {sections.map((s) => (
-        <SectionRenderer key={s.id} section={s} />
+      {sections.map((s, idx) => (
+        <SectionRenderer key={s.id || idx} section={{ type: s.type, data: s.data }} />
       ))}
     </main>
   )
