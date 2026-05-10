@@ -303,7 +303,6 @@ export function AdminSidebar() {
                                     aria-hidden="true"
                                   />
                                 )}
-                                <span className="truncate">{subItem.title}</span>
                               </Link>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
