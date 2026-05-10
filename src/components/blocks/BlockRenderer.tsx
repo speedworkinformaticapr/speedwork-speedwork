@@ -204,15 +204,23 @@ export function BlockRenderer({ block }: { block: any }) {
       return <BlogPostsGrid block={block} />
     case 'media_carousel': {
       const items = block.data.items || []
-      const autoplay = block.data.autoplay !== false
-      const delay = block.data.delay || 5000
+      const autoplay = !!block.data.autoplay
+      const delay = Number(block.data.delay) || 5000
+
+      if (items.length === 0) {
+        return (
+          <div className="container mx-auto px-4 my-12 text-center text-muted-foreground p-12 bg-muted/20 rounded-2xl border border-dashed">
+            Adicione mídias nas propriedades do carrossel para visualizar.
+          </div>
+        )
+      }
 
       return (
         <div className="container mx-auto px-4 my-12">
           <Carousel
             opts={{
               align: 'start',
-              loop: true,
+              loop: items.length > 1,
             }}
             plugins={
               autoplay
@@ -223,13 +231,13 @@ export function BlockRenderer({ block }: { block: any }) {
                   ]
                 : []
             }
-            className="w-full max-w-5xl mx-auto group"
+            className="w-full max-w-5xl mx-auto group relative"
           >
             <CarouselContent>
               {items.map((item: any, i: number) => (
                 <CarouselItem key={i}>
                   <div className="p-1">
-                    <Card className="overflow-hidden border-none shadow-lg rounded-2xl aspect-video relative bg-black">
+                    <Card className="overflow-hidden border-none shadow-lg rounded-2xl aspect-video relative bg-black flex items-center justify-center">
                       {item.type === 'video' ? (
                         <video
                           src={item.url}
@@ -256,8 +264,12 @@ export function BlockRenderer({ block }: { block: any }) {
                 </CarouselItem>
               ))}
             </CarouselContent>
-            <CarouselPrevious className="left-4 opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 hover:bg-white text-black border-none" />
-            <CarouselNext className="right-4 opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 hover:bg-white text-black border-none" />
+            {items.length > 1 && (
+              <>
+                <CarouselPrevious className="left-4 opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 hover:bg-white text-black border-none z-10" />
+                <CarouselNext className="right-4 opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 hover:bg-white text-black border-none z-10" />
+              </>
+            )}
           </Carousel>
         </div>
       )
