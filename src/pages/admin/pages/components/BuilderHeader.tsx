@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
+import { AIGenerateButton } from '@/components/AIGenerateButton'
 
 export function BuilderHeader() {
   const { state, setState } = usePageBuilderStore()
@@ -91,7 +92,14 @@ export function BuilderHeader() {
             </DialogHeader>
             <div className="space-y-4 pt-4">
               <div className="space-y-2">
-                <Label>Título Interno *</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Título Interno *</Label>
+                  <AIGenerateButton
+                    fieldContext="Título curto e claro para a página (uso interno e exibição principal)"
+                    currentText={state.title}
+                    onGenerate={(text) => setState({ title: text })}
+                  />
+                </div>
                 <Input value={state.title} onChange={(e) => setState({ title: e.target.value })} />
               </div>
               <div className="space-y-2">
@@ -113,14 +121,30 @@ export function BuilderHeader() {
                 <Label>Página Publicada</Label>
               </div>
               <div className="space-y-2 pt-2 border-t mt-2">
-                <Label>Meta Title (SEO)</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Meta Title (SEO)</Label>
+                  <AIGenerateButton
+                    fieldContext={`Meta Title SEO atrativo e com palavras-chave para a página. Título base: ${state.title}`}
+                    currentText={state.metaTitle}
+                    onGenerate={(text) => setState({ metaTitle: text })}
+                    maxLength={60}
+                  />
+                </div>
                 <Input
                   value={state.metaTitle}
                   onChange={(e) => setState({ metaTitle: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Meta Description (SEO)</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Meta Description (SEO)</Label>
+                  <AIGenerateButton
+                    fieldContext={`Meta Description SEO engajadora e descritiva para a página. Título base: ${state.title}`}
+                    currentText={state.metaDescription}
+                    onGenerate={(text) => setState({ metaDescription: text })}
+                    maxLength={160}
+                  />
+                </div>
                 <Textarea
                   value={state.metaDescription}
                   onChange={(e) => setState({ metaDescription: e.target.value })}
