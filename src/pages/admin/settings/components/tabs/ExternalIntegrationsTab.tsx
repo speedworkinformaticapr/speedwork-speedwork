@@ -119,6 +119,54 @@ export function ExternalIntegrationsTab({ form }: { form: UseFormReturn<SystemDa
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
+            name="openai_environment"
+            render={({ field }) => (
+              <FormItem className="col-span-1 md:col-span-2">
+                <FormLabel>Ambiente OpenAI</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value || 'test'}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="test">Testes Internos</SelectItem>
+                    <SelectItem value="production">Produção</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="openai_api_key_test"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>OpenAI API Key (Testes)</FormLabel>
+                <FormControl>
+                  <Input type="password" {...field} value={field.value || ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="openai_api_key_production"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>OpenAI API Key (Produção)</FormLabel>
+                <FormControl>
+                  <Input type="password" {...field} value={field.value || ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="recaptcha_site_key"
             render={({ field }) => (
               <FormItem>

@@ -103,6 +103,18 @@ export const systemDataSchema = z.object({
   payment_environment: z.enum(['sandbox', 'production']).optional().nullable(),
   asaas_api_key: z.string().optional().nullable(),
 
+  openai_api_key_test: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((v) => (v === '' ? null : v)),
+  openai_api_key_production: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((v) => (v === '' ? null : v)),
+  openai_environment: z.enum(['test', 'production']).optional().nullable(),
+
   term_content_uso: z.string().optional().nullable(),
   term_content_lgpd: z.string().optional().nullable(),
   term_content_cookies: z.string().optional().nullable(),

@@ -4011,6 +4011,24 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION generate_numero_registro_federativo()
+//   CREATE OR REPLACE FUNCTION public.generate_numero_registro_federativo()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//   AS $function$
+//   DECLARE
+//       year_month TEXT;
+//       seq_val INTEGER;
+//   BEGIN
+//       IF NEW.numero_registro_federativo IS NULL OR NEW.numero_registro_federativo = '' THEN
+//           year_month := to_char(COALESCE(NEW.created_at, CURRENT_TIMESTAMP), 'YYYYMM');
+//           seq_val := nextval('public.profile_registro_seq');
+//           NEW.numero_registro_federativo := year_month || lpad(seq_val::TEXT, 4, '0');
+//       END IF;
+//       RETURN NEW;
+//   END;
+//   $function$
+//
 // FUNCTION handle_new_user()
 //   CREATE OR REPLACE FUNCTION public.handle_new_user()
 //    RETURNS trigger
@@ -4301,6 +4319,7 @@ export const Constants = {
 // Table: pedidos
 //   trg_pedido_financeiro_estoque: CREATE TRIGGER trg_pedido_financeiro_estoque AFTER UPDATE ON public.pedidos FOR EACH ROW EXECUTE FUNCTION handle_pedido_financeiro_estoque()
 // Table: profiles
+//   on_profile_insert_generate_registro: CREATE TRIGGER on_profile_insert_generate_registro BEFORE INSERT ON public.profiles FOR EACH ROW EXECUTE FUNCTION generate_numero_registro_federativo()
 //   on_profile_sync_usuarios: CREATE TRIGGER on_profile_sync_usuarios AFTER INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION sync_profile_to_usuarios()
 // Table: sections
 //   sections_updated_at_trigger: CREATE TRIGGER sections_updated_at_trigger BEFORE UPDATE ON public.sections FOR EACH ROW EXECUTE FUNCTION update_sections_modtime()
