@@ -5,6 +5,7 @@ import { Trash2, GripVertical, Plus, ChevronUp, ChevronDown } from 'lucide-react
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/hooks/use-toast'
+import { SectionRenderer } from '@/components/sections/SectionRenderer'
 
 export function BuilderCanvas() {
   const { state, setState } = usePageBuilderStore()
@@ -174,15 +175,18 @@ export function BuilderCanvas() {
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
-              <div className="pl-6">
-                <div className="flex items-center gap-2 mb-2">
+              <div className="pl-6 w-full">
+                <div className="flex items-center gap-2 mb-4">
                   <span className="bg-primary/10 text-primary text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">
                     {block.type}
                   </span>
                   <span className="font-semibold text-foreground">{block.name}</span>
                 </div>
-                <div className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg font-mono truncate max-h-24 whitespace-pre-wrap overflow-hidden">
-                  {JSON.stringify(block.data)}
+                <div className="relative pointer-events-none rounded-lg overflow-hidden bg-background border shadow-inner max-h-[350px] w-full">
+                  <div className="w-full">
+                    <SectionRenderer section={{ type: block.type, data: block.data || {} }} />
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-card to-transparent pointer-events-none" />
                 </div>
               </div>
             </div>
