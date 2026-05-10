@@ -24,8 +24,8 @@ import useEmblaCarousel from 'embla-carousel-react'
 import Autoplay from 'embla-carousel-autoplay'
 
 function MediaCarouselSection({ data }: { data: any }) {
-  const delay = Number(data.delay) || 5000
-  const autoplayEnabled = !!data.autoplay
+  const delay = Math.max(1000, Number(data.delay) || 5000)
+  const autoplayEnabled = data.autoplay === undefined ? true : !!data.autoplay
 
   const plugins = useMemo(() => {
     return autoplayEnabled ? [Autoplay({ delay, stopOnInteraction: true })] : []
@@ -58,7 +58,10 @@ function MediaCarouselSection({ data }: { data: any }) {
         ]
 
   return (
-    <section className="relative w-full overflow-hidden bg-background group">
+    <section
+      key={`carousel-${autoplayEnabled}-${delay}`}
+      className="relative w-full overflow-hidden bg-background group"
+    >
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex">
           {items.map((item: any, idx: number) => (
