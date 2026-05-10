@@ -4,6 +4,14 @@ import { PageHero } from '@/components/PageHero'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { BlogPostsGrid } from '@/components/blocks/BlogPostsGrid'
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel'
+import Autoplay from 'embla-carousel-autoplay'
 
 export function BlockRenderer({ block }: { block: any }) {
   if (!block || !block.type || !block.data) return null
@@ -143,21 +151,34 @@ export function BlockRenderer({ block }: { block: any }) {
         </div>
       )
     case 'gallery': {
-      const images = Array.isArray(block.data.images) ? block.data.images : []
+      const images = Array.isArray(block.data.items)
+        ? block.data.items
+        : Array.isArray(block.data.images)
+          ? block.data.images
+          : []
+
       return (
         <div className="container mx-auto px-4 my-10 grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-          {images.map((img: any, i: number) => (
-            <div
-              key={i}
-              className="aspect-square rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300"
-            >
-              <img
-                src={img.url}
-                alt={img.alt || `Galeria imagem ${i + 1}`}
-                className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
-              />
-            </div>
-          ))}
+          {images.map((img: any, i: number) => {
+            const url = typeof img === 'string' ? img : img.url
+            const alt =
+              typeof img === 'string'
+                ? `Galeria imagem ${i + 1}`
+                : img.alt || `Galeria imagem ${i + 1}`
+
+            return (
+              <div
+                key={i}
+                className="aspect-square rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300"
+              >
+                <img
+                  src={url}
+                  alt={alt}
+                  className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                />
+              </div>
+            )
+          })}
         </div>
       )
     }
@@ -181,6 +202,66 @@ export function BlockRenderer({ block }: { block: any }) {
       )
     case 'blog_posts_grid':
       return <BlogPostsGrid block={block} />
+    case 'media_carousel': {
+      const items = block.data.items || []
+      const autoplay = block.data.autoplay !== false
+      const delay = block.data.delay || 5000
+
+      return (
+        <div className="container mx-auto px-4 my-12">
+          <Carousel
+            opts={{
+              align: 'start',
+              loop: true,
+            }}
+            plugins={
+              autoplay
+                ? [
+                    Autoplay({
+                      delay: delay,
+                    }),
+                  ]
+                : []
+            }
+            className="w-full max-w-5xl mx-auto group"
+          >
+            <CarouselContent>
+              {items.map((item: any, i: number) => (
+                <CarouselItem key={i}>
+                  <div className="p-1">
+                    <Card className="overflow-hidden border-none shadow-lg rounded-2xl aspect-video relative bg-black">
+                      {item.type === 'video' ? (
+                        <video
+                          src={item.url}
+                          className="w-full h-full object-cover"
+                          autoPlay
+                          muted
+                          loop
+                          playsInline
+                        />
+                      ) : (
+                        <img
+                          src={item.url || 'https://img.usecurling.com/p/1600/900?q=sports'}
+                          alt={item.title || `Mídia ${i + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                      {item.title && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 pt-12 text-white">
+                          <h3 className="text-xl md:text-2xl font-bold">{item.title}</h3>
+                        </div>
+                      )}
+                    </Card>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="left-4 opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 hover:bg-white text-black border-none" />
+            <CarouselNext className="right-4 opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 hover:bg-white text-black border-none" />
+          </Carousel>
+        </div>
+      )
+    }
     default:
       return null
   }

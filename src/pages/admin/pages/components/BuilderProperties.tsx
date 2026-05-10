@@ -4,9 +4,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Settings, AlertCircle, Plus, Trash2, Save } from 'lucide-react'
+import { Settings, AlertCircle, Plus, Trash2, Save, Image as ImageIcon } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AIGenerateButton } from '@/components/AIGenerateButton'
+import { MediaPicker } from '@/components/MediaPicker'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -99,13 +100,28 @@ function FieldRenderer({
         </div>
       )}
       {field.type === 'url' && (
-        <Input
-          type="url"
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-8 text-xs"
-          placeholder="https://..."
-        />
+        <div className="flex gap-2">
+          <Input
+            type="url"
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+            className="h-8 text-xs flex-1"
+            placeholder="https://..."
+          />
+          <MediaPicker
+            onSelect={(url) => onChange(url)}
+            trigger={
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                title="Buscar na Galeria"
+              >
+                <ImageIcon className="w-4 h-4" />
+              </Button>
+            }
+          />
+        </div>
       )}
       {field.type === 'number' && (
         <Input
@@ -224,49 +240,71 @@ function ListRenderer({
       )}
 
       <Accordion type="multiple" className="w-full">
-        {(items || []).map((item, idx) => (
-          <AccordionItem
-            key={idx}
-            value={`item-${idx}`}
-            className="border rounded-md px-3 mb-2 bg-card"
-          >
-            <div className="flex items-center justify-between w-full h-10">
-              <AccordionTrigger className="hover:no-underline py-0 flex-1 justify-start text-xs font-medium truncate pr-4">
-                {isStringList
-                  ? item || `Item ${idx + 1}`
-                  : item.title || item.name || item.question || item.author || `Item ${idx + 1}`}
-              </AccordionTrigger>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 text-destructive shrink-0"
-                onClick={() => handleRemove(idx)}
-              >
-                <Trash2 className="w-3 h-3" />
-              </Button>
-            </div>
-            <AccordionContent className="pb-3 pt-1 space-y-4">
-              {isStringList ? (
-                <div className="flex gap-2">
-                  <Input
-                    value={item || ''}
-                    onChange={(e) => handleUpdateStringItem(idx, e.target.value)}
-                    className="h-8 text-xs"
-                  />
-                </div>
-              ) : (
-                listDef.fields?.map((f) => (
-                  <FieldRenderer
-                    key={f.name}
-                    field={f}
-                    value={item[f.name]}
-                    onChange={(v) => handleUpdateItem(idx, f.name, v)}
-                  />
-                ))
-              )}
-            </AccordionContent>
-          </AccordionItem>
-        ))}
+        {(items || []).map((item, idx) => {
+          const isMediaList = listDef.name === 'items' && listDef.label.includes('URLs')
+          const displayTitle = isStringList
+            ? item || `Item ${idx + 1}`
+            : isMediaList && typeof item === 'string'
+              ? item || `Mídia ${idx + 1}`
+              : item.title || item.name || item.question || item.author || `Item ${idx + 1}`
+
+          return (
+            <AccordionItem
+              key={idx}
+              value={`item-${idx}`}
+              className="border rounded-md px-3 mb-2 bg-card"
+            >
+              <div className="flex items-center justify-between w-full h-10">
+                <AccordionTrigger className="hover:no-underline py-0 flex-1 justify-start text-xs font-medium truncate pr-4">
+                  {displayTitle}
+                </AccordionTrigger>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-destructive shrink-0"
+                  onClick={() => handleRemove(idx)}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </div>
+              <AccordionContent className="pb-3 pt-1 space-y-4">
+                {isStringList ? (
+                  <div className="flex gap-2">
+                    <Input
+                      value={item || ''}
+                      onChange={(e) => handleUpdateStringItem(idx, e.target.value)}
+                      className="h-8 text-xs flex-1"
+                    />
+                    {listDef.label.includes('URLs') && (
+                      <MediaPicker
+                        onSelect={(url) => handleUpdateStringItem(idx, url)}
+                        trigger={
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 shrink-0"
+                            title="Buscar na Galeria"
+                          >
+                            <ImageIcon className="w-4 h-4" />
+                          </Button>
+                        }
+                      />
+                    )}
+                  </div>
+                ) : (
+                  listDef.fields?.map((f) => (
+                    <FieldRenderer
+                      key={f.name}
+                      field={f}
+                      value={item[f.name]}
+                      onChange={(v) => handleUpdateItem(idx, f.name, v)}
+                    />
+                  ))
+                )}
+              </AccordionContent>
+            </AccordionItem>
+          )
+        })}
       </Accordion>
     </div>
   )

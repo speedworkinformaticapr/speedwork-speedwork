@@ -286,6 +286,18 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
       },
     ],
   },
+  image: {
+    sections: [
+      {
+        title: 'Conteúdo',
+        fields: [
+          { name: 'url', label: 'URL da Imagem', type: 'url' },
+          { name: 'alt', label: 'Texto Alternativo', type: 'text' },
+          { name: 'caption', label: 'Legenda', type: 'text' },
+        ],
+      },
+    ],
+  },
   blog_posts_grid: {
     sections: [
       {
@@ -294,6 +306,36 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
           { name: 'title', label: 'Título', type: 'text' },
           { name: 'subtitle', label: 'Subtítulo', type: 'textarea' },
           { name: 'limit', label: 'Limite de Posts', type: 'number' },
+        ],
+      },
+    ],
+  },
+  media_carousel: {
+    sections: [
+      {
+        title: 'Configurações',
+        fields: [
+          { name: 'autoplay', label: 'Reprodução Automática', type: 'boolean' },
+          { name: 'delay', label: 'Tempo (ms)', type: 'number' },
+        ],
+      },
+    ],
+    lists: [
+      {
+        name: 'items',
+        label: 'Mídias',
+        fields: [
+          { name: 'url', label: 'URL da Mídia', type: 'url' },
+          {
+            name: 'type',
+            label: 'Tipo',
+            type: 'select',
+            options: [
+              { label: 'Imagem', value: 'image' },
+              { label: 'Vídeo', value: 'video' },
+            ],
+          },
+          { name: 'title', label: 'Título/Alt', type: 'text' },
         ],
       },
     ],
