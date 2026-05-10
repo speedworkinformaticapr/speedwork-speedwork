@@ -7,6 +7,8 @@ interface AuthContextType {
   session: Session | null
   profile: any | null
   roles: string[]
+  activeRole: string | null
+  setActiveRole: (role: string) => void
   signUp: (email: string, password: string) => Promise<{ error: any }>
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signOut: () => Promise<{ error: any }>
@@ -26,6 +28,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<any | null>(null)
   const [roles, setRoles] = useState<string[]>([])
+  const [activeRole, setActiveRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -58,6 +61,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         setRoles(userRoles)
+        setActiveRole((prev) => {
+          if (!prev && userRoles.length > 0) return userRoles[0]
+          return prev
+        })
       } catch (err) {
         console.error('Error fetching profile/roles:', err)
       } finally {
@@ -73,6 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!session?.user) {
         setProfile(null)
         setRoles([])
+        setActiveRole(null)
         setLoading(false)
       }
     })
@@ -109,7 +117,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, session, profile, roles, signUp, signIn, signOut, loading }}
+      value={{
+        user,
+        session,
+        profile,
+        roles,
+        activeRole,
+        setActiveRole,
+        signUp,
+        signIn,
+        signOut,
+        loading,
+      }}
     >
       {children}
     </AuthContext.Provider>
