@@ -3,6 +3,7 @@ import { Users, Target, Shield, Trophy } from 'lucide-react'
 import { PageHero } from '@/components/PageHero'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import { BlogPostsGrid } from '@/components/blocks/BlogPostsGrid'
 
 export function BlockRenderer({ block }: { block: any }) {
   if (!block || !block.type || !block.data) return null
@@ -178,6 +179,8 @@ export function BlockRenderer({ block }: { block: any }) {
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl -ml-10 -mb-10"></div>
         </div>
       )
+    case 'blog_posts_grid':
+      return <BlogPostsGrid block={block} />
     default:
       return null
   }

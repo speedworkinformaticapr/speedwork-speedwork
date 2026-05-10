@@ -286,4 +286,16 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
       },
     ],
   },
+  blog_posts_grid: {
+    sections: [
+      {
+        title: 'Conteúdo',
+        fields: [
+          { name: 'title', label: 'Título', type: 'text' },
+          { name: 'subtitle', label: 'Subtítulo', type: 'textarea' },
+          { name: 'limit', label: 'Limite de Posts', type: 'number' },
+        ],
+      },
+    ],
+  },
 }
