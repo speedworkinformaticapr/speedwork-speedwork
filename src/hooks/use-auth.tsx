@@ -67,20 +67,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         let userRoles: string[] = []
-        try {
-          const { data: rolesData, error: rolesError } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', userId)
 
-          if (!rolesError && rolesData) {
-            userRoles = rolesData.map((r: any) => r.role)
-          }
-        } catch (e) {
-          // ignore if table doesn't exist
-        }
-
-        // Combine roles from user_roles and profiles tables to prevent lockouts
+        // Combine roles from profiles tables to prevent lockouts
         if (profileData?.role && !userRoles.includes(profileData.role)) {
           userRoles.push(profileData.role)
         }
