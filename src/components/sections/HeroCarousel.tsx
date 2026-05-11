@@ -95,29 +95,6 @@ export function HeroCarousel() {
                 allow="autoplay; fullscreen; picture-in-picture"
               />
             )}
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-6 text-center">
-              <div className="max-w-3xl animate-fade-in-up flex flex-col items-center">
-                {slide.title && (
-                  <h2 className="text-3xl md:text-6xl font-extrabold text-white mb-4 drop-shadow-lg tracking-tight">
-                    {slide.title}
-                  </h2>
-                )}
-                {slide.description && (
-                  <p className="text-lg md:text-2xl text-white/90 mb-8 drop-shadow-md font-medium">
-                    {slide.description}
-                  </p>
-                )}
-                {slide.button_text && slide.link_url && (
-                  <Button
-                    asChild
-                    size="lg"
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-8 py-6 text-lg rounded-full transition-all hover:scale-105 shadow-xl"
-                  >
-                    <Link to={slide.link_url}>{slide.button_text}</Link>
-                  </Button>
-                )}
-              </div>
-            </div>
           </div>
         ))}
       </div>
