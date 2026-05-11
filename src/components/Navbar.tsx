@@ -120,7 +120,12 @@ export function Navbar() {
   }, [])
 
   return (
-    <header className="glass-header sticky top-0 z-50 w-full shadow-sm flex flex-col transition-all duration-300">
+    <header
+      className={cn(
+        'sticky top-0 z-50 w-full flex flex-col transition-all duration-300',
+        isScrolled ? 'bg-background shadow-md border-b' : 'bg-transparent border-transparent',
+      )}
+    >
       {systemData?.show_contact_bar && (
         <div
           className={cn(

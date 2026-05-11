@@ -19,6 +19,7 @@ import {
 import Autoplay from 'embla-carousel-autoplay'
 import { DynamicPricingTableBlock } from './DynamicPricingTableBlock'
 import { MapBlock } from './MapBlock'
+import { SectionRenderer } from '@/components/sections/SectionRenderer'
 
 export function BlockRenderer({ block }: { block: any }) {
   if (!block || !block.type || !block.data) return null
@@ -33,103 +34,13 @@ export function BlockRenderer({ block }: { block: any }) {
     case 'dynamic_pricing':
     case 'dynamic_pricing_table':
       return <DynamicPricingTableBlock data={block.data} />
-    case 'hero': {
-      const IconComp =
-        block.data.icon === 'Target'
-          ? Target
-          : block.data.icon === 'Shield'
-            ? Shield
-            : block.data.icon === 'Trophy'
-              ? Trophy
-              : Users
-      return (
-        <PageHero
-          title={block.data.title || ''}
-          description={block.data.description || ''}
-          breadcrumbs={
-            block.data.breadcrumbs || [
-              { label: 'Home', href: '/' },
-              { label: block.data.title || 'Página' },
-            ]
-          }
-          icon={<IconComp className="w-[400px] h-[400px]" />}
-        />
-      )
-    }
-    case 'text_image': {
-      const isLeft = block.data.imagePosition === 'left'
-      return (
-        <div className="container mx-auto px-4 relative z-20 my-12">
-          <Card className="border-none shadow-xl overflow-hidden bg-white rounded-2xl">
-            <div className={cn('flex flex-col lg:flex-row', isLeft ? 'lg:flex-row-reverse' : '')}>
-              <div className="lg:w-1/2 p-8 md:p-12 lg:p-16 flex flex-col justify-center">
-                {block.data.title && (
-                  <h2 className="text-3xl font-black font-montserrat text-[#0052CC] uppercase mb-6">
-                    {block.data.title}
-                  </h2>
-                )}
-                <div
-                  className="space-y-4 text-gray-600 leading-relaxed text-lg prose max-w-none"
-                  dangerouslySetInnerHTML={{ __html: block.data.content || '' }}
-                />
-              </div>
-              <div className="lg:w-1/2 h-64 lg:h-auto relative">
-                <img
-                  src={
-                    block.data.imageUrl || 'https://img.usecurling.com/p/800/600?q=image&color=blue'
-                  }
-                  alt={block.data.title || 'Imagem'}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-          </Card>
-        </div>
-      )
-    }
-    case 'features': {
-      return (
-        <div className="container mx-auto px-4 my-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {(block.data.items || []).map((item: any, i: number) => {
-              const IconComp =
-                item.icon === 'Target'
-                  ? Target
-                  : item.icon === 'Shield'
-                    ? Shield
-                    : item.icon === 'Trophy'
-                      ? Trophy
-                      : Users
-              const colorClass =
-                item.icon === 'Target'
-                  ? 'text-[#1B7D3A] bg-[#1B7D3A]/10'
-                  : item.icon === 'Shield'
-                    ? 'text-[#0052CC] bg-[#0052CC]/10'
-                    : item.icon === 'Trophy'
-                      ? 'text-amber-500 bg-amber-500/10'
-                      : 'text-slate-600 bg-slate-600/10'
-              return (
-                <Card
-                  key={i}
-                  className="border-none shadow-md hover:shadow-lg transition-shadow bg-white text-center p-8 group"
-                >
-                  <div
-                    className={cn(
-                      'w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform',
-                      colorClass,
-                    )}
-                  >
-                    <IconComp className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-xl font-bold mb-4 text-gray-900">{item.title}</h3>
-                  <p className="text-gray-600">{item.description}</p>
-                </Card>
-              )
-            })}
-          </div>
-        </div>
-      )
-    }
+    case 'hero':
+      return <SectionRenderer section={{ type: 'hero', data: block.data }} />
+    case 'text_image':
+      return <SectionRenderer section={{ type: 'text_image', data: block.data }} />
+    case 'features':
+    case 'feature_cards':
+      return <SectionRenderer section={{ type: 'feature_cards', data: block.data }} />
     case 'text':
       return (
         <div className="container mx-auto px-4">
@@ -155,67 +66,13 @@ export function BlockRenderer({ block }: { block: any }) {
         </div>
       )
     case 'video':
-      return (
-        <div className="container mx-auto px-4 my-10 aspect-video rounded-2xl overflow-hidden shadow-xl border border-muted bg-black/5">
-          <iframe
-            src={block.data.url}
-            className="w-full h-full"
-            allowFullScreen
-            title="Vídeo"
-            style={{ border: 'none' }}
-          />
-        </div>
-      )
-    case 'gallery': {
-      const images = Array.isArray(block.data.items)
-        ? block.data.items
-        : Array.isArray(block.data.images)
-          ? block.data.images
-          : []
-
-      return (
-        <div className="container mx-auto px-4 my-10 grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-          {images.map((img: any, i: number) => {
-            const url = typeof img === 'string' ? img : img.url
-            const alt =
-              typeof img === 'string'
-                ? `Galeria imagem ${i + 1}`
-                : img.alt || `Galeria imagem ${i + 1}`
-
-            return (
-              <div
-                key={i}
-                className="aspect-square rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300"
-              >
-                <img
-                  src={url}
-                  alt={alt}
-                  className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
-                />
-              </div>
-            )
-          })}
-        </div>
-      )
-    }
+      return <SectionRenderer section={{ type: 'video', data: block.data }} />
+    case 'gallery':
+    case 'galeria':
+    case 'carrossel':
+      return <SectionRenderer section={{ type: 'gallery', data: block.data }} />
     case 'cta':
-      return (
-        <div className="container mx-auto px-4 my-12 text-center bg-gradient-to-br from-primary/10 to-primary/5 p-10 md:p-14 rounded-3xl border border-primary/20 shadow-sm relative overflow-hidden">
-          <div className="relative z-10">
-            <h3 className="text-2xl md:text-4xl font-extrabold text-primary mb-6">
-              {block.data.text || 'Chamada para Ação'}
-            </h3>
-            <a
-              href={block.data.link || '#'}
-              className="inline-block bg-primary text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-primary/90 hover:-translate-y-1 transition-all duration-300 shadow-lg hover:shadow-primary/30"
-            >
-              {block.data.buttonText || 'Clique Aqui'}
-            </a>
-          </div>
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-10 -mt-10"></div>
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/5 rounded-full blur-3xl -ml-10 -mb-10"></div>
-        </div>
-      )
+      return <SectionRenderer section={{ type: 'cta', data: block.data }} />
     case 'blog_posts_grid':
     case 'blog_posts':
       return <BlogPostsGrid block={block} />
@@ -278,78 +135,8 @@ export function BlockRenderer({ block }: { block: any }) {
         </div>
       )
     }
-    case 'media_carousel': {
-      const items = block.data.items || []
-      const autoplay = !!block.data.autoplay
-      const delay = Number(block.data.delay) || 5000
-
-      if (items.length === 0) {
-        return (
-          <div className="container mx-auto px-4 my-12 text-center text-muted-foreground p-12 bg-muted/20 rounded-2xl border border-dashed">
-            Adicione mídias nas propriedades do carrossel para visualizar.
-          </div>
-        )
-      }
-
-      return (
-        <div className="container mx-auto px-4 my-12">
-          <Carousel
-            opts={{
-              align: 'start',
-              loop: items.length > 1,
-            }}
-            plugins={
-              autoplay
-                ? [
-                    Autoplay({
-                      delay: delay,
-                    }),
-                  ]
-                : []
-            }
-            className="w-full max-w-5xl mx-auto group relative"
-          >
-            <CarouselContent>
-              {items.map((item: any, i: number) => (
-                <CarouselItem key={i}>
-                  <div className="p-1">
-                    <Card className="overflow-hidden border-none shadow-lg rounded-2xl aspect-video relative bg-black flex items-center justify-center">
-                      {item.type === 'video' ? (
-                        <video
-                          src={item.url}
-                          className="w-full h-full object-cover"
-                          autoPlay
-                          muted
-                          loop
-                          playsInline
-                        />
-                      ) : (
-                        <img
-                          src={item.url || 'https://img.usecurling.com/p/1600/900?q=sports'}
-                          alt={item.title || `Mídia ${i + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      )}
-                      {item.title && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 pt-12 text-white">
-                          <h3 className="text-xl md:text-2xl font-bold">{item.title}</h3>
-                        </div>
-                      )}
-                    </Card>
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            {items.length > 1 && (
-              <>
-                <CarouselPrevious className="left-4 opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 hover:bg-white text-black border-none z-10" />
-                <CarouselNext className="right-4 opacity-0 group-hover:opacity-100 transition-opacity bg-white/50 hover:bg-white text-black border-none z-10" />
-              </>
-            )}
-          </Carousel>
-        </div>
-      )
-    }
+    case 'media_carousel':
+      return <SectionRenderer section={{ type: 'media_carousel', data: block.data }} />
     default:
       console.warn(
         `[BlockRenderer] Unmapped block type received: "${block.type}" (normalized: "${blockType}"). Block data:`,
