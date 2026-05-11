@@ -9,14 +9,20 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export function DynamicPricingTableBlock({ data }: { data: any }) {
   const [servicesData, setServicesData] = useState<any[]>([])
   const [slasData, setSlasData] = useState<any[]>([])
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'semiannual' | 'annual'>('monthly')
 
   useEffect(() => {
     async function loadData() {
-      const { data: srvs } = await supabase.from('plan_services').select('id, title, description')
+      const { data: srvs } = await supabase
+        .from('plan_services')
+        .select(
+          'id, title, description, monthly_value, semiannual_value, annual_value, monthly_discount, semiannual_discount, annual_discount',
+        )
       if (srvs) setServicesData(srvs)
 
       const { data: slas } = await supabase
@@ -29,6 +35,21 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
 
   const plans = Array.isArray(data?.plans) ? data.plans : []
 
+  const getServiceCost = (srv: any) => {
+    switch (billingCycle) {
+      case 'annual':
+        return (Number(srv.annual_value) || 0) - (Number(srv.annual_discount) || 0)
+      case 'semiannual':
+        return (Number(srv.semiannual_value) || 0) - (Number(srv.semiannual_discount) || 0)
+      default:
+        return (Number(srv.monthly_value) || 0) - (Number(srv.monthly_discount) || 0)
+    }
+  }
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+  }
+
   return (
     <div className="container mx-auto px-4 my-16">
       <div className="text-center mb-12">
@@ -38,6 +59,20 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
         {data?.subtitle && (
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{data.subtitle}</p>
         )}
+
+        <div className="mt-8 inline-flex items-center justify-center">
+          <Tabs
+            value={billingCycle}
+            onValueChange={(v) => setBillingCycle(v as any)}
+            className="w-[320px]"
+          >
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="monthly">Mensal</TabsTrigger>
+              <TabsTrigger value="semiannual">Semestral</TabsTrigger>
+              <TabsTrigger value="annual">Anual</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-start">
@@ -46,10 +81,12 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
           const planServices = servicesData.filter((s) => (plan.services || []).includes(s.id))
           const planSla = slasData.find((s) => s.id === plan.sla_id)
 
+          const totalCost = planServices.reduce((acc, srv) => acc + getServiceCost(srv), 0)
+
           return (
             <Card
               key={i}
-              className={`relative flex flex-col p-8 overflow-hidden transition-all duration-300 ${
+              className={`relative flex flex-col p-8 overflow-hidden transition-all duration-300 bg-card ${
                 isHighlighted
                   ? 'border-primary shadow-xl md:scale-105 ring-2 ring-primary ring-offset-2 z-10'
                   : 'border-border shadow-sm hover:shadow-md'
@@ -121,7 +158,20 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
                 </Accordion>
               </div>
 
-              <div className="mt-8 pt-6 border-t border-border">
+              <div className="mt-8 pt-6 border-t border-border text-center">
+                <div className="mb-6 flex flex-col items-center">
+                  <span className="text-4xl font-black text-foreground">
+                    {formatCurrency(totalCost)}
+                  </span>
+                  <span className="text-sm text-muted-foreground mt-1">
+                    /
+                    {billingCycle === 'monthly'
+                      ? 'mês'
+                      : billingCycle === 'semiannual'
+                        ? 'semestre'
+                        : 'ano'}
+                  </span>
+                </div>
                 <Button
                   className="w-full font-bold"
                   variant={isHighlighted ? 'default' : 'outline'}
