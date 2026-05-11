@@ -68,6 +68,7 @@ export default function PublicPage() {
             type: section.type,
             data: section.data,
             order: block.order || 0,
+            name: block.name,
           }
         }
       }
@@ -79,7 +80,10 @@ export default function PublicPage() {
   return (
     <div className="min-h-screen bg-background animate-fade-in flex flex-col w-full overflow-hidden">
       {renderableBlocks.map((block: any, index: number) => (
-        <SectionRenderer key={block.id || index} section={{ type: block.type, data: block.data }} />
+        <SectionRenderer
+          key={block.id || index}
+          section={{ type: block.type, data: block.data, id: block.name }}
+        />
       ))}
     </div>
   )

@@ -25,11 +25,37 @@ import useEmblaCarousel from 'embla-carousel-react'
 import Autoplay from 'embla-carousel-autoplay'
 
 export function SectionRenderer({ section }: { section: any }) {
-  const { type, data: rawData } = section
+  const { type, data: rawData, id: sectionId } = section
   const data = rawData || {}
 
+  // Resolve links gracefully - se iniciar com # ou http usamos um <a/> comum, caso contrário <Link/>
+  const renderLink = (url: string, children: React.ReactNode, className?: string) => {
+    if (!url) return null
+    if (url.startsWith('#') || url.startsWith('http')) {
+      return (
+        <a
+          href={url}
+          className={className}
+          target={url.startsWith('http') ? '_blank' : undefined}
+          rel={url.startsWith('http') ? 'noreferrer' : undefined}
+        >
+          {children}
+        </a>
+      )
+    }
+    return (
+      <Link to={url} className={className}>
+        {children}
+      </Link>
+    )
+  }
+
   if (type === 'media_carousel') {
-    return <MediaCarousel data={data} />
+    return (
+      <div id={sectionId}>
+        <MediaCarousel data={data} />
+      </div>
+    )
   }
 
   if (type === 'hero') {
@@ -41,7 +67,10 @@ export function SectionRenderer({ section }: { section: any }) {
     const overlayOpacity = data.overlayOpacity !== undefined ? data.overlayOpacity : 40
 
     return (
-      <section className="relative py-28 md:py-48 flex items-center justify-center overflow-hidden w-full">
+      <section
+        id={sectionId}
+        className="relative py-28 md:py-48 flex items-center justify-center overflow-hidden w-full"
+      >
         {bgImage ? (
           <div className="absolute inset-0 z-0">
             <img src={bgImage} className="w-full h-full object-cover" alt="Hero background" />
@@ -66,9 +95,12 @@ export function SectionRenderer({ section }: { section: any }) {
               size="lg"
               className="px-8 py-6 text-lg rounded-full shadow-xl hover:scale-105 transition-all"
             >
-              <Link to={data.link || data.buttonLink || '#'}>
-                {data.buttonText || 'Saiba mais'} <ArrowRight className="w-5 h-5 ml-2" />
-              </Link>
+              {renderLink(
+                data.link || data.buttonLink || '#',
+                <>
+                  {data.buttonText || 'Saiba mais'} <ArrowRight className="w-5 h-5 ml-2" />
+                </>,
+              )}
             </Button>
           )}
         </div>
@@ -86,7 +118,7 @@ export function SectionRenderer({ section }: { section: any }) {
             { title: 'Funcionalidade Extra 3', description: 'Detalhes adicionais importantes.' },
           ]
     return (
-      <section className="py-24 bg-muted/30 w-full">
+      <section id={sectionId} className="py-24 bg-muted/30 w-full">
         <div className="container mx-auto px-4">
           {(data.title || !data.items) && (
             <h2 className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight">
@@ -110,13 +142,14 @@ export function SectionRenderer({ section }: { section: any }) {
                 </CardHeader>
                 {item.link && (
                   <div className="px-8 pb-8 pt-0 mt-auto">
-                    <Link
-                      to={item.link}
-                      className="text-primary font-bold hover:text-primary/80 flex items-center gap-2 group"
-                    >
-                      Saiba mais{' '}
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </Link>
+                    {renderLink(
+                      item.link,
+                      <>
+                        Saiba mais{' '}
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </>,
+                      'text-primary font-bold hover:text-primary/80 flex items-center gap-2 group',
+                    )}
                   </div>
                 )}
               </Card>
@@ -140,7 +173,7 @@ export function SectionRenderer({ section }: { section: any }) {
               'https://img.usecurling.com/p/400/400?seed=4',
             ]
     return (
-      <section className="py-24 w-full bg-background">
+      <section id={sectionId} className="py-24 w-full bg-background">
         <div className="container mx-auto px-4">
           {(data.title || !data.items) && (
             <h2 className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight">
@@ -176,6 +209,7 @@ export function SectionRenderer({ section }: { section: any }) {
 
     return (
       <section
+        id={sectionId}
         className="py-28 relative overflow-hidden w-full"
         style={{ backgroundColor: data.backgroundColor || '#1B7D3A' }}
       >
@@ -211,7 +245,7 @@ export function SectionRenderer({ section }: { section: any }) {
               variant={bgImage ? 'default' : 'secondary'}
               className="px-10 py-6 text-xl rounded-full shadow-2xl hover:scale-105 transition-all"
             >
-              <Link to={data.link || '#'}>{data.buttonText || 'Acessar Agora'}</Link>
+              {renderLink(data.link || '#', <>{data.buttonText || 'Acessar Agora'}</>)}
             </Button>
           )}
         </div>
@@ -235,7 +269,7 @@ export function SectionRenderer({ section }: { section: any }) {
             },
           ]
     return (
-      <section className="py-24 bg-muted/10 w-full border-y border-muted">
+      <section id={sectionId} className="py-24 bg-muted/10 w-full border-y border-muted">
         <div className="container mx-auto px-4">
           {(data.title || !data.items) && (
             <h2 className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight">
@@ -282,7 +316,7 @@ export function SectionRenderer({ section }: { section: any }) {
             { question: 'Posso cancelar a qualquer momento?', answer: 'Sim, não há fidelidade.' },
           ]
     return (
-      <section className="py-24 w-full bg-background">
+      <section id={sectionId} className="py-24 w-full bg-background">
         <div className="container mx-auto px-4 max-w-4xl">
           {(data.title || !data.items) && (
             <h2 className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight">
@@ -319,7 +353,7 @@ export function SectionRenderer({ section }: { section: any }) {
         ? ''
         : '<p>Escreva o conteúdo textual do seu bloco aqui. Utilize tags HTML para formatação.</p>')
     return (
-      <section className="py-24 w-full bg-background">
+      <section id={sectionId} className="py-24 w-full bg-background">
         <div className="container mx-auto px-4 max-w-4xl">
           {title && (
             <h2 className="text-3xl md:text-5xl font-bold text-primary mb-8 tracking-tight">
@@ -342,7 +376,7 @@ export function SectionRenderer({ section }: { section: any }) {
       '<p>Adicione um texto explicativo acompanhado de uma imagem representativa para ilustrar melhor a ideia.</p>'
     const imageUrl = data.imageUrl || 'https://img.usecurling.com/p/800/600?seed=text-image'
     return (
-      <section className="py-24 w-full bg-background">
+      <section id={sectionId} className="py-24 w-full bg-background">
         <div className="container mx-auto px-4">
           <div
             className={`flex flex-col gap-12 items-center ${data.imagePosition === 'left' ? 'md:flex-row-reverse' : 'md:flex-row'}`}
@@ -397,7 +431,7 @@ export function SectionRenderer({ section }: { section: any }) {
             },
           ]
     return (
-      <section className="py-24 bg-muted/10 w-full">
+      <section id={sectionId} className="py-24 bg-muted/10 w-full">
         <div className="container mx-auto px-4">
           {(data.title || !data.plans) && (
             <h2 className="text-3xl md:text-5xl font-bold text-center text-primary mb-16">
@@ -443,7 +477,7 @@ export function SectionRenderer({ section }: { section: any }) {
 
   if (type === 'video') {
     return (
-      <section className="py-24 w-full bg-black">
+      <section id={sectionId} className="py-24 w-full bg-black">
         <div className="container mx-auto px-4 max-w-5xl text-center">
           {(data.title || !data.url) && (
             <h2 className="text-3xl font-bold text-white mb-8">
@@ -476,7 +510,7 @@ export function SectionRenderer({ section }: { section: any }) {
             { value: '24h', label: 'Suporte Dedicado' },
           ]
     return (
-      <section className="py-20 bg-primary text-white w-full">
+      <section id={sectionId} className="py-20 bg-primary text-white w-full">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {stats.map((stat: any, i: number) => (
@@ -495,7 +529,7 @@ export function SectionRenderer({ section }: { section: any }) {
 
   if (type === 'newsletter') {
     return (
-      <section className="py-24 w-full bg-muted/5 border-y">
+      <section id={sectionId} className="py-24 w-full bg-muted/5 border-y">
         <div className="container mx-auto px-4 max-w-2xl text-center">
           <Mail className="w-12 h-12 text-primary mx-auto mb-6" />
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -524,7 +558,7 @@ export function SectionRenderer({ section }: { section: any }) {
             { name: 'Roberto Lima', role: 'Marketing', bio: 'Estrategista de crescimento.' },
           ]
     return (
-      <section className="py-24 bg-muted/10 w-full">
+      <section id={sectionId} className="py-24 bg-muted/10 w-full">
         <div className="container mx-auto px-4">
           {(data.title || !data.members) && (
             <h2 className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight">
@@ -564,7 +598,7 @@ export function SectionRenderer({ section }: { section: any }) {
             'https://img.usecurling.com/i?q=meta&color=gray',
           ]
     return (
-      <section className="py-12 border-y bg-background w-full overflow-hidden">
+      <section id={sectionId} className="py-12 border-y bg-background w-full overflow-hidden">
         <div className="container mx-auto px-4">
           <p className="text-center text-sm font-bold text-muted-foreground uppercase tracking-widest mb-8">
             {data.title || 'Empresas que confiam em nós'}
@@ -581,7 +615,7 @@ export function SectionRenderer({ section }: { section: any }) {
 
   if (type === 'contact_form') {
     return (
-      <section className="py-24 bg-background w-full">
+      <section id={sectionId} className="py-24 bg-background w-full">
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="grid md:grid-cols-2 gap-12">
             <div>
@@ -625,7 +659,10 @@ export function SectionRenderer({ section }: { section: any }) {
   }
 
   return (
-    <div className="p-12 text-center text-muted-foreground border-2 border-dashed rounded-xl bg-muted/10">
+    <div
+      id={sectionId}
+      className="p-12 text-center text-muted-foreground border-2 border-dashed rounded-xl bg-muted/10"
+    >
       <p>
         Bloco <strong>{type}</strong> não configurado visualmente.
       </p>

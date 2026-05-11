@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -91,12 +92,29 @@ import { CookieConsent } from './components/CookieConsent'
 import { RoleGuard } from './components/RoleGuard'
 import { Analytics } from './components/Analytics'
 
+function ScrollToHash() {
+  const location = useLocation()
+  useEffect(() => {
+    if (location.hash) {
+      setTimeout(() => {
+        const id = location.hash.replace('#', '')
+        const element = document.getElementById(id)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' })
+        }
+      }, 100)
+    }
+  }, [location])
+  return null
+}
+
 const App = () => (
   <AuthProvider>
     <TranslationProvider>
       <SystemDataProvider>
         <ThemeProvider>
           <BrowserRouter>
+            <ScrollToHash />
             <TooltipProvider>
               <Toaster />
               <Sonner />

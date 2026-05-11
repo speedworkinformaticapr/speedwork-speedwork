@@ -25,25 +25,34 @@ export function BlockRenderer({ block }: { block: any }) {
   if (!block || !block.type || !block.data) return null
 
   const blockType = String(block.type).trim().toLowerCase()
+  const blockId = block.name ? block.name.trim() : undefined
 
   switch (blockType) {
     case 'map':
     case 'map_element':
-      return <MapBlock data={block.data} />
+      return (
+        <div id={blockId}>
+          <MapBlock data={block.data} />
+        </div>
+      )
     case 'pricing_table':
     case 'dynamic_pricing':
     case 'dynamic_pricing_table':
-      return <DynamicPricingTableBlock data={block.data} />
+      return (
+        <div id={blockId}>
+          <DynamicPricingTableBlock data={block.data} />
+        </div>
+      )
     case 'hero':
-      return <SectionRenderer section={{ type: 'hero', data: block.data }} />
+      return <SectionRenderer section={{ type: 'hero', data: block.data, id: blockId }} />
     case 'text_image':
-      return <SectionRenderer section={{ type: 'text_image', data: block.data }} />
+      return <SectionRenderer section={{ type: 'text_image', data: block.data, id: blockId }} />
     case 'features':
     case 'feature_cards':
-      return <SectionRenderer section={{ type: 'feature_cards', data: block.data }} />
+      return <SectionRenderer section={{ type: 'feature_cards', data: block.data, id: blockId }} />
     case 'text':
       return (
-        <div className="container mx-auto px-4">
+        <div id={blockId} className="container mx-auto px-4">
           <div
             className="prose prose-lg max-w-none text-foreground my-8"
             dangerouslySetInnerHTML={{ __html: block.data.content || '' }}
@@ -52,7 +61,7 @@ export function BlockRenderer({ block }: { block: any }) {
       )
     case 'image':
       return (
-        <div className="container mx-auto px-4 my-8 flex flex-col items-center">
+        <div id={blockId} className="container mx-auto px-4 my-8 flex flex-col items-center">
           <img
             src={block.data.url}
             alt={block.data.alt || 'Imagem'}
@@ -66,16 +75,20 @@ export function BlockRenderer({ block }: { block: any }) {
         </div>
       )
     case 'video':
-      return <SectionRenderer section={{ type: 'video', data: block.data }} />
+      return <SectionRenderer section={{ type: 'video', data: block.data, id: blockId }} />
     case 'gallery':
     case 'galeria':
     case 'carrossel':
-      return <SectionRenderer section={{ type: 'gallery', data: block.data }} />
+      return <SectionRenderer section={{ type: 'gallery', data: block.data, id: blockId }} />
     case 'cta':
-      return <SectionRenderer section={{ type: 'cta', data: block.data }} />
+      return <SectionRenderer section={{ type: 'cta', data: block.data, id: blockId }} />
     case 'blog_posts_grid':
     case 'blog_posts':
-      return <BlogPostsGrid block={block} />
+      return (
+        <div id={blockId}>
+          <BlogPostsGrid block={block} />
+        </div>
+      )
     case 'timeline': {
       const title = block.data.title
       const events = Array.isArray(block.data.events) ? [...block.data.events] : []
@@ -88,7 +101,7 @@ export function BlockRenderer({ block }: { block: any }) {
       })
 
       return (
-        <div className="container mx-auto px-4 my-16 max-w-5xl">
+        <div id={blockId} className="container mx-auto px-4 my-16 max-w-5xl">
           {title && (
             <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-16 text-primary tracking-tight">
               {title}
@@ -136,7 +149,7 @@ export function BlockRenderer({ block }: { block: any }) {
       )
     }
     case 'media_carousel':
-      return <SectionRenderer section={{ type: 'media_carousel', data: block.data }} />
+      return <SectionRenderer section={{ type: 'media_carousel', data: block.data, id: blockId }} />
     default:
       console.warn(
         `[BlockRenderer] Unmapped block type received: "${block.type}" (normalized: "${blockType}"). Block data:`,

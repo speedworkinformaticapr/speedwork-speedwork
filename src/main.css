@@ -59,6 +59,11 @@
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 100px;
+  }
+
   .embla-transform-none > div {
     transform: none !important;
   }
