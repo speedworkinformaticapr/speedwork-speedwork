@@ -3486,6 +3486,11 @@ export const Constants = {
 //   quote_footer_text: text (nullable)
 //   records_per_page: integer (nullable, default: 50)
 //   business_hours: jsonb (nullable, default: '{}'::jsonb)
+// Table: user_roles
+//   id: uuid (not null, default: gen_random_uuid())
+//   user_id: uuid (not null)
+//   role: text (not null)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: usuarios
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (nullable, default: auth.uid())
@@ -3702,6 +3707,10 @@ export const Constants = {
 //   PRIMARY KEY stripe_payments_pkey: PRIMARY KEY (id)
 // Table: system_data
 //   PRIMARY KEY system_data_pkey: PRIMARY KEY (id)
+// Table: user_roles
+//   PRIMARY KEY user_roles_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY user_roles_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+//   UNIQUE user_roles_user_id_role_key: UNIQUE (user_id, role)
 // Table: usuarios
 //   UNIQUE usuarios_email_key: UNIQUE (email)
 //   PRIMARY KEY usuarios_pkey: PRIMARY KEY (id)
@@ -4079,6 +4088,16 @@ export const Constants = {
 //   Policy "system_data_select" (SELECT, PERMISSIVE) roles={public}
 //     USING: true
 //   Policy "system_data_update" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: user_roles
+//   Policy "user_roles_delete" (DELETE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "user_roles_insert" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: true
+//   Policy "user_roles_select" (SELECT, PERMISSIVE) roles={public}
+//     USING: true
+//   Policy "user_roles_update" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
 // Table: usuarios
@@ -4480,5 +4499,7 @@ export const Constants = {
 //   CREATE UNIQUE INDEX pedidos_numero_pedido_key ON public.pedidos USING btree (numero_pedido)
 // Table: rankings
 //   CREATE UNIQUE INDEX rankings_athlete_id_key ON public.rankings USING btree (athlete_id)
+// Table: user_roles
+//   CREATE UNIQUE INDEX user_roles_user_id_role_key ON public.user_roles USING btree (user_id, role)
 // Table: usuarios
 //   CREATE UNIQUE INDEX usuarios_email_key ON public.usuarios USING btree (email)
