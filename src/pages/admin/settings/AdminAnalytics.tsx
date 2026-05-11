@@ -138,6 +138,7 @@ export default function AdminAnalytics() {
       const updatedIntegrations = {
         ...currentIntegrations,
         googleAnalytics: {
+          ...(currentIntegrations.googleAnalytics || {}),
           trackingId: values.trackingId,
           metrics: values.metrics,
           updatedAt: new Date().toISOString(),

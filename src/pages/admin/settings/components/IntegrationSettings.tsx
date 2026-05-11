@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/hooks/use-toast'
-import { Plug, CreditCard, Mail, BarChart, Server, Loader2, CheckCircle2 } from 'lucide-react'
+import { Plug, CreditCard, Mail, BarChart, Server, Loader2, CheckCircle2, Map } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
 export default function IntegrationSettings() {
@@ -46,6 +46,16 @@ export default function IntegrationSettings() {
 
   const handleChange = (key: string, value: any) => {
     setIntegrations((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const handleDeepChange = (key: string, subKey: string, value: any) => {
+    setIntegrations((prev) => ({
+      ...prev,
+      [key]: {
+        ...(prev[key] || {}),
+        [subKey]: value,
+      },
+    }))
   }
 
   const handleStripeChange = (key: string, value: any) => {
@@ -199,8 +209,11 @@ export default function IntegrationSettings() {
           <div className="space-y-2">
             <Label>Measurement ID (G-XXXXX)</Label>
             <Input
-              value={integrations.ga_id || ''}
-              onChange={(e) => handleChange('ga_id', e.target.value)}
+              value={integrations.googleAnalytics?.trackingId || integrations.ga_id || ''}
+              onChange={(e) => {
+                handleChange('ga_id', undefined)
+                handleDeepChange('googleAnalytics', 'trackingId', e.target.value)
+              }}
             />
           </div>
           <div className="space-y-2">
@@ -242,6 +255,33 @@ export default function IntegrationSettings() {
             <Input
               value={integrations.recaptcha_key || ''}
               onChange={(e) => handleChange('recaptcha_key', e.target.value)}
+            />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>Secret Key</Label>
+            <Input
+              type="password"
+              value={integrations.recaptcha_secret || ''}
+              onChange={(e) => handleChange('recaptcha_secret', e.target.value)}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3 border-b bg-muted/20 flex flex-row items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Map className="w-4 h-4" /> Google Maps
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4 grid grid-cols-1 gap-4">
+          <div className="space-y-2">
+            <Label>API Key</Label>
+            <Input
+              type="password"
+              value={integrations.google_maps_key || ''}
+              onChange={(e) => handleChange('google_maps_key', e.target.value)}
+              placeholder="AIzaSy..."
             />
           </div>
         </CardContent>

@@ -89,6 +89,7 @@ import { ThemeProvider } from './components/theme-provider'
 import { FloatingWidgets } from './components/FloatingWidgets'
 import { CookieConsent } from './components/CookieConsent'
 import { RoleGuard } from './components/RoleGuard'
+import { Analytics } from './components/Analytics'
 
 const App = () => (
   <AuthProvider>
@@ -100,6 +101,7 @@ const App = () => (
               <Toaster />
               <Sonner />
               <AccessibilityWidget />
+              <Analytics />
               <Routes>
                 <Route
                   element={
