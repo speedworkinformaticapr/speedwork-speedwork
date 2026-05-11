@@ -24,8 +24,6 @@ import AdminGallery from './pages/admin/gallery/AdminGallery'
 import AdminDashboard from './pages/admin/dashboard/AdminDashboard'
 import AdminPageList from './pages/admin/pages/AdminPageList'
 import AdminPageForm from './pages/admin/pages/AdminPageForm'
-import AdminSectionsList from './pages/admin/sections/AdminSectionsList'
-import AdminSectionForm from './pages/admin/sections/AdminSectionForm'
 import PublicPage from './pages/PublicPage'
 import ClubDashboard from './pages/club/dashboard/ClubDashboard'
 import AdminLayout from './components/admin/AdminLayout'
@@ -193,9 +191,6 @@ const App = () => (
                   <Route path="/admin/pages" element={<AdminPageList />} />
                   <Route path="/admin/pages/new" element={<AdminPageForm />} />
                   <Route path="/admin/pages/:id/edit" element={<AdminPageForm />} />
-                  <Route path="/admin/sections" element={<AdminSectionsList />} />
-                  <Route path="/admin/sections/new" element={<AdminSectionForm />} />
-                  <Route path="/admin/sections/:id/edit" element={<AdminSectionForm />} />
                   <Route path="/admin/blog" element={<AdminBlogList />} />
                   <Route path="/admin/blog/new" element={<AdminBlogForm />} />
                   <Route path="/admin/blog/:id/edit" element={<AdminBlogForm />} />

@@ -115,7 +115,6 @@ const navItems = [
     title: 'Customizar CMS',
     icon: LayoutTemplate,
     items: [
-      { title: 'Biblioteca de Dobras', url: '/admin/sections', icon: Layout },
       { title: 'Galeria de Fotos', url: '/admin/gallery', icon: Image },
       { title: 'Gestão de Mídias', url: '/admin/settings/media', icon: Video },
       { title: 'Páginas & Rotas', url: '/admin/pages', icon: AppWindow },
