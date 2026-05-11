@@ -33,7 +33,7 @@ export function Footer() {
   const renderLegalModal = (title: string, content: string | undefined, defaultLink: string) => {
     if (!content) {
       return (
-        <Link to={defaultLink} className="hover:text-white transition-colors">
+        <Link to={defaultLink} className="hover:text-foreground transition-colors">
           {title}
         </Link>
       )
@@ -58,7 +58,7 @@ export function Footer() {
 
     return (
       <Dialog>
-        <DialogTrigger className="hover:text-white transition-colors text-left cursor-pointer">
+        <DialogTrigger className="hover:text-foreground transition-colors text-left cursor-pointer">
           {title}
         </DialogTrigger>
         <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col bg-background text-foreground border-slate-700">
@@ -94,7 +94,7 @@ export function Footer() {
   }
 
   return (
-    <footer className="bg-foreground text-background pt-16 pb-8 border-t-4 border-primary mt-auto">
+    <footer className="bg-card text-card-foreground pt-16 pb-8 border-t-4 border-primary mt-auto">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
           <div className="flex flex-col">
@@ -106,10 +106,10 @@ export function Footer() {
                 <img src={systemData.logo_url} alt="Logo" className="w-auto h-12 object-contain" />
               ) : (
                 <>
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white">
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
                     <Dribbble className="w-5 h-5" />
                   </div>
-                  <span className="font-montserrat font-black text-2xl tracking-tighter text-white uppercase">
+                  <span className="font-montserrat font-black text-2xl tracking-tighter text-foreground uppercase">
                     {systemData?.platform_name || systemData?.razao_social || (
                       <>
                         FOOTGOLF<span className="text-primary">PR</span>
@@ -120,7 +120,7 @@ export function Footer() {
               )}
             </Link>
 
-            <p className="text-white font-medium text-base md:text-lg max-w-sm mb-6 leading-relaxed italic border-l-4 border-primary pl-4">
+            <p className="text-foreground/90 font-medium text-base md:text-lg max-w-sm mb-6 leading-relaxed italic border-l-4 border-primary pl-4">
               "
               {systemData?.slogan ||
                 'Eleve o seu jogo, viva a paixão pelo esporte. Junte-se à revolução!'}
@@ -130,7 +130,7 @@ export function Footer() {
 
           <div className="flex flex-col md:items-center">
             <div className="w-full md:w-auto">
-              <h4 className="font-montserrat font-bold text-lg mb-6 text-white uppercase tracking-wider flex items-center gap-2">
+              <h4 className="font-montserrat font-bold text-lg mb-6 text-foreground uppercase tracking-wider flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-primary"></span>
                 {t('footer.quickLinks')}
               </h4>
@@ -138,7 +138,7 @@ export function Footer() {
                 <li>
                   <Link
                     to="/courses"
-                    className="text-muted hover:text-primary transition-colors text-sm flex items-center gap-2"
+                    className="text-muted-foreground hover:text-primary transition-colors text-sm flex items-center gap-2"
                   >
                     <span className="hover:translate-x-1 transition-transform inline-block">
                       › {t('nav.courses')}
@@ -148,7 +148,7 @@ export function Footer() {
                 <li>
                   <Link
                     to="/tournaments"
-                    className="text-muted hover:text-primary transition-colors text-sm flex items-center gap-2"
+                    className="text-muted-foreground hover:text-primary transition-colors text-sm flex items-center gap-2"
                   >
                     <span className="hover:translate-x-1 transition-transform inline-block">
                       › {t('nav.tournaments')}
@@ -158,7 +158,7 @@ export function Footer() {
                 <li>
                   <Link
                     to="/rules"
-                    className="text-muted hover:text-primary transition-colors text-sm flex items-center gap-2"
+                    className="text-muted-foreground hover:text-primary transition-colors text-sm flex items-center gap-2"
                   >
                     <span className="hover:translate-x-1 transition-transform inline-block">
                       › {t('nav.rules')}
@@ -168,7 +168,7 @@ export function Footer() {
                 <li>
                   <Link
                     to="/blog"
-                    className="text-muted hover:text-primary transition-colors text-sm flex items-center gap-2"
+                    className="text-muted-foreground hover:text-primary transition-colors text-sm flex items-center gap-2"
                   >
                     <span className="hover:translate-x-1 transition-transform inline-block">
                       › {t('nav.blog')}
@@ -181,7 +181,7 @@ export function Footer() {
 
           <div className="flex flex-col md:items-end">
             <div className="w-full md:w-auto">
-              <h4 className="font-montserrat font-bold text-lg mb-6 text-white uppercase tracking-wider flex items-center gap-2">
+              <h4 className="font-montserrat font-bold text-lg mb-6 text-foreground uppercase tracking-wider flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-primary"></span>
                 {t('footer.stayUpdated')}
               </h4>
@@ -191,7 +191,7 @@ export function Footer() {
                     href={systemData.integrations.instagram}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary hover:-translate-y-1 transition-all text-white shadow-lg"
+                    className="w-12 h-12 rounded-full bg-muted border border-border flex items-center justify-center hover:bg-primary hover:border-primary hover:-translate-y-1 transition-all text-foreground hover:text-primary-foreground shadow-sm"
                   >
                     <Instagram className="w-5 h-5" />
                   </a>
@@ -201,7 +201,7 @@ export function Footer() {
                     href={systemData.integrations.facebook}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary hover:-translate-y-1 transition-all text-white shadow-lg"
+                    className="w-12 h-12 rounded-full bg-muted border border-border flex items-center justify-center hover:bg-primary hover:border-primary hover:-translate-y-1 transition-all text-foreground hover:text-primary-foreground shadow-sm"
                   >
                     <Facebook className="w-5 h-5" />
                   </a>
@@ -211,7 +211,7 @@ export function Footer() {
                     href={systemData.integrations.youtube}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary hover:-translate-y-1 transition-all text-white shadow-lg"
+                    className="w-12 h-12 rounded-full bg-muted border border-border flex items-center justify-center hover:bg-primary hover:border-primary hover:-translate-y-1 transition-all text-foreground hover:text-primary-foreground shadow-sm"
                   >
                     <Youtube className="w-5 h-5" />
                   </a>
@@ -223,21 +223,21 @@ export function Footer() {
                     <a
                       key={i}
                       href="#"
-                      className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary hover:-translate-y-1 transition-all text-white shadow-lg"
+                      className="w-12 h-12 rounded-full bg-muted border border-border flex items-center justify-center hover:bg-primary hover:border-primary hover:-translate-y-1 transition-all text-foreground hover:text-primary-foreground shadow-sm"
                     >
                       <Icon className="w-5 h-5" />
                     </a>
                   ))}
               </div>
 
-              <div className="space-y-2 text-sm text-muted/80 text-left md:text-right">
+              <div className="space-y-2 text-sm text-muted-foreground text-left md:text-right">
                 {systemData?.email && (
-                  <p className="hover:text-white transition-colors">
+                  <p className="hover:text-primary transition-colors">
                     <a href={`mailto:${systemData.email}`}>{systemData.email}</a>
                   </p>
                 )}
                 {(systemData?.phone || systemData?.mobile) && (
-                  <p className="hover:text-white transition-colors">
+                  <p className="hover:text-primary transition-colors">
                     <a href={`tel:${(systemData.phone || systemData.mobile)?.replace(/\D/g, '')}`}>
                       {systemData.phone || systemData.mobile}
                     </a>
@@ -248,7 +248,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-white/10 py-6 flex flex-row flex-wrap justify-between items-center gap-x-4 gap-y-2 text-xs text-muted">
+        <div className="border-t border-border py-6 flex flex-row flex-wrap justify-between items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
           <div className="flex-1 flex items-center whitespace-nowrap">
             <span>
               © {new Date().getFullYear()}{' '}
@@ -262,7 +262,7 @@ export function Footer() {
               href="https://www.s4md.com.br"
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-1 text-white hover:text-primary transition-colors"
+              className="ml-1 text-foreground hover:text-primary transition-colors"
             >
               S4MD (www.s4md.com.br)
             </a>
