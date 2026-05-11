@@ -108,6 +108,7 @@ const navItems = [
       { title: 'Página de Manutenção', url: '/admin/settings/maintenance', icon: Wrench },
       { title: 'Plano de Contas', url: '/admin/financial/chart-of-accounts', icon: FileText },
       { title: 'Regras de Cobrança', url: '/admin/financial/settings', icon: Receipt },
+      { title: 'Serviços para Planos', url: '/admin/settings/plan-services', icon: LayoutTemplate },
       { title: 'Gestão de Usuários', url: '/admin/users', icon: Users },
     ],
   },
