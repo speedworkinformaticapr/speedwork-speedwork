@@ -17,7 +17,7 @@ export default function AdminPlanServices() {
     setStatus('loading')
     const { data: records, error } = await supabase
       .from('plan_services' as any)
-      .select('*')
+      .select('*, plan_categories(title)')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -139,6 +139,7 @@ export default function AdminPlanServices() {
               <thead className="bg-muted text-muted-foreground border-b">
                 <tr>
                   <th className="p-4 font-medium">Título</th>
+                  <th className="p-4 font-medium">Categoria</th>
                   <th className="p-4 font-medium min-w-[200px]">Descrição</th>
                   <th className="p-4 font-medium">Valor Mensal</th>
                   <th className="p-4 font-medium">Valor Semestral</th>
@@ -150,6 +151,7 @@ export default function AdminPlanServices() {
                 {data.map((item) => (
                   <tr key={item.id} className="hover:bg-muted/50 transition-colors">
                     <td className="p-4 font-medium">{item.title}</td>
+                    <td className="p-4">{item.plan_categories?.title || '-'}</td>
                     <td className="p-4 text-muted-foreground">
                       {item.description.length > 50
                         ? `${item.description.substring(0, 50)}...`

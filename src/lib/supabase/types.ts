@@ -1853,6 +1853,80 @@ export type Database = {
           },
         ]
       }
+      plan_categories: {
+        Row: {
+          created_at: string
+          id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      plan_services: {
+        Row: {
+          annual_discount: number | null
+          annual_value: number
+          category_id: string | null
+          created_at: string
+          description: string
+          id: string
+          monthly_discount: number | null
+          monthly_value: number
+          observation: string | null
+          semiannual_discount: number | null
+          semiannual_value: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          annual_discount?: number | null
+          annual_value?: number
+          category_id?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          monthly_discount?: number | null
+          monthly_value?: number
+          observation?: string | null
+          semiannual_discount?: number | null
+          semiannual_value?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          annual_discount?: number | null
+          annual_value?: number
+          category_id?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          monthly_discount?: number | null
+          monthly_value?: number
+          observation?: string | null
+          semiannual_discount?: number | null
+          semiannual_value?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'plan_services_category_id_fkey'
+            columns: ['category_id']
+            isOneToOne: false
+            referencedRelation: 'plan_categories'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       plano_contas: {
         Row: {
           codigo_estrutural: string
@@ -3204,6 +3278,24 @@ export const Constants = {
 //   veiculo_modelo: text (nullable)
 //   veiculo_km: text (nullable)
 //   conta_id: uuid (nullable)
+// Table: plan_categories
+//   id: uuid (not null, default: gen_random_uuid())
+//   title: text (not null)
+//   created_at: timestamp with time zone (not null, default: now())
+// Table: plan_services
+//   id: uuid (not null, default: gen_random_uuid())
+//   title: text (not null)
+//   description: text (not null)
+//   monthly_value: numeric (not null, default: 0)
+//   semiannual_value: numeric (not null, default: 0)
+//   annual_value: numeric (not null, default: 0)
+//   monthly_discount: numeric (nullable, default: 0)
+//   semiannual_discount: numeric (nullable, default: 0)
+//   annual_discount: numeric (nullable, default: 0)
+//   observation: text (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
+//   category_id: uuid (nullable)
 // Table: plano_contas
 //   id: uuid (not null, default: gen_random_uuid())
 //   codigo_estrutural: text (not null)
@@ -3550,6 +3642,11 @@ export const Constants = {
 //   PRIMARY KEY pedidos_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY pedidos_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id)
 //   FOREIGN KEY pedidos_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+// Table: plan_categories
+//   PRIMARY KEY plan_categories_pkey: PRIMARY KEY (id)
+// Table: plan_services
+//   FOREIGN KEY plan_services_category_id_fkey: FOREIGN KEY (category_id) REFERENCES plan_categories(id) ON DELETE SET NULL
+//   PRIMARY KEY plan_services_pkey: PRIMARY KEY (id)
 // Table: plano_contas
 //   FOREIGN KEY plano_contas_conta_pai_id_fkey: FOREIGN KEY (conta_pai_id) REFERENCES plano_contas(id) ON DELETE CASCADE
 //   CHECK plano_contas_natureza_check: CHECK ((natureza = ANY (ARRAY['receita'::text, 'despesa'::text])))
@@ -3885,6 +3982,16 @@ export const Constants = {
 //     USING: (user_id = auth.uid())
 //   Policy "pedidos_update" (UPDATE, PERMISSIVE) roles={public}
 //     USING: (user_id = auth.uid())
+// Table: plan_categories
+//   Policy "plan_categories_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+//   Policy "plan_categories_select" (SELECT, PERMISSIVE) roles={public}
+//     USING: true
+// Table: plan_services
+//   Policy "plan_services_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: plano_contas
 //   Policy "plano_contas_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
