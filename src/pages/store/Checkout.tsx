@@ -4,6 +4,7 @@ import { useCartStore } from '@/stores/useCartStore'
 import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { useSearchParams } from 'react-router-dom'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -17,7 +18,11 @@ export default function Checkout() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { items, clearCart } = useCartStore()
+  const [searchParams] = useSearchParams()
+  const planId = searchParams.get('plan_id')
+  const period = searchParams.get('period') || 'monthly'
 
+  const [plan, setPlan] = useState<any>(null)
   const [address, setAddress] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('credit_card')
   const [coupon, setCoupon] = useState('')
@@ -26,10 +31,29 @@ export default function Checkout() {
 
   useEffect(() => {
     if (!user) navigate('/login')
-    if (items.length === 0) navigate('/store')
-  }, [user, items, navigate])
+    if (!planId && items.length === 0) navigate('/store')
 
-  const subtotal = items.reduce((acc, item) => acc + (item.product?.price || 0) * item.quantity, 0)
+    if (planId) {
+      supabase
+        .from('plan_services')
+        .select('*, contract_templates(content)')
+        .eq('id', planId)
+        .single()
+        .then(({ data }) => {
+          if (data) setPlan(data)
+        })
+    }
+  }, [user, items, planId, navigate])
+
+  let subtotal = 0
+  if (planId && plan) {
+    if (period === 'monthly') subtotal = (plan.monthly_value || 0) - (plan.monthly_discount || 0)
+    else if (period === 'semiannual')
+      subtotal = (plan.semiannual_value || 0) - (plan.semiannual_discount || 0)
+    else if (period === 'annual') subtotal = (plan.annual_value || 0) - (plan.annual_discount || 0)
+  } else {
+    subtotal = items.reduce((acc, item) => acc + (item.product?.price || 0) * item.quantity, 0)
+  }
   const total = Math.max(0, subtotal - discount)
 
   const handleApplyCoupon = () => {
@@ -50,33 +74,78 @@ export default function Checkout() {
 
     setLoading(true)
     try {
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
+      if (planId && plan) {
+        let clienteId = null
+        const { data: cliente } = await supabase
+          .from('clientes')
+          .select('id')
+          .eq('user_id', user!.id)
+          .limit(1)
+          .maybeSingle()
+        if (cliente) {
+          clienteId = cliente.id
+        } else {
+          const { data: newCliente, error: clienteErr } = await supabase
+            .from('clientes')
+            .insert({
+              user_id: user!.id,
+              nome: user!.user_metadata?.name || user!.email || 'Cliente',
+              endereco: address,
+            })
+            .select('id')
+            .single()
+          if (!clienteErr && newCliente) clienteId = newCliente.id
+        }
+
+        const duracaoStr =
+          period === 'monthly' ? 'mensal' : period === 'semiannual' ? 'semestral' : 'anual'
+        const observacoes = plan.contract_templates?.content
+          ? plan.contract_templates.content
+              .replace(/{{nome_cliente}}/g, user!.user_metadata?.name || '')
+              .replace(/{{valor_total}}/g, total.toFixed(2))
+          : ''
+
+        const { error: contractErr } = await supabase.from('contratos').insert({
           user_id: user!.id,
-          total_price: total,
-          status: 'pending',
-          delivery_address: address,
-          payment_method: paymentMethod,
-          discount: discount,
-        } as any)
-        .select()
-        .single()
+          cliente_id: clienteId,
+          status: 'ativo',
+          tipo_contrato: 'assinatura',
+          valor_ciclo: total,
+          duracao_ciclo: duracaoStr,
+          observacoes: observacoes,
+          numero_contrato: `CTR-${Date.now()}`,
+        })
 
-      if (orderError) throw orderError
+        if (contractErr) throw contractErr
+      } else {
+        const { data: order, error: orderError } = await supabase
+          .from('orders')
+          .insert({
+            user_id: user!.id,
+            total_price: total,
+            status: 'pending',
+            delivery_address: address,
+            payment_method: paymentMethod,
+            discount: discount,
+          } as any)
+          .select()
+          .single()
 
-      const orderItems = items.map((item) => ({
-        order_id: order.id,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        price: item.product.price,
-      }))
+        if (orderError) throw orderError
 
-      const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
+        const orderItems = items.map((item) => ({
+          order_id: order.id,
+          product_id: item.product_id,
+          quantity: item.quantity,
+          price: item.product.price,
+        }))
 
-      if (itemsError) throw itemsError
+        const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
 
-      await clearCart(user!.id)
+        if (itemsError) throw itemsError
+
+        await clearCart(user!.id)
+      }
 
       const { data: prof } = await supabase
         .from('profiles')
@@ -115,7 +184,7 @@ export default function Checkout() {
     }
   }
 
-  if (items.length === 0) return null
+  if (!planId && items.length === 0) return null
 
   return (
     <div className="min-h-screen bg-secondary/30 pt-24 pb-12">
@@ -225,25 +294,40 @@ export default function Checkout() {
               <CardContent className="p-6">
                 <h3 className="font-bold text-xl mb-6">Resumo</h3>
 
-                <div className="space-y-4 mb-6 max-h-[30vh] overflow-y-auto pr-2 scrollbar-thin">
-                  {items.map((item) => (
-                    <div key={item.id} className="flex gap-3 text-sm">
-                      <div className="w-12 h-12 rounded bg-secondary overflow-hidden shrink-0">
-                        <img
-                          src={item.product?.image_url}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
+                {planId && plan ? (
+                  <div className="space-y-4 mb-6 bg-primary/5 p-4 rounded-xl border border-primary/20">
+                    <p className="font-bold text-lg">{plan.title}</p>
+                    <p className="text-sm text-muted-foreground">{plan.description}</p>
+                    <p className="text-sm font-medium capitalize mt-2 border-t pt-2 border-border/50">
+                      Plano:{' '}
+                      {period === 'monthly'
+                        ? 'Mensal'
+                        : period === 'semiannual'
+                          ? 'Semestral'
+                          : 'Anual'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4 mb-6 max-h-[30vh] overflow-y-auto pr-2 scrollbar-thin">
+                    {items.map((item) => (
+                      <div key={item.id} className="flex gap-3 text-sm">
+                        <div className="w-12 h-12 rounded bg-secondary overflow-hidden shrink-0">
+                          <img
+                            src={item.product?.image_url}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-bold line-clamp-1">{item.product?.name}</p>
+                          <p className="text-muted-foreground">
+                            {item.quantity}x R$ {item.product?.price?.toFixed(2)}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="font-bold line-clamp-1">{item.product?.name}</p>
-                        <p className="text-muted-foreground">
-                          {item.quantity}x R$ {item.product?.price?.toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
 
                 <div className="space-y-4 mb-6 pt-6 border-t border-border/50 text-sm">
                   <div className="flex items-center gap-2 mb-2">
