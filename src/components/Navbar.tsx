@@ -248,6 +248,26 @@ export function Navbar() {
                       >
                         {sub.label}
                       </a>
+                    ) : sub.url.startsWith('#') || sub.url.startsWith('/#') ? (
+                      <a
+                        key={`sub-${i}`}
+                        href={sub.url}
+                        onClick={(e) => {
+                          const hashIndex = sub.url.indexOf('#')
+                          const id = sub.url.substring(hashIndex + 1)
+                          if (id) {
+                            const element = document.getElementById(id)
+                            if (element) {
+                              e.preventDefault()
+                              element.scrollIntoView({ behavior: 'smooth' })
+                              window.history.pushState(null, '', sub.url.substring(hashIndex))
+                            }
+                          }
+                        }}
+                        className="block px-3 py-2 text-sm font-medium text-muted-foreground hover:text-[#1B7D3A] hover:bg-[#1B7D3A]/5 rounded-md transition-colors"
+                      >
+                        {sub.label}
+                      </a>
                     ) : (
                       <Link
                         key={`sub-${i}`}
@@ -482,6 +502,31 @@ export function Navbar() {
                                 rel="noreferrer"
                                 className="text-sm font-medium text-muted-foreground hover:text-[#1B7D3A] transition-colors py-1"
                                 onClick={() => setMobileOpen(false)}
+                              >
+                                {sub.label}
+                              </a>
+                            ) : sub.url.startsWith('#') || sub.url.startsWith('/#') ? (
+                              <a
+                                key={i}
+                                href={sub.url}
+                                onClick={(e) => {
+                                  setMobileOpen(false)
+                                  const hashIndex = sub.url.indexOf('#')
+                                  const id = sub.url.substring(hashIndex + 1)
+                                  if (id) {
+                                    const element = document.getElementById(id)
+                                    if (element) {
+                                      e.preventDefault()
+                                      element.scrollIntoView({ behavior: 'smooth' })
+                                      window.history.pushState(
+                                        null,
+                                        '',
+                                        sub.url.substring(hashIndex),
+                                      )
+                                    }
+                                  }
+                                }}
+                                className="text-sm font-medium text-muted-foreground hover:text-[#1B7D3A] transition-colors py-1"
                               >
                                 {sub.label}
                               </a>

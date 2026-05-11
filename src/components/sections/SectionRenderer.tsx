@@ -31,13 +31,27 @@ export function SectionRenderer({ section }: { section: any }) {
   // Resolve links gracefully - se iniciar com # ou http usamos um <a/> comum, caso contrário <Link/>
   const renderLink = (url: string, children: React.ReactNode, className?: string) => {
     if (!url) return null
-    if (url.startsWith('#') || url.startsWith('http')) {
+    if (url.startsWith('#') || url.startsWith('/#') || url.startsWith('http')) {
       return (
         <a
           href={url}
           className={className}
           target={url.startsWith('http') ? '_blank' : undefined}
           rel={url.startsWith('http') ? 'noreferrer' : undefined}
+          onClick={(e) => {
+            if (url.startsWith('#') || url.startsWith('/#')) {
+              const hashIndex = url.indexOf('#')
+              const id = url.substring(hashIndex + 1)
+              if (id) {
+                const element = document.getElementById(id)
+                if (element) {
+                  e.preventDefault()
+                  element.scrollIntoView({ behavior: 'smooth' })
+                  window.history.pushState(null, '', url.substring(hashIndex))
+                }
+              }
+            }
+          }}
         >
           {children}
         </a>

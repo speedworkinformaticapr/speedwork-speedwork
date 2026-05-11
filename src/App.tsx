@@ -94,6 +94,7 @@ import { Analytics } from './components/Analytics'
 
 function ScrollToHash() {
   const location = useLocation()
+
   useEffect(() => {
     if (location.hash) {
       setTimeout(() => {
@@ -105,6 +106,32 @@ function ScrollToHash() {
       }, 100)
     }
   }, [location])
+
+  useEffect(() => {
+    const handleAnchorClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      const anchor = target.closest('a')
+
+      if (anchor && anchor.hash && anchor.hash !== '#') {
+        const isSamePage = anchor.pathname === window.location.pathname
+
+        if (isSamePage) {
+          const id = anchor.hash.replace('#', '')
+          const element = document.getElementById(id)
+
+          if (element) {
+            e.preventDefault()
+            element.scrollIntoView({ behavior: 'smooth' })
+            window.history.pushState(null, '', anchor.hash)
+          }
+        }
+      }
+    }
+
+    document.addEventListener('click', handleAnchorClick, true)
+    return () => document.removeEventListener('click', handleAnchorClick, true)
+  }, [])
+
   return null
 }
 
