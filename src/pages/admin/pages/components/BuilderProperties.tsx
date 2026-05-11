@@ -146,14 +146,38 @@ function FieldRenderer({
         )}
       </div>
       {field.type === 'text' && (
-        <Input
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-8 text-xs"
-        />
+        <div className="relative">
+          <Input
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+            className="h-8 text-xs pr-12"
+            maxLength={field.maxLength}
+          />
+          {field.maxLength && (
+            <span className="absolute right-2 top-2 text-[10px] text-muted-foreground">
+              {(value || '').length}/{field.maxLength}
+            </span>
+          )}
+        </div>
       )}
       {field.type === 'textarea' && (
-        <RichTextEditor value={value || ''} onChange={onChange} minHeight="120px" />
+        <div className="relative">
+          {field.maxLength ? (
+            <Textarea
+              value={value || ''}
+              onChange={(e) => onChange(e.target.value)}
+              className="text-xs min-h-[80px]"
+              maxLength={field.maxLength}
+            />
+          ) : (
+            <RichTextEditor value={value || ''} onChange={onChange} minHeight="120px" />
+          )}
+          {field.maxLength && (
+            <span className="absolute right-2 bottom-2 text-[10px] text-muted-foreground">
+              {(value || '').length}/{field.maxLength}
+            </span>
+          )}
+        </div>
       )}
       {field.type === 'color' && (
         <div className="flex gap-2">
@@ -202,6 +226,21 @@ function FieldRenderer({
           onChange={(e) => onChange(e.target.value)}
           className="h-8 text-xs"
         />
+      )}
+      {field.type === 'range' && (
+        <div className="flex items-center gap-3">
+          <Input
+            type="range"
+            min="0"
+            max="100"
+            value={value || 0}
+            onChange={(e) => onChange(parseInt(e.target.value, 10))}
+            className="flex-1 cursor-pointer"
+          />
+          <span className="text-xs font-mono bg-muted px-2 py-1 rounded w-12 text-center">
+            {value || 0}%
+          </span>
+        </div>
       )}
       {field.type === 'date' && (
         <Input

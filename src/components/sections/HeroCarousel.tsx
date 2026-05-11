@@ -69,10 +69,62 @@ export function HeroCarousel() {
   }
 
   return (
-    <div className="relative w-full overflow-hidden group bg-slate-900" ref={emblaRef}>
-      <div className="flex touch-pan-y">{slides.map((slide) => null)}</div>
+    <div
+      className="relative w-full overflow-hidden group bg-slate-900 h-[60vh] md:h-[80vh]"
+      ref={emblaRef}
+    >
+      <div className="flex touch-pan-y w-full h-full">
+        {slides.map((slide, index) => (
+          <div key={index} className="relative flex-[0_0_100%] min-w-0 h-full">
+            {slide.media_type === 'video' ? (
+              <iframe
+                src={getEmbedUrl(slide.media_type, slide.media_url)}
+                className="w-full h-full object-cover pointer-events-none"
+                allow="autoplay; fullscreen"
+                frameBorder="0"
+              />
+            ) : (
+              <img
+                src={slide.media_url}
+                alt={slide.title || 'Slide'}
+                className="w-full h-full object-cover"
+              />
+            )}
+            {(slide.title || slide.description || slide.button_text) && (
+              <div
+                className="absolute inset-0 flex p-6 md:p-12 z-20 items-center justify-center text-center"
+                style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
+              >
+                <div className="max-w-4xl animate-fade-in-up flex flex-col gap-4 items-center">
+                  {slide.title && (
+                    <h2 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white drop-shadow-lg tracking-tight">
+                      {slide.title}
+                    </h2>
+                  )}
+                  {slide.description && (
+                    <p className="text-base md:text-xl lg:text-2xl text-white/90 drop-shadow-md font-medium whitespace-pre-wrap">
+                      {slide.description}
+                    </p>
+                  )}
+                  {slide.button_text && slide.link_url && (
+                    <div className="mt-6">
+                      <Button
+                        asChild
+                        size="lg"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-8 py-6 text-lg rounded-full transition-all hover:scale-105 shadow-xl pointer-events-auto"
+                      >
+                        <Link to={slide.link_url}>{slide.button_text}</Link>
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
 
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/70 to-transparent pointer-events-none z-20" />
 
       <Button
         variant="ghost"

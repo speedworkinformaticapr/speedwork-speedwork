@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useCallback, useMemo } from 'react'
+import { MediaCarousel } from './MediaCarousel'
 import {
   Accordion,
   AccordionItem,
@@ -23,102 +24,12 @@ import {
 import useEmblaCarousel from 'embla-carousel-react'
 import Autoplay from 'embla-carousel-autoplay'
 
-function MediaCarouselSection({ data }: { data: any }) {
-  const delay = Math.max(1000, Number(data.delay) || 5000)
-  const autoplayEnabled = data.autoplay === undefined ? true : !!data.autoplay
-
-  const plugins = useMemo(() => {
-    return autoplayEnabled ? [Autoplay({ delay, stopOnInteraction: true })] : []
-  }, [autoplayEnabled, delay])
-
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, plugins)
-
-  const scrollPrev = useCallback(() => {
-    if (emblaApi) emblaApi.scrollPrev()
-  }, [emblaApi])
-
-  const scrollNext = useCallback(() => {
-    if (emblaApi) emblaApi.scrollNext()
-  }, [emblaApi])
-
-  const items =
-    data.items && data.items.length > 0
-      ? data.items
-      : [
-          {
-            type: 'image',
-            url: 'https://img.usecurling.com/p/1200/600?seed=1',
-            title: 'Imagem de Exemplo 1',
-          },
-          {
-            type: 'image',
-            url: 'https://img.usecurling.com/p/1200/600?seed=2',
-            title: 'Imagem de Exemplo 2',
-          },
-        ]
-
-  return (
-    <section
-      key={`carousel-${autoplayEnabled}-${delay}`}
-      className="relative w-full overflow-hidden bg-background group"
-    >
-      <div className="overflow-hidden" ref={emblaRef}>
-        <div className="flex">
-          {items.map((item: any, idx: number) => (
-            <div className="relative flex-[0_0_100%] min-w-0" key={idx}>
-              {item.type === 'video' ? (
-                <video
-                  src={item.url}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  className="w-full min-h-[400px] md:h-[600px] object-cover bg-muted"
-                />
-              ) : (
-                <img
-                  src={item.url || `https://img.usecurling.com/p/1200/600?seed=${idx}`}
-                  alt={item.title || 'Carousel media'}
-                  className="w-full min-h-[400px] md:h-[600px] object-cover bg-muted"
-                />
-              )}
-              {item.title && (
-                <div className="absolute bottom-0 left-0 w-full p-8 bg-gradient-to-t from-black/80 to-transparent">
-                  <h3 className="text-2xl md:text-4xl font-bold text-white drop-shadow-md">
-                    {item.title}
-                  </h3>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-      {items.length > 1 && (
-        <>
-          <button
-            onClick={scrollPrev}
-            className="absolute top-1/2 left-4 -translate-y-1/2 bg-black/30 text-white p-3 rounded-full z-10 hover:bg-black/60 transition-colors backdrop-blur-sm opacity-0 group-hover:opacity-100"
-          >
-            <ArrowLeft className="w-6 h-6" />
-          </button>
-          <button
-            onClick={scrollNext}
-            className="absolute top-1/2 right-4 -translate-y-1/2 bg-black/30 text-white p-3 rounded-full z-10 hover:bg-black/60 transition-colors backdrop-blur-sm opacity-0 group-hover:opacity-100"
-          >
-            <ArrowRight className="w-6 h-6" />
-          </button>
-        </>
-      )}
-    </section>
-  )
-}
-
 export function SectionRenderer({ section }: { section: any }) {
   const { type, data: rawData } = section
   const data = rawData || {}
 
   if (type === 'media_carousel') {
-    return <MediaCarouselSection data={data} />
+    return <MediaCarousel data={data} />
   }
 
   if (type === 'hero') {
@@ -127,30 +38,38 @@ export function SectionRenderer({ section }: { section: any }) {
     const subtitle =
       data.subtitle ||
       'Subtítulo atrativo que descreve seu produto ou serviço. Configure os detalhes nas propriedades.'
+    const overlayOpacity = data.overlayOpacity !== undefined ? data.overlayOpacity : 40
+
     return (
       <section className="relative py-28 md:py-48 flex items-center justify-center overflow-hidden w-full">
         {bgImage ? (
           <div className="absolute inset-0 z-0">
             <img src={bgImage} className="w-full h-full object-cover" alt="Hero background" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-black/40 backdrop-blur-[2px]" />
+            <div
+              className="absolute inset-0 backdrop-blur-[2px]"
+              style={{ backgroundColor: `rgba(0,0,0,${overlayOpacity / 100})` }}
+            />
           </div>
         ) : (
           <div className="absolute inset-0 z-0 bg-primary" />
         )}
-        <div className="relative z-10 container mx-auto px-4 text-center">
+        <div className="relative z-10 container mx-auto px-4 text-center flex flex-col items-center justify-center">
           <h1 className="text-4xl md:text-7xl font-extrabold text-white mb-6 drop-shadow-lg tracking-tight">
             {title}
           </h1>
-          <p className="text-xl md:text-2xl text-gray-200 mb-10 max-w-3xl mx-auto drop-shadow">
+          <p className="text-xl md:text-2xl text-white/90 mb-10 max-w-3xl mx-auto drop-shadow">
             {subtitle}
           </p>
           {(data.buttonText || data.link || data.buttonLink || !data.title) && (
-            <Link
-              to={data.link || data.buttonLink || '#'}
-              className="inline-flex items-center gap-2 bg-white text-primary px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 hover:scale-105 transition-all shadow-xl"
+            <Button
+              asChild
+              size="lg"
+              className="px-8 py-6 text-lg rounded-full shadow-xl hover:scale-105 transition-all"
             >
-              {data.buttonText || 'Saiba mais'} <ArrowRight className="w-5 h-5" />
-            </Link>
+              <Link to={data.link || data.buttonLink || '#'}>
+                {data.buttonText || 'Saiba mais'} <ArrowRight className="w-5 h-5 ml-2" />
+              </Link>
+            </Button>
           )}
         </div>
       </section>
@@ -252,19 +171,33 @@ export function SectionRenderer({ section }: { section: any }) {
   if (type === 'cta') {
     const title = data.title || 'Chamada para Ação'
     const subtitle = data.subtitle || 'Este é um espaço ideal para converter seus visitantes.'
+    const bgImage = data.backgroundImage
+    const overlayOpacity = data.overlayOpacity !== undefined ? data.overlayOpacity : 40
+
     return (
       <section
         className="py-28 relative overflow-hidden w-full"
         style={{ backgroundColor: data.backgroundColor || '#1B7D3A' }}
       >
-        <div
-          className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.4) 0%, transparent 50%)',
-          }}
-        ></div>
-        <div className="container mx-auto px-4 text-center relative z-10">
+        {bgImage && (
+          <div className="absolute inset-0 z-0">
+            <img src={bgImage} className="w-full h-full object-cover" alt="CTA background" />
+            <div
+              className="absolute inset-0 backdrop-blur-[2px]"
+              style={{ backgroundColor: `rgba(0,0,0,${overlayOpacity / 100})` }}
+            />
+          </div>
+        )}
+        {!bgImage && (
+          <div
+            className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none z-0"
+            style={{
+              backgroundImage:
+                'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.4) 0%, transparent 50%)',
+            }}
+          ></div>
+        )}
+        <div className="container mx-auto px-4 text-center relative z-10 flex flex-col items-center justify-center">
           <h2 className="text-4xl md:text-6xl font-extrabold text-white mb-6 drop-shadow-md tracking-tight">
             {title}
           </h2>
@@ -272,12 +205,14 @@ export function SectionRenderer({ section }: { section: any }) {
             {subtitle}
           </p>
           {(data.buttonText || data.link || !data.title) && (
-            <Link
-              to={data.link || '#'}
-              className="inline-block bg-white text-gray-900 px-10 py-5 rounded-full font-bold text-xl hover:bg-gray-100 hover:scale-105 transition-all shadow-2xl"
+            <Button
+              asChild
+              size="lg"
+              variant={bgImage ? 'default' : 'secondary'}
+              className="px-10 py-6 text-xl rounded-full shadow-2xl hover:scale-105 transition-all"
             >
-              {data.buttonText || 'Acessar Agora'}
-            </Link>
+              <Link to={data.link || '#'}>{data.buttonText || 'Acessar Agora'}</Link>
+            </Button>
           )}
         </div>
       </section>

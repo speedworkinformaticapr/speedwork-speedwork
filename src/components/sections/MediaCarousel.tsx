@@ -71,7 +71,7 @@ export function MediaCarousel({ data }: { data: any }) {
         : alignVertical === 'bottom'
           ? 'justify-end pb-16'
           : 'justify-center'
-    return `${h} ${v}`
+    return `flex-col ${h} ${v}`
   }
 
   const getTransitionStyles = (index: number) => {
@@ -139,24 +139,31 @@ export function MediaCarousel({ data }: { data: any }) {
 
             {(slide.title || slide.subtitle || slide.buttonText) && (
               <div
-                className={cn(
-                  'absolute inset-0 bg-black/40 flex p-6 md:p-12 z-20',
-                  getAlignClasses(),
-                )}
+                className={cn('absolute inset-0 flex p-6 md:p-12 z-20', getAlignClasses())}
+                style={{ backgroundColor: `rgba(0,0,0,${(slide.overlayOpacity ?? 40) / 100})` }}
               >
-                <div className="max-w-4xl animate-fade-in-up flex flex-col gap-4">
+                <div
+                  className={cn(
+                    'max-w-4xl animate-fade-in-up flex flex-col gap-4',
+                    alignHorizontal === 'left'
+                      ? 'items-start'
+                      : alignHorizontal === 'right'
+                        ? 'items-end'
+                        : 'items-center',
+                  )}
+                >
                   {slide.title && (
-                    <h2 className="text-3xl md:text-6xl font-extrabold text-white drop-shadow-lg tracking-tight">
+                    <h2 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white drop-shadow-lg tracking-tight">
                       {slide.title}
                     </h2>
                   )}
                   {slide.subtitle && (
-                    <p className="text-lg md:text-2xl text-white/90 drop-shadow-md font-medium whitespace-pre-wrap">
+                    <p className="text-base md:text-xl lg:text-2xl text-white/90 drop-shadow-md font-medium whitespace-pre-wrap">
                       {slide.subtitle}
                     </p>
                   )}
                   {slide.buttonText && slide.buttonLink && (
-                    <div className="mt-4">
+                    <div className="mt-6">
                       <Button
                         asChild
                         size="lg"

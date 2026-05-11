@@ -4,6 +4,7 @@ export type FieldType =
   | 'color'
   | 'url'
   | 'number'
+  | 'range'
   | 'select'
   | 'boolean'
   | 'string_list'
@@ -16,6 +17,7 @@ export interface FieldDef {
   label: string
   type: FieldType
   options?: { label: string; value: string }[]
+  maxLength?: number
 }
 
 export interface ListDef {
@@ -126,8 +128,8 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
       {
         title: 'Conteúdo',
         fields: [
-          { name: 'title', label: 'Título', type: 'text' },
-          { name: 'subtitle', label: 'Subtítulo', type: 'textarea' },
+          { name: 'title', label: 'Título', type: 'text', maxLength: 80 },
+          { name: 'subtitle', label: 'Subtítulo', type: 'textarea', maxLength: 160 },
         ],
       },
       {
@@ -135,12 +137,13 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
         fields: [
           { name: 'backgroundColor', label: 'Cor de Fundo', type: 'color' },
           { name: 'backgroundImage', label: 'Imagem de Fundo (URL)', type: 'url' },
+          { name: 'overlayOpacity', label: 'Escurecimento da Imagem (%)', type: 'range' },
         ],
       },
       {
         title: 'Ação',
         fields: [
-          { name: 'buttonText', label: 'Texto do Botão', type: 'text' },
+          { name: 'buttonText', label: 'Texto do Botão', type: 'text', maxLength: 40 },
           { name: 'link', label: 'Link do Botão', type: 'url' },
         ],
       },
@@ -188,18 +191,22 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
       {
         title: 'Conteúdo',
         fields: [
-          { name: 'title', label: 'Título', type: 'text' },
-          { name: 'subtitle', label: 'Subtítulo', type: 'textarea' },
+          { name: 'title', label: 'Título', type: 'text', maxLength: 80 },
+          { name: 'subtitle', label: 'Subtítulo', type: 'textarea', maxLength: 160 },
         ],
       },
       {
         title: 'Estilo',
-        fields: [{ name: 'backgroundColor', label: 'Cor de Fundo', type: 'color' }],
+        fields: [
+          { name: 'backgroundColor', label: 'Cor de Fundo', type: 'color' },
+          { name: 'backgroundImage', label: 'Imagem de Fundo (URL)', type: 'url' },
+          { name: 'overlayOpacity', label: 'Escurecimento da Imagem (%)', type: 'range' },
+        ],
       },
       {
         title: 'Ação',
         fields: [
-          { name: 'buttonText', label: 'Texto do Botão', type: 'text' },
+          { name: 'buttonText', label: 'Texto do Botão', type: 'text', maxLength: 40 },
           { name: 'link', label: 'Link do Botão', type: 'url' },
         ],
       },
@@ -235,7 +242,7 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
       {
         title: 'Conteúdo',
         fields: [
-          { name: 'title', label: 'Título', type: 'text' },
+          { name: 'title', label: 'Título', type: 'text', maxLength: 80 },
           { name: 'content', label: 'Texto HTML', type: 'textarea' },
           { name: 'imageUrl', label: 'URL da Imagem', type: 'url' },
         ],
@@ -468,10 +475,11 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
               { label: 'Vídeo', value: 'video' },
             ],
           },
-          { name: 'title', label: 'Título', type: 'text' },
-          { name: 'subtitle', label: 'Subtítulo', type: 'textarea' },
-          { name: 'buttonText', label: 'Texto do Botão', type: 'text' },
+          { name: 'title', label: 'Título', type: 'text', maxLength: 80 },
+          { name: 'subtitle', label: 'Subtítulo', type: 'textarea', maxLength: 160 },
+          { name: 'buttonText', label: 'Texto do Botão', type: 'text', maxLength: 40 },
           { name: 'buttonLink', label: 'Link do Botão', type: 'url' },
+          { name: 'overlayOpacity', label: 'Escurecimento da Imagem (%)', type: 'range' },
         ],
       },
     ],
