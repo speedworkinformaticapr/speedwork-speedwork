@@ -128,6 +128,14 @@ function FieldRenderer({
           className="h-8 text-xs"
         />
       )}
+      {field.type === 'date' && (
+        <Input
+          type="date"
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-8 text-xs"
+        />
+      )}
       {field.type === 'boolean' && (
         <div className="flex items-center h-8">
           <Switch checked={!!value} onCheckedChange={onChange} />
@@ -243,7 +251,12 @@ function ListRenderer({
             ? item || `Item ${idx + 1}`
             : isMediaList && typeof item === 'string'
               ? item || `Mídia ${idx + 1}`
-              : item.title || item.name || item.question || item.author || `Item ${idx + 1}`
+              : item.title ||
+                item.name ||
+                item.question ||
+                item.author ||
+                item.date ||
+                `Item ${idx + 1}`
 
           return (
             <AccordionItem

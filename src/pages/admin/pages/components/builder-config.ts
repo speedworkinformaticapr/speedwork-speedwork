@@ -7,6 +7,7 @@ export type FieldType =
   | 'select'
   | 'boolean'
   | 'string_list'
+  | 'date'
 
 export interface FieldDef {
   name: string
@@ -306,6 +307,33 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
           { name: 'title', label: 'Título', type: 'text' },
           { name: 'subtitle', label: 'Subtítulo', type: 'textarea' },
           { name: 'limit', label: 'Limite de Posts', type: 'number' },
+        ],
+      },
+    ],
+  },
+  timeline: {
+    sections: [
+      {
+        title: 'Conteúdo Principal',
+        fields: [{ name: 'title', label: 'Título da Linha do Tempo', type: 'text' }],
+      },
+    ],
+    lists: [
+      {
+        name: 'events',
+        label: 'Eventos',
+        fields: [
+          { name: 'date', label: 'Data', type: 'date' },
+          { name: 'description', label: 'Texto', type: 'textarea' },
+          {
+            name: 'position',
+            label: 'Lado da Linha',
+            type: 'select',
+            options: [
+              { label: 'Esquerda', value: 'left' },
+              { label: 'Direita', value: 'right' },
+            ],
+          },
         ],
       },
     ],

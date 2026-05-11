@@ -303,6 +303,7 @@ export function AdminSidebar() {
                                     aria-hidden="true"
                                   />
                                 )}
+                                <span>{subItem.title}</span>
                               </Link>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
