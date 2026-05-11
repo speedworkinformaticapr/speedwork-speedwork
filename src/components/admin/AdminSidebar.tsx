@@ -23,7 +23,6 @@ import {
   Receipt,
   MessageSquare,
   LayoutTemplate,
-  Images,
   Layout,
   Image,
   Video,
@@ -116,7 +115,6 @@ const navItems = [
     title: 'Customizar CMS',
     icon: LayoutTemplate,
     items: [
-      { title: 'Carrossel Principal', url: '/admin/settings/hero-carousel', icon: Images },
       { title: 'Biblioteca de Dobras', url: '/admin/sections', icon: Layout },
       { title: 'Galeria de Fotos', url: '/admin/gallery', icon: Image },
       { title: 'Gestão de Mídias', url: '/admin/settings/media', icon: Video },

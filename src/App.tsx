@@ -58,7 +58,6 @@ import AdminLogistics from './pages/admin/ecommerce/AdminLogistics'
 import AdminAthleteScouting from './pages/admin/business/AdminAthleteScouting'
 import AdminSystemData from './pages/admin/settings/AdminSystemData'
 import AdminMedia from './pages/admin/settings/AdminMedia'
-import AdminHeroCarousel from './pages/admin/settings/AdminHeroCarousel'
 import AdminAnalytics from './pages/admin/settings/AdminAnalytics'
 import AdminPublishLogs from './pages/admin/settings/AdminPublishLogs'
 import AdminWhatsApp from './pages/admin/whatsapp/AdminWhatsApp'
@@ -204,7 +203,6 @@ const App = () => (
                   <Route path="/admin/settings/maintenance" element={<AdminMaintenance />} />
                   <Route path="/admin/settings/system-data" element={<AdminSystemData />} />
                   <Route path="/admin/settings/media" element={<AdminMedia />} />
-                  <Route path="/admin/settings/hero-carousel" element={<AdminHeroCarousel />} />
                   <Route path="/admin/settings/analytics" element={<AdminAnalytics />} />
                   <Route path="/admin/settings/publish-logs" element={<AdminPublishLogs />} />
 
