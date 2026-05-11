@@ -26,7 +26,7 @@ export const BUILDER_ELEMENTS = [
   { type: 'feature_cards', label: 'Feature Cards', icon: LayoutGrid },
   { type: 'testimonials', label: 'Testimonials', icon: MessageSquare },
   { type: 'cta', label: 'CTA', icon: Megaphone },
-  { type: 'pricing_table', label: 'Pricing Table', icon: CircleDollarSign },
+  { type: 'dynamic_pricing_table', label: 'Pricing Table', icon: CircleDollarSign },
   { type: 'gallery', label: 'Image Gallery', icon: ImageIcon },
   { type: 'video', label: 'Video Embed', icon: Video },
   { type: 'text_image', label: 'Text & Image', icon: AlignLeft },
