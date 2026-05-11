@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { Plus } from 'lucide-react'
+import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
@@ -331,7 +332,7 @@ export function PlanServiceFormDialog({ open, onOpenChange, initialData, onSave 
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <FormLabel>Título da Categoria</FormLabel>
+              <Label>Título da Categoria</Label>
               <Input
                 value={newCategoryTitle}
                 onChange={(e) => setNewCategoryTitle(e.target.value)}

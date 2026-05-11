@@ -3992,6 +3992,8 @@ export const Constants = {
 //   Policy "plan_services_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+//   Policy "plan_services_select" (SELECT, PERMISSIVE) roles={public}
+//     USING: true
 // Table: plano_contas
 //   Policy "plano_contas_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
