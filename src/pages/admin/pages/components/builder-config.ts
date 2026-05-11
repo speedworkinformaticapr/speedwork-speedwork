@@ -52,6 +52,25 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
       },
     ],
   },
+  map_element: {
+    sections: [
+      {
+        title: 'Configurações',
+        fields: [
+          {
+            name: 'size',
+            label: 'Tamanho do Mapa',
+            type: 'select',
+            options: [
+              { label: 'Pequeno', value: 'small' },
+              { label: 'Médio', value: 'medium' },
+              { label: 'Grande', value: 'large' },
+            ],
+          },
+        ],
+      },
+    ],
+  },
   pricing_table: {
     sections: [
       {

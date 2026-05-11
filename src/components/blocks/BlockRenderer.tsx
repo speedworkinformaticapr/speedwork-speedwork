@@ -18,40 +18,7 @@ import {
 } from '@/components/ui/carousel'
 import Autoplay from 'embla-carousel-autoplay'
 import { DynamicPricingTableBlock } from './DynamicPricingTableBlock'
-
-function MapBlock({ block }: { block: any }) {
-  const { data } = useSystemData()
-  const size = block.data?.size || 'medium'
-  const heightClass = size === 'small' ? 'h-64' : size === 'large' ? 'h-[500px]' : 'h-96'
-
-  const address = data
-    ? [data.address_street, data.address_number, data.address_city, data.address_state]
-        .filter(Boolean)
-        .join(', ')
-    : ''
-
-  if (!address)
-    return (
-      <div
-        className={`w-full ${heightClass} bg-muted flex items-center justify-center rounded-2xl shadow-sm container mx-auto my-12`}
-      >
-        Endereço não configurado no sistema.
-      </div>
-    )
-
-  const encodedAddress = encodeURIComponent(address)
-
-  return (
-    <div className="container mx-auto px-4 my-12">
-      <iframe
-        width="100%"
-        height="100%"
-        className={`rounded-2xl shadow-lg border-none w-full ${heightClass}`}
-        src={`https://maps.google.com/maps?q=${encodedAddress}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
-      />
-    </div>
-  )
-}
+import { MapBlock } from './MapBlock'
 
 export function BlockRenderer({ block }: { block: any }) {
   if (!block || !block.type || !block.data) return null
@@ -60,7 +27,8 @@ export function BlockRenderer({ block }: { block: any }) {
 
   switch (blockType) {
     case 'map':
-      return <MapBlock block={block} />
+    case 'map_element':
+      return <MapBlock data={block.data} />
     case 'pricing_table':
     case 'dynamic_pricing':
     case 'dynamic_pricing_table':

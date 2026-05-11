@@ -32,9 +32,14 @@ export default function AdminPageForm() {
               metaKeywords: data.meta_keywords || '',
               blocks: (data.blocks || [])
                 .map((b: any) => {
-                  const normalizedType = String(b.type || '')
+                  let normalizedType = String(b.type || '')
                     .trim()
                     .toLowerCase()
+
+                  if (normalizedType === 'map_element') {
+                    normalizedType = 'map'
+                  }
+
                   if (
                     normalizedType === 'pricing_table' ||
                     normalizedType === 'dynamic_pricing_table' ||
