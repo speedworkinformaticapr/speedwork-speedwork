@@ -109,6 +109,7 @@ const navItems = [
       { title: 'Plano de Contas', url: '/admin/financial/chart-of-accounts', icon: FileText },
       { title: 'Regras de Cobrança', url: '/admin/financial/settings', icon: Receipt },
       { title: 'Serviços para Planos', url: '/admin/settings/plan-services', icon: LayoutTemplate },
+      { title: 'Tipos de SLA', url: '/admin/settings/sla-types', icon: Tags },
       { title: 'Gestão de Usuários', url: '/admin/users', icon: Users },
     ],
   },

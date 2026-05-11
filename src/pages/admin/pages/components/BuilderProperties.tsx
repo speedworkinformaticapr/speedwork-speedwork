@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Settings, AlertCircle, Plus, Trash2, Save, Image as ImageIcon } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AIGenerateButton } from '@/components/AIGenerateButton'
 import { MediaPicker } from '@/components/MediaPicker'
@@ -34,6 +35,78 @@ const colorSchema = z
   .regex(/^#([0-9A-F]{3}){1,2}$/i, 'Hex inválido')
   .or(z.literal(''))
 const numberSchema = z.coerce.number().or(z.literal(''))
+
+function SlaSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [slas, setSlas] = useState<any[]>([])
+  useEffect(() => {
+    import('@/lib/supabase/client').then(({ supabase }) => {
+      supabase
+        .from('sla_types')
+        .select('id, name')
+        .then(({ data }) => {
+          if (data) setSlas(data)
+        })
+    })
+  }, [])
+
+  return (
+    <Select value={value || ''} onValueChange={onChange}>
+      <SelectTrigger className="h-8 text-xs">
+        <SelectValue placeholder="Selecione um SLA..." />
+      </SelectTrigger>
+      <SelectContent>
+        {slas.map((sla) => (
+          <SelectItem key={sla.id} value={sla.id} className="text-xs">
+            {sla.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
+function ServicesMultiselect({
+  value,
+  onChange,
+}: {
+  value: string[]
+  onChange: (v: string[]) => void
+}) {
+  const [services, setServices] = useState<any[]>([])
+  useEffect(() => {
+    import('@/lib/supabase/client').then(({ supabase }) => {
+      supabase
+        .from('plan_services')
+        .select('id, title, category_id, plan_categories(title)')
+        .then(({ data }) => {
+          if (data) setServices(data)
+        })
+    })
+  }, [])
+
+  const selected = value || []
+  const toggle = (id: string) => {
+    if (selected.includes(id)) {
+      onChange(selected.filter((x) => x !== id))
+    } else {
+      onChange([...selected, id])
+    }
+  }
+
+  return (
+    <div className="space-y-2 border p-2 rounded-md max-h-48 overflow-y-auto bg-background">
+      {services.map((srv) => (
+        <label key={srv.id} className="flex items-center space-x-2 text-xs cursor-pointer">
+          <Checkbox checked={selected.includes(srv.id)} onCheckedChange={() => toggle(srv.id)} />
+          <span className="truncate">
+            {srv.title}{' '}
+            <span className="text-muted-foreground">({srv.plan_categories?.title})</span>
+          </span>
+        </label>
+      ))}
+    </div>
+  )
+}
 
 function validateValue(type: FieldType, value: any) {
   try {
@@ -154,6 +227,10 @@ function FieldRenderer({
             ))}
           </SelectContent>
         </Select>
+      )}
+      {field.type === 'sla_select' && <SlaSelect value={value} onChange={onChange} />}
+      {field.type === 'services_multiselect' && (
+        <ServicesMultiselect value={value} onChange={onChange} />
       )}
       {field.type === 'string_list' && (
         <div className="space-y-2 mt-1">

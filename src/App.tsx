@@ -55,6 +55,7 @@ import AdminOrders from './pages/admin/ecommerce/AdminOrders'
 import AdminLogistics from './pages/admin/ecommerce/AdminLogistics'
 import AdminAthleteScouting from './pages/admin/business/AdminAthleteScouting'
 import AdminPlanServices from './pages/admin/settings/AdminPlanServices'
+import AdminSlaTypes from './pages/admin/settings/AdminSlaTypes'
 import AdminSystemData from './pages/admin/settings/AdminSystemData'
 import AdminMedia from './pages/admin/settings/AdminMedia'
 import AdminAnalytics from './pages/admin/settings/AdminAnalytics'
@@ -199,6 +200,7 @@ const App = () => (
                   <Route path="/admin/settings/maintenance" element={<AdminMaintenance />} />
                   <Route path="/admin/settings/system-data" element={<AdminSystemData />} />
                   <Route path="/admin/settings/plan-services" element={<AdminPlanServices />} />
+                  <Route path="/admin/settings/sla-types" element={<AdminSlaTypes />} />
                   <Route path="/admin/settings/media" element={<AdminMedia />} />
                   <Route path="/admin/settings/analytics" element={<AdminAnalytics />} />
                   <Route path="/admin/settings/publish-logs" element={<AdminPublishLogs />} />

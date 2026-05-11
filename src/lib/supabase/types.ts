@@ -715,6 +715,33 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_templates: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       contratos: {
         Row: {
           cliente_id: string | null
@@ -1876,6 +1903,7 @@ export type Database = {
           annual_discount: number | null
           annual_value: number
           category_id: string | null
+          contract_template_id: string | null
           created_at: string
           description: string
           id: string
@@ -1891,6 +1919,7 @@ export type Database = {
           annual_discount?: number | null
           annual_value?: number
           category_id?: string | null
+          contract_template_id?: string | null
           created_at?: string
           description: string
           id?: string
@@ -1906,6 +1935,7 @@ export type Database = {
           annual_discount?: number | null
           annual_value?: number
           category_id?: string | null
+          contract_template_id?: string | null
           created_at?: string
           description?: string
           id?: string
@@ -1923,6 +1953,13 @@ export type Database = {
             columns: ['category_id']
             isOneToOne: false
             referencedRelation: 'plan_categories'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'plan_services_contract_template_id_fkey'
+            columns: ['contract_template_id']
+            isOneToOne: false
+            referencedRelation: 'contract_templates'
             referencedColumns: ['id']
           },
         ]
@@ -3029,6 +3066,13 @@ export const Constants = {
 //   email: text (nullable)
 //   status: text (nullable, default: 'active'::text)
 //   financial_status: text (nullable, default: 'normal'::text)
+// Table: contract_templates
+//   id: uuid (not null, default: gen_random_uuid())
+//   title: text (not null)
+//   content: text (nullable)
+//   is_active: boolean (nullable, default: true)
+//   created_at: timestamp with time zone (nullable, default: now())
+//   updated_at: timestamp with time zone (nullable, default: now())
 // Table: contratos
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (nullable, default: auth.uid())
@@ -3317,6 +3361,7 @@ export const Constants = {
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
 //   category_id: uuid (nullable)
+//   contract_template_id: uuid (nullable)
 // Table: plano_contas
 //   id: uuid (not null, default: gen_random_uuid())
 //   codigo_estrutural: text (not null)
@@ -3585,6 +3630,8 @@ export const Constants = {
 //   FOREIGN KEY clientes_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: clubs
 //   PRIMARY KEY clubs_pkey: PRIMARY KEY (id)
+// Table: contract_templates
+//   PRIMARY KEY contract_templates_pkey: PRIMARY KEY (id)
 // Table: contratos
 //   FOREIGN KEY contratos_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
 //   FOREIGN KEY contratos_conta_id_fkey: FOREIGN KEY (conta_id) REFERENCES plano_contas(id) ON DELETE SET NULL
@@ -3672,6 +3719,7 @@ export const Constants = {
 //   PRIMARY KEY plan_categories_pkey: PRIMARY KEY (id)
 // Table: plan_services
 //   FOREIGN KEY plan_services_category_id_fkey: FOREIGN KEY (category_id) REFERENCES plan_categories(id) ON DELETE SET NULL
+//   FOREIGN KEY plan_services_contract_template_id_fkey: FOREIGN KEY (contract_template_id) REFERENCES contract_templates(id) ON DELETE SET NULL
 //   PRIMARY KEY plan_services_pkey: PRIMARY KEY (id)
 // Table: plano_contas
 //   FOREIGN KEY plano_contas_conta_pai_id_fkey: FOREIGN KEY (conta_pai_id) REFERENCES plano_contas(id) ON DELETE CASCADE
@@ -3833,6 +3881,12 @@ export const Constants = {
 //   Policy "Enable update for authenticated users" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+// Table: contract_templates
+//   Policy "Enable all access for authenticated users" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+//   Policy "Enable read access for all users" (SELECT, PERMISSIVE) roles={public}
+//     USING: (is_active = true)
 // Table: contratos
 //   Policy "contratos_delete" (DELETE, PERMISSIVE) roles={public}
 //     USING: (user_id = auth.uid())
