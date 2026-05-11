@@ -2365,6 +2365,36 @@ export type Database = {
         }
         Relationships: []
       }
+      sla_types: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          resolution_time: string | null
+          response_time: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          resolution_time?: string | null
+          response_time?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          resolution_time?: string | null
+          response_time?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       stripe_config: {
         Row: {
           card_fee_fixed: number | null
@@ -3467,6 +3497,14 @@ export const Constants = {
 //   add_time: text (nullable)
 //   created_at: timestamp with time zone (nullable, default: now())
 //   updated_at: timestamp with time zone (nullable, default: now())
+// Table: sla_types
+//   id: uuid (not null, default: gen_random_uuid())
+//   name: text (not null)
+//   description: text (nullable)
+//   response_time: text (nullable)
+//   resolution_time: text (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: stripe_config
 //   id: uuid (not null, default: gen_random_uuid())
 //   tenant_id: uuid (nullable, default: '00000000-0000-0000-0000-000000000001'::uuid)
@@ -3747,6 +3785,8 @@ export const Constants = {
 //   PRIMARY KEY sections_pkey: PRIMARY KEY (id)
 // Table: services
 //   PRIMARY KEY services_pkey: PRIMARY KEY (id)
+// Table: sla_types
+//   PRIMARY KEY sla_types_pkey: PRIMARY KEY (id)
 // Table: stripe_config
 //   PRIMARY KEY stripe_config_pkey: PRIMARY KEY (id)
 // Table: stripe_payments
@@ -4128,6 +4168,12 @@ export const Constants = {
 //     WITH CHECK: true
 //   Policy "services_select_public" (SELECT, PERMISSIVE) roles={public}
 //     USING: true
+// Table: sla_types
+//   Policy "sla_types_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+//   Policy "sla_types_select" (SELECT, PERMISSIVE) roles={public}
+//     USING: true
 // Table: stripe_config
 //   Policy "stripe_config_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -4306,6 +4352,51 @@ export const Constants = {
 //         END LOOP;
 //       END IF;
 //     END IF;
+//     RETURN NEW;
+//   END;
+//   $function$
+//
+// FUNCTION handle_plan_payment_contract()
+//   CREATE OR REPLACE FUNCTION public.handle_plan_payment_contract()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   DECLARE
+//     v_cliente_id UUID;
+//   BEGIN
+//     IF NEW.status = 'pago' AND (OLD.status IS DISTINCT FROM 'pago') AND NEW.category = 'plano' THEN
+//       IF NEW.athlete_id IS NOT NULL THEN
+//          SELECT id INTO v_cliente_id FROM public.clientes WHERE user_id = NEW.athlete_id LIMIT 1;
+//
+//          IF v_cliente_id IS NULL THEN
+//             INSERT INTO public.clientes (user_id, nome)
+//             SELECT id, name FROM public.profiles WHERE id = NEW.athlete_id
+//             RETURNING id INTO v_cliente_id;
+//          END IF;
+//       END IF;
+//
+//       INSERT INTO public.contratos (
+//         cliente_id,
+//         tipo_contrato,
+//         data_inicio,
+//         duracao_ciclo,
+//         valor_ciclo,
+//         status,
+//         numero_contrato,
+//         observacoes
+//       ) VALUES (
+//         v_cliente_id,
+//         'Plano de Serviços',
+//         CURRENT_DATE,
+//         'mensal',
+//         NEW.amount,
+//         'ativo',
+//         'CTR-' || floor(random() * 1000000)::text,
+//         'Contrato gerado automaticamente após pagamento do ' || COALESCE(NEW.description, 'Plano')
+//       );
+//     END IF;
+//
 //     RETURN NEW;
 //   END;
 //   $function$
@@ -4514,6 +4605,8 @@ export const Constants = {
 // Table: event_registrations
 //   on_event_registration_update_count: CREATE TRIGGER on_event_registration_update_count AFTER INSERT OR DELETE ON public.event_registrations FOR EACH ROW EXECUTE FUNCTION update_event_participants()
 //   trigger_notify_event_registration: CREATE TRIGGER trigger_notify_event_registration AFTER INSERT ON public.event_registrations FOR EACH ROW EXECUTE FUNCTION notify_event_registration()
+// Table: financial_charges
+//   on_plan_payment_paid: CREATE TRIGGER on_plan_payment_paid AFTER UPDATE ON public.financial_charges FOR EACH ROW EXECUTE FUNCTION handle_plan_payment_contract()
 // Table: orcamentos
 //   trg_generate_numero_orcamento: CREATE TRIGGER trg_generate_numero_orcamento BEFORE INSERT ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION generate_numero_orcamento()
 //   trg_orcamento_financeiro: CREATE TRIGGER trg_orcamento_financeiro AFTER UPDATE ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION handle_orcamento_financeiro()

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Check } from 'lucide-react'
+import { Check, Info } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -9,6 +9,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { useNavigate } from 'react-router-dom'
 
 export function DynamicPricingTableBlock({ data }: { data: any }) {
@@ -138,12 +145,46 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
                 </div>
 
                 {sla && (
-                  <div className="mb-6 p-4 bg-muted/50 rounded-lg">
-                    <h4 className="font-semibold text-sm mb-1">SLA: {sla.name}</h4>
-                    <div className="text-xs text-muted-foreground space-y-1">
-                      <p>Resposta: {sla.response_time}</p>
-                      <p>Resolução: {sla.resolution_time}</p>
+                  <div className="mb-6 p-4 bg-muted/50 rounded-lg flex items-start justify-between">
+                    <div>
+                      <h4 className="font-semibold text-sm mb-1">SLA: {sla.name}</h4>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>Resposta: {sla.response_time}</p>
+                      </div>
                     </div>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-full shrink-0"
+                        >
+                          <Info className="w-4 h-4 text-primary" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>SLA - {sla.name}</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 text-sm mt-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-muted/50 p-4 rounded-md">
+                            <div>
+                              <span className="font-semibold block mb-1">Tempo de Resposta:</span>
+                              {sla.response_time}
+                            </div>
+                            <div>
+                              <span className="font-semibold block mb-1">Tempo de Resolução:</span>
+                              {sla.resolution_time}
+                            </div>
+                          </div>
+                          {sla.description && (
+                            <div className="mt-4 whitespace-pre-wrap leading-relaxed text-muted-foreground bg-card border rounded-md p-4">
+                              {sla.description}
+                            </div>
+                          )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 )}
 

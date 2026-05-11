@@ -144,6 +144,7 @@ export default function AdminSlaTypes() {
               <div className="space-y-2">
                 <Label>Descrição</Label>
                 <Textarea
+                  className="min-h-[200px]"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Detalhes do acordo..."

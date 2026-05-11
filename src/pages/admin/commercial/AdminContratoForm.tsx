@@ -21,10 +21,12 @@ export default function AdminContratoForm() {
   const [clientes, setClientes] = useState<any[]>([])
 
   const [planoContas, setPlanoContas] = useState<any[]>([])
+  const [slas, setSlas] = useState<any[]>([])
 
   const [form, setForm] = useState({
     cliente_id: '',
     conta_id: '',
+    sla_id: '',
     tipo_contrato: 'assinatura',
     data_inicio: new Date().toISOString().split('T')[0],
     duracao_ciclo: 'mensal',
@@ -43,18 +45,24 @@ export default function AdminContratoForm() {
       .from('clientes')
       .select('id, nome')
       .then(({ data }) => setClientes(data || []))
+    supabase
+      .from('sla_types')
+      .select('id, name')
+      .then(({ data }) => setSlas(data || []))
+
     if (id)
       supabase
         .from('contratos')
         .select('*')
         .eq('id', id)
         .single()
-        .then(({ data }) => data && setForm(data as any))
+        .then(({ data }) => data && setForm((prev) => ({ ...prev, ...data })))
   }, [id])
 
   const handleSave = async (status: string) => {
     if (!form.cliente_id)
       return toast({ title: 'Erro', description: 'Cliente obrigatório', variant: 'destructive' })
+
     const payload: any = {
       ...form,
       status,
@@ -63,6 +71,7 @@ export default function AdminContratoForm() {
       data_proxima_cobranca: (form as any).data_proxima_cobranca || form.data_inicio,
     }
     if (!payload.conta_id) payload.conta_id = null
+    if (!payload.sla_id) payload.sla_id = null
 
     if (id) await supabase.from('contratos').update(payload).eq('id', id)
     else await supabase.from('contratos').insert([payload])
@@ -139,6 +148,22 @@ export default function AdminContratoForm() {
               {planoContas.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.codigo_estrutural} - {c.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>SLA Associado</Label>
+          <Select value={form.sla_id || ''} onValueChange={(v) => setForm({ ...form, sla_id: v })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Nenhum SLA selecionado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Nenhum SLA</SelectItem>
+              {slas.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.name}
                 </SelectItem>
               ))}
             </SelectContent>
