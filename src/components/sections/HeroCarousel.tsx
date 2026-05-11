@@ -73,13 +73,7 @@ export function HeroCarousel() {
       <div className="flex touch-pan-y">
         {slides.map((slide) => (
           <div key={slide.id} className="relative flex-[0_0_100%] min-w-0 h-[60vh] md:h-[80vh]">
-            {slide.media_type === 'image' ? (
-              <img
-                src={slide.media_url}
-                alt={slide.title || 'Slide'}
-                className="w-full h-full object-cover"
-              />
-            ) : slide.media_type === 'local_video' ? (
+            {slide.media_type === 'image' ? null : slide.media_type === 'local_video' ? (
               <video
                 src={slide.media_url}
                 autoPlay
