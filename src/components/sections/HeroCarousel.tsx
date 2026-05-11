@@ -70,28 +70,7 @@ export function HeroCarousel() {
 
   return (
     <div className="relative w-full overflow-hidden group bg-slate-900" ref={emblaRef}>
-      <div className="flex touch-pan-y">
-        {slides.map((slide) => (
-          <div key={slide.id} className="relative flex-[0_0_100%] min-w-0 h-[60vh] md:h-[80vh]">
-            {slide.media_type === 'image' ? null : slide.media_type === 'local_video' ? (
-              <video
-                src={slide.media_url}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full h-full object-cover pointer-events-none"
-              />
-            ) : (
-              <iframe
-                src={getEmbedUrl(slide.media_type, slide.media_url)}
-                className="w-full h-full object-cover pointer-events-none"
-                allow="autoplay; fullscreen; picture-in-picture"
-              />
-            )}
-          </div>
-        ))}
-      </div>
+      <div className="flex touch-pan-y">{slides.map((slide) => null)}</div>
 
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
 
