@@ -37,15 +37,16 @@ export default function AdminPageForm() {
                       ...b,
                       type: 'dynamic_pricing_table',
                       data: {
+                        ...b.data,
                         title: b.data?.title || 'Nossos Planos',
-                        subtitle: '',
+                        subtitle: b.data?.subtitle || '',
                         plans: (b.data?.plans || []).map((p: any) => ({
                           name: p.name || '',
                           description: p.description || '',
                           buttonText: p.buttonText || '',
                           highlight: p.highlight || false,
-                          sla_id: '',
-                          services: [],
+                          sla_id: p.sla_id || '',
+                          services: p.services || [],
                         })),
                       },
                     }

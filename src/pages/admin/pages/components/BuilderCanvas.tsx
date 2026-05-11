@@ -182,11 +182,17 @@ export function BuilderCanvas() {
                   </span>
                   <span className="font-semibold text-foreground">{block.name}</span>
                 </div>
-                <div className="relative pointer-events-none rounded-lg overflow-hidden bg-background border shadow-inner max-h-[350px] w-full">
-                  <div className="w-full">
+                <div className="relative rounded-lg overflow-hidden bg-background border shadow-inner max-h-[450px] overflow-y-auto w-full">
+                  <div
+                    className="w-full"
+                    onClickCapture={(e) => {
+                      if ((e.target as HTMLElement).closest('a')) {
+                        e.preventDefault()
+                      }
+                    }}
+                  >
                     <BlockRenderer block={{ type: block.type, data: block.data || {} }} />
                   </div>
-                  <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-card to-transparent pointer-events-none" />
                 </div>
               </div>
             </div>

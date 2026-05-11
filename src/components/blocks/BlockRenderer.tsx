@@ -59,6 +59,7 @@ export function BlockRenderer({ block }: { block: any }) {
   switch (block.type) {
     case 'map':
       return <MapBlock block={block} />
+    case 'pricing_table':
     case 'dynamic_pricing_table':
       return <DynamicPricingTableBlock data={block.data} />
     case 'hero': {
@@ -378,6 +379,13 @@ export function BlockRenderer({ block }: { block: any }) {
       )
     }
     default:
-      return null
+      return (
+        <div className="container mx-auto px-4 my-12">
+          <div className="p-12 text-center bg-muted/20 border-2 border-dashed border-muted-foreground/30 rounded-2xl text-muted-foreground shadow-sm">
+            Bloco do tipo <strong className="text-foreground">{block.type}</strong> não configurado
+            visualmente.
+          </div>
+        </div>
+      )
   }
 }
