@@ -30,7 +30,29 @@ export default function AdminPageForm() {
               metaTitle: data.meta_title || '',
               metaDescription: data.meta_description || '',
               metaKeywords: data.meta_keywords || '',
-              blocks: (data.blocks || []).sort((a: any, b: any) => (a.order || 0) - (b.order || 0)),
+              blocks: (data.blocks || [])
+                .map((b: any) => {
+                  if (b.type === 'pricing_table') {
+                    return {
+                      ...b,
+                      type: 'dynamic_pricing_table',
+                      data: {
+                        title: b.data?.title || 'Nossos Planos',
+                        subtitle: '',
+                        plans: (b.data?.plans || []).map((p: any) => ({
+                          name: p.name || '',
+                          description: p.description || '',
+                          buttonText: p.buttonText || '',
+                          highlight: p.highlight || false,
+                          sla_id: '',
+                          services: [],
+                        })),
+                      },
+                    }
+                  }
+                  return b
+                })
+                .sort((a: any, b: any) => (a.order || 0) - (b.order || 0)),
               status: 'idle',
             })
           }

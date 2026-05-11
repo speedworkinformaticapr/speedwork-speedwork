@@ -100,7 +100,9 @@ function ServicesMultiselect({
           <Checkbox checked={selected.includes(srv.id)} onCheckedChange={() => toggle(srv.id)} />
           <span className="truncate">
             {srv.title}{' '}
-            <span className="text-muted-foreground">({srv.plan_categories?.title})</span>
+            <span className="text-muted-foreground">
+              ({srv.plan_categories?.title || 'Outros'})
+            </span>
           </span>
         </label>
       ))}

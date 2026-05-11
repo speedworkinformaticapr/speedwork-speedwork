@@ -758,6 +758,7 @@ export type Database = {
           observacoes: string | null
           renovacao_automatica: boolean | null
           responsavel_id: string | null
+          sla_id: string | null
           status: string | null
           tipo_contrato: string | null
           updated_at: string | null
@@ -779,6 +780,7 @@ export type Database = {
           observacoes?: string | null
           renovacao_automatica?: boolean | null
           responsavel_id?: string | null
+          sla_id?: string | null
           status?: string | null
           tipo_contrato?: string | null
           updated_at?: string | null
@@ -800,6 +802,7 @@ export type Database = {
           observacoes?: string | null
           renovacao_automatica?: boolean | null
           responsavel_id?: string | null
+          sla_id?: string | null
           status?: string | null
           tipo_contrato?: string | null
           updated_at?: string | null
@@ -826,6 +829,13 @@ export type Database = {
             columns: ['responsavel_id']
             isOneToOne: false
             referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'contratos_sla_id_fkey'
+            columns: ['sla_id']
+            isOneToOne: false
+            referencedRelation: 'sla_types'
             referencedColumns: ['id']
           },
         ]
@@ -3123,6 +3133,7 @@ export const Constants = {
 //   created_at: timestamp with time zone (nullable, default: now())
 //   updated_at: timestamp with time zone (nullable, default: now())
 //   conta_id: uuid (nullable)
+//   sla_id: uuid (nullable)
 // Table: courses
 //   id: uuid (not null, default: gen_random_uuid())
 //   club_id: uuid (nullable)
@@ -3676,6 +3687,7 @@ export const Constants = {
 //   UNIQUE contratos_numero_contrato_key: UNIQUE (numero_contrato)
 //   PRIMARY KEY contratos_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY contratos_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id)
+//   FOREIGN KEY contratos_sla_id_fkey: FOREIGN KEY (sla_id) REFERENCES sla_types(id) ON DELETE SET NULL
 //   FOREIGN KEY contratos_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: courses
 //   FOREIGN KEY courses_club_id_fkey: FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE

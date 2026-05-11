@@ -161,28 +161,6 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
       },
     ],
   },
-  pricing_table: {
-    sections: [
-      {
-        title: 'Conteúdo',
-        fields: [{ name: 'title', label: 'Título da Seção', type: 'text' }],
-      },
-    ],
-    lists: [
-      {
-        name: 'plans',
-        label: 'Planos',
-        fields: [
-          { name: 'name', label: 'Nome do Plano', type: 'text' },
-          { name: 'price', label: 'Preço', type: 'text' },
-          { name: 'description', label: 'Descrição', type: 'text' },
-          { name: 'buttonText', label: 'Texto do Botão', type: 'text' },
-          { name: 'highlight', label: 'Destacar Plano', type: 'boolean' },
-          { name: 'features', label: 'Recursos', type: 'string_list' },
-        ],
-      },
-    ],
-  },
   gallery: {
     sections: [
       {
