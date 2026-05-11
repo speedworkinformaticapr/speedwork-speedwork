@@ -17,6 +17,7 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel'
 import Autoplay from 'embla-carousel-autoplay'
+import { DynamicPricingTableBlock } from './DynamicPricingTableBlock'
 
 function MapBlock({ block }: { block: any }) {
   const { data } = useSystemData()
@@ -52,144 +53,6 @@ function MapBlock({ block }: { block: any }) {
   )
 }
 
-function DynamicPricingTableBlock({ block }: { block: any }) {
-  const [categories, setCategories] = useState<any[]>([])
-  const [period, setPeriod] = useState<'monthly' | 'semiannual' | 'annual'>('monthly')
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    async function loadData() {
-      const { data, error } = await supabase.from('plan_categories').select(`
-          id, title,
-          plan_services (
-            id, title, description,
-            monthly_value, semiannual_value, annual_value,
-            monthly_discount, semiannual_discount, annual_discount
-          )
-        `)
-      if (!error && data) {
-        setCategories(data)
-      }
-      setLoading(false)
-    }
-    loadData()
-  }, [])
-
-  if (loading)
-    return <div className="text-center my-12 text-muted-foreground">Carregando planos...</div>
-
-  const title = block.data?.title || 'Nossos Planos'
-  const subtitle = block.data?.subtitle || 'Escolha a melhor opção para sua necessidade'
-
-  return (
-    <div className="container mx-auto px-4 my-16">
-      <div className="text-center max-w-3xl mx-auto mb-12">
-        <h2 className="text-3xl md:text-4xl font-extrabold text-primary mb-4">{title}</h2>
-        <p className="text-lg text-muted-foreground">{subtitle}</p>
-      </div>
-
-      <div className="flex justify-center mb-12">
-        <Tabs value={period} onValueChange={(v: any) => setPeriod(v)} className="w-[400px]">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="monthly">Mensal</TabsTrigger>
-            <TabsTrigger value="semiannual">Semestral</TabsTrigger>
-            <TabsTrigger value="annual">Anual</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-
-      <div className="space-y-16">
-        {categories.map((cat) => (
-          <div key={cat.id}>
-            <h3 className="text-2xl font-bold text-center mb-8 border-b pb-4">{cat.title}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {(cat.plan_services || []).map((service: any) => {
-                let price = 0
-                let discount = 0
-                if (period === 'monthly') {
-                  price = service.monthly_value || 0
-                  discount = service.monthly_discount || 0
-                } else if (period === 'semiannual') {
-                  price = service.semiannual_value || 0
-                  discount = service.semiannual_discount || 0
-                } else if (period === 'annual') {
-                  price = service.annual_value || 0
-                  discount = service.annual_discount || 0
-                }
-
-                const finalPrice = Math.max(0, price - discount)
-
-                return (
-                  <Card
-                    key={service.id}
-                    className="p-8 border shadow-sm hover:shadow-xl transition-shadow flex flex-col h-full bg-card rounded-2xl relative overflow-hidden group"
-                  >
-                    <div className="flex-1">
-                      <h4 className="text-xl font-bold mb-2">{service.title}</h4>
-                      <p className="text-muted-foreground text-sm mb-6 min-h-[40px]">
-                        {service.description}
-                      </p>
-
-                      <div className="mb-8">
-                        {discount > 0 && (
-                          <span className="text-sm text-muted-foreground line-through block">
-                            R$ {price.toFixed(2)}
-                          </span>
-                        )}
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-2xl font-bold text-primary">R$</span>
-                          <span className="text-4xl font-black text-primary">
-                            {finalPrice.toFixed(2)}
-                          </span>
-                          <span className="text-sm text-muted-foreground font-medium">
-                            /
-                            {period === 'monthly'
-                              ? 'mês'
-                              : period === 'semiannual'
-                                ? 'semestre'
-                                : 'ano'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <ul className="space-y-3 mb-8">
-                        <li className="flex items-center gap-2 text-sm">
-                          <Check className="w-4 h-4 text-green-500 shrink-0" />
-                          <span>Acesso completo à plataforma</span>
-                        </li>
-                        <li className="flex items-center gap-2 text-sm">
-                          <Check className="w-4 h-4 text-green-500 shrink-0" />
-                          <span>Suporte especializado</span>
-                        </li>
-                        <li className="flex items-center gap-2 text-sm">
-                          <Check className="w-4 h-4 text-green-500 shrink-0" />
-                          <span>Contrato digital gerado</span>
-                        </li>
-                      </ul>
-                    </div>
-
-                    <a
-                      href={`/checkout?plan_id=${service.id}&period=${period}`}
-                      className="w-full bg-primary text-primary-foreground py-3 px-4 rounded-xl text-center font-bold hover:bg-primary/90 transition-colors shadow-md mt-auto block"
-                    >
-                      Contratar Plano
-                    </a>
-                  </Card>
-                )
-              })}
-            </div>
-            {(!cat.plan_services || cat.plan_services.length === 0) && (
-              <p className="text-center text-muted-foreground italic">
-                Nenhum serviço cadastrado nesta categoria.
-              </p>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 export function BlockRenderer({ block }: { block: any }) {
   if (!block || !block.type || !block.data) return null
 
@@ -197,7 +60,7 @@ export function BlockRenderer({ block }: { block: any }) {
     case 'map':
       return <MapBlock block={block} />
     case 'dynamic_pricing_table':
-      return <DynamicPricingTableBlock block={block} />
+      return <DynamicPricingTableBlock data={block.data} />
     case 'hero': {
       const IconComp =
         block.data.icon === 'Target'

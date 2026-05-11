@@ -5,7 +5,7 @@ import { Trash2, GripVertical, Plus, ChevronUp, ChevronDown } from 'lucide-react
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/hooks/use-toast'
-import { SectionRenderer } from '@/components/sections/SectionRenderer'
+import { BlockRenderer } from '@/components/blocks/BlockRenderer'
 
 export function BuilderCanvas() {
   const { state, setState } = usePageBuilderStore()
@@ -184,7 +184,7 @@ export function BuilderCanvas() {
                 </div>
                 <div className="relative pointer-events-none rounded-lg overflow-hidden bg-background border shadow-inner max-h-[350px] w-full">
                   <div className="w-full">
-                    <SectionRenderer section={{ type: block.type, data: block.data || {} }} />
+                    <BlockRenderer block={{ type: block.type, data: block.data || {} }} />
                   </div>
                   <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-card to-transparent pointer-events-none" />
                 </div>
