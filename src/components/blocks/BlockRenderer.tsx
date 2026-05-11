@@ -56,7 +56,7 @@ function MapBlock({ block }: { block: any }) {
 export function BlockRenderer({ block }: { block: any }) {
   if (!block || !block.type || !block.data) return null
 
-  const blockType = String(block.type).trim()
+  const blockType = String(block.type).trim().toLowerCase()
 
   switch (blockType) {
     case 'map':
@@ -249,6 +249,7 @@ export function BlockRenderer({ block }: { block: any }) {
         </div>
       )
     case 'blog_posts_grid':
+    case 'blog_posts':
       return <BlogPostsGrid block={block} />
     case 'timeline': {
       const title = block.data.title
@@ -382,6 +383,10 @@ export function BlockRenderer({ block }: { block: any }) {
       )
     }
     default:
+      console.warn(
+        `[BlockRenderer] Unmapped block type received: "${block.type}" (normalized: "${blockType}"). Block data:`,
+        block.data,
+      )
       return (
         <div className="container mx-auto px-4 my-12">
           <div className="p-12 text-center bg-muted/20 border-2 border-dashed border-muted-foreground/30 rounded-2xl text-muted-foreground shadow-sm">

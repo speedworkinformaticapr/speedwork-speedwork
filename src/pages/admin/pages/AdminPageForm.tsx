@@ -32,7 +32,14 @@ export default function AdminPageForm() {
               metaKeywords: data.meta_keywords || '',
               blocks: (data.blocks || [])
                 .map((b: any) => {
-                  if (b.type === 'pricing_table') {
+                  const normalizedType = String(b.type || '')
+                    .trim()
+                    .toLowerCase()
+                  if (
+                    normalizedType === 'pricing_table' ||
+                    normalizedType === 'dynamic_pricing_table' ||
+                    normalizedType === 'dynamic_pricing'
+                  ) {
                     return {
                       ...b,
                       type: 'dynamic_pricing_table',
@@ -51,7 +58,7 @@ export default function AdminPageForm() {
                       },
                     }
                   }
-                  return b
+                  return { ...b, type: normalizedType }
                 })
                 .sort((a: any, b: any) => (a.order || 0) - (b.order || 0)),
               status: 'idle',

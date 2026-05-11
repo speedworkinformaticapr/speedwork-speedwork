@@ -14,11 +14,13 @@ export function BlogPostsGrid({ block }: { block: any }) {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
+        console.log(`[BlogPostsGrid] Fetching posts with limit: ${limit}`)
         const data = await blogService.getPosts()
         const activePosts = data.filter((p) => p.is_active !== false && p.status !== 'draft')
         setPosts(activePosts.slice(0, limit))
+        console.log(`[BlogPostsGrid] Fetched ${activePosts.length} active posts`)
       } catch (error) {
-        console.error('Error fetching blog posts:', error)
+        console.error('[BlogPostsGrid] Error fetching blog posts:', error)
       } finally {
         setLoading(false)
       }

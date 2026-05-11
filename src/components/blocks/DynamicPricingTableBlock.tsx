@@ -21,19 +21,27 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
     async function loadData() {
       setIsLoading(true)
       try {
-        const { data: srvs } = await supabase
+        console.log('[DynamicPricingTableBlock] Loading services and slas...')
+        const { data: srvs, error: srvsError } = await supabase
           .from('plan_services')
           .select(
             'id, title, description, monthly_value, semiannual_value, annual_value, monthly_discount, semiannual_discount, annual_discount',
           )
+        if (srvsError)
+          console.error('[DynamicPricingTableBlock] Error fetching plan_services:', srvsError)
         if (srvs) setServicesData(srvs)
 
-        const { data: slas } = await supabase
+        const { data: slas, error: slasError } = await supabase
           .from('sla_types')
           .select('id, name, description, response_time, resolution_time')
+        if (slasError)
+          console.error('[DynamicPricingTableBlock] Error fetching sla_types:', slasError)
         if (slas) setSlasData(slas)
+        console.log(
+          `[DynamicPricingTableBlock] Loaded ${srvs?.length || 0} services and ${slas?.length || 0} slas.`,
+        )
       } catch (error) {
-        console.error('Error loading pricing data:', error)
+        console.error('[DynamicPricingTableBlock] Error loading pricing data:', error)
       } finally {
         setIsLoading(false)
       }
