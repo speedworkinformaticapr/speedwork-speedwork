@@ -16,6 +16,7 @@
     "sync-google-ads": 1,
     "validar_whatsapp_config": 1,
     "cron-commercial-contracts": 2,
-    "generate-ai-text": 2
+    "generate-ai-text": 2,
+    "verify-recaptcha": 1
   }
 }
