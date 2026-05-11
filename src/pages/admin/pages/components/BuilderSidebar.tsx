@@ -19,6 +19,8 @@ import {
   Newspaper,
   PlaySquare,
   GripVertical,
+  Map as MapIcon,
+  GitCommit,
 } from 'lucide-react'
 
 export const BUILDER_ELEMENTS = [
@@ -40,6 +42,8 @@ export const BUILDER_ELEMENTS = [
   { type: 'image', label: 'Single Image', icon: FileImage },
   { type: 'blog_posts_grid', label: 'Blog Posts', icon: Newspaper },
   { type: 'media_carousel', label: 'Media Carousel', icon: PlaySquare },
+  { type: 'map', label: 'Mapa', icon: MapIcon },
+  { type: 'timeline', label: 'Linha do Tempo', icon: GitCommit },
 ]
 
 export function BuilderSidebar() {
