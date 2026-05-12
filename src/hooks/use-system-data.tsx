@@ -71,6 +71,18 @@ export const SystemDataProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast()
 
   useEffect(() => {
+    const updateFavicon = (url?: string) => {
+      if (url) {
+        let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']")
+        if (!link) {
+          link = document.createElement('link')
+          link.rel = 'icon'
+          document.head.appendChild(link)
+        }
+        link.href = url
+      }
+    }
+
     const fetchInitialData = async () => {
       try {
         const { data: systemData, error } = await supabase
@@ -81,6 +93,7 @@ export const SystemDataProvider = ({ children }: { children: ReactNode }) => {
 
         if (!error && systemData) {
           setData(systemData as SystemData)
+          updateFavicon(systemData.browser_icon_url)
         }
       } catch (err) {
         console.error('Error fetching system data:', err)
@@ -94,7 +107,9 @@ export const SystemDataProvider = ({ children }: { children: ReactNode }) => {
     const channel = supabase
       .channel('system_data_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'system_data' }, (payload) => {
-        setData(payload.new as SystemData)
+        const newData = payload.new as SystemData
+        setData(newData)
+        updateFavicon(newData.browser_icon_url)
       })
       .subscribe()
 

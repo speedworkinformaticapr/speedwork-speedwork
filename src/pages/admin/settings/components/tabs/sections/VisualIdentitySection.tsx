@@ -9,6 +9,7 @@ import { SystemDataFormData } from '../../SystemDataSchema'
 export function VisualIdentitySection({ form }: { form: UseFormReturn<SystemDataFormData> }) {
   const logoUrl = form.watch('logo_url')
   const bgImageUrl = form.watch('bg_image_url')
+  const browserIconUrl = form.watch('browser_icon_url')
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -30,6 +31,16 @@ export function VisualIdentitySection({ form }: { form: UseFormReturn<SystemData
     }
   }
 
+  const handleBrowserIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () =>
+        form.setValue('browser_icon_url', reader.result as string, { shouldValidate: true })
+      reader.readAsDataURL(file)
+    }
+  }
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
@@ -44,7 +55,7 @@ export function VisualIdentitySection({ form }: { form: UseFormReturn<SystemData
               <FormItem>
                 <FormLabel>Nome da Plataforma</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input {...field} value={field.value || ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -57,7 +68,7 @@ export function VisualIdentitySection({ form }: { form: UseFormReturn<SystemData
               <FormItem>
                 <FormLabel>Slogan</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input {...field} value={field.value || ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -73,6 +84,7 @@ export function VisualIdentitySection({ form }: { form: UseFormReturn<SystemData
                   <Input
                     type="number"
                     {...field}
+                    value={field.value || 100}
                     onChange={(e) => field.onChange(parseInt(e.target.value) || 100)}
                   />
                 </FormControl>
@@ -85,9 +97,20 @@ export function VisualIdentitySection({ form }: { form: UseFormReturn<SystemData
           <div className="space-y-3">
             <Label>Logo da Plataforma</Label>
             <div className="flex items-center gap-4">
-              <div className="h-24 w-24 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center bg-white dark:bg-slate-950 overflow-hidden">
+              <div className="h-24 w-24 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center bg-white dark:bg-slate-950 overflow-hidden relative group">
                 {logoUrl ? (
-                  <img src={logoUrl} alt="Logo" className="h-full w-full object-contain p-2" />
+                  <>
+                    <img src={logoUrl} alt="Logo" className="h-full w-full object-contain p-2" />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => form.setValue('logo_url', '', { shouldValidate: true })}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </>
                 ) : (
                   <UploadCloud className="h-8 w-8 text-slate-300" />
                 )}
@@ -99,6 +122,47 @@ export function VisualIdentitySection({ form }: { form: UseFormReturn<SystemData
                   onChange={handleImageUpload}
                   className="cursor-pointer"
                 />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-4 border-t border-border/50">
+            <Label>Ícone do Navegador / Rodapé (Favicon)</Label>
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center bg-white dark:bg-slate-950 overflow-hidden relative group">
+                {browserIconUrl ? (
+                  <>
+                    <img
+                      src={browserIconUrl}
+                      alt="Favicon"
+                      className="h-full w-full object-contain p-2"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() =>
+                        form.setValue('browser_icon_url', '', { shouldValidate: true })
+                      }
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </>
+                ) : (
+                  <UploadCloud className="h-6 w-6 text-slate-300" />
+                )}
+              </div>
+              <div className="flex-1 space-y-2">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleBrowserIconUpload}
+                  className="cursor-pointer"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Usado na aba do navegador e em detalhes de marca.
+                </p>
               </div>
             </div>
           </div>

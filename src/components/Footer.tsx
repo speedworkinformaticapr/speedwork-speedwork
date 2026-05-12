@@ -1,11 +1,12 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Instagram, Facebook, Youtube, Send, Dribbble } from 'lucide-react'
+import { Instagram, Facebook, Youtube, Dribbble } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { useTranslation } from '@/hooks/use-translation'
 import { useSystemData } from '@/hooks/use-system-data'
 import { useAuth } from '@/hooks/use-auth'
+import { supabase } from '@/lib/supabase/client'
 import {
   Dialog,
   DialogContent,
@@ -21,14 +22,19 @@ export function Footer() {
   const { t } = useTranslation()
   const { data: systemData } = useSystemData()
   const { user } = useAuth()
+  const [pages, setPages] = useState<{ id: string; slug: string; title: string }[]>([])
 
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault()
-    toast({
-      title: 'Welcome to the club!',
-      description: 'You have successfully subscribed to our newsletter.',
-    })
-  }
+  useEffect(() => {
+    const fetchPages = async () => {
+      const { data } = await supabase
+        .from('pages')
+        .select('id, slug, title')
+        .eq('is_published', true)
+        .order('display_order')
+      if (data) setPages(data)
+    }
+    fetchPages()
+  }, [])
 
   const renderLegalModal = (title: string, content: string | undefined, defaultLink: string) => {
     if (!content) {
@@ -106,8 +112,16 @@ export function Footer() {
                 <img src={systemData.logo_url} alt="Logo" className="w-auto h-12 object-contain" />
               ) : (
                 <>
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
-                    <Dribbble className="w-5 h-5" />
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground overflow-hidden shrink-0">
+                    {systemData?.browser_icon_url ? (
+                      <img
+                        src={systemData.browser_icon_url}
+                        alt="Icon"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Dribbble className="w-5 h-5" />
+                    )}
                   </div>
                   <span className="font-montserrat font-black text-2xl tracking-tighter text-foreground uppercase">
                     {systemData?.platform_name || systemData?.razao_social || (
@@ -134,13 +148,13 @@ export function Footer() {
                 <span className="w-2 h-2 rounded-full bg-primary"></span>
                 {t('footer.quickLinks')}
               </h4>
-              <ul className="space-y-4">
+              <ul className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
                 <li>
                   <Link
                     to="/courses"
                     className="text-muted-foreground hover:text-primary transition-colors text-sm flex items-center gap-2"
                   >
-                    <span className="hover:translate-x-1 transition-transform inline-block">
+                    <span className="hover:translate-x-1 transition-transform inline-block whitespace-nowrap">
                       › {t('nav.courses')}
                     </span>
                   </Link>
@@ -150,7 +164,7 @@ export function Footer() {
                     to="/tournaments"
                     className="text-muted-foreground hover:text-primary transition-colors text-sm flex items-center gap-2"
                   >
-                    <span className="hover:translate-x-1 transition-transform inline-block">
+                    <span className="hover:translate-x-1 transition-transform inline-block whitespace-nowrap">
                       › {t('nav.tournaments')}
                     </span>
                   </Link>
@@ -160,7 +174,7 @@ export function Footer() {
                     to="/rules"
                     className="text-muted-foreground hover:text-primary transition-colors text-sm flex items-center gap-2"
                   >
-                    <span className="hover:translate-x-1 transition-transform inline-block">
+                    <span className="hover:translate-x-1 transition-transform inline-block whitespace-nowrap">
                       › {t('nav.rules')}
                     </span>
                   </Link>
@@ -170,11 +184,26 @@ export function Footer() {
                     to="/blog"
                     className="text-muted-foreground hover:text-primary transition-colors text-sm flex items-center gap-2"
                   >
-                    <span className="hover:translate-x-1 transition-transform inline-block">
+                    <span className="hover:translate-x-1 transition-transform inline-block whitespace-nowrap">
                       › {t('nav.blog')}
                     </span>
                   </Link>
                 </li>
+                {pages.map((page) => (
+                  <li key={page.id}>
+                    <Link
+                      to={`/${page.slug}`}
+                      className="text-muted-foreground hover:text-primary transition-colors text-sm flex items-center gap-2"
+                    >
+                      <span
+                        className="hover:translate-x-1 transition-transform inline-block whitespace-nowrap truncate max-w-[120px]"
+                        title={page.title}
+                      >
+                        › {page.title}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
