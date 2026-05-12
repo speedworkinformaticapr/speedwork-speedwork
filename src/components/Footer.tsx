@@ -107,36 +107,30 @@ export function Footer() {
           <div className="flex flex-col">
             <Link
               to="/"
-              className="flex items-center gap-2 mb-6 opacity-90 hover:opacity-100 transition-opacity"
+              className="flex items-center gap-3 mb-6 opacity-90 hover:opacity-100 transition-opacity"
             >
-              {systemData?.logo_url ? (
-                <img src={systemData.logo_url} alt="Logo" className="w-auto h-12 object-contain" />
-              ) : (
-                <>
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground overflow-hidden shrink-0">
-                    {systemData?.browser_icon_url ? (
-                      <img
-                        src={systemData.browser_icon_url}
-                        alt="Icon"
-                        className="w-full h-full object-cover"
-                        style={{
-                          transform: `scale(${((systemData as any)?.footer_icon_size || 100) / 100})`,
-                          transition: 'transform 0.2s ease-in-out',
-                        }}
-                      />
-                    ) : (
-                      <Dribbble className="w-5 h-5" />
-                    )}
-                  </div>
-                  <span className="font-montserrat font-black text-2xl tracking-tighter text-foreground uppercase">
-                    {systemData?.platform_name || systemData?.razao_social || (
-                      <>
-                        FOOTGOLF<span className="text-primary">PR</span>
-                      </>
-                    )}
-                  </span>
-                </>
-              )}
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground overflow-hidden shrink-0">
+                {systemData?.browser_icon_url ? (
+                  <img
+                    src={systemData.browser_icon_url}
+                    alt="Icon"
+                    className="w-full h-full object-cover"
+                    style={{
+                      transform: `scale(${((systemData as any)?.footer_icon_size || 100) / 100})`,
+                      transition: 'transform 0.2s ease-in-out',
+                    }}
+                  />
+                ) : (
+                  <Dribbble className="w-6 h-6" />
+                )}
+              </div>
+              <span className="font-montserrat font-black text-xl md:text-2xl tracking-tighter text-foreground uppercase line-clamp-2">
+                {systemData?.platform_name || systemData?.razao_social || (
+                  <>
+                    FOOTGOLF<span className="text-primary">PR</span>
+                  </>
+                )}
+              </span>
             </Link>
 
             {(systemData?.slogan || !systemData) && (
@@ -170,27 +164,20 @@ export function Footer() {
               >
                 {Array.from({ length: systemData?.footer_links?.columns || 3 }).map((_, colIdx) => {
                   const colNumber = colIdx + 1
-                  const footerLinksConfig = systemData?.footer_links
-                  const isConfigured =
-                    footerLinksConfig &&
-                    footerLinksConfig.links &&
-                    footerLinksConfig.links.length > 0
+                  const columnsCount = systemData?.footer_links?.columns || 3
 
-                  let colLinks = []
-                  if (isConfigured) {
-                    colLinks = footerLinksConfig.links.filter((l: any) => l.col === colNumber)
-                  } else {
-                    const defaultLinks = [
-                      { id: 'courses', title: t('nav.courses'), path: '/courses' },
-                      { id: 'tournaments', title: t('nav.tournaments'), path: '/tournaments' },
-                      { id: 'rules', title: t('nav.rules'), path: '/rules' },
-                      { id: 'blog', title: t('nav.blog'), path: '/blog' },
-                      ...pages.map((p) => ({ id: p.id, title: p.title, path: `/${p.slug}` })),
-                    ]
-                    colLinks = defaultLinks.filter(
-                      (_, i) => (i % (footerLinksConfig?.columns || 3)) + 1 === colNumber,
-                    )
-                  }
+                  const activeLinks = [
+                    { id: 'courses', title: t('nav.courses'), path: '/courses' },
+                    { id: 'tournaments', title: t('nav.tournaments'), path: '/tournaments' },
+                    { id: 'rules', title: t('nav.rules'), path: '/rules' },
+                    { id: 'blog', title: t('nav.blog'), path: '/blog' },
+                    ...pages.map((p) => ({ id: p.id, title: p.title, path: `/${p.slug}` })),
+                  ]
+
+                  // Distribute links evenly across columns
+                  const colLinks = activeLinks.filter(
+                    (_, i) => (i % columnsCount) + 1 === colNumber,
+                  )
 
                   if (colLinks.length === 0) return null
 

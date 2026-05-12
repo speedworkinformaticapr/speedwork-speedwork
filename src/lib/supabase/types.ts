@@ -2518,6 +2518,7 @@ export type Database = {
           cnpj: string | null
           dark_mode: boolean | null
           email: string | null
+          footer_icon_size: number | null
           footer_links: Json | null
           id: string
           integrations: Json | null
@@ -2537,6 +2538,7 @@ export type Database = {
           responsible_phone: string | null
           responsible_role: string | null
           session_lifetime: number | null
+          short_description: string | null
           show_cnpj: boolean | null
           show_contact_bar: boolean | null
           slogan: string | null
@@ -2561,6 +2563,7 @@ export type Database = {
           cnpj?: string | null
           dark_mode?: boolean | null
           email?: string | null
+          footer_icon_size?: number | null
           footer_links?: Json | null
           id?: string
           integrations?: Json | null
@@ -2580,6 +2583,7 @@ export type Database = {
           responsible_phone?: string | null
           responsible_role?: string | null
           session_lifetime?: number | null
+          short_description?: string | null
           show_cnpj?: boolean | null
           show_contact_bar?: boolean | null
           slogan?: string | null
@@ -2604,6 +2608,7 @@ export type Database = {
           cnpj?: string | null
           dark_mode?: boolean | null
           email?: string | null
+          footer_icon_size?: number | null
           footer_links?: Json | null
           id?: string
           integrations?: Json | null
@@ -2623,6 +2628,7 @@ export type Database = {
           responsible_phone?: string | null
           responsible_role?: string | null
           session_lifetime?: number | null
+          short_description?: string | null
           show_cnpj?: boolean | null
           show_contact_bar?: boolean | null
           slogan?: string | null
@@ -3584,6 +3590,8 @@ export const Constants = {
 //   records_per_page: integer (nullable, default: 50)
 //   business_hours: jsonb (nullable, default: '{}'::jsonb)
 //   footer_links: jsonb (nullable, default: '{"links": [], "columns": 3}'::jsonb)
+//   footer_icon_size: integer (nullable, default: 100)
+//   short_description: text (nullable)
 // Table: user_roles
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (not null)
