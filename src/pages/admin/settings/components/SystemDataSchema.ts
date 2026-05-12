@@ -3,8 +3,10 @@ import { z } from 'zod'
 export const systemDataSchema = z.object({
   logo_url: z.string().optional().nullable(),
   menu_logo_size: z.coerce.number().optional().nullable(),
+  footer_icon_size: z.coerce.number().optional().nullable(),
   platform_name: z.string().optional().nullable(),
   slogan: z.string().optional().nullable(),
+  short_description: z.string().max(80, 'Máximo de 80 caracteres').optional().nullable(),
   cnpj: z.string().optional().nullable(),
   razao_social: z.string().optional().nullable(),
   address_street: z.string().optional().nullable(),

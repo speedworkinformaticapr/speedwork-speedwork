@@ -119,6 +119,10 @@ export function Footer() {
                         src={systemData.browser_icon_url}
                         alt="Icon"
                         className="w-full h-full object-cover"
+                        style={{
+                          transform: `scale(${((systemData as any)?.footer_icon_size || 100) / 100})`,
+                          transition: 'transform 0.2s ease-in-out',
+                        }}
                       />
                     ) : (
                       <Dribbble className="w-5 h-5" />
@@ -135,14 +139,21 @@ export function Footer() {
               )}
             </Link>
 
-            <p className="text-foreground/90 font-medium text-base md:text-lg max-w-sm mb-6 leading-relaxed italic border-l-4 border-primary pl-4">
-              "
-              {systemData?.slogan ||
-                'Eleve o seu jogo, viva a paixão pelo esporte. Junte-se à revolução!'}
-              "
-            </p>
-          </div>
+            {(systemData?.slogan || !systemData) && (
+              <p className="text-foreground/90 font-medium text-base md:text-lg max-w-sm mb-4 leading-relaxed italic border-l-4 border-primary pl-4">
+                "
+                {systemData?.slogan ||
+                  'Eleve o seu jogo, viva a paixão pelo esporte. Junte-se à revolução!'}
+                "
+              </p>
+            )}
 
+            {(systemData as any)?.short_description && (
+              <p className="text-muted-foreground text-sm max-w-sm mb-6 leading-relaxed">
+                {(systemData as any).short_description}
+              </p>
+            )}
+          </div>
           <div className="flex flex-col md:items-center">
             <div className="w-full md:w-auto">
               <h4 className="font-montserrat font-bold text-lg mb-6 text-foreground uppercase tracking-wider flex items-center gap-2">

@@ -3544,7 +3544,6 @@ export const Constants = {
 //   data_pagamento: timestamp with time zone (nullable)
 // Table: system_data
 //   id: uuid (not null, default: '00000000-0000-0000-0000-000000000001'::uuid)
-//   footer_links: jsonb (nullable, default: '{"links": [], "columns": 3}'::jsonb)
 //   logo_url: text (nullable)
 //   slogan: text (nullable)
 //   cnpj: text (nullable)
@@ -3584,6 +3583,7 @@ export const Constants = {
 //   quote_footer_text: text (nullable)
 //   records_per_page: integer (nullable, default: 50)
 //   business_hours: jsonb (nullable, default: '{}'::jsonb)
+//   footer_links: jsonb (nullable, default: '{"links": [], "columns": 3}'::jsonb)
 // Table: user_roles
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (not null)

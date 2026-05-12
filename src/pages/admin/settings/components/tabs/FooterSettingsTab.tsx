@@ -1,13 +1,5 @@
 import { useEffect, useState } from 'react'
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-  FormDescription,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
+import { FormItem, FormLabel, FormDescription } from '@/components/ui/form'
 import {
   Select,
   SelectContent,
@@ -61,46 +53,18 @@ export function FooterSettingsTab({ form }: { form: any }) {
 
   return (
     <div className="space-y-6">
-      <div className="bg-muted/30 p-6 rounded-xl border border-border/50">
-        <h3 className="text-lg font-semibold mb-4">Configurações do Rodapé</h3>
-
-        <div className="grid grid-cols-1 gap-6">
-          <FormField
-            control={form.control}
-            name="slogan"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Texto de Impacto do Rodapé (Gatilho Mental)</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Ex: Eleve o seu jogo, viva a paixão pelo esporte. Junte-se à revolução!"
-                    {...field}
-                    value={field.value || ''}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Frase curta exibida na primeira coluna do rodapé, abaixo da logomarca. Aproveite
-                  para engajar seus usuários com gatilhos mentais.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-      </div>
-
-      <div className="bg-muted/30 p-6 rounded-xl border border-border/50">
-        <h3 className="text-lg font-semibold mb-4">Links Rápidos</h3>
+      <div className="bg-muted/30 p-4 sm:p-6 rounded-xl border border-border/50">
+        <h3 className="text-lg font-semibold mb-4">Links Rápidos e Menus Ativos</h3>
         <p className="text-sm text-muted-foreground mb-6">
           Defina quantas colunas a seção de links rápidos terá e escolha em qual coluna cada link
-          será exibido.
+          será exibido no rodapé do site.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <FormItem>
-            <FormLabel>Número de Colunas</FormLabel>
+            <FormLabel>Número de Colunas para Links</FormLabel>
             <Select value={columnsCount.toString()} onValueChange={handleColumnsChange}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Selecione..." />
               </SelectTrigger>
               <SelectContent>
@@ -115,17 +79,21 @@ export function FooterSettingsTab({ form }: { form: any }) {
           </FormItem>
         </div>
 
-        <div className="border rounded-md divide-y overflow-hidden">
+        <div className="border rounded-md divide-y overflow-hidden bg-background">
+          <div className="p-3 bg-muted/50 hidden md:grid grid-cols-2 font-medium text-sm">
+            <div>Página / Link</div>
+            <div>Coluna de Exibição</div>
+          </div>
           {availableLinks.map((al) => {
             const currentLink = links.find((l: any) => l.id === al.id)
             const currentCol = currentLink?.col || '0'
             return (
               <div
                 key={al.id}
-                className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-muted/10"
+                className="p-4 flex flex-col md:grid md:grid-cols-2 gap-4 hover:bg-muted/20 items-start md:items-center transition-colors"
               >
                 <div>
-                  <p className="font-medium">{al.title}</p>
+                  <p className="font-medium text-sm md:text-base">{al.title}</p>
                   <p className="text-xs text-muted-foreground">{al.path}</p>
                 </div>
                 <Select
@@ -139,7 +107,7 @@ export function FooterSettingsTab({ form }: { form: any }) {
                     )
                   }
                 >
-                  <SelectTrigger className="w-full md:w-[200px]">
+                  <SelectTrigger className="w-full md:max-w-[250px]">
                     <SelectValue placeholder="Não exibir" />
                   </SelectTrigger>
                   <SelectContent>

@@ -37,6 +37,8 @@ export default function SystemDataForm() {
         bg_opacity: data.bg_opacity ?? 100,
         active_theme: data.active_theme || 'system',
         menu_logo_size: data.menu_logo_size ?? 100,
+        footer_icon_size: (data as any).footer_icon_size ?? 100,
+        short_description: (data as any).short_description || '',
         dark_mode: data.dark_mode ?? false,
         libras_enabled: data.libras_enabled ?? false,
         bg_image_url: data.bg_image_url || '',
@@ -134,7 +136,9 @@ export default function SystemDataForm() {
       records_per_page: 'Registros por página',
       bg_opacity: 'Opacidade do Fundo',
       menu_logo_size: 'Tamanho da Logo',
-      platform_name: 'Nome da Plataforma',
+      footer_icon_size: 'Tamanho do Ícone (Rodapé)',
+      platform_name: 'Título',
+      short_description: 'Texto Curto',
       email: 'E-mail Principal',
     }
 
@@ -165,8 +169,10 @@ export default function SystemDataForm() {
       const payload = {
         logo_url: values.logo_url,
         menu_logo_size: values.menu_logo_size,
+        footer_icon_size: values.footer_icon_size,
         platform_name: values.platform_name,
         slogan: values.slogan,
+        short_description: values.short_description,
         cnpj: values.cnpj,
         razao_social: values.razao_social,
         address_street: values.address_street,
@@ -230,7 +236,7 @@ export default function SystemDataForm() {
         footer_links: values.footer_links,
       }
 
-      const success = await updateData(payload)
+      const success = await updateData(payload as any)
       if (!success) {
         console.warn('O salvamento falhou na camada de serviço.')
       }
