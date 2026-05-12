@@ -73,6 +73,7 @@ export default function SystemDataForm() {
         term_content_uso: data.terms?.uso || '',
         term_content_lgpd: data.terms?.lgpd || '',
         term_content_cookies: data.terms?.cookies || '',
+        footer_links: data.footer_links || { columns: 3, links: [] },
         business_hours: data.business_hours || {
           monday: {
             is_open: true,
@@ -226,6 +227,7 @@ export default function SystemDataForm() {
           lgpd: values.term_content_lgpd,
           cookies: values.term_content_cookies,
         },
+        footer_links: values.footer_links,
       }
 
       const success = await updateData(payload)

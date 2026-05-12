@@ -16,6 +16,7 @@ import {
   DialogClose,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { cn } from '@/lib/utils'
 
 export function Footer() {
   const { toast } = useToast()
@@ -148,63 +149,61 @@ export function Footer() {
                 <span className="w-2 h-2 rounded-full bg-primary"></span>
                 {t('footer.quickLinks')}
               </h4>
-              <ul className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                <li>
-                  <Link
-                    to="/courses"
-                    className="text-muted-foreground hover:text-primary transition-colors text-sm flex items-center gap-2"
-                  >
-                    <span className="hover:translate-x-1 transition-transform inline-block whitespace-nowrap">
-                      › {t('nav.courses')}
-                    </span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/tournaments"
-                    className="text-muted-foreground hover:text-primary transition-colors text-sm flex items-center gap-2"
-                  >
-                    <span className="hover:translate-x-1 transition-transform inline-block whitespace-nowrap">
-                      › {t('nav.tournaments')}
-                    </span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/rules"
-                    className="text-muted-foreground hover:text-primary transition-colors text-sm flex items-center gap-2"
-                  >
-                    <span className="hover:translate-x-1 transition-transform inline-block whitespace-nowrap">
-                      › {t('nav.rules')}
-                    </span>
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/blog"
-                    className="text-muted-foreground hover:text-primary transition-colors text-sm flex items-center gap-2"
-                  >
-                    <span className="hover:translate-x-1 transition-transform inline-block whitespace-nowrap">
-                      › {t('nav.blog')}
-                    </span>
-                  </Link>
-                </li>
-                {pages.map((page) => (
-                  <li key={page.id}>
-                    <Link
-                      to={`/${page.slug}`}
-                      className="text-muted-foreground hover:text-primary transition-colors text-sm flex items-center gap-2"
-                    >
-                      <span
-                        className="hover:translate-x-1 transition-transform inline-block whitespace-nowrap truncate max-w-[120px]"
-                        title={page.title}
-                      >
-                        › {page.title}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <div
+                className={cn('grid gap-x-8 gap-y-6', {
+                  'grid-cols-1': (systemData?.footer_links?.columns || 3) === 1,
+                  'grid-cols-1 sm:grid-cols-2': (systemData?.footer_links?.columns || 3) === 2,
+                  'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3':
+                    (systemData?.footer_links?.columns || 3) >= 3,
+                })}
+              >
+                {Array.from({ length: systemData?.footer_links?.columns || 3 }).map((_, colIdx) => {
+                  const colNumber = colIdx + 1
+                  const footerLinksConfig = systemData?.footer_links
+                  const isConfigured =
+                    footerLinksConfig &&
+                    footerLinksConfig.links &&
+                    footerLinksConfig.links.length > 0
+
+                  let colLinks = []
+                  if (isConfigured) {
+                    colLinks = footerLinksConfig.links.filter((l: any) => l.col === colNumber)
+                  } else {
+                    const defaultLinks = [
+                      { id: 'courses', title: t('nav.courses'), path: '/courses' },
+                      { id: 'tournaments', title: t('nav.tournaments'), path: '/tournaments' },
+                      { id: 'rules', title: t('nav.rules'), path: '/rules' },
+                      { id: 'blog', title: t('nav.blog'), path: '/blog' },
+                      ...pages.map((p) => ({ id: p.id, title: p.title, path: `/${p.slug}` })),
+                    ]
+                    colLinks = defaultLinks.filter(
+                      (_, i) => (i % (footerLinksConfig?.columns || 3)) + 1 === colNumber,
+                    )
+                  }
+
+                  if (colLinks.length === 0) return null
+
+                  return (
+                    <ul key={colNumber} className="flex flex-col gap-4">
+                      {colLinks.map((link: any) => (
+                        <li key={link.id}>
+                          <Link
+                            to={link.path}
+                            className="text-muted-foreground hover:text-primary transition-colors text-sm flex items-center gap-2"
+                          >
+                            <span
+                              className="hover:translate-x-1 transition-transform inline-block whitespace-nowrap truncate max-w-[150px]"
+                              title={link.title}
+                            >
+                              › {link.title}
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )
+                })}
+              </div>
             </div>
           </div>
 
