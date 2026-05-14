@@ -146,13 +146,24 @@ export function SectionRenderer({ section }: { section: any }) {
                 className="hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-primary/10"
               >
                 <CardHeader className="p-8">
-                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-6 shadow-inner">
-                    <CheckCircle2 className="w-7 h-7" />
-                  </div>
+                  {item.icon || item.image ? (
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-6 shadow-inner overflow-hidden">
+                      <img
+                        src={item.icon || item.image}
+                        alt={item.title || 'Icon'}
+                        className="w-full h-full object-contain p-2"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-6 shadow-inner">
+                      <CheckCircle2 className="w-7 h-7" />
+                    </div>
+                  )}
                   <CardTitle className="text-2xl mb-2">{item.title}</CardTitle>
-                  <CardDescription className="text-base leading-relaxed">
-                    {item.description}
-                  </CardDescription>
+                  <div
+                    className="text-base text-muted-foreground leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: item.description || '' }}
+                  />
                 </CardHeader>
                 {item.link && (
                   <div className="px-8 pb-8 pt-0 mt-auto">
@@ -297,13 +308,22 @@ export function SectionRenderer({ section }: { section: any }) {
                 className="bg-card p-10 rounded-3xl shadow-sm border border-muted/50 relative hover:shadow-lg transition-shadow"
               >
                 <Quote className="absolute top-8 right-8 w-12 h-12 text-primary/10" />
-                <p className="text-lg md:text-xl text-foreground/80 mb-8 italic leading-relaxed relative z-10">
-                  "{item.text || item.description}"
-                </p>
+                <div
+                  className="text-lg md:text-xl text-foreground/80 mb-8 italic leading-relaxed relative z-10"
+                  dangerouslySetInnerHTML={{ __html: item.text || item.description || '' }}
+                />
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-lg uppercase">
-                    {(item.author || item.title || 'A').charAt(0)}
-                  </div>
+                  {item.image || item.icon ? (
+                    <img
+                      src={item.image || item.icon}
+                      alt={item.author || item.title || 'Author'}
+                      className="w-12 h-12 rounded-full object-cover shadow-sm"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-lg uppercase">
+                      {(item.author || item.title || 'A').charAt(0)}
+                    </div>
+                  )}
                   <p className="font-bold text-primary text-lg">{item.author || item.title}</p>
                 </div>
               </div>
@@ -348,7 +368,9 @@ export function SectionRenderer({ section }: { section: any }) {
                   {item.question || item.title}
                 </AccordionTrigger>
                 <AccordionContent className="text-base md:text-lg text-muted-foreground leading-relaxed pb-6">
-                  {item.answer || item.description}
+                  <div
+                    dangerouslySetInnerHTML={{ __html: item.answer || item.description || '' }}
+                  />
                 </AccordionContent>
               </AccordionItem>
             ))}
@@ -591,7 +613,10 @@ export function SectionRenderer({ section }: { section: any }) {
                 </div>
                 <h3 className="text-xl font-bold mb-1">{member.name}</h3>
                 <p className="text-primary font-medium mb-3">{member.role}</p>
-                <p className="text-sm text-muted-foreground">{member.bio}</p>
+                <div
+                  className="text-sm text-muted-foreground"
+                  dangerouslySetInnerHTML={{ __html: member.bio || '' }}
+                />
               </div>
             ))}
           </div>
