@@ -10,12 +10,13 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { UploadCloud, X, Wand2, Loader2 } from 'lucide-react'
+import { UploadCloud, X, Wand2, Loader2, Image as ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { UseFormReturn } from 'react-hook-form'
 import { SystemDataFormData } from '../../SystemDataSchema'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { MediaPicker } from '@/components/MediaPicker'
 
 export function VisualIdentitySection({ form }: { form: UseFormReturn<SystemDataFormData> }) {
   const { toast } = useToast()
@@ -97,7 +98,7 @@ export function VisualIdentitySection({ form }: { form: UseFormReturn<SystemData
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-        Logo, Título, Slogan e Texto
+        Ícone, Título, Slogan e Texto
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
@@ -227,7 +228,7 @@ export function VisualIdentitySection({ form }: { form: UseFormReturn<SystemData
               name="menu_logo_size"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tamanho Logo Menu (%)</FormLabel>
+                  <FormLabel>Tamanho Ícone Menu (%)</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -263,7 +264,7 @@ export function VisualIdentitySection({ form }: { form: UseFormReturn<SystemData
         </div>
         <div className="flex flex-col space-y-6 p-4 border rounded-xl bg-slate-50/50 dark:bg-slate-900/50">
           <div className="space-y-3">
-            <Label>Logo da Plataforma</Label>
+            <Label>Ícone da Plataforma</Label>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <div className="h-24 w-24 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center bg-white dark:bg-slate-950 overflow-hidden relative group shrink-0">
                 {logoUrl ? (
@@ -284,12 +285,29 @@ export function VisualIdentitySection({ form }: { form: UseFormReturn<SystemData
                 )}
               </div>
               <div className="flex-1 w-full space-y-2">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="cursor-pointer text-sm"
-                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="cursor-pointer text-sm flex-1"
+                  />
+                  <MediaPicker
+                    onSelect={(url) => form.setValue('logo_url', url, { shouldValidate: true })}
+                    trigger={
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0"
+                        title="Buscar na Galeria"
+                      >
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        Galeria
+                      </Button>
+                    }
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -322,12 +340,31 @@ export function VisualIdentitySection({ form }: { form: UseFormReturn<SystemData
                 )}
               </div>
               <div className="flex-1 w-full space-y-2">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleBrowserIconUpload}
-                  className="cursor-pointer text-sm"
-                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBrowserIconUpload}
+                    className="cursor-pointer text-sm flex-1"
+                  />
+                  <MediaPicker
+                    onSelect={(url) =>
+                      form.setValue('browser_icon_url', url, { shouldValidate: true })
+                    }
+                    trigger={
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0"
+                        title="Buscar na Galeria"
+                      >
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        Galeria
+                      </Button>
+                    }
+                  />
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Usado na aba do navegador e em detalhes de marca.
                 </p>
@@ -371,12 +408,29 @@ export function VisualIdentitySection({ form }: { form: UseFormReturn<SystemData
               )}
             </div>
             <div className="flex-1 w-full space-y-2">
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleBgImageUpload}
-                className="cursor-pointer text-sm"
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleBgImageUpload}
+                  className="cursor-pointer text-sm flex-1"
+                />
+                <MediaPicker
+                  onSelect={(url) => form.setValue('bg_image_url', url, { shouldValidate: true })}
+                  trigger={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0"
+                      title="Buscar na Galeria"
+                    >
+                      <ImageIcon className="h-4 w-4 mr-2" />
+                      Galeria
+                    </Button>
+                  }
+                />
+              </div>
               <p className="text-xs text-muted-foreground">Recomendado: 1920x1080px.</p>
             </div>
           </div>

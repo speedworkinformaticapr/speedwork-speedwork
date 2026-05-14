@@ -14,6 +14,7 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  AlignJustify,
   Link2,
   List,
   Heading1,
@@ -174,6 +175,16 @@ export function RichTextEditor({
           title="Alinhar à Direita"
         >
           <AlignRight className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => handleCommand('justifyFull')}
+          className="h-8 w-8 p-0 hover:bg-muted"
+          title="Justificar"
+        >
+          <AlignJustify className="h-4 w-4" />
         </Button>
 
         {variables && variables.length > 0 && (

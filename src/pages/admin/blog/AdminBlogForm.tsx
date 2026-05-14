@@ -13,11 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase/client'
-import { getMedia, type MediaItem } from '@/services/media'
 import { AIGenerateButton } from '@/components/AIGenerateButton'
+import { MediaPicker } from '@/components/MediaPicker'
 
 export default function AdminBlogForm() {
   const { id } = useParams()
@@ -66,27 +65,6 @@ export default function AdminBlogForm() {
   }, [id])
 
   const [isSaving, setIsSaving] = useState(false)
-  const [isMediaSelectorOpen, setIsMediaSelectorOpen] = useState(false)
-  const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
-  const [loadingMedia, setLoadingMedia] = useState(false)
-
-  const handleOpenMediaSelector = async () => {
-    setLoadingMedia(true)
-    setIsMediaSelectorOpen(true)
-    try {
-      const items = await getMedia('image')
-      setMediaItems(items)
-    } catch (error) {
-      toast({ title: 'Erro', description: 'Erro ao carregar mídias', variant: 'destructive' })
-    } finally {
-      setLoadingMedia(false)
-    }
-  }
-
-  const handleSelectMedia = (item: MediaItem) => {
-    setPost({ ...post, image_url: item.url })
-    setIsMediaSelectorOpen(false)
-  }
 
   const save = async () => {
     if (!post.title) {
@@ -273,10 +251,15 @@ export default function AdminBlogForm() {
                   placeholder="https://..."
                   className="flex-1"
                 />
-                <Button type="button" variant="outline" onClick={handleOpenMediaSelector}>
-                  <Library className="h-4 w-4 mr-2" />
-                  Biblioteca
-                </Button>
+                <MediaPicker
+                  onSelect={(url) => setPost({ ...post, image_url: url })}
+                  trigger={
+                    <Button type="button" variant="outline">
+                      <Library className="h-4 w-4 mr-2" />
+                      Biblioteca
+                    </Button>
+                  }
+                />
               </div>
               {post.image_url && (
                 <div className="mt-2 rounded-lg border overflow-hidden w-full max-w-xs">
@@ -314,48 +297,6 @@ export default function AdminBlogForm() {
           </div>
         </div>
       </div>
-
-      <Dialog open={isMediaSelectorOpen} onOpenChange={setIsMediaSelectorOpen}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Selecionar Imagem da Biblioteca</DialogTitle>
-          </DialogHeader>
-          {loadingMedia ? (
-            <div className="flex justify-center p-12">
-              <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4">
-              {mediaItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="group relative border rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all aspect-video bg-muted flex items-center justify-center"
-                  onClick={() => handleSelectMedia(item)}
-                >
-                  <img
-                    src={item.url}
-                    alt={item.name || item.title || item.file_name}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2 transform translate-y-full group-hover:translate-y-0 transition-transform">
-                    <p
-                      className="text-xs text-white truncate"
-                      title={item.name || item.title || item.file_name}
-                    >
-                      {item.name || item.title || item.file_name}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              {mediaItems.length === 0 && (
-                <div className="col-span-full text-center p-12 text-muted-foreground border-2 border-dashed rounded-lg">
-                  Nenhuma imagem encontrada na biblioteca.
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
