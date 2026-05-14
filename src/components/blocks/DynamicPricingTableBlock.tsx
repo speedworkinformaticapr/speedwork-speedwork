@@ -165,9 +165,10 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
 
               <div className={`mb-6 ${isHighlighted ? 'mt-4' : ''}`}>
                 <h3 className="text-2xl font-black mb-2 text-foreground">{plan.name || 'Plano'}</h3>
-                <p className="text-muted-foreground min-h-[48px] text-sm leading-relaxed">
-                  {plan.description}
-                </p>
+                <div
+                  className="text-muted-foreground min-h-[48px] text-sm leading-relaxed w-full [&_p]:mb-2 [&_p:last-child]:mb-0"
+                  dangerouslySetInnerHTML={{ __html: plan.description || '' }}
+                />
               </div>
 
               <div className="flex-1 space-y-6">

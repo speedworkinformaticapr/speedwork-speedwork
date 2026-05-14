@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import useEmblaCarousel from 'embla-carousel-react'
 import Autoplay from 'embla-carousel-autoplay'
+import { DynamicPricingTableBlock } from '@/components/blocks/DynamicPricingTableBlock'
 
 export function SectionRenderer({ section }: { section: any }) {
   const { type, data: rawData, id: sectionId } = section
@@ -146,10 +147,10 @@ export function SectionRenderer({ section }: { section: any }) {
                 className="hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border-primary/10"
               >
                 <CardHeader className="p-8">
-                  {item.icon || item.image ? (
+                  {item.icon || item.image || item.url ? (
                     <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-6 shadow-inner overflow-hidden">
                       <img
-                        src={item.icon || item.image}
+                        src={item.icon || item.image || item.url}
                         alt={item.title || 'Icon'}
                         className="w-full h-full object-contain p-2"
                       />
@@ -161,7 +162,7 @@ export function SectionRenderer({ section }: { section: any }) {
                   )}
                   <CardTitle className="text-2xl mb-2">{item.title}</CardTitle>
                   <div
-                    className="text-base text-muted-foreground leading-relaxed"
+                    className="text-base text-muted-foreground leading-relaxed w-full [&_p]:mb-2 [&_p:last-child]:mb-0"
                     dangerouslySetInnerHTML={{ __html: item.description || '' }}
                   />
                 </CardHeader>
@@ -309,13 +310,13 @@ export function SectionRenderer({ section }: { section: any }) {
               >
                 <Quote className="absolute top-8 right-8 w-12 h-12 text-primary/10" />
                 <div
-                  className="text-lg md:text-xl text-foreground/80 mb-8 italic leading-relaxed relative z-10"
+                  className="text-lg md:text-xl text-foreground/80 mb-8 italic leading-relaxed relative z-10 w-full [&_p]:mb-2 [&_p:last-child]:mb-0"
                   dangerouslySetInnerHTML={{ __html: item.text || item.description || '' }}
                 />
                 <div className="flex items-center gap-4">
-                  {item.image || item.icon ? (
+                  {item.image || item.icon || item.url ? (
                     <img
-                      src={item.image || item.icon}
+                      src={item.image || item.icon || item.url}
                       alt={item.author || item.title || 'Author'}
                       className="w-12 h-12 rounded-full object-cover shadow-sm"
                     />
@@ -369,6 +370,7 @@ export function SectionRenderer({ section }: { section: any }) {
                 </AccordionTrigger>
                 <AccordionContent className="text-base md:text-lg text-muted-foreground leading-relaxed pb-6">
                   <div
+                    className="w-full [&_p]:mb-2 [&_p:last-child]:mb-0"
                     dangerouslySetInnerHTML={{ __html: item.answer || item.description || '' }}
                   />
                 </AccordionContent>
@@ -441,73 +443,11 @@ export function SectionRenderer({ section }: { section: any }) {
     )
   }
 
-  if (type === 'pricing_table') {
-    const plans =
-      data.plans && data.plans.length > 0
-        ? data.plans
-        : [
-            {
-              name: 'Iniciante',
-              price: 'R$ 29/mês',
-              description: 'Para quem está começando.',
-              features: ['Até 100 usuários', 'Suporte por e-mail'],
-            },
-            {
-              name: 'Profissional',
-              price: 'R$ 89/mês',
-              description: 'Para profissionais em ascensão.',
-              features: ['Até 1000 usuários', 'Suporte prioritário', 'Integrações'],
-              highlight: true,
-            },
-            {
-              name: 'Empresarial',
-              price: 'R$ 199/mês',
-              description: 'Para grandes demandas.',
-              features: ['Usuários ilimitados', 'Suporte 24/7', 'Gestor de conta'],
-            },
-          ]
+  if (type === 'pricing_table' || type === 'dynamic_pricing_table' || type === 'dynamic_pricing') {
     return (
-      <section id={sectionId} className="py-24 bg-muted/10 w-full">
-        <div className="container mx-auto px-4">
-          {(data.title || !data.plans) && (
-            <h2 className="text-3xl md:text-5xl font-bold text-center text-primary mb-16">
-              {data.title || 'Planos e Preços'}
-            </h2>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {plans.map((plan: any, i: number) => (
-              <Card
-                key={i}
-                className={`relative ${plan.highlight ? 'border-primary shadow-xl scale-105 z-10' : ''}`}
-              >
-                {plan.highlight && (
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-white px-4 py-1 rounded-full text-sm font-bold shadow-sm whitespace-nowrap">
-                    Mais Popular
-                  </div>
-                )}
-                <CardHeader className="text-center p-8">
-                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                  <div className="text-4xl font-extrabold mt-4">{plan.price}</div>
-                  <CardDescription className="mt-2">{plan.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="p-8 pt-0">
-                  <ul className="space-y-4 mb-8">
-                    {(plan.features || []).map((feat: string, j: number) => (
-                      <li key={j} className="flex items-center gap-2">
-                        <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />{' '}
-                        <span>{feat}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button className="w-full" variant={plan.highlight ? 'default' : 'outline'}>
-                    {plan.buttonText || 'Assinar'}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+      <div id={sectionId} className="w-full">
+        <DynamicPricingTableBlock data={data} />
+      </div>
     )
   }
 
@@ -606,7 +546,12 @@ export function SectionRenderer({ section }: { section: any }) {
               <div key={i} className="text-center group">
                 <div className="w-40 h-40 mx-auto rounded-full overflow-hidden mb-6 shadow-lg border-4 border-background group-hover:border-primary transition-colors">
                   <img
-                    src={member.image || `https://img.usecurling.com/ppl/medium?seed=${i + 10}`}
+                    src={
+                      member.image ||
+                      member.icon ||
+                      member.url ||
+                      `https://img.usecurling.com/ppl/medium?seed=${i + 10}`
+                    }
                     alt={member.name}
                     className="w-full h-full object-cover bg-muted"
                   />
@@ -614,7 +559,7 @@ export function SectionRenderer({ section }: { section: any }) {
                 <h3 className="text-xl font-bold mb-1">{member.name}</h3>
                 <p className="text-primary font-medium mb-3">{member.role}</p>
                 <div
-                  className="text-sm text-muted-foreground"
+                  className="text-sm text-muted-foreground w-full [&_p]:mb-2 [&_p:last-child]:mb-0"
                   dangerouslySetInnerHTML={{ __html: member.bio || '' }}
                 />
               </div>

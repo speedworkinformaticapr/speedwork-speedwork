@@ -89,7 +89,7 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
         label: 'Planos',
         fields: [
           { name: 'name', label: 'Nome do Plano', type: 'text' },
-          { name: 'description', label: 'Descrição', type: 'text' },
+          { name: 'description', label: 'Descrição', type: 'textarea' },
           { name: 'sla_id', label: 'Tipo de SLA', type: 'sla_select' },
           { name: 'buttonText', label: 'Texto do Botão', type: 'text' },
           { name: 'highlight', label: 'Destacar Plano', type: 'boolean' },
@@ -114,7 +114,7 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
         label: 'Planos',
         fields: [
           { name: 'name', label: 'Nome do Plano', type: 'text' },
-          { name: 'description', label: 'Descrição', type: 'text' },
+          { name: 'description', label: 'Descrição', type: 'textarea' },
           { name: 'sla_id', label: 'Tipo de SLA', type: 'sla_select' },
           { name: 'buttonText', label: 'Texto do Botão', type: 'text' },
           { name: 'highlight', label: 'Destacar Plano', type: 'boolean' },
