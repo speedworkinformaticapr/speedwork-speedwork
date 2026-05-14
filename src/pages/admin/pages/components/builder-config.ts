@@ -161,6 +161,7 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
         name: 'items',
         label: 'Cards',
         fields: [
+          { name: 'icon', label: 'URL do Ícone/Imagem', type: 'url' },
           { name: 'title', label: 'Título', type: 'text' },
           { name: 'description', label: 'Descrição', type: 'textarea' },
           { name: 'link', label: 'Link', type: 'url' },
@@ -180,6 +181,7 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
         name: 'items',
         label: 'Depoimentos',
         fields: [
+          { name: 'image', label: 'URL da Foto do Autor', type: 'url' },
           { name: 'author', label: 'Autor', type: 'text' },
           { name: 'text', label: 'Depoimento', type: 'textarea' },
         ],
@@ -270,6 +272,7 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
         name: 'stats',
         label: 'Estatísticas',
         fields: [
+          { name: 'icon', label: 'URL do Ícone', type: 'url' },
           { name: 'value', label: 'Valor (ex: 100+)', type: 'text' },
           { name: 'label', label: 'Rótulo', type: 'text' },
         ],
