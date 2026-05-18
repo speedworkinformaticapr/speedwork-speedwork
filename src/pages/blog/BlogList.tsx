@@ -69,7 +69,7 @@ export default function BlogList() {
   })
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 font-sans">
+    <div className="min-h-screen bg-background pb-24 font-sans">
       <PageHero
         title={t('blog.title') || 'Blog e Notícias'}
         description={t('blog.desc') || 'Acompanhe as últimas novidades do Footgolf no estado.'}
@@ -78,7 +78,7 @@ export default function BlogList() {
       />
 
       <main className="container mx-auto px-4 -mt-8 relative z-20">
-        <div className="bg-white rounded-2xl p-4 shadow-lg mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="bg-card rounded-2xl p-4 shadow-lg mb-8 flex flex-col md:flex-row justify-between items-center gap-4 border border-border">
           <div className="flex overflow-x-auto pb-2 md:pb-0 gap-2 w-full md:w-auto no-scrollbar">
             {categories.map((cat) => (
               <Button
@@ -86,8 +86,8 @@ export default function BlogList() {
                 variant={category === cat ? 'default' : 'outline'}
                 className={
                   category === cat
-                    ? 'bg-[#1B7D3A] hover:bg-[#1B7D3A]/90 text-white'
-                    : 'text-slate-600 border-gray-200'
+                    ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
+                    : 'text-muted-foreground border-border'
                 }
                 onClick={() => {
                   setCategory(cat as string)
@@ -99,10 +99,10 @@ export default function BlogList() {
             ))}
           </div>
           <div className="relative w-full md:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder={t('blog.searchPlaceholder') || 'Buscar...'}
-              className="pl-9 bg-gray-50 border-gray-200 focus:ring-[#1B7D3A]"
+              className="pl-9 bg-muted/50 border-border focus:ring-primary"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
@@ -127,8 +127,8 @@ export default function BlogList() {
             ))}
           </div>
         ) : filteredPosts.length === 0 ? (
-          <div className="text-center py-20 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-            <p className="text-slate-500 text-lg mb-4">{t('blog.noPosts')}</p>
+          <div className="text-center py-20 bg-muted/30 rounded-lg border border-dashed border-border">
+            <p className="text-muted-foreground text-lg mb-4">{t('blog.noPosts')}</p>
             <Button
               variant="outline"
               onClick={() => {
@@ -145,9 +145,9 @@ export default function BlogList() {
               {paginatedPosts.map((post) => (
                 <Card
                   key={post.id}
-                  className="overflow-hidden flex flex-col hover:shadow-lg transition-all duration-300 group"
+                  className="overflow-hidden flex flex-col hover:shadow-lg transition-all duration-300 group border-border bg-card"
                 >
-                  <div className="h-48 overflow-hidden relative">
+                  <div className="h-48 overflow-hidden relative bg-muted">
                     <img
                       src={
                         post.image_url ||
@@ -157,16 +157,16 @@ export default function BlogList() {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     {post.category && (
-                      <Badge className="absolute top-4 left-4 bg-[#0052CC] hover:bg-[#0052CC]/90">
+                      <Badge className="absolute top-4 left-4 bg-[#0052CC] text-white hover:bg-[#0052CC]/90">
                         {post.category}
                       </Badge>
                     )}
                   </div>
                   <CardHeader className="pb-3">
-                    <h3 className="text-xl font-bold text-slate-900 line-clamp-2 group-hover:text-[#1B7D3A] transition-colors">
+                    <h3 className="text-xl font-bold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
                       {post.title}
                     </h3>
-                    <div className="flex items-center text-xs text-slate-500 gap-4 mt-2">
+                    <div className="flex items-center text-xs text-muted-foreground gap-4 mt-2">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {t('blog.readTime', { time: calculateReadTime(post.content) })}
@@ -179,7 +179,7 @@ export default function BlogList() {
                     </div>
                   </CardHeader>
                   <CardContent className="flex-1 pb-4">
-                    <p className="text-slate-600 line-clamp-3">
+                    <p className="text-muted-foreground line-clamp-3">
                       {post.summary || post.content?.substring(0, 150) + '...'}
                     </p>
                   </CardContent>
@@ -187,7 +187,7 @@ export default function BlogList() {
                     <Button
                       asChild
                       variant="ghost"
-                      className="w-full justify-between text-[#1B7D3A] hover:text-[#1B7D3A] hover:bg-green-50 group-hover:bg-green-50"
+                      className="w-full justify-between text-primary hover:text-primary hover:bg-primary/10 group-hover:bg-primary/10"
                     >
                       <Link to={`/blog/${post.id}`}>
                         {t('blog.readMore')}{' '}

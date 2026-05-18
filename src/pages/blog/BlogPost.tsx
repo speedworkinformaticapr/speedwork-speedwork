@@ -149,8 +149,8 @@ export default function BlogPost() {
   if (!post) {
     return (
       <div className="container mx-auto px-4 py-20 text-center">
-        <h2 className="text-2xl font-bold mb-4">{t('blog.postNotFound')}</h2>
-        <Button asChild className="bg-[#1B7D3A] hover:bg-[#1B7D3A]/90">
+        <h2 className="text-2xl font-bold mb-4 text-foreground">{t('blog.postNotFound')}</h2>
+        <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
           <Link to="/blog">{t('blog.backToBlog')}</Link>
         </Button>
       </div>
@@ -161,22 +161,22 @@ export default function BlogPost() {
     <article className="container mx-auto px-4 py-8 max-w-4xl animate-fade-in-up">
       <Link
         to="/blog"
-        className="inline-flex items-center text-[#1B7D3A] hover:underline mb-8 font-medium"
+        className="inline-flex items-center text-primary hover:underline mb-8 font-medium transition-colors"
       >
         <ArrowLeft className="mr-2 h-4 w-4" /> {t('blog.backToBlog')}
       </Link>
 
       {post.category && (
-        <Badge className="mb-4 bg-[#0052CC] hover:bg-[#0052CC]/90 text-sm py-1 px-3">
+        <Badge className="mb-4 bg-[#0052CC] hover:bg-[#0052CC]/90 text-white text-sm py-1 px-3">
           {post.category}
         </Badge>
       )}
 
-      <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 leading-tight mb-6">
+      <h1 className="text-4xl md:text-5xl font-extrabold text-foreground leading-tight mb-6">
         {post.title}
       </h1>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-8 text-slate-500 pb-6 border-b">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-8 text-muted-foreground pb-6 border-b border-border">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
@@ -208,18 +208,20 @@ export default function BlogPost() {
       )}
 
       <div
-        className="prose prose-lg prose-slate max-w-none mb-16"
+        className="prose prose-lg dark:prose-invert prose-headings:text-primary prose-a:text-primary hover:prose-a:text-primary/80 prose-img:rounded-xl max-w-none mb-16 text-foreground"
         dangerouslySetInnerHTML={parseMarkdown(post.content)}
       />
 
       {post.tags && post.tags.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-12">
-          <span className="text-slate-500 font-medium mr-2 self-center">{t('blog.tags')}</span>
+          <span className="text-muted-foreground font-medium mr-2 self-center">
+            {t('blog.tags')}
+          </span>
           {post.tags.map((tag, i) => (
             <Badge
               key={i}
               variant="secondary"
-              className="bg-slate-100 text-slate-700 hover:bg-slate-200"
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
             >
               #{tag}
             </Badge>
@@ -231,39 +233,39 @@ export default function BlogPost() {
 
       {/* Comentários */}
       <section className="mb-16">
-        <h3 className="text-2xl font-bold text-slate-900 mb-8 flex items-center gap-2">
-          <MessageCircle className="h-6 w-6 text-[#1B7D3A]" />
+        <h3 className="text-2xl font-bold text-foreground mb-8 flex items-center gap-2">
+          <MessageCircle className="h-6 w-6 text-primary" />
           {t('blog.comments', { count: comments.length })}
         </h3>
 
         <div className="space-y-6 mb-10">
           {comments.map((comment) => (
-            <div key={comment.id} className="bg-slate-50 p-6 rounded-lg border border-slate-100">
+            <div key={comment.id} className="bg-muted/30 p-6 rounded-lg border border-border">
               <div className="flex items-center gap-3 mb-3">
-                <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                <Avatar className="h-10 w-10 border-2 border-background shadow-sm">
                   <AvatarFallback className="bg-[#0052CC] text-white">
                     {comment.author_name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h4 className="font-semibold text-slate-900">{comment.author_name}</h4>
-                  <p className="text-xs text-slate-500">
+                  <h4 className="font-semibold text-foreground">{comment.author_name}</h4>
+                  <p className="text-xs text-muted-foreground">
                     {format(new Date(comment.created_at), 'dd/MM/yyyy HH:mm')}
                   </p>
                 </div>
               </div>
-              <p className="text-slate-700">{comment.content}</p>
+              <p className="text-foreground/90">{comment.content}</p>
             </div>
           ))}
           {comments.length === 0 && (
-            <p className="text-slate-500 italic bg-slate-50 p-6 rounded-lg border border-dashed border-slate-200 text-center">
+            <p className="text-muted-foreground italic bg-muted/30 p-6 rounded-lg border border-dashed border-border text-center">
               {t('blog.noComments')}
             </p>
           )}
         </div>
 
-        <div className="bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm">
-          <h4 className="text-lg font-bold mb-4 text-slate-900">{t('blog.leaveComment')}</h4>
+        <div className="bg-card p-6 md:p-8 rounded-xl border border-border shadow-sm">
+          <h4 className="text-lg font-bold mb-4 text-card-foreground">{t('blog.leaveComment')}</h4>
           <form onSubmit={handleSubmitComment} className="space-y-4">
             <div>
               <Label htmlFor="name">{t('blog.yourName')}</Label>
@@ -290,7 +292,7 @@ export default function BlogPost() {
             </div>
             <Button
               type="submit"
-              className="bg-[#1B7D3A] hover:bg-[#1B7D3A]/90 text-white"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
               disabled={submitting}
             >
               {submitting ? t('blog.sending') : t('blog.sendComment')}
@@ -301,8 +303,8 @@ export default function BlogPost() {
 
       {/* Posts Relacionados */}
       {relatedPosts.length > 0 && (
-        <section className="bg-slate-50 p-8 rounded-2xl border border-slate-100">
-          <h3 className="text-2xl font-bold text-slate-900 mb-6">{t('blog.relatedPosts')}</h3>
+        <section className="bg-muted/30 p-8 rounded-2xl border border-border">
+          <h3 className="text-2xl font-bold text-foreground mb-6">{t('blog.relatedPosts')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {relatedPosts.map((relPost) => (
               <Link
@@ -320,7 +322,7 @@ export default function BlogPost() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
-                <h4 className="font-bold text-slate-900 group-hover:text-[#0052CC] line-clamp-2 transition-colors">
+                <h4 className="font-bold text-foreground group-hover:text-primary line-clamp-2 transition-colors">
                   {relPost.title}
                 </h4>
               </Link>
