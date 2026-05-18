@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { pt } from '@/lib/i18n/pt'
 import { en } from '@/lib/i18n/en'
+import { es } from '@/lib/i18n/es'
 
-type Language = 'pt' | 'en'
+type Language = 'pt' | 'en' | 'es'
 
 interface TranslationContextType {
   t: (key: string, params?: Record<string, string | number>) => string
@@ -21,8 +22,10 @@ export const useTranslation = () => {
 export const TranslationProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguage] = useState<Language>(() => {
     const saved = localStorage.getItem('language')
-    if (saved === 'pt' || saved === 'en') return saved
-    return navigator.language.startsWith('pt') ? 'pt' : 'en'
+    if (saved === 'pt' || saved === 'en' || saved === 'es') return saved as Language
+    if (navigator.language.startsWith('pt')) return 'pt'
+    if (navigator.language.startsWith('es')) return 'es'
+    return 'en'
   })
 
   useEffect(() => {
@@ -32,7 +35,7 @@ export const TranslationProvider = ({ children }: { children: ReactNode }) => {
 
   const t = (key: string, params?: Record<string, string | number>) => {
     const keys = key.split('.')
-    let value: any = language === 'pt' ? pt : en
+    let value: any = language === 'pt' ? pt : language === 'en' ? en : es
 
     for (const k of keys) {
       if (value && typeof value === 'object' && k in value) {

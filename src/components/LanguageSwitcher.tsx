@@ -32,6 +32,12 @@ export function LanguageSwitcher() {
         >
           🇺🇸 English
         </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => setLanguage('es')}
+          className={language === 'es' ? 'bg-muted font-bold' : ''}
+        >
+          🇪🇸 Español
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

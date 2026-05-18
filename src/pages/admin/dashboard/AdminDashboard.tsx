@@ -350,11 +350,9 @@ export default function AdminDashboard() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-primary">
-            Dashboard Administrativo
+            {t('adminDashboard.title')}
           </h1>
-          <p className="text-muted-foreground mt-1">
-            Visão geral e métricas principais do sistema.
-          </p>
+          <p className="text-muted-foreground mt-1">{t('adminDashboard.desc')}</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -370,7 +368,9 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Atletas</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {t('adminDashboard.totalAthletes')}
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -388,7 +388,7 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Clubes</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminDashboard.totalClubs')}</CardTitle>
             <Flag className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -466,10 +466,10 @@ export default function AdminDashboard() {
 
       <Card className="mt-8">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Evolução Financeira (Receitas x Despesas)</CardTitle>
+          <CardTitle>{t('adminDashboard.revenueChart')}</CardTitle>
           <Select value={financialPeriod} onValueChange={setFinancialPeriod}>
             <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Período" />
+              <SelectValue placeholder={t('adminDashboard.period')} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="month">Mês</SelectItem>
@@ -517,15 +517,15 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
         <Card>
           <CardHeader>
-            <CardTitle>Top 5 Clubes</CardTitle>
+            <CardTitle>{t('adminDashboard.topClubs')}</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[60px]">Pos</TableHead>
+                  <TableHead className="w-[60px]">{t('adminDashboard.pos')}</TableHead>
                   <TableHead>Nome</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t('adminDashboard.status')}</TableHead>
                   <TableHead className="text-right">Ação</TableHead>
                 </TableRow>
               </TableHeader>
@@ -576,9 +576,9 @@ export default function AdminDashboard() {
               <Table>
                 <TableHeader className="sticky top-0 bg-background/95 backdrop-blur z-10">
                   <TableRow>
-                    <TableHead className="w-[60px]">Pos</TableHead>
-                    <TableHead>Atleta</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead className="w-[60px]">{t('adminDashboard.pos')}</TableHead>
+                    <TableHead>{t('adminDashboard.athlete')}</TableHead>
+                    <TableHead>{t('adminDashboard.status')}</TableHead>
                     <TableHead className="text-right">Ação</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -622,7 +622,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
         <Card>
           <CardHeader>
-            <CardTitle>Inscrições Recentes</CardTitle>
+            <CardTitle>{t('adminDashboard.registrationsChart')}</CardTitle>
           </CardHeader>
           <CardContent className="pl-0">
             {loading ? (
@@ -681,7 +681,7 @@ export default function AdminDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-destructive">
               <AlertCircle className="h-5 w-5" />
-              Controle de Inadimplentes
+              {t('adminDashboard.defaultingClubs')}
             </CardTitle>
             <CardDescription>
               Gerencie e notifique usuários, clubes e clientes com pendências financeiras.
