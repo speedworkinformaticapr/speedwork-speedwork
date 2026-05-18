@@ -489,3 +489,29 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
     ],
   },
 }
+
+const ANIMATION_SECTION = {
+  title: 'Animação',
+  fields: [
+    {
+      name: 'animation',
+      label: 'Animação de Entrada',
+      type: 'select' as FieldType,
+      options: [
+        { label: 'Nenhum', value: 'none' },
+        { label: 'Fade In (Esmaecimento)', value: 'fade-in' },
+        { label: 'Deslizar para Cima (Slide Up)', value: 'fade-in-up' },
+        { label: 'Deslizar para Baixo (Slide Down)', value: 'fade-in-down' },
+        { label: 'Deslizar para Esquerda (Slide Left)', value: 'fade-in-left' },
+        { label: 'Deslizar para Direita (Slide Right)', value: 'fade-in-right' },
+        { label: 'Aproximar (Zoom In)', value: 'zoom-in' },
+      ],
+    },
+  ],
+}
+
+Object.values(ELEMENT_CONFIGS).forEach((config) => {
+  if (!config.sections.some((s) => s.title === 'Animação')) {
+    config.sections.push(ANIMATION_SECTION)
+  }
+})

@@ -26,10 +26,34 @@ import Autoplay from 'embla-carousel-autoplay'
 import { DynamicPricingTableBlock } from '@/components/blocks/DynamicPricingTableBlock'
 import { BlogPostsGrid } from '@/components/blocks/BlogPostsGrid'
 import { MapBlock } from '@/components/blocks/MapBlock'
+import { useScrollAnimation } from '@/hooks/use-scroll-animation'
+
+function AnimatedWrapper({
+  children,
+  animation,
+  className,
+}: {
+  children: React.ReactNode
+  animation?: string
+  className?: string
+}) {
+  const ref = useScrollAnimation()
+
+  if (!animation || animation === 'none') {
+    return <div className={className}>{children}</div>
+  }
+
+  return (
+    <div ref={ref} className={`scroll-animate anim-${animation} ${className || ''}`}>
+      {children}
+    </div>
+  )
+}
 
 export function SectionRenderer({ section }: { section: any }) {
   const { type, data: rawData, id: sectionId } = section
   const data = rawData || {}
+  const animation = data.animation
 
   // Resolve links gracefully - se iniciar com # ou http usamos um <a/> comum, caso contrário <Link/>
   const renderLink = (url: string, children: React.ReactNode, className?: string) => {
@@ -70,7 +94,9 @@ export function SectionRenderer({ section }: { section: any }) {
   if (type === 'media_carousel') {
     return (
       <div id={sectionId}>
-        <MediaCarousel data={data} />
+        <AnimatedWrapper animation={animation}>
+          <MediaCarousel data={data} />
+        </AnimatedWrapper>
       </div>
     )
   }
@@ -101,7 +127,10 @@ export function SectionRenderer({ section }: { section: any }) {
         ) : (
           <div className="absolute inset-0 z-0 bg-primary" />
         )}
-        <div className="relative z-10 container mx-auto px-4 text-center flex flex-col items-center justify-center">
+        <AnimatedWrapper
+          animation={animation}
+          className="relative z-10 container mx-auto px-4 text-center flex flex-col items-center justify-center"
+        >
           <h1
             className="text-4xl md:text-7xl font-extrabold text-white mb-6 drop-shadow-lg tracking-tight"
             dangerouslySetInnerHTML={{ __html: title }}
@@ -124,7 +153,7 @@ export function SectionRenderer({ section }: { section: any }) {
               )}
             </Button>
           )}
-        </div>
+        </AnimatedWrapper>
       </section>
     )
   }
@@ -140,7 +169,7 @@ export function SectionRenderer({ section }: { section: any }) {
           ]
     return (
       <section id={sectionId} className="py-24 bg-muted/30 w-full">
-        <div className="container mx-auto px-4">
+        <AnimatedWrapper animation={animation} className="container mx-auto px-4">
           {(data.title || !data.items) && (
             <h2
               className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight"
@@ -191,7 +220,7 @@ export function SectionRenderer({ section }: { section: any }) {
               </Card>
             ))}
           </div>
-        </div>
+        </AnimatedWrapper>
       </section>
     )
   }
@@ -210,7 +239,7 @@ export function SectionRenderer({ section }: { section: any }) {
             ]
     return (
       <section id={sectionId} className="py-24 w-full bg-background">
-        <div className="container mx-auto px-4">
+        <AnimatedWrapper animation={animation} className="container mx-auto px-4">
           {(data.title || !data.items) && (
             <h2
               className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight"
@@ -233,7 +262,7 @@ export function SectionRenderer({ section }: { section: any }) {
               ))}
             </div>
           )}
-        </div>
+        </AnimatedWrapper>
       </section>
     )
   }
@@ -268,7 +297,10 @@ export function SectionRenderer({ section }: { section: any }) {
             }}
           ></div>
         )}
-        <div className="container mx-auto px-4 text-center relative z-10 flex flex-col items-center justify-center">
+        <AnimatedWrapper
+          animation={animation}
+          className="container mx-auto px-4 text-center relative z-10 flex flex-col items-center justify-center"
+        >
           <h2
             className="text-4xl md:text-6xl font-extrabold text-white mb-6 drop-shadow-md tracking-tight"
             dangerouslySetInnerHTML={{ __html: title }}
@@ -287,7 +319,7 @@ export function SectionRenderer({ section }: { section: any }) {
               {renderLink(data.link || '#', <>{data.buttonText || 'Acessar Agora'}</>)}
             </Button>
           )}
-        </div>
+        </AnimatedWrapper>
       </section>
     )
   }
@@ -309,7 +341,7 @@ export function SectionRenderer({ section }: { section: any }) {
           ]
     return (
       <section id={sectionId} className="py-24 bg-muted/10 w-full border-y border-muted">
-        <div className="container mx-auto px-4">
+        <AnimatedWrapper animation={animation} className="container mx-auto px-4">
           {(data.title || !data.items) && (
             <h2
               className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight"
@@ -347,7 +379,7 @@ export function SectionRenderer({ section }: { section: any }) {
               </div>
             ))}
           </div>
-        </div>
+        </AnimatedWrapper>
       </section>
     )
   }
@@ -369,7 +401,7 @@ export function SectionRenderer({ section }: { section: any }) {
           ]
     return (
       <section id={sectionId} className="py-24 w-full bg-background">
-        <div className="container mx-auto px-4 max-w-4xl">
+        <AnimatedWrapper animation={animation} className="container mx-auto px-4 max-w-4xl">
           {(data.title || !data.items) && (
             <h2
               className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight"
@@ -395,7 +427,7 @@ export function SectionRenderer({ section }: { section: any }) {
               </AccordionItem>
             ))}
           </Accordion>
-        </div>
+        </AnimatedWrapper>
       </section>
     )
   }
@@ -410,7 +442,7 @@ export function SectionRenderer({ section }: { section: any }) {
         : '<p>Escreva o conteúdo textual do seu bloco aqui. Utilize tags HTML para formatação.</p>')
     return (
       <section id={sectionId} className="py-24 w-full bg-background">
-        <div className="container mx-auto px-4 max-w-4xl">
+        <AnimatedWrapper animation={animation} className="container mx-auto px-4 max-w-4xl">
           {title && (
             <h2
               className="text-3xl md:text-5xl font-bold text-primary mb-8 tracking-tight"
@@ -421,7 +453,7 @@ export function SectionRenderer({ section }: { section: any }) {
             className="prose prose-lg max-w-none text-muted-foreground"
             dangerouslySetInnerHTML={{ __html: content }}
           />
-        </div>
+        </AnimatedWrapper>
       </section>
     )
   }
@@ -434,7 +466,7 @@ export function SectionRenderer({ section }: { section: any }) {
     const imageUrl = data.imageUrl || 'https://img.usecurling.com/p/800/600?seed=text-image'
     return (
       <section id={sectionId} className="py-24 w-full bg-background">
-        <div className="container mx-auto px-4">
+        <AnimatedWrapper animation={animation} className="container mx-auto px-4">
           <div
             className={`flex flex-col gap-12 items-center ${data.imagePosition === 'left' ? 'md:flex-row-reverse' : 'md:flex-row'}`}
           >
@@ -458,7 +490,7 @@ export function SectionRenderer({ section }: { section: any }) {
               />
             </div>
           </div>
-        </div>
+        </AnimatedWrapper>
       </section>
     )
   }
@@ -466,7 +498,9 @@ export function SectionRenderer({ section }: { section: any }) {
   if (type === 'pricing_table' || type === 'dynamic_pricing_table' || type === 'dynamic_pricing') {
     return (
       <div id={sectionId} className="w-full">
-        <DynamicPricingTableBlock data={data} />
+        <AnimatedWrapper animation={animation}>
+          <DynamicPricingTableBlock data={data} />
+        </AnimatedWrapper>
       </div>
     )
   }
@@ -474,7 +508,9 @@ export function SectionRenderer({ section }: { section: any }) {
   if (type === 'map' || type === 'map_element' || type === 'map_block') {
     return (
       <div id={sectionId} className="w-full">
-        <MapBlock data={data} />
+        <AnimatedWrapper animation={animation}>
+          <MapBlock data={data} />
+        </AnimatedWrapper>
       </div>
     )
   }
@@ -492,7 +528,7 @@ export function SectionRenderer({ section }: { section: any }) {
 
     return (
       <section id={sectionId} className="py-24 w-full bg-background">
-        <div className="container mx-auto px-4 max-w-5xl">
+        <AnimatedWrapper animation={animation} className="container mx-auto px-4 max-w-5xl">
           {(title || events.length === 0) && (
             <h2
               className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight"
@@ -537,7 +573,7 @@ export function SectionRenderer({ section }: { section: any }) {
               )
             })}
           </div>
-        </div>
+        </AnimatedWrapper>
       </section>
     )
   }
@@ -545,7 +581,9 @@ export function SectionRenderer({ section }: { section: any }) {
   if (type === 'blog_posts_grid' || type === 'blog_posts') {
     return (
       <div id={sectionId} className="w-full">
-        <BlogPostsGrid block={section} />
+        <AnimatedWrapper animation={animation}>
+          <BlogPostsGrid block={section} />
+        </AnimatedWrapper>
       </div>
     )
   }
@@ -553,7 +591,10 @@ export function SectionRenderer({ section }: { section: any }) {
   if (type === 'video') {
     return (
       <section id={sectionId} className="py-24 w-full bg-black">
-        <div className="container mx-auto px-4 max-w-5xl text-center">
+        <AnimatedWrapper
+          animation={animation}
+          className="container mx-auto px-4 max-w-5xl text-center"
+        >
           {(data.title || !data.url) && (
             <h2
               className="text-3xl font-bold text-white mb-8"
@@ -570,7 +611,7 @@ export function SectionRenderer({ section }: { section: any }) {
               </div>
             )}
           </div>
-        </div>
+        </AnimatedWrapper>
       </section>
     )
   }
@@ -587,7 +628,7 @@ export function SectionRenderer({ section }: { section: any }) {
           ]
     return (
       <section id={sectionId} className="py-20 bg-primary text-white w-full">
-        <div className="container mx-auto px-4">
+        <AnimatedWrapper animation={animation} className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {stats.map((stat: any, i: number) => (
               <div key={i} className="space-y-2">
@@ -599,7 +640,7 @@ export function SectionRenderer({ section }: { section: any }) {
               </div>
             ))}
           </div>
-        </div>
+        </AnimatedWrapper>
       </section>
     )
   }
@@ -607,7 +648,10 @@ export function SectionRenderer({ section }: { section: any }) {
   if (type === 'newsletter') {
     return (
       <section id={sectionId} className="py-24 w-full bg-muted/5 border-y">
-        <div className="container mx-auto px-4 max-w-2xl text-center">
+        <AnimatedWrapper
+          animation={animation}
+          className="container mx-auto px-4 max-w-2xl text-center"
+        >
           <Mail className="w-12 h-12 text-primary mx-auto mb-6" />
           <h2
             className="text-3xl md:text-4xl font-bold mb-4"
@@ -623,7 +667,7 @@ export function SectionRenderer({ section }: { section: any }) {
             <Input placeholder="Seu melhor e-mail" className="flex-1" />
             <Button>Inscrever-se</Button>
           </div>
-        </div>
+        </AnimatedWrapper>
       </section>
     )
   }
@@ -640,7 +684,7 @@ export function SectionRenderer({ section }: { section: any }) {
           ]
     return (
       <section id={sectionId} className="py-24 bg-muted/10 w-full">
-        <div className="container mx-auto px-4">
+        <AnimatedWrapper animation={animation} className="container mx-auto px-4">
           {(data.title || !data.members) && (
             <h2
               className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight"
@@ -677,7 +721,7 @@ export function SectionRenderer({ section }: { section: any }) {
               </div>
             ))}
           </div>
-        </div>
+        </AnimatedWrapper>
       </section>
     )
   }
@@ -695,7 +739,7 @@ export function SectionRenderer({ section }: { section: any }) {
           ]
     return (
       <section id={sectionId} className="py-12 border-y bg-background w-full overflow-hidden">
-        <div className="container mx-auto px-4">
+        <AnimatedWrapper animation={animation} className="container mx-auto px-4">
           <div
             className="text-center text-sm font-bold text-muted-foreground uppercase tracking-widest mb-8 [&_p]:mb-0"
             dangerouslySetInnerHTML={{ __html: data.title || 'Empresas que confiam em nós' }}
@@ -705,7 +749,7 @@ export function SectionRenderer({ section }: { section: any }) {
               <img key={i} src={logo} alt="Parceiro" className="h-8 md:h-12 object-contain" />
             ))}
           </div>
-        </div>
+        </AnimatedWrapper>
       </section>
     )
   }
@@ -713,7 +757,7 @@ export function SectionRenderer({ section }: { section: any }) {
   if (type === 'contact_form') {
     return (
       <section id={sectionId} className="py-24 bg-background w-full">
-        <div className="container mx-auto px-4 max-w-4xl">
+        <AnimatedWrapper animation={animation} className="container mx-auto px-4 max-w-4xl">
           <div className="grid md:grid-cols-2 gap-12">
             <div>
               <h2
@@ -755,7 +799,7 @@ export function SectionRenderer({ section }: { section: any }) {
               </form>
             </div>
           </div>
-        </div>
+        </AnimatedWrapper>
       </section>
     )
   }

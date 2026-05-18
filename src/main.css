@@ -64,6 +64,87 @@
     scroll-padding-top: 100px;
   }
 
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes fade-in-down {
+    from {
+      opacity: 0;
+      transform: translateY(-30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes fade-in-left {
+    from {
+      opacity: 0;
+      transform: translateX(-30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  @keyframes fade-in-right {
+    from {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  @keyframes zoom-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .scroll-animate {
+    opacity: 0;
+  }
+  .scroll-animate.is-visible.anim-fade-in {
+    animation: fade-in 0.7s ease-out forwards;
+  }
+  .scroll-animate.is-visible.anim-fade-in-up {
+    animation: fade-in-up 0.7s ease-out forwards;
+  }
+  .scroll-animate.is-visible.anim-fade-in-down {
+    animation: fade-in-down 0.7s ease-out forwards;
+  }
+  .scroll-animate.is-visible.anim-fade-in-left {
+    animation: fade-in-left 0.7s ease-out forwards;
+  }
+  .scroll-animate.is-visible.anim-fade-in-right {
+    animation: fade-in-right 0.7s ease-out forwards;
+  }
+  .scroll-animate.is-visible.anim-zoom-in {
+    animation: zoom-in 0.7s ease-out forwards;
+  }
+
   .embla-transform-none > div {
     transform: none !important;
   }
