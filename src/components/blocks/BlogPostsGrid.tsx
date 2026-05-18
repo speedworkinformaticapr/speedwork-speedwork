@@ -32,12 +32,16 @@ export function BlogPostsGrid({ block }: { block: any }) {
     <div className="container mx-auto px-4 my-16">
       <div className="text-center mb-12">
         {block.data?.title && (
-          <h2 className="text-3xl md:text-4xl font-black font-montserrat text-primary uppercase mb-4">
-            {block.data.title}
-          </h2>
+          <h2
+            className="text-3xl md:text-4xl font-black font-montserrat text-primary uppercase mb-4"
+            dangerouslySetInnerHTML={{ __html: block.data.title }}
+          />
         )}
         {block.data?.subtitle && (
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{block.data.subtitle}</p>
+          <div
+            className="text-lg text-muted-foreground max-w-2xl mx-auto [&_p]:mb-2 [&_p:last-child]:mb-0"
+            dangerouslySetInnerHTML={{ __html: block.data.subtitle }}
+          />
         )}
       </div>
 
@@ -84,13 +88,17 @@ export function BlogPostsGrid({ block }: { block: any }) {
                   )}
                 </div>
                 <h3 className="text-xl font-bold leading-tight group-hover:text-primary transition-colors line-clamp-2 mb-4">
-                  <Link to={`/blog/${post.id}`}>{post.title}</Link>
+                  <Link to={`/blog/${post.id}`} dangerouslySetInnerHTML={{ __html: post.title }} />
                 </h3>
-                <p className="text-muted-foreground text-sm line-clamp-3 mb-6 flex-1">
-                  {post.summary ||
-                    post.introduction ||
-                    'Leia mais sobre este assunto clicando no botão abaixo.'}
-                </p>
+                <div
+                  className="text-muted-foreground text-sm line-clamp-3 mb-6 flex-1 [&_p]:mb-2 [&_p:last-child]:mb-0"
+                  dangerouslySetInnerHTML={{
+                    __html:
+                      post.summary ||
+                      post.introduction ||
+                      'Leia mais sobre este assunto clicando no botão abaixo.',
+                  }}
+                />
                 <div className="mt-auto">
                   <Button
                     asChild

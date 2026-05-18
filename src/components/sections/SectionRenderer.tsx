@@ -98,12 +98,14 @@ export function SectionRenderer({ section }: { section: any }) {
           <div className="absolute inset-0 z-0 bg-primary" />
         )}
         <div className="relative z-10 container mx-auto px-4 text-center flex flex-col items-center justify-center">
-          <h1 className="text-4xl md:text-7xl font-extrabold text-white mb-6 drop-shadow-lg tracking-tight">
-            {title}
-          </h1>
-          <p className="text-xl md:text-2xl text-white/90 mb-10 max-w-3xl mx-auto drop-shadow">
-            {subtitle}
-          </p>
+          <h1
+            className="text-4xl md:text-7xl font-extrabold text-white mb-6 drop-shadow-lg tracking-tight"
+            dangerouslySetInnerHTML={{ __html: title }}
+          />
+          <div
+            className="text-xl md:text-2xl text-white/90 mb-10 max-w-3xl mx-auto drop-shadow [&_p]:mb-2 [&_p:last-child]:mb-0"
+            dangerouslySetInnerHTML={{ __html: subtitle }}
+          />
           {(data.buttonText || data.link || data.buttonLink || !data.title) && (
             <Button
               asChild
@@ -136,9 +138,10 @@ export function SectionRenderer({ section }: { section: any }) {
       <section id={sectionId} className="py-24 bg-muted/30 w-full">
         <div className="container mx-auto px-4">
           {(data.title || !data.items) && (
-            <h2 className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight">
-              {data.title || 'Nossos Recursos'}
-            </h2>
+            <h2
+              className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight"
+              dangerouslySetInnerHTML={{ __html: data.title || 'Nossos Recursos' }}
+            />
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {items.map((item: any, i: number) => (
@@ -151,7 +154,7 @@ export function SectionRenderer({ section }: { section: any }) {
                     <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-6 shadow-inner overflow-hidden">
                       <img
                         src={item.icon || item.image || item.url}
-                        alt={item.title || 'Icon'}
+                        alt="Icon"
                         className="w-full h-full object-contain p-2"
                       />
                     </div>
@@ -160,7 +163,10 @@ export function SectionRenderer({ section }: { section: any }) {
                       <CheckCircle2 className="w-7 h-7" />
                     </div>
                   )}
-                  <CardTitle className="text-2xl mb-2">{item.title}</CardTitle>
+                  <CardTitle
+                    className="text-2xl mb-2"
+                    dangerouslySetInnerHTML={{ __html: item.title || '' }}
+                  />
                   <div
                     className="text-base text-muted-foreground leading-relaxed w-full [&_p]:mb-2 [&_p:last-child]:mb-0"
                     dangerouslySetInnerHTML={{ __html: item.description || '' }}
@@ -202,9 +208,10 @@ export function SectionRenderer({ section }: { section: any }) {
       <section id={sectionId} className="py-24 w-full bg-background">
         <div className="container mx-auto px-4">
           {(data.title || !data.items) && (
-            <h2 className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight">
-              {data.title || 'Nossa Galeria'}
-            </h2>
+            <h2
+              className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight"
+              dangerouslySetInnerHTML={{ __html: data.title || 'Nossa Galeria' }}
+            />
           )}
           {items.length > 0 && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
@@ -258,12 +265,14 @@ export function SectionRenderer({ section }: { section: any }) {
           ></div>
         )}
         <div className="container mx-auto px-4 text-center relative z-10 flex flex-col items-center justify-center">
-          <h2 className="text-4xl md:text-6xl font-extrabold text-white mb-6 drop-shadow-md tracking-tight">
-            {title}
-          </h2>
-          <p className="text-xl md:text-2xl text-white/90 mb-12 max-w-3xl mx-auto font-light">
-            {subtitle}
-          </p>
+          <h2
+            className="text-4xl md:text-6xl font-extrabold text-white mb-6 drop-shadow-md tracking-tight"
+            dangerouslySetInnerHTML={{ __html: title }}
+          />
+          <div
+            className="text-xl md:text-2xl text-white/90 mb-12 max-w-3xl mx-auto font-light [&_p]:mb-2 [&_p:last-child]:mb-0"
+            dangerouslySetInnerHTML={{ __html: subtitle }}
+          />
           {(data.buttonText || data.link || !data.title) && (
             <Button
               asChild
@@ -298,9 +307,10 @@ export function SectionRenderer({ section }: { section: any }) {
       <section id={sectionId} className="py-24 bg-muted/10 w-full border-y border-muted">
         <div className="container mx-auto px-4">
           {(data.title || !data.items) && (
-            <h2 className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight">
-              {data.title || 'O que dizem sobre nós'}
-            </h2>
+            <h2
+              className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight"
+              dangerouslySetInnerHTML={{ __html: data.title || 'O que dizem sobre nós' }}
+            />
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {items.map((item: any, i: number) => (
@@ -317,7 +327,7 @@ export function SectionRenderer({ section }: { section: any }) {
                   {item.image || item.icon || item.url ? (
                     <img
                       src={item.image || item.icon || item.url}
-                      alt={item.author || item.title || 'Author'}
+                      alt="Author"
                       className="w-12 h-12 rounded-full object-cover shadow-sm"
                     />
                   ) : (
@@ -325,7 +335,10 @@ export function SectionRenderer({ section }: { section: any }) {
                       {(item.author || item.title || 'A').charAt(0)}
                     </div>
                   )}
-                  <p className="font-bold text-primary text-lg">{item.author || item.title}</p>
+                  <div
+                    className="font-bold text-primary text-lg [&_p]:mb-0"
+                    dangerouslySetInnerHTML={{ __html: item.author || item.title || '' }}
+                  />
                 </div>
               </div>
             ))}
@@ -354,9 +367,10 @@ export function SectionRenderer({ section }: { section: any }) {
       <section id={sectionId} className="py-24 w-full bg-background">
         <div className="container mx-auto px-4 max-w-4xl">
           {(data.title || !data.items) && (
-            <h2 className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight">
-              {data.title || 'Perguntas Frequentes'}
-            </h2>
+            <h2
+              className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight"
+              dangerouslySetInnerHTML={{ __html: data.title || 'Perguntas Frequentes' }}
+            />
           )}
           <Accordion type="single" collapsible className="w-full space-y-4">
             {items.map((item: any, i: number) => (
@@ -366,7 +380,7 @@ export function SectionRenderer({ section }: { section: any }) {
                 className="bg-card border rounded-2xl px-6 py-2 shadow-sm"
               >
                 <AccordionTrigger className="text-left text-lg md:text-xl font-semibold hover:no-underline hover:text-primary transition-colors py-4">
-                  {item.question || item.title}
+                  <span dangerouslySetInnerHTML={{ __html: item.question || item.title || '' }} />
                 </AccordionTrigger>
                 <AccordionContent className="text-base md:text-lg text-muted-foreground leading-relaxed pb-6">
                   <div
@@ -394,9 +408,10 @@ export function SectionRenderer({ section }: { section: any }) {
       <section id={sectionId} className="py-24 w-full bg-background">
         <div className="container mx-auto px-4 max-w-4xl">
           {title && (
-            <h2 className="text-3xl md:text-5xl font-bold text-primary mb-8 tracking-tight">
-              {title}
-            </h2>
+            <h2
+              className="text-3xl md:text-5xl font-bold text-primary mb-8 tracking-tight"
+              dangerouslySetInnerHTML={{ __html: title }}
+            />
           )}
           <div
             className="prose prose-lg max-w-none text-muted-foreground"
@@ -421,9 +436,10 @@ export function SectionRenderer({ section }: { section: any }) {
           >
             <div className="flex-1 space-y-6">
               {title && (
-                <h2 className="text-3xl md:text-5xl font-bold text-primary tracking-tight">
-                  {title}
-                </h2>
+                <h2
+                  className="text-3xl md:text-5xl font-bold text-primary tracking-tight"
+                  dangerouslySetInnerHTML={{ __html: title }}
+                />
               )}
               <div
                 className="prose prose-lg text-muted-foreground"
@@ -433,7 +449,7 @@ export function SectionRenderer({ section }: { section: any }) {
             <div className="flex-1 w-full">
               <img
                 src={imageUrl}
-                alt={title || 'Image'}
+                alt="Image"
                 className="rounded-3xl shadow-2xl w-full object-cover aspect-video bg-muted"
               />
             </div>
@@ -456,9 +472,10 @@ export function SectionRenderer({ section }: { section: any }) {
       <section id={sectionId} className="py-24 w-full bg-black">
         <div className="container mx-auto px-4 max-w-5xl text-center">
           {(data.title || !data.url) && (
-            <h2 className="text-3xl font-bold text-white mb-8">
-              {data.title || 'Assista ao Vídeo'}
-            </h2>
+            <h2
+              className="text-3xl font-bold text-white mb-8"
+              dangerouslySetInnerHTML={{ __html: data.title || 'Assista ao Vídeo' }}
+            />
           )}
           <div className="aspect-video rounded-3xl overflow-hidden shadow-2xl relative bg-muted/20">
             {data.url ? (
@@ -492,9 +509,10 @@ export function SectionRenderer({ section }: { section: any }) {
             {stats.map((stat: any, i: number) => (
               <div key={i} className="space-y-2">
                 <div className="text-4xl md:text-6xl font-extrabold">{stat.value}</div>
-                <div className="text-white/80 font-medium uppercase tracking-wider text-sm md:text-base">
-                  {stat.label}
-                </div>
+                <div
+                  className="text-white/80 font-medium uppercase tracking-wider text-sm md:text-base"
+                  dangerouslySetInnerHTML={{ __html: stat.label || '' }}
+                />
               </div>
             ))}
           </div>
@@ -508,12 +526,16 @@ export function SectionRenderer({ section }: { section: any }) {
       <section id={sectionId} className="py-24 w-full bg-muted/5 border-y">
         <div className="container mx-auto px-4 max-w-2xl text-center">
           <Mail className="w-12 h-12 text-primary mx-auto mb-6" />
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            {data.title || 'Assine nossa Newsletter'}
-          </h2>
-          <p className="text-muted-foreground mb-8">
-            {data.subtitle || 'Receba novidades e atualizações diretamente no seu e-mail.'}
-          </p>
+          <h2
+            className="text-3xl md:text-4xl font-bold mb-4"
+            dangerouslySetInnerHTML={{ __html: data.title || 'Assine nossa Newsletter' }}
+          />
+          <div
+            className="text-muted-foreground mb-8 [&_p]:mb-2 [&_p:last-child]:mb-0"
+            dangerouslySetInnerHTML={{
+              __html: data.subtitle || 'Receba novidades e atualizações diretamente no seu e-mail.',
+            }}
+          />
           <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
             <Input placeholder="Seu melhor e-mail" className="flex-1" />
             <Button>Inscrever-se</Button>
@@ -537,9 +559,10 @@ export function SectionRenderer({ section }: { section: any }) {
       <section id={sectionId} className="py-24 bg-muted/10 w-full">
         <div className="container mx-auto px-4">
           {(data.title || !data.members) && (
-            <h2 className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight">
-              {data.title || 'Nossa Equipe'}
-            </h2>
+            <h2
+              className="text-3xl md:text-5xl font-bold text-center text-primary mb-16 tracking-tight"
+              dangerouslySetInnerHTML={{ __html: data.title || 'Nossa Equipe' }}
+            />
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
             {members.map((member: any, i: number) => (
@@ -552,12 +575,18 @@ export function SectionRenderer({ section }: { section: any }) {
                       member.url ||
                       `https://img.usecurling.com/ppl/medium?seed=${i + 10}`
                     }
-                    alt={member.name}
+                    alt="Team Member"
                     className="w-full h-full object-cover bg-muted"
                   />
                 </div>
-                <h3 className="text-xl font-bold mb-1">{member.name}</h3>
-                <p className="text-primary font-medium mb-3">{member.role}</p>
+                <h3
+                  className="text-xl font-bold mb-1"
+                  dangerouslySetInnerHTML={{ __html: member.name || '' }}
+                />
+                <div
+                  className="text-primary font-medium mb-3 [&_p]:mb-0"
+                  dangerouslySetInnerHTML={{ __html: member.role || '' }}
+                />
                 <div
                   className="text-sm text-muted-foreground w-full [&_p]:mb-2 [&_p:last-child]:mb-0"
                   dangerouslySetInnerHTML={{ __html: member.bio || '' }}
@@ -584,9 +613,10 @@ export function SectionRenderer({ section }: { section: any }) {
     return (
       <section id={sectionId} className="py-12 border-y bg-background w-full overflow-hidden">
         <div className="container mx-auto px-4">
-          <p className="text-center text-sm font-bold text-muted-foreground uppercase tracking-widest mb-8">
-            {data.title || 'Empresas que confiam em nós'}
-          </p>
+          <div
+            className="text-center text-sm font-bold text-muted-foreground uppercase tracking-widest mb-8 [&_p]:mb-0"
+            dangerouslySetInnerHTML={{ __html: data.title || 'Empresas que confiam em nós' }}
+          />
           <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
             {logos.map((logo: string, i: number) => (
               <img key={i} src={logo} alt="Parceiro" className="h-8 md:h-12 object-contain" />
@@ -603,13 +633,18 @@ export function SectionRenderer({ section }: { section: any }) {
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="grid md:grid-cols-2 gap-12">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                {data.title || 'Fale Conosco'}
-              </h2>
-              <p className="text-muted-foreground mb-8">
-                {data.subtitle ||
-                  'Preencha o formulário abaixo e nossa equipe entrará em contato o mais breve possível.'}
-              </p>
+              <h2
+                className="text-3xl md:text-4xl font-bold mb-6"
+                dangerouslySetInnerHTML={{ __html: data.title || 'Fale Conosco' }}
+              />
+              <div
+                className="text-muted-foreground mb-8 [&_p]:mb-2 [&_p:last-child]:mb-0"
+                dangerouslySetInnerHTML={{
+                  __html:
+                    data.subtitle ||
+                    'Preencha o formulário abaixo e nossa equipe entrará em contato o mais breve possível.',
+                }}
+              />
               {(data.email || !data.title) && (
                 <div className="flex items-center gap-3 text-muted-foreground">
                   <Mail className="w-5 h-5 text-primary" /> {data.email || 'contato@empresa.com'}

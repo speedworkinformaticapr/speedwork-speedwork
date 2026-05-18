@@ -94,13 +94,15 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
   return (
     <div className="container mx-auto px-4 my-16">
       <div className="text-center mb-12 animate-fade-in-up">
-        <h2 className="text-3xl md:text-5xl font-extrabold text-foreground tracking-tight mb-4">
-          {data?.title || 'Nossos Planos'}
-        </h2>
+        <h2
+          className="text-3xl md:text-5xl font-extrabold text-foreground tracking-tight mb-4"
+          dangerouslySetInnerHTML={{ __html: data?.title || 'Nossos Planos' }}
+        />
         {data?.subtitle && (
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            {data.subtitle}
-          </p>
+          <div
+            className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed [&_p]:mb-2 [&_p:last-child]:mb-0"
+            dangerouslySetInnerHTML={{ __html: data.subtitle }}
+          />
         )}
 
         <div className="mt-10 inline-flex items-center justify-center bg-muted/50 p-1.5 rounded-xl border shadow-sm">
@@ -164,7 +166,10 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
               )}
 
               <div className={`mb-6 ${isHighlighted ? 'mt-4' : ''}`}>
-                <h3 className="text-2xl font-black mb-2 text-foreground">{plan.name || 'Plano'}</h3>
+                <h3
+                  className="text-2xl font-black mb-2 text-foreground"
+                  dangerouslySetInnerHTML={{ __html: plan.name || 'Plano' }}
+                />
                 <div
                   className="text-muted-foreground min-h-[48px] text-sm leading-relaxed w-full [&_p]:mb-2 [&_p:last-child]:mb-0"
                   dangerouslySetInnerHTML={{ __html: plan.description || '' }}
@@ -185,11 +190,15 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
                               <Check className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
                             </div>
                             <div>
-                              <p className="text-sm font-semibold text-foreground">{srv.title}</p>
+                              <div
+                                className="text-sm font-semibold text-foreground [&_p]:mb-1 [&_p:last-child]:mb-0"
+                                dangerouslySetInnerHTML={{ __html: srv.title }}
+                              />
                               {srv.description && (
-                                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                                  {srv.description}
-                                </p>
+                                <div
+                                  className="text-xs text-muted-foreground mt-0.5 leading-relaxed [&_p]:mb-1 [&_p:last-child]:mb-0"
+                                  dangerouslySetInnerHTML={{ __html: srv.description }}
+                                />
                               )}
                             </div>
                           </div>
@@ -210,11 +219,15 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
                       <AccordionContent className="pt-2">
                         <div className="bg-muted/40 rounded-xl p-4 space-y-3 border border-border/50">
                           <div>
-                            <p className="font-bold text-primary">{planSla.name}</p>
+                            <div
+                              className="font-bold text-primary [&_p]:mb-1 [&_p:last-child]:mb-0"
+                              dangerouslySetInnerHTML={{ __html: planSla.name }}
+                            />
                             {planSla.description && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {planSla.description}
-                              </p>
+                              <div
+                                className="text-xs text-muted-foreground mt-1 [&_p]:mb-1 [&_p:last-child]:mb-0"
+                                dangerouslySetInnerHTML={{ __html: planSla.description }}
+                              />
                             )}
                           </div>
                           <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-border/50">

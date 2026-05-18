@@ -103,9 +103,10 @@ export function BlockRenderer({ block }: { block: any }) {
       return (
         <div id={blockId} className="container mx-auto px-4 my-16 max-w-5xl">
           {title && (
-            <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-16 text-primary tracking-tight">
-              {title}
-            </h2>
+            <h2
+              className="text-3xl md:text-4xl font-extrabold text-center mb-16 text-primary tracking-tight"
+              dangerouslySetInnerHTML={{ __html: title }}
+            />
           )}
           <div className="relative border-l-2 border-primary/20 md:border-l-0 md:flex md:flex-col md:items-center">
             {/* Linha central para desktop */}

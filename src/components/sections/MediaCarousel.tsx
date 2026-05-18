@@ -153,14 +153,16 @@ export function MediaCarousel({ data }: { data: any }) {
                   )}
                 >
                   {slide.title && (
-                    <h2 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white drop-shadow-lg tracking-tight">
-                      {slide.title}
-                    </h2>
+                    <h2
+                      className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white drop-shadow-lg tracking-tight"
+                      dangerouslySetInnerHTML={{ __html: slide.title }}
+                    />
                   )}
                   {slide.subtitle && (
-                    <p className="text-base md:text-xl lg:text-2xl text-white/90 drop-shadow-md font-medium whitespace-pre-wrap">
-                      {slide.subtitle}
-                    </p>
+                    <div
+                      className="text-base md:text-xl lg:text-2xl text-white/90 drop-shadow-md font-medium whitespace-pre-wrap [&_p]:mb-2 [&_p:last-child]:mb-0"
+                      dangerouslySetInnerHTML={{ __html: slide.subtitle }}
+                    />
                   )}
                   {slide.buttonText && slide.buttonLink && (
                     <div className="mt-6">

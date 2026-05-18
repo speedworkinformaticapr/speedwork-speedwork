@@ -56,16 +56,16 @@ export function PageHero({ title, description, breadcrumbs, icon, children }: Pa
           </BreadcrumbList>
         </Breadcrumb>
 
-        <h1 className="text-4xl md:text-6xl font-montserrat font-black mb-4 uppercase leading-tight animate-fade-in-up">
-          {title}
-        </h1>
+        <h1
+          className="text-4xl md:text-6xl font-montserrat font-black mb-4 uppercase leading-tight animate-fade-in-up"
+          dangerouslySetInnerHTML={{ __html: title }}
+        />
         {description && (
-          <p
-            className="text-xl font-medium max-w-2xl opacity-90 mb-8 animate-fade-in-up"
+          <div
+            className="text-xl font-medium max-w-2xl opacity-90 mb-8 animate-fade-in-up [&_p]:mb-2 [&_p:last-child]:mb-0"
             style={{ animationDelay: '100ms' }}
-          >
-            {description}
-          </p>
+            dangerouslySetInnerHTML={{ __html: description }}
+          />
         )}
         {children && (
           <div className="mt-8 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
