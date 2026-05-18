@@ -167,11 +167,11 @@ export function Footer() {
                   const columnsCount = systemData?.footer_links?.columns || 3
 
                   const activeLinks = [
-                    { id: 'courses', title: t('nav.courses'), path: '/courses' },
-                    { id: 'tournaments', title: t('nav.tournaments'), path: '/tournaments' },
-                    { id: 'rules', title: t('nav.rules'), path: '/rules' },
-                    { id: 'blog', title: t('nav.blog'), path: '/blog' },
-                    ...pages.map((p) => ({ id: p.id, title: p.title, path: `/${p.slug}` })),
+                    ...pages.map((p) => ({
+                      id: p.id,
+                      title: p.title,
+                      path: p.slug === 'inicio' || p.slug === 'home' ? '/' : `/${p.slug}`,
+                    })),
                   ]
 
                   // Distribute links evenly across columns

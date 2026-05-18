@@ -24,6 +24,7 @@ import {
 import useEmblaCarousel from 'embla-carousel-react'
 import Autoplay from 'embla-carousel-autoplay'
 import { DynamicPricingTableBlock } from '@/components/blocks/DynamicPricingTableBlock'
+import { BlogPostsGrid } from '@/components/blocks/BlogPostsGrid'
 
 export function SectionRenderer({ section }: { section: any }) {
   const { type, data: rawData, id: sectionId } = section
@@ -463,6 +464,14 @@ export function SectionRenderer({ section }: { section: any }) {
     return (
       <div id={sectionId} className="w-full">
         <DynamicPricingTableBlock data={data} />
+      </div>
+    )
+  }
+
+  if (type === 'blog_posts_grid' || type === 'blog_posts') {
+    return (
+      <div id={sectionId} className="w-full">
+        <BlogPostsGrid block={section} />
       </div>
     )
   }
