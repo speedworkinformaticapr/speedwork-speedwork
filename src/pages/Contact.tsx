@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Mail, Phone, MapPin, Send } from 'lucide-react'
 import { PageHero } from '@/components/PageHero'
 import { Card, CardContent } from '@/components/ui/card'
@@ -7,28 +7,78 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { useSeo } from '@/hooks/use-seo'
+import { useSystemData } from '@/hooks/use-system-data'
+import { supabase } from '@/lib/supabase/client'
+
+declare global {
+  interface Window {
+    grecaptcha: any
+  }
+}
 
 export default function Contact() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const { data: sysData } = useSystemData()
+  const siteKey = sysData?.integrations?.recaptcha_site_key
 
   useSeo({
     title: 'Contato - Footgolf PR',
     description: 'Entre em contato com a federação de Footgolf do Paraná.',
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (siteKey) {
+      const script = document.createElement('script')
+      script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`
+      script.async = true
+      document.body.appendChild(script)
+      return () => {
+        if (document.body.contains(script)) {
+          document.body.removeChild(script)
+        }
+      }
+    }
+  }, [siteKey])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+      if (siteKey && window.grecaptcha) {
+        const token = await new Promise<string>((resolve) => {
+          window.grecaptcha.ready(() => {
+            window.grecaptcha.execute(siteKey, { action: 'contact' }).then(resolve)
+          })
+        })
+
+        const { data, error } = await supabase.functions.invoke('verify-recaptcha', {
+          body: { token },
+        })
+
+        if (error || !data.success) {
+          throw new Error('Falha na verificação de segurança (reCAPTCHA).')
+        }
+      }
+
+      // Simulate API call
+      setTimeout(() => {
+        toast({
+          title: 'Mensagem enviada!',
+          description: 'Recebemos seu contato e retornaremos em breve.',
+        })
+        setLoading(false)
+        ;(e.target as HTMLFormElement).reset()
+      }, 1000)
+    } catch (error: any) {
       toast({
-        title: 'Mensagem enviada!',
-        description: 'Recebemos seu contato e retornaremos em breve.',
+        title: 'Atenção',
+        description: error.message || 'Erro ao processar sua requisição.',
+        variant: 'destructive',
       })
       setLoading(false)
-      ;(e.target as HTMLFormElement).reset()
-    }, 1000)
+    }
   }
 
   return (

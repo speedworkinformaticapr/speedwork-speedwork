@@ -55,6 +55,16 @@ export const systemDataSchema = z.object({
     .optional()
     .nullable()
     .transform((v) => (v === '' ? null : v)),
+  google_maps_key: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((v) => (v === '' ? null : v)),
+  google_place_id: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((v) => (v === '' ? null : v)),
   recaptcha_site_key: z
     .string()
     .optional()

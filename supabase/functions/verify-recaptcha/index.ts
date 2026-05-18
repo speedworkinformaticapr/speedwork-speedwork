@@ -34,7 +34,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const integrations = (sysData.integrations as any) || {}
-    const secretKey = integrations.recaptcha_secret
+    const secretKey = integrations.recaptcha_secret_key || integrations.recaptcha_secret
 
     if (!secretKey) {
       throw new Error('reCAPTCHA Secret Key não configurada.')

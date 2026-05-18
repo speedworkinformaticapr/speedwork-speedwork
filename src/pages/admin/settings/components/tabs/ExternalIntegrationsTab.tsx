@@ -119,6 +119,33 @@ export function ExternalIntegrationsTab({ form }: { form: UseFormReturn<SystemDa
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
+            name="google_maps_key"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Google Maps API Key</FormLabel>
+                <FormControl>
+                  <Input type="password" {...field} value={field.value || ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="google_place_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Google Place ID</FormLabel>
+                <FormControl>
+                  <Input {...field} value={field.value || ''} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="openai_environment"
             render={({ field }) => (
               <FormItem className="col-span-1 md:col-span-2">
