@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 import { Trash } from 'lucide-react'
-import { decimalToTime } from '@/lib/utils'
+import { decimalToTime, formatCurrencyInput, parseCurrencyInput } from '@/lib/utils'
 
 export default function AdminPedidoForm() {
   const { id } = useParams()
@@ -423,10 +423,10 @@ export default function AdminPedidoForm() {
             <div className="w-full md:w-28 space-y-2">
               <Label>{item.tipo_item === 'servico' ? 'Valor/h R$' : 'Unitário R$'}</Label>
               <Input
-                type="number"
-                step="0.01"
-                value={item.valor_unitario || ''}
-                onChange={(e) => updateItem(idx, 'valor_unitario', +e.target.value)}
+                value={formatCurrencyInput(item.valor_unitario)}
+                onChange={(e) =>
+                  updateItem(idx, 'valor_unitario', parseCurrencyInput(e.target.value))
+                }
               />
             </div>
             <div className="w-full md:w-32 space-y-2">

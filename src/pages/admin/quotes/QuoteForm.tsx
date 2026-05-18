@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { Trash, ArrowLeft, Plus } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { decimalToTime } from '@/lib/utils'
+import { decimalToTime, formatCurrencyInput, parseCurrencyInput } from '@/lib/utils'
 
 export default function QuoteForm() {
   const { id } = useParams()
@@ -364,10 +364,10 @@ export default function QuoteForm() {
               <div className="w-full md:w-28 space-y-2">
                 <Label>{it.tipo_item === 'servico' ? 'Valor/h (R$)' : 'Unit. (R$)'}</Label>
                 <Input
-                  type="number"
-                  step="0.01"
-                  value={it.valor_unitario || ''}
-                  onChange={(e) => updateItem(idx, 'valor_unitario', e.target.value)}
+                  value={formatCurrencyInput(it.valor_unitario)}
+                  onChange={(e) =>
+                    updateItem(idx, 'valor_unitario', parseCurrencyInput(e.target.value))
+                  }
                 />
               </div>
               <div className="w-full md:w-32 space-y-2">
@@ -414,28 +414,28 @@ export default function QuoteForm() {
             <div className="space-y-2">
               <Label>Desconto (%)</Label>
               <Input
-                type="number"
-                step="0.01"
-                value={data.desconto_percentual}
-                onChange={(e) => setData({ ...data, desconto_percentual: Number(e.target.value) })}
+                value={formatCurrencyInput(data.desconto_percentual)}
+                onChange={(e) =>
+                  setData({ ...data, desconto_percentual: parseCurrencyInput(e.target.value) })
+                }
               />
             </div>
             <div className="space-y-2">
               <Label>Desconto (R$)</Label>
               <Input
-                type="number"
-                step="0.01"
-                value={data.desconto_valor}
-                onChange={(e) => setData({ ...data, desconto_valor: Number(e.target.value) })}
+                value={formatCurrencyInput(data.desconto_valor)}
+                onChange={(e) =>
+                  setData({ ...data, desconto_valor: parseCurrencyInput(e.target.value) })
+                }
               />
             </div>
             <div className="space-y-2">
               <Label>Impostos (R$)</Label>
               <Input
-                type="number"
-                step="0.01"
-                value={data.valor_impostos}
-                onChange={(e) => setData({ ...data, valor_impostos: Number(e.target.value) })}
+                value={formatCurrencyInput(data.valor_impostos)}
+                onChange={(e) =>
+                  setData({ ...data, valor_impostos: parseCurrencyInput(e.target.value) })
+                }
               />
             </div>
           </div>

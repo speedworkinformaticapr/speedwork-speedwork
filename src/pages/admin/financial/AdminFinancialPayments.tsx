@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { formatCurrencyInput, parseCurrencyInput } from '@/lib/utils'
 import {
   Edit2,
   Plus,
@@ -656,12 +657,14 @@ export default function AdminFinancialPayments() {
               <div>
                 <Label>Valor</Label>
                 <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
                   required
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  value={formatCurrencyInput(formData.amount)}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      amount: parseCurrencyInput(e.target.value).toString(),
+                    })
+                  }
                 />
               </div>
               <div>

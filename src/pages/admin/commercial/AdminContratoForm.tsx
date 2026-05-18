@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
+import { formatCurrencyInput, parseCurrencyInput } from '@/lib/utils'
 
 export default function AdminContratoForm() {
   const { id } = useParams()
@@ -130,10 +131,8 @@ export default function AdminContratoForm() {
         <div className="space-y-2">
           <Label>Valor do Ciclo R$</Label>
           <Input
-            type="number"
-            step="0.01"
-            value={form.valor_ciclo}
-            onChange={(e) => setForm({ ...form, valor_ciclo: +e.target.value })}
+            value={formatCurrencyInput(form.valor_ciclo)}
+            onChange={(e) => setForm({ ...form, valor_ciclo: parseCurrencyInput(e.target.value) })}
           />
         </div>
         <div className="space-y-2">

@@ -18,6 +18,20 @@ export function decimalToTime(decimal: number | null | undefined): string {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
 }
 
+export function formatCurrencyInput(value: any): string {
+  if (value === '' || value === null || value === undefined || isNaN(Number(value))) return '0,00'
+  return Number(value).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
+
+export function parseCurrencyInput(value: string): number {
+  const val = value.replace(/\D/g, '')
+  if (val === '') return 0
+  return Number(val) / 100
+}
+
 export function downloadCSV(data: any[], filename: string) {
   if (!data || !data.length) return
   const headers = Object.keys(data[0]).join(',')
