@@ -46,6 +46,43 @@ export function RegistrationPaymentModal({
   useEffect(() => {
     if (!currentIntentId) return
 
+    const channel = supabase
+      .channel(`reg_payment_${currentIntentId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'registration_payments',
+          filter: `payment_intent_id=eq.${currentIntentId}`,
+        },
+        (payload) => {
+          if (payload.new.status === 'succeeded') {
+            setIsSuccess(true)
+            toast({
+              title: 'Pagamento confirmado com sucesso!',
+              className: 'bg-[#4ADE80] text-white border-none',
+            })
+            setTimeout(() => {
+              onSuccess()
+              onOpenChange(false)
+              setIsSuccess(false)
+              setPixData(null)
+              setCurrentIntentId(null)
+            }, 2000)
+          } else if (payload.new.status === 'failed') {
+            toast({
+              title: 'Pagamento falhou',
+              description: 'Tente gerar um novo código.',
+              variant: 'destructive',
+            })
+            setCurrentIntentId(null)
+            setPixData(null)
+          }
+        },
+      )
+      .subscribe()
+
     const interval = setInterval(async () => {
       try {
         const { data } = await supabase
@@ -57,10 +94,6 @@ export function RegistrationPaymentModal({
         if (data?.status === 'succeeded') {
           clearInterval(interval)
           setIsSuccess(true)
-          toast({
-            title: 'Pagamento confirmado com sucesso!',
-            className: 'bg-[#4ADE80] text-white border-none',
-          })
           setTimeout(() => {
             onSuccess()
             onOpenChange(false)
@@ -68,22 +101,16 @@ export function RegistrationPaymentModal({
             setPixData(null)
             setCurrentIntentId(null)
           }, 2000)
-        } else if (data?.status === 'failed') {
-          clearInterval(interval)
-          toast({
-            title: 'Pagamento falhou',
-            description: 'Tente gerar um novo código.',
-            variant: 'destructive',
-          })
-          setCurrentIntentId(null)
-          setPixData(null)
         }
-      } catch (error) {
-        console.error('Error polling payment status', error)
+      } catch {
+        /* intentionally ignored */
       }
-    }, 5000) // Poll every 5 seconds
+    }, 10000)
 
-    return () => clearInterval(interval)
+    return () => {
+      supabase.removeChannel(channel)
+      clearInterval(interval)
+    }
   }, [currentIntentId, onSuccess, onOpenChange, toast])
 
   const handleProcessPayment = async (method: 'card' | 'pix') => {

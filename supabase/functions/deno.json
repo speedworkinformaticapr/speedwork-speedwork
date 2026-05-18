@@ -8,7 +8,7 @@
     "generate-affiliation-billing": 1,
     "get-athlete-comparison": 1,
     "process-registration-payment": 1,
-    "process-stripe-payment": 1,
+    "process-stripe-payment": 2,
     "registration-payment-webhook": 1,
     "request-password-reset": 1,
     "send-email": 1,
@@ -18,6 +18,7 @@
     "cron-commercial-contracts": 2,
     "generate-ai-text": 2,
     "verify-recaptcha": 1,
-    "translate-text": 1
+    "translate-text": 1,
+    "webhook-asaas": 1
   }
 }

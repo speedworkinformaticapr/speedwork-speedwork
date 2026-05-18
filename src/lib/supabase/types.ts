@@ -508,49 +508,79 @@ export type Database = {
           author_id: string | null
           category: string | null
           conclusion: string | null
+          conclusion_en: string | null
+          conclusion_es: string | null
           content: string | null
+          content_en: string | null
+          content_es: string | null
           created_at: string
           id: string
           image_url: string | null
           introduction: string | null
+          introduction_en: string | null
+          introduction_es: string | null
           is_active: boolean | null
           published_at: string | null
           status: string | null
           summary: string | null
+          summary_en: string | null
+          summary_es: string | null
           tags: Json | null
           title: string
+          title_en: string | null
+          title_es: string | null
         }
         Insert: {
           author_id?: string | null
           category?: string | null
           conclusion?: string | null
+          conclusion_en?: string | null
+          conclusion_es?: string | null
           content?: string | null
+          content_en?: string | null
+          content_es?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
           introduction?: string | null
+          introduction_en?: string | null
+          introduction_es?: string | null
           is_active?: boolean | null
           published_at?: string | null
           status?: string | null
           summary?: string | null
+          summary_en?: string | null
+          summary_es?: string | null
           tags?: Json | null
           title: string
+          title_en?: string | null
+          title_es?: string | null
         }
         Update: {
           author_id?: string | null
           category?: string | null
           conclusion?: string | null
+          conclusion_en?: string | null
+          conclusion_es?: string | null
           content?: string | null
+          content_en?: string | null
+          content_es?: string | null
           created_at?: string
           id?: string
           image_url?: string | null
           introduction?: string | null
+          introduction_en?: string | null
+          introduction_es?: string | null
           is_active?: boolean | null
           published_at?: string | null
           status?: string | null
           summary?: string | null
+          summary_en?: string | null
+          summary_es?: string | null
           tags?: Json | null
           title?: string
+          title_en?: string | null
+          title_es?: string | null
         }
         Relationships: []
       }
@@ -845,6 +875,8 @@ export type Database = {
           club_id: string | null
           created_at: string
           description: string | null
+          description_en: string | null
+          description_es: string | null
           difficulty_rating: string | null
           handicap_rating: number | null
           holes: number | null
@@ -852,6 +884,8 @@ export type Database = {
           image_url: string | null
           instructor: string | null
           name: string
+          name_en: string | null
+          name_es: string | null
           par: number | null
           slope_rating: number | null
           spots: number | null
@@ -862,6 +896,8 @@ export type Database = {
           club_id?: string | null
           created_at?: string
           description?: string | null
+          description_en?: string | null
+          description_es?: string | null
           difficulty_rating?: string | null
           handicap_rating?: number | null
           holes?: number | null
@@ -869,6 +905,8 @@ export type Database = {
           image_url?: string | null
           instructor?: string | null
           name: string
+          name_en?: string | null
+          name_es?: string | null
           par?: number | null
           slope_rating?: number | null
           spots?: number | null
@@ -879,6 +917,8 @@ export type Database = {
           club_id?: string | null
           created_at?: string
           description?: string | null
+          description_en?: string | null
+          description_es?: string | null
           difficulty_rating?: string | null
           handicap_rating?: number | null
           holes?: number | null
@@ -886,6 +926,8 @@ export type Database = {
           image_url?: string | null
           instructor?: string | null
           name?: string
+          name_en?: string | null
+          name_es?: string | null
           par?: number | null
           slope_rating?: number | null
           spots?: number | null
@@ -1014,6 +1056,8 @@ export type Database = {
           current_participants: number | null
           date: string | null
           description: string | null
+          description_en: string | null
+          description_es: string | null
           end_date: string | null
           event_type: string | null
           id: string
@@ -1021,6 +1065,8 @@ export type Database = {
           location: string | null
           max_participants: number | null
           name: string
+          name_en: string | null
+          name_es: string | null
           photos: Json | null
           post_link: string | null
           price_registration: number | null
@@ -1036,6 +1082,8 @@ export type Database = {
           current_participants?: number | null
           date?: string | null
           description?: string | null
+          description_en?: string | null
+          description_es?: string | null
           end_date?: string | null
           event_type?: string | null
           id?: string
@@ -1043,6 +1091,8 @@ export type Database = {
           location?: string | null
           max_participants?: number | null
           name: string
+          name_en?: string | null
+          name_es?: string | null
           photos?: Json | null
           post_link?: string | null
           price_registration?: number | null
@@ -1058,6 +1108,8 @@ export type Database = {
           current_participants?: number | null
           date?: string | null
           description?: string | null
+          description_en?: string | null
+          description_es?: string | null
           end_date?: string | null
           event_type?: string | null
           id?: string
@@ -1065,6 +1117,8 @@ export type Database = {
           location?: string | null
           max_participants?: number | null
           name?: string
+          name_en?: string | null
+          name_es?: string | null
           photos?: Json | null
           post_link?: string | null
           price_registration?: number | null
@@ -1682,11 +1736,17 @@ export type Database = {
           id: string
           is_published: boolean | null
           meta_description: string | null
+          meta_description_en: string | null
+          meta_description_es: string | null
           meta_keywords: string | null
           meta_title: string | null
+          meta_title_en: string | null
+          meta_title_es: string | null
           slug: string
           submenus: Json | null
           title: string
+          title_en: string | null
+          title_es: string | null
           updated_at: string
         }
         Insert: {
@@ -1696,11 +1756,17 @@ export type Database = {
           id?: string
           is_published?: boolean | null
           meta_description?: string | null
+          meta_description_en?: string | null
+          meta_description_es?: string | null
           meta_keywords?: string | null
           meta_title?: string | null
+          meta_title_en?: string | null
+          meta_title_es?: string | null
           slug: string
           submenus?: Json | null
           title: string
+          title_en?: string | null
+          title_es?: string | null
           updated_at?: string
         }
         Update: {
@@ -1710,11 +1776,17 @@ export type Database = {
           id?: string
           is_published?: boolean | null
           meta_description?: string | null
+          meta_description_en?: string | null
+          meta_description_es?: string | null
           meta_keywords?: string | null
           meta_title?: string | null
+          meta_title_en?: string | null
+          meta_title_es?: string | null
           slug?: string
           submenus?: Json | null
           title?: string
+          title_en?: string | null
+          title_es?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -2020,10 +2092,14 @@ export type Database = {
           category: string | null
           created_at: string
           description: string | null
+          description_en: string | null
+          description_es: string | null
           dimensions: string | null
           id: string
           image_url: string | null
           name: string
+          name_en: string | null
+          name_es: string | null
           price: number | null
           rating: number | null
           sku: string | null
@@ -2034,10 +2110,14 @@ export type Database = {
           category?: string | null
           created_at?: string
           description?: string | null
+          description_en?: string | null
+          description_es?: string | null
           dimensions?: string | null
           id?: string
           image_url?: string | null
           name: string
+          name_en?: string | null
+          name_es?: string | null
           price?: number | null
           rating?: number | null
           sku?: string | null
@@ -2048,10 +2128,14 @@ export type Database = {
           category?: string | null
           created_at?: string
           description?: string | null
+          description_en?: string | null
+          description_es?: string | null
           dimensions?: string | null
           id?: string
           image_url?: string | null
           name?: string
+          name_en?: string | null
+          name_es?: string | null
           price?: number | null
           rating?: number | null
           sku?: string | null
@@ -3072,6 +3156,16 @@ export const Constants = {
 //   conclusion: text (nullable)
 //   status: text (nullable, default: 'draft'::text)
 //   is_active: boolean (nullable, default: true)
+//   title_en: text (nullable)
+//   title_es: text (nullable)
+//   summary_en: text (nullable)
+//   summary_es: text (nullable)
+//   introduction_en: text (nullable)
+//   introduction_es: text (nullable)
+//   content_en: text (nullable)
+//   content_es: text (nullable)
+//   conclusion_en: text (nullable)
+//   conclusion_es: text (nullable)
 // Table: cart_items
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (nullable)
@@ -3159,6 +3253,10 @@ export const Constants = {
 //   start_date: date (nullable)
 //   spots: integer (nullable)
 //   image_url: text (nullable)
+//   name_en: text (nullable)
+//   name_es: text (nullable)
+//   description_en: text (nullable)
+//   description_es: text (nullable)
 // Table: email_logs
 //   id: uuid (not null, default: gen_random_uuid())
 //   recipient_email: text (nullable)
@@ -3201,6 +3299,10 @@ export const Constants = {
 //   photos: jsonb (nullable, default: '[]'::jsonb)
 //   post_link: text (nullable)
 //   event_type: text (nullable)
+//   name_en: text (nullable)
+//   name_es: text (nullable)
+//   description_en: text (nullable)
+//   description_es: text (nullable)
 // Table: financial_charges
 //   id: uuid (not null, default: gen_random_uuid())
 //   client_name: text (not null)
@@ -3357,6 +3459,12 @@ export const Constants = {
 //   updated_at: timestamp with time zone (not null, default: now())
 //   display_order: integer (not null, default: 0)
 //   submenus: jsonb (nullable, default: '[]'::jsonb)
+//   title_en: text (nullable)
+//   title_es: text (nullable)
+//   meta_title_en: text (nullable)
+//   meta_title_es: text (nullable)
+//   meta_description_en: text (nullable)
+//   meta_description_es: text (nullable)
 // Table: pedido_itens
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (nullable, default: auth.uid())
@@ -3434,6 +3542,10 @@ export const Constants = {
 //   subcategory: text (nullable)
 //   sku: text (nullable)
 //   dimensions: text (nullable)
+//   name_en: text (nullable)
+//   name_es: text (nullable)
+//   description_en: text (nullable)
+//   description_es: text (nullable)
 // Table: profiles
 //   id: uuid (not null)
 //   email: text (nullable)
