@@ -129,7 +129,7 @@ export default function AdminContratoForm() {
           />
         </div>
         <div className="space-y-2">
-          <Label>Valor do Ciclo R$</Label>
+          <Label>Valor do Ciclo (R$)</Label>
           <Input
             value={formatCurrencyInput(form.valor_ciclo)}
             onChange={(e) => setForm({ ...form, valor_ciclo: parseCurrencyInput(e.target.value) })}

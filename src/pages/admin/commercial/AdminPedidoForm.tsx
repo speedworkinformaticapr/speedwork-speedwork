@@ -165,15 +165,15 @@ export default function AdminPedidoForm() {
 
     if (newItems[index].tipo_item === 'servico') {
       const tempo = Number(newItems[index].tempo_estimado) || 0
-      newItems[index].valor_total = tempo * valUnit * qtd
+      newItems[index].valor_total = Math.round(tempo * valUnit * qtd * 100) / 100
     } else {
-      newItems[index].valor_total = qtd * valUnit
+      newItems[index].valor_total = Math.round(qtd * valUnit * 100) / 100
     }
 
     setItems(newItems)
   }
 
-  const subtotal = itens.reduce((acc, i) => acc + (i.valor_total || 0), 0)
+  const subtotal = Math.round(itens.reduce((acc, i) => acc + (i.valor_total || 0), 0) * 100) / 100
 
   const handleSave = async (status: string) => {
     if (!formData.cliente_id)
@@ -421,7 +421,7 @@ export default function AdminPedidoForm() {
               />
             </div>
             <div className="w-full md:w-28 space-y-2">
-              <Label>{item.tipo_item === 'servico' ? 'Valor/h R$' : 'Unitário R$'}</Label>
+              <Label>{item.tipo_item === 'servico' ? 'Valor/h (R$)' : 'Unit. (R$)'}</Label>
               <Input
                 value={formatCurrencyInput(item.valor_unitario)}
                 onChange={(e) =>
@@ -430,15 +430,8 @@ export default function AdminPedidoForm() {
               />
             </div>
             <div className="w-full md:w-32 space-y-2">
-              <Label>Total R$</Label>
-              <Input
-                readOnly
-                value={(item.valor_total || 0).toLocaleString('pt-BR', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-                className="bg-muted"
-              />
+              <Label>Total (R$)</Label>
+              <Input readOnly value={formatCurrencyInput(item.valor_total)} className="bg-muted" />
             </div>
             <Button
               variant="ghost"
@@ -451,10 +444,7 @@ export default function AdminPedidoForm() {
         ))}
       </div>
 
-      <div className="text-right text-xl font-bold">
-        Total: R${' '}
-        {subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-      </div>
+      <div className="text-right text-xl font-bold">Total: R$ {formatCurrencyInput(subtotal)}</div>
 
       <div className="flex justify-end gap-4 mt-8">
         <Button variant="outline" onClick={() => navigate(-1)}>

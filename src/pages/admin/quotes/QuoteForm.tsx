@@ -136,20 +136,25 @@ export default function QuoteForm() {
 
     if (newItems[idx].tipo_item === 'servico') {
       const tempo = Number(newItems[idx].tempo_estimado) || 0
-      newItems[idx].valor_total = tempo * valUnit * qtd
+      newItems[idx].valor_total = Math.round(tempo * valUnit * qtd * 100) / 100
     } else {
-      newItems[idx].valor_total = qtd * valUnit
+      newItems[idx].valor_total = Math.round(qtd * valUnit * 100) / 100
     }
 
     setItems(newItems)
   }
 
-  const subtotal = items.reduce((acc, i) => acc + Number(i.valor_total), 0)
-  const total =
-    subtotal -
-    Number(data.desconto_valor) -
-    (subtotal * Number(data.desconto_percentual)) / 100 +
-    Number(data.valor_impostos)
+  const subtotal = Math.round(items.reduce((acc, i) => acc + Number(i.valor_total), 0) * 100) / 100
+  const total = Math.max(
+    0,
+    Math.round(
+      (subtotal -
+        Number(data.desconto_valor) -
+        (subtotal * Number(data.desconto_percentual)) / 100 +
+        Number(data.valor_impostos)) *
+        100,
+    ) / 100,
+  )
 
   const handleSave = async (status: string) => {
     if (!data.cliente_id) return toast({ title: 'O cliente é obrigatório', variant: 'destructive' })
@@ -372,14 +377,7 @@ export default function QuoteForm() {
               </div>
               <div className="w-full md:w-32 space-y-2">
                 <Label>Total (R$)</Label>
-                <Input
-                  readOnly
-                  value={Number(it.valor_total).toLocaleString('pt-BR', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                  className="bg-muted"
-                />
+                <Input readOnly value={formatCurrencyInput(it.valor_total)} className="bg-muted" />
               </div>
               <Button
                 variant="ghost"
@@ -404,12 +402,8 @@ export default function QuoteForm() {
         <CardContent className="space-y-6">
           <div className="grid gap-4 md:grid-cols-4">
             <div className="space-y-2">
-              <Label>Subtotal</Label>
-              <Input
-                readOnly
-                value={`R$ ${subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                className="bg-muted"
-              />
+              <Label>Subtotal (R$)</Label>
+              <Input readOnly value={formatCurrencyInput(subtotal)} className="bg-muted" />
             </div>
             <div className="space-y-2">
               <Label>Desconto (%)</Label>
@@ -441,13 +435,7 @@ export default function QuoteForm() {
           </div>
           <div className="bg-primary/10 p-4 rounded-lg flex justify-between items-center">
             <span className="text-lg font-medium text-primary">Total Final</span>
-            <span className="text-2xl font-bold text-primary">
-              R${' '}
-              {total.toLocaleString('pt-BR', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </span>
+            <span className="text-2xl font-bold text-primary">R$ {formatCurrencyInput(total)}</span>
           </div>
           <div className="space-y-2">
             <Label>Observações para o Cliente</Label>
