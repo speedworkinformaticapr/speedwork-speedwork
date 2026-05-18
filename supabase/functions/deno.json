@@ -19,6 +19,7 @@
     "generate-ai-text": 2,
     "verify-recaptcha": 2,
     "translate-text": 1,
-    "webhook-asaas": 1
+    "webhook-asaas": 1,
+    "sync-google-reviews": 1
   }
 }
