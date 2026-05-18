@@ -174,13 +174,16 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
     sections: [
       {
         title: 'Conteúdo',
-        fields: [{ name: 'title', label: 'Título da Seção', type: 'text' }],
+        fields: [
+          { name: 'title', label: 'Título da Seção', type: 'text' },
+          { name: 'useGoogleReviews', label: 'Exibir Avaliações do Google', type: 'boolean' },
+        ],
       },
     ],
     lists: [
       {
         name: 'items',
-        label: 'Depoimentos',
+        label: 'Depoimentos (Manuais)',
         fields: [
           { name: 'image', label: 'URL da Foto do Autor', type: 'url' },
           { name: 'author', label: 'Autor', type: 'text' },

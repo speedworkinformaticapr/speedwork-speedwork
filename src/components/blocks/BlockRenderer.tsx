@@ -20,6 +20,7 @@ import Autoplay from 'embla-carousel-autoplay'
 import { DynamicPricingTableBlock } from './DynamicPricingTableBlock'
 import { MapBlock } from './MapBlock'
 import { SectionRenderer } from '@/components/sections/SectionRenderer'
+import { TestimonialsBlock } from './TestimonialsBlock'
 
 export function BlockRenderer({ block }: { block: any }) {
   if (!block || !block.type || !block.data) return null
@@ -82,6 +83,8 @@ export function BlockRenderer({ block }: { block: any }) {
       return <SectionRenderer section={{ type: 'gallery', data: block.data, id: blockId }} />
     case 'cta':
       return <SectionRenderer section={{ type: 'cta', data: block.data, id: blockId }} />
+    case 'testimonials':
+      return <TestimonialsBlock data={block.data} id={blockId} />
     case 'blog_posts_grid':
     case 'blog_posts':
       return (
