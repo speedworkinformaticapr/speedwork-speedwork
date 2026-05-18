@@ -114,7 +114,7 @@ const mockSessions = [
 ]
 
 export default function AdminDashboard() {
-  const { t } = useTranslation()
+  const { t, tf } = useTranslation()
   const { user } = useAuth()
 
   const [kpis, setKpis] = useState({
@@ -309,7 +309,7 @@ export default function AdminDashboard() {
 
         setEventData(
           (events || []).map((e) => ({
-            name: e.name,
+            name: tf(e, 'name'),
             participants: e.current_participants || 0,
           })),
         )

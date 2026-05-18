@@ -8,6 +8,7 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
+  Languages,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useSystemData } from '@/hooks/use-system-data'
@@ -20,13 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
@@ -46,9 +41,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 
 export default function AdminEcommerceProducts() {
   const [products, setProducts] = useState<any[]>([])
@@ -64,9 +61,16 @@ export default function AdminEcommerceProducts() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isTranslating, setIsTranslating] = useState(false)
+  const [langTab, setLangTab] = useState('pt')
 
   const [formData, setFormData] = useState({
     name: '',
+    name_en: '',
+    name_es: '',
+    description: '',
+    description_en: '',
+    description_es: '',
     category: '',
     subcategory: '',
     price: '',
@@ -78,7 +82,6 @@ export default function AdminEcommerceProducts() {
 
   const { data: systemData } = useSystemData()
   const itemsPerPage = systemData?.records_per_page || 50
-
   const { toast } = useToast()
 
   useEffect(() => {
@@ -161,6 +164,11 @@ export default function AdminEcommerceProducts() {
       setEditingId(product.id)
       setFormData({
         name: product.name || '',
+        name_en: product.name_en || '',
+        name_es: product.name_es || '',
+        description: product.description || '',
+        description_en: product.description_en || '',
+        description_es: product.description_es || '',
         category: product.category || '',
         subcategory: product.subcategory || '',
         price: product.price?.toString() || '',
@@ -173,6 +181,11 @@ export default function AdminEcommerceProducts() {
       setEditingId(null)
       setFormData({
         name: '',
+        name_en: '',
+        name_es: '',
+        description: '',
+        description_en: '',
+        description_es: '',
         category: '',
         subcategory: '',
         price: '',
@@ -182,7 +195,41 @@ export default function AdminEcommerceProducts() {
         image_url: '',
       })
     }
+    setLangTab('pt')
     setIsModalOpen(true)
+  }
+
+  const translateAll = async () => {
+    if (!formData.name && !formData.description) {
+      return toast({
+        title: 'Aviso',
+        description: 'Preencha Nome e Descrição em Português para traduzir.',
+      })
+    }
+    setIsTranslating(true)
+    try {
+      const texts = {
+        name: formData.name,
+        description: formData.description,
+      }
+      const { data, error } = await supabase.functions.invoke('translate-text', {
+        body: { texts },
+      })
+      if (error) throw error
+
+      setFormData((prev) => ({
+        ...prev,
+        name_en: data.en.name || prev.name_en,
+        name_es: data.es.name || prev.name_es,
+        description_en: data.en.description || prev.description_en,
+        description_es: data.es.description || prev.description_es,
+      }))
+      toast({ title: 'Tradução automática concluída com sucesso!' })
+    } catch (err: any) {
+      toast({ title: 'Erro na tradução', description: err.message, variant: 'destructive' })
+    } finally {
+      setIsTranslating(false)
+    }
   }
 
   const handleSaveProduct = async () => {
@@ -198,6 +245,11 @@ export default function AdminEcommerceProducts() {
     try {
       const payload = {
         name: formData.name,
+        name_en: formData.name_en,
+        name_es: formData.name_es,
+        description: formData.description,
+        description_en: formData.description_en,
+        description_es: formData.description_es,
         category: formData.category,
         subcategory: formData.subcategory,
         price: parseFloat(formData.price) || 0,
@@ -225,6 +277,17 @@ export default function AdminEcommerceProducts() {
     }
   }
 
+  const bindField = (field: string) => {
+    const key = langTab === 'pt' ? field : `${field}_${langTab}`
+    return {
+      value: (formData as any)[key] || '',
+      onChange: (val: string | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const v = typeof val === 'string' ? val : val.target.value
+        setFormData({ ...formData, [key]: v })
+      },
+    }
+  }
+
   return (
     <div className="p-6 space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -236,93 +299,129 @@ export default function AdminEcommerceProducts() {
           <Plus className="w-4 h-4 mr-2" /> Novo Produto
         </Button>
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingId ? 'Editar Produto' : 'Cadastrar Novo Produto'}</DialogTitle>
             </DialogHeader>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-              <div className="space-y-2 md:col-span-2">
-                <Label>Nome do Produto</Label>
-                <Input
-                  placeholder="Ex: Bola Oficial Footgolf Pro"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Grupo Principal</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(val) => setFormData({ ...formData, category: val })}
+
+            <Tabs value={langTab} onValueChange={setLangTab} className="w-full mt-2">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 bg-muted/30 p-2 rounded-lg border">
+                <TabsList className="bg-transparent border-none">
+                  <TabsTrigger value="pt">PT</TabsTrigger>
+                  <TabsTrigger value="en">EN</TabsTrigger>
+                  <TabsTrigger value="es">ES</TabsTrigger>
+                </TabsList>
+                <Button
+                  onClick={translateAll}
+                  variant="default"
+                  size="sm"
+                  disabled={isTranslating}
+                  className="mt-2 sm:mt-0 bg-[#0052CC] hover:bg-[#0052CC]/90"
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="equipamentos">Equipamentos</SelectItem>
-                    <SelectItem value="vestuario">Vestuário</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <Languages className="w-4 h-4 mr-2" />
+                  {isTranslating ? 'Traduzindo...' : 'Traduzir Textos'}
+                </Button>
               </div>
-              <div className="space-y-2">
-                <Label>Subgrupo</Label>
-                <Input
-                  placeholder="Ex: Bolas"
-                  value={formData.subcategory}
-                  onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
-                />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Nome do Produto ({langTab.toUpperCase()})</Label>
+                  <Input
+                    placeholder="Ex: Bola Oficial Footgolf Pro"
+                    value={bindField('name').value}
+                    onChange={bindField('name').onChange}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Descrição ({langTab.toUpperCase()})</Label>
+                  <Textarea
+                    placeholder="Descrição completa do produto..."
+                    className="resize-none"
+                    rows={3}
+                    value={bindField('description').value}
+                    onChange={bindField('description').onChange}
+                  />
+                </div>
+
+                {langTab === 'pt' && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Grupo Principal</Label>
+                      <Select
+                        value={formData.category}
+                        onValueChange={(val) => setFormData({ ...formData, category: val })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="equipamentos">Equipamentos</SelectItem>
+                          <SelectItem value="vestuario">Vestuário</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Subgrupo</Label>
+                      <Input
+                        placeholder="Ex: Bolas"
+                        value={formData.subcategory}
+                        onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Preço de Venda (R$)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={formData.price}
+                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Estoque Inicial</Label>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        value={formData.stock}
+                        onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Código SKU</Label>
+                      <Input
+                        placeholder="Ex: BOLA-PRO-01"
+                        value={formData.sku}
+                        onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Peso e Dimensões (Frete)</Label>
+                      <Input
+                        placeholder="Ex: 0.5kg - 20x20x20cm"
+                        value={formData.dimensions}
+                        onChange={(e) => setFormData({ ...formData, dimensions: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label>URL da Imagem</Label>
+                      <Input
+                        placeholder="https://..."
+                        value={formData.image_url}
+                        onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                      />
+                    </div>
+                  </>
+                )}
+                <Button
+                  className="md:col-span-2 mt-4"
+                  onClick={handleSaveProduct}
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Salvando...' : 'Salvar Produto'}
+                </Button>
               </div>
-              <div className="space-y-2">
-                <Label>Preço de Venda (R$)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Estoque Inicial</Label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  value={formData.stock}
-                  onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Código SKU</Label>
-                <Input
-                  placeholder="Ex: BOLA-PRO-01"
-                  value={formData.sku}
-                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Peso e Dimensões (Frete)</Label>
-                <Input
-                  placeholder="Ex: 0.5kg - 20x20x20cm"
-                  value={formData.dimensions}
-                  onChange={(e) => setFormData({ ...formData, dimensions: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label>URL da Imagem</Label>
-                <Input
-                  placeholder="https://..."
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                />
-              </div>
-              <Button
-                className="md:col-span-2 mt-2"
-                onClick={handleSaveProduct}
-                disabled={isSaving}
-              >
-                {isSaving ? 'Salvando...' : 'Publicar Produto'}
-              </Button>
-            </div>
+            </Tabs>
           </DialogContent>
         </Dialog>
       </div>

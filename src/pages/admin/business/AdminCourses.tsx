@@ -19,6 +19,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,14 +30,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
-import { Edit2, Plus, Search, Trash2, AlertCircle } from 'lucide-react'
+import { Edit2, Plus, Search, Trash2, AlertCircle, Languages } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { supabase } from '@/lib/supabase/client'
 
 const MOCK_DATA = [
   {
     id: '1',
     name: 'Clínica de Regras Básicas',
+    description: 'Curso intensivo sobre as regras.',
     instructor: 'João Silva',
     start_date: '2026-05-10',
     status: 'active',
@@ -44,6 +48,7 @@ const MOCK_DATA = [
   {
     id: '2',
     name: 'Técnicas de Chute',
+    description: 'Aprimore seu chute longo.',
     instructor: 'Maria Souza',
     start_date: '2026-06-15',
     status: 'inactive',
@@ -51,15 +56,9 @@ const MOCK_DATA = [
   {
     id: '3',
     name: 'Estratégia de Jogo',
+    description: 'Leitura de campo e estratégia.',
     instructor: 'Carlos Pereira',
     start_date: '2026-07-20',
-    status: 'active',
-  },
-  {
-    id: '4',
-    name: 'Footgolf para Iniciantes',
-    instructor: 'Ana Oliveira',
-    start_date: '2026-08-05',
     status: 'active',
   },
 ]
@@ -72,6 +71,8 @@ export default function AdminCourses() {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isTranslating, setIsTranslating] = useState(false)
+  const [langTab, setLangTab] = useState('pt')
   const { toast } = useToast()
 
   const handleOpen = (item?: any) => {
@@ -79,12 +80,43 @@ export default function AdminCourses() {
       item || {
         id: Date.now().toString(),
         name: '',
+        name_en: '',
+        name_es: '',
+        description: '',
+        description_en: '',
+        description_es: '',
         instructor: '',
         start_date: '',
         status: 'active',
       },
     )
+    setLangTab('pt')
     setIsModalOpen(true)
+  }
+
+  const translateAll = async () => {
+    if (!formData.name && !formData.description) return
+    setIsTranslating(true)
+    try {
+      const texts = { name: formData.name, description: formData.description }
+      const { data, error } = await supabase.functions.invoke('translate-text', {
+        body: { texts },
+      })
+      if (error) throw error
+
+      setFormData((prev: any) => ({
+        ...prev,
+        name_en: data.en.name || prev.name_en,
+        name_es: data.es.name || prev.name_es,
+        description_en: data.en.description || prev.description_en,
+        description_es: data.es.description || prev.description_es,
+      }))
+      toast({ title: 'Tradução automática concluída com sucesso!' })
+    } catch (err: any) {
+      toast({ title: 'Erro na tradução', description: err.message, variant: 'destructive' })
+    } finally {
+      setIsTranslating(false)
+    }
   }
 
   const handleSave = () => {
@@ -116,9 +148,7 @@ export default function AdminCourses() {
     }
   }
 
-  const handleDelete = (id: string) => {
-    setItemToDelete(id)
-  }
+  const handleDelete = (id: string) => setItemToDelete(id)
 
   const confirmDelete = () => {
     if (!itemToDelete) return
@@ -138,6 +168,17 @@ export default function AdminCourses() {
   }
 
   const filtered = items.filter((c) => c.name?.toLowerCase().includes(search.toLowerCase()))
+
+  const bindField = (field: string) => {
+    const key = langTab === 'pt' ? field : `${field}_${langTab}`
+    return {
+      value: formData[key] || '',
+      onChange: (val: string | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const v = typeof val === 'string' ? val : val.target.value
+        setFormData({ ...formData, [key]: v })
+      },
+    }
+  }
 
   return (
     <div className="p-6 space-y-6 max-w-[1200px] mx-auto w-full">
@@ -227,30 +268,59 @@ export default function AdminCourses() {
               {formData.id && formData.name ? 'Editar Curso' : 'Novo Curso'}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Nome do Curso *</Label>
-              <Input
-                value={formData.name || ''}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
+          <Tabs value={langTab} onValueChange={setLangTab} className="w-full mt-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 bg-muted/30 p-2 rounded-lg border">
+              <TabsList className="bg-transparent border-none">
+                <TabsTrigger value="pt">PT</TabsTrigger>
+                <TabsTrigger value="en">EN</TabsTrigger>
+                <TabsTrigger value="es">ES</TabsTrigger>
+              </TabsList>
+              <Button
+                onClick={translateAll}
+                variant="default"
+                size="sm"
+                disabled={isTranslating}
+                className="mt-2 sm:mt-0 bg-[#0052CC] hover:bg-[#0052CC]/90"
+              >
+                <Languages className="w-4 h-4 mr-2" />
+                {isTranslating ? 'Traduzindo...' : 'Traduzir Textos'}
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label>Instrutor</Label>
-              <Input
-                value={formData.instructor || ''}
-                onChange={(e) => setFormData({ ...formData, instructor: e.target.value })}
-              />
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label>Nome do Curso ({langTab.toUpperCase()}) *</Label>
+                <Input value={bindField('name').value} onChange={bindField('name').onChange} />
+              </div>
+              <div className="space-y-2">
+                <Label>Descrição ({langTab.toUpperCase()})</Label>
+                <Textarea
+                  value={bindField('description').value}
+                  onChange={bindField('description').onChange}
+                  rows={3}
+                  className="resize-none"
+                />
+              </div>
+              {langTab === 'pt' && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Instrutor</Label>
+                    <Input
+                      value={formData.instructor || ''}
+                      onChange={(e) => setFormData({ ...formData, instructor: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Data Início</Label>
+                    <Input
+                      type="date"
+                      value={formData.start_date || ''}
+                      onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                    />
+                  </div>
+                </>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label>Data Início</Label>
-              <Input
-                type="date"
-                value={formData.start_date || ''}
-                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-              />
-            </div>
-          </div>
+          </Tabs>
           <DialogFooter>
             <Button onClick={handleSave} disabled={isSaving}>
               {isSaving ? 'Salvando...' : 'Salvar (Mock)'}

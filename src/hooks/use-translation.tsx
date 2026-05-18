@@ -7,6 +7,7 @@ type Language = 'pt' | 'en' | 'es'
 
 interface TranslationContextType {
   t: (key: string, params?: Record<string, string | number>) => string
+  tf: (obj: any, field: string) => string
   language: Language
   setLanguage: (lang: Language) => void
 }
@@ -33,6 +34,13 @@ export const TranslationProvider = ({ children }: { children: ReactNode }) => {
     document.documentElement.lang = language
   }, [language])
 
+  const tf = (obj: any, field: string) => {
+    if (!obj) return ''
+    if (language === 'pt') return obj[field] || ''
+    const translated = obj[`${field}_${language}`]
+    return translated || obj[field] || ''
+  }
+
   const t = (key: string, params?: Record<string, string | number>) => {
     const keys = key.split('.')
     let value: any = language === 'pt' ? pt : language === 'en' ? en : es
@@ -57,7 +65,7 @@ export const TranslationProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <TranslationContext.Provider value={{ t, language, setLanguage }}>
+    <TranslationContext.Provider value={{ t, tf, language, setLanguage }}>
       {children}
     </TranslationContext.Provider>
   )

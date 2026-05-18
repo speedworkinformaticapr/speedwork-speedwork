@@ -18,7 +18,7 @@ import { useSeo } from '@/hooks/use-seo'
 
 export default function BlogPost() {
   const { id } = useParams<{ id: string }>()
-  const { t } = useTranslation()
+  const { t, tf } = useTranslation()
   const [post, setPost] = useState<BlogPostType | null>(null)
   const [relatedPosts, setRelatedPosts] = useState<BlogPostType[]>([])
   const [comments, setComments] = useState<BlogComment[]>([])
@@ -65,8 +65,8 @@ export default function BlogPost() {
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: post?.title,
-        text: post?.summary || '',
+        title: tf(post, 'title'),
+        text: tf(post, 'summary') || '',
         url: window.location.href,
       })
     } else {
@@ -109,17 +109,17 @@ export default function BlogPost() {
   }
 
   useSeo({
-    title: post ? `${post.title} - Footgolf PR` : 'Carregando...',
+    title: post ? `${tf(post, 'title')} - Footgolf PR` : 'Carregando...',
     description:
-      post?.summary ||
-      post?.content?.substring(0, 160) ||
+      tf(post, 'summary') ||
+      tf(post, 'content')?.substring(0, 160) ||
       'Leia este artigo no blog oficial do Footgolf PR.',
     ogImage: post?.image_url || undefined,
     schema: post
       ? {
           '@context': 'https://schema.org',
           '@type': 'Article',
-          headline: post.title,
+          headline: tf(post, 'title'),
           image: post.image_url ? [post.image_url] : [],
           datePublished: post.published_at || post.created_at,
           author: {
@@ -173,7 +173,7 @@ export default function BlogPost() {
       )}
 
       <h1 className="text-4xl md:text-5xl font-extrabold text-foreground leading-tight mb-6">
-        {post.title}
+        {tf(post, 'title')}
       </h1>
 
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8 text-muted-foreground pb-6 border-b border-border">
@@ -201,7 +201,7 @@ export default function BlogPost() {
         <div className="mb-12 rounded-xl overflow-hidden shadow-md">
           <img
             src={post.image_url}
-            alt={post.title}
+            alt={tf(post, 'title')}
             className="w-full h-auto max-h-[500px] object-cover"
           />
         </div>
@@ -209,7 +209,7 @@ export default function BlogPost() {
 
       <div
         className="prose prose-lg dark:prose-invert prose-headings:text-primary prose-a:text-primary hover:prose-a:text-primary/80 prose-img:rounded-xl max-w-none mb-16 text-foreground"
-        dangerouslySetInnerHTML={parseMarkdown(post.content)}
+        dangerouslySetInnerHTML={parseMarkdown(tf(post, 'content'))}
       />
 
       {post.tags && post.tags.length > 0 && (
@@ -318,12 +318,12 @@ export default function BlogPost() {
                       relPost.image_url ||
                       `https://img.usecurling.com/p/300/200?q=golf&seed=${relPost.id}`
                     }
-                    alt={relPost.title}
+                    alt={tf(relPost, 'title')}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
                 <h4 className="font-bold text-foreground group-hover:text-primary line-clamp-2 transition-colors">
-                  {relPost.title}
+                  {tf(relPost, 'title')}
                 </h4>
               </Link>
             ))}

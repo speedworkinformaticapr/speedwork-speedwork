@@ -22,7 +22,6 @@ import { useTranslation } from '@/hooks/use-translation'
 import { useSeo } from '@/hooks/use-seo'
 
 export default function BlogList() {
-  const { t } = useTranslation()
   const [posts, setPosts] = useState<BlogPost[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -51,10 +50,13 @@ export default function BlogList() {
     ...Array.from(new Set(posts.map((p) => p.category).filter(Boolean))),
   ]
 
+  const { t, tf } = useTranslation()
   const filteredPosts = posts.filter((post) => {
+    const title = tf(post, 'title') || ''
+    const summary = tf(post, 'summary') || ''
     const matchesSearch =
-      post.title.toLowerCase().includes(search.toLowerCase()) ||
-      (post.summary && post.summary.toLowerCase().includes(search.toLowerCase()))
+      title.toLowerCase().includes(search.toLowerCase()) ||
+      summary.toLowerCase().includes(search.toLowerCase())
     const matchesCategory = category === t('blog.allCategories') || post.category === category
     return matchesSearch && matchesCategory
   })
@@ -153,7 +155,7 @@ export default function BlogList() {
                         post.image_url ||
                         `https://img.usecurling.com/p/400/300?q=golf&color=green&seed=${post.id}`
                       }
-                      alt={post.title}
+                      alt={tf(post, 'title')}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     {post.category && (
@@ -164,7 +166,7 @@ export default function BlogList() {
                   </div>
                   <CardHeader className="pb-3">
                     <h3 className="text-xl font-bold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-                      {post.title}
+                      {tf(post, 'title')}
                     </h3>
                     <div className="flex items-center text-xs text-muted-foreground gap-4 mt-2">
                       <span className="flex items-center gap-1">
@@ -180,7 +182,7 @@ export default function BlogList() {
                   </CardHeader>
                   <CardContent className="flex-1 pb-4">
                     <p className="text-muted-foreground line-clamp-3">
-                      {post.summary || post.content?.substring(0, 150) + '...'}
+                      {tf(post, 'summary') || tf(post, 'content')?.substring(0, 150) + '...'}
                     </p>
                   </CardContent>
                   <CardFooter>

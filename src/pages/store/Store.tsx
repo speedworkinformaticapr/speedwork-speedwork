@@ -20,7 +20,7 @@ import { useNavigate } from 'react-router-dom'
 import { useSeo } from '@/hooks/use-seo'
 
 export default function Store() {
-  const { t } = useTranslation()
+  const { t, tf } = useTranslation()
   const { user } = useAuth()
   const navigate = useNavigate()
   const { addToCart } = useCartStore()
@@ -76,8 +76,8 @@ export default function Store() {
               position: i + 1,
               item: {
                 '@type': 'Product',
-                name: p.name,
-                description: p.description || p.name,
+                name: tf(p, 'name'),
+                description: tf(p, 'description') || tf(p, 'name'),
                 offers: {
                   '@type': 'Offer',
                   price: p.price,
@@ -91,7 +91,8 @@ export default function Store() {
 
   const filteredProducts = products.filter((p) => {
     if (category !== 'all' && p.category !== category) return false
-    if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false
+    const name = tf(p, 'name') || ''
+    if (search && !name.toLowerCase().includes(search.toLowerCase())) return false
     if (p.price > maxPrice) return false
     if ((p.rating || 0) < minRating) return false
     return true
@@ -199,7 +200,7 @@ export default function Store() {
                     <div className="aspect-square bg-secondary/50 relative overflow-hidden">
                       <img
                         src={product.image_url || 'https://img.usecurling.com/p/400/400?q=product'}
-                        alt={product.name}
+                        alt={tf(product, 'name')}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       />
                       {product.category && (
@@ -211,11 +212,11 @@ export default function Store() {
                     <CardContent className="p-5">
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="font-bold text-lg line-clamp-1 group-hover:text-primary transition-colors">
-                          {product.name}
+                          {tf(product, 'name')}
                         </h3>
                       </div>
                       <p className="text-sm text-muted-foreground line-clamp-2 mb-4 h-10">
-                        {product.description}
+                        {tf(product, 'description')}
                       </p>
                       <div className="flex justify-between items-center">
                         <span className="text-2xl font-black text-foreground">
