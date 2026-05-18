@@ -11,6 +11,13 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function decimalToTime(decimal: number | null | undefined): string {
+  if (!decimal) return ''
+  const hours = Math.floor(decimal)
+  const minutes = Math.round((decimal - hours) * 60)
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+}
+
 export function downloadCSV(data: any[], filename: string) {
   if (!data || !data.length) return
   const headers = Object.keys(data[0]).join(',')

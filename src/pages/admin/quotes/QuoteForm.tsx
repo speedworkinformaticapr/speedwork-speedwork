@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { Trash, ArrowLeft, Plus } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { decimalToTime } from '@/lib/utils'
 
 export default function QuoteForm() {
   const { id } = useParams()
@@ -68,7 +69,12 @@ export default function QuoteForm() {
     if (q) {
       setData(q)
       const { data: it } = await supabase.from('orcamento_itens').select('*').eq('orcamento_id', id)
-      setItems(it || [])
+      setItems(
+        it?.map((item) => ({
+          ...item,
+          tempo_estimado_str: decimalToTime(item.tempo_estimado),
+        })) || [],
+      )
     }
   }
 
@@ -81,6 +87,7 @@ export default function QuoteForm() {
         servico_id: '',
         quantidade: 1,
         tempo_estimado: 0,
+        tempo_estimado_str: '',
         valor_unitario: 0,
         valor_total: 0,
         descricao: '',
@@ -99,6 +106,7 @@ export default function QuoteForm() {
       newItems[idx].valor_unitario = 0
       newItems[idx].quantidade = 1
       newItems[idx].tempo_estimado = 0
+      newItems[idx].tempo_estimado_str = ''
       newItems[idx].descricao = ''
     }
 
@@ -116,6 +124,11 @@ export default function QuoteForm() {
         newItems[idx].valor_unitario = s.sale_value || 0
         newItems[idx].descricao = s.title
       }
+    }
+
+    if (field === 'tempo_estimado_str') {
+      const [h, m] = (val || '00:00').split(':')
+      newItems[idx].tempo_estimado = Number(h || 0) + Number(m || 0) / 60
     }
 
     const qtd = Number(newItems[idx].quantidade) || 0
@@ -159,7 +172,7 @@ export default function QuoteForm() {
 
     if (orcId) {
       const itemsPayload = items.map((i) => {
-        const { id, ...cleanItem } = i
+        const { id, tempo_estimado_str, ...cleanItem } = i
         return { ...cleanItem, orcamento_id: orcId }
       })
       await supabase.from('orcamento_itens').insert(itemsPayload)
@@ -329,13 +342,11 @@ export default function QuoteForm() {
 
               {it.tipo_item === 'servico' && (
                 <div className="w-full md:w-24 space-y-2">
-                  <Label>Tempo (h)</Label>
+                  <Label>Tempo</Label>
                   <Input
-                    type="number"
-                    min="0.1"
-                    step="0.1"
-                    value={it.tempo_estimado || ''}
-                    onChange={(e) => updateItem(idx, 'tempo_estimado', e.target.value)}
+                    type="time"
+                    value={it.tempo_estimado_str || ''}
+                    onChange={(e) => updateItem(idx, 'tempo_estimado_str', e.target.value)}
                   />
                 </div>
               )}
@@ -360,8 +371,15 @@ export default function QuoteForm() {
                 />
               </div>
               <div className="w-full md:w-32 space-y-2">
-                <Label>Total</Label>
-                <Input readOnly value={Number(it.valor_total).toFixed(2)} className="bg-muted" />
+                <Label>Total (R$)</Label>
+                <Input
+                  readOnly
+                  value={Number(it.valor_total).toLocaleString('pt-BR', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                  className="bg-muted"
+                />
               </div>
               <Button
                 variant="ghost"
@@ -387,12 +405,17 @@ export default function QuoteForm() {
           <div className="grid gap-4 md:grid-cols-4">
             <div className="space-y-2">
               <Label>Subtotal</Label>
-              <Input readOnly value={`R$ ${subtotal.toFixed(2)}`} className="bg-muted" />
+              <Input
+                readOnly
+                value={`R$ ${subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                className="bg-muted"
+              />
             </div>
             <div className="space-y-2">
               <Label>Desconto (%)</Label>
               <Input
                 type="number"
+                step="0.01"
                 value={data.desconto_percentual}
                 onChange={(e) => setData({ ...data, desconto_percentual: Number(e.target.value) })}
               />
@@ -401,6 +424,7 @@ export default function QuoteForm() {
               <Label>Desconto (R$)</Label>
               <Input
                 type="number"
+                step="0.01"
                 value={data.desconto_valor}
                 onChange={(e) => setData({ ...data, desconto_valor: Number(e.target.value) })}
               />
@@ -409,6 +433,7 @@ export default function QuoteForm() {
               <Label>Impostos (R$)</Label>
               <Input
                 type="number"
+                step="0.01"
                 value={data.valor_impostos}
                 onChange={(e) => setData({ ...data, valor_impostos: Number(e.target.value) })}
               />
@@ -417,7 +442,11 @@ export default function QuoteForm() {
           <div className="bg-primary/10 p-4 rounded-lg flex justify-between items-center">
             <span className="text-lg font-medium text-primary">Total Final</span>
             <span className="text-2xl font-bold text-primary">
-              R$ {total.toFixed(2).replace('.', ',')}
+              R${' '}
+              {total.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </span>
           </div>
           <div className="space-y-2">

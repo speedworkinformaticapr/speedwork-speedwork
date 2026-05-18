@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/hooks/use-toast'
 import { Printer } from 'lucide-react'
+import { decimalToTime } from '@/lib/utils'
 
 export default function AdminPedidoView() {
   const { id } = useParams()
@@ -100,15 +101,25 @@ export default function AdminPedidoView() {
                 </div>
                 <div className="text-muted-foreground text-xs">
                   {i.tipo_item === 'servico'
-                    ? `${i.tempo_estimado}h a R$ ${i.valor_unitario.toFixed(2)}/h ${i.quantidade > 1 ? `(x${i.quantidade})` : ''}`
-                    : `${i.quantidade}x R$ ${i.valor_unitario.toFixed(2)}`}
+                    ? `${decimalToTime(i.tempo_estimado)} a R$ ${i.valor_unitario.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/h ${i.quantidade > 1 ? `(x${i.quantidade})` : ''}`
+                    : `${i.quantidade}x R$ ${i.valor_unitario.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 </div>
               </div>
-              <strong className="ml-4">R$ {(i.valor_total || 0).toFixed(2)}</strong>
+              <strong className="ml-4">
+                R${' '}
+                {(i.valor_total || 0).toLocaleString('pt-BR', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </strong>
             </div>
           ))}
           <div className="text-right text-xl font-bold mt-4 pt-4 border-t border-border/50">
-            Total: R$ {pedido.valor_total.toFixed(2)}
+            Total: R${' '}
+            {pedido.valor_total.toLocaleString('pt-BR', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
           </div>
         </div>
       </div>

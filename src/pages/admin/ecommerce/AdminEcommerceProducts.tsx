@@ -488,7 +488,11 @@ export default function AdminEcommerceProducts() {
                       <Badge variant="outline">{product.category || 'Sem Categoria'}</Badge>
                     </TableCell>
                     <TableCell className="font-medium text-green-600">
-                      R$ {Number(product.price).toFixed(2)}
+                      R${' '}
+                      {Number(product.price).toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                     </TableCell>
                     <TableCell>{product.stock || 0} unid.</TableCell>
                     <TableCell>

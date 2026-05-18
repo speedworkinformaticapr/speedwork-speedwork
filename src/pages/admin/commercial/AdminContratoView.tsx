@@ -72,7 +72,11 @@ export default function AdminContratoView() {
         </div>
         <div className="text-right">
           <div className="text-3xl font-bold text-green-600">
-            R$ {contrato.valor_ciclo.toFixed(2)}
+            R${' '}
+            {contrato.valor_ciclo.toLocaleString('pt-BR', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
           </div>
         </div>
       </div>

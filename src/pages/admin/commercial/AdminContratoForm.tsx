@@ -131,6 +131,7 @@ export default function AdminContratoForm() {
           <Label>Valor do Ciclo R$</Label>
           <Input
             type="number"
+            step="0.01"
             value={form.valor_ciclo}
             onChange={(e) => setForm({ ...form, valor_ciclo: +e.target.value })}
           />

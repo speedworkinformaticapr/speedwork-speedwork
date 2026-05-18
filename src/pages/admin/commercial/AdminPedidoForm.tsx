@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 import { Trash } from 'lucide-react'
+import { decimalToTime } from '@/lib/utils'
 
 export default function AdminPedidoForm() {
   const { id } = useParams()
@@ -79,7 +80,13 @@ export default function AdminPedidoForm() {
         .select('*')
         .eq('pedido_id', id)
         .then(({ data }) => {
-          if (data) setItems(data)
+          if (data)
+            setItems(
+              data.map((item: any) => ({
+                ...item,
+                tempo_estimado_str: decimalToTime(item.tempo_estimado),
+              })),
+            )
         })
     }
   }, [id])
@@ -100,7 +107,15 @@ export default function AdminPedidoForm() {
       .from('orcamento_itens')
       .select('*')
       .eq('orcamento_id', orcId)
-    if (oItems) setItems(oItems.map((i) => ({ ...i, id: undefined, pedido_id: undefined })))
+    if (oItems)
+      setItems(
+        oItems.map((i) => ({
+          ...i,
+          id: undefined,
+          pedido_id: undefined,
+          tempo_estimado_str: decimalToTime(i.tempo_estimado),
+        })),
+      )
   }
 
   const addItem = () =>
@@ -112,6 +127,7 @@ export default function AdminPedidoForm() {
         servico_id: null,
         quantidade: 1,
         tempo_estimado: 0,
+        tempo_estimado_str: '',
         valor_unitario: 0,
         valor_total: 0,
       },
@@ -127,6 +143,7 @@ export default function AdminPedidoForm() {
       newItems[index].valor_unitario = 0
       newItems[index].quantidade = 1
       newItems[index].tempo_estimado = 0
+      newItems[index].tempo_estimado_str = ''
     }
 
     if (field === 'produto_id' && newItems[index].tipo_item === 'produto') {
@@ -136,6 +153,11 @@ export default function AdminPedidoForm() {
     if (field === 'servico_id' && newItems[index].tipo_item === 'servico') {
       const serv = servicos.find((s) => s.id === value)
       if (serv) newItems[index].valor_unitario = serv.sale_value || 0
+    }
+
+    if (field === 'tempo_estimado_str') {
+      const [h, m] = (value || '00:00').split(':')
+      newItems[index].tempo_estimado = Number(h || 0) + Number(m || 0) / 60
     }
 
     const qtd = Number(newItems[index].quantidade) || 0
@@ -208,9 +230,12 @@ export default function AdminPedidoForm() {
     }
 
     if (pid && itens.length > 0) {
-      await supabase
-        .from('pedido_itens')
-        .insert(itens.map((i) => ({ ...i, pedido_id: pid, user_id: user?.id })))
+      await supabase.from('pedido_itens').insert(
+        itens.map((i) => {
+          const { tempo_estimado_str, ...cleanItem } = i
+          return { ...cleanItem, pedido_id: pid, user_id: user?.id }
+        }),
+      )
     }
 
     toast({ title: 'Sucesso', description: 'Pedido salvo.' })
@@ -377,13 +402,11 @@ export default function AdminPedidoForm() {
 
             {item.tipo_item === 'servico' && (
               <div className="w-full md:w-24 space-y-2">
-                <Label>Tempo (h)</Label>
+                <Label>Tempo</Label>
                 <Input
-                  type="number"
-                  min="0.1"
-                  step="0.1"
-                  value={item.tempo_estimado || ''}
-                  onChange={(e) => updateItem(idx, 'tempo_estimado', e.target.value)}
+                  type="time"
+                  value={item.tempo_estimado_str || ''}
+                  onChange={(e) => updateItem(idx, 'tempo_estimado_str', e.target.value)}
                 />
               </div>
             )}
@@ -406,9 +429,16 @@ export default function AdminPedidoForm() {
                 onChange={(e) => updateItem(idx, 'valor_unitario', +e.target.value)}
               />
             </div>
-            <div className="w-full md:w-28 space-y-2">
+            <div className="w-full md:w-32 space-y-2">
               <Label>Total R$</Label>
-              <Input readOnly value={(item.valor_total || 0).toFixed(2)} />
+              <Input
+                readOnly
+                value={(item.valor_total || 0).toLocaleString('pt-BR', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+                className="bg-muted"
+              />
             </div>
             <Button
               variant="ghost"
@@ -421,7 +451,10 @@ export default function AdminPedidoForm() {
         ))}
       </div>
 
-      <div className="text-right text-xl font-bold">Total: R$ {subtotal.toFixed(2)}</div>
+      <div className="text-right text-xl font-bold">
+        Total: R${' '}
+        {subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </div>
 
       <div className="flex justify-end gap-4 mt-8">
         <Button variant="outline" onClick={() => navigate(-1)}>

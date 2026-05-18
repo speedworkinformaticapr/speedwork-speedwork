@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { Check, X, ArrowLeft, Send, ShoppingCart, Info, Printer } from 'lucide-react'
+import { decimalToTime } from '@/lib/utils'
 
 export default function QuoteView() {
   const { id } = useParams()
@@ -269,17 +270,25 @@ export default function QuoteView() {
                     </td>
                     <td className="py-3 text-center">
                       {it.tipo_item === 'servico'
-                        ? `${it.tempo_estimado}h ${it.quantidade > 1 ? `(x${it.quantidade})` : ''}`
+                        ? `${decimalToTime(it.tempo_estimado)} ${it.quantidade > 1 ? `(x${it.quantidade})` : ''}`
                         : it.quantidade}
                     </td>
                     <td className="py-3 text-right">
-                      R$ {Number(it.valor_unitario).toFixed(2).replace('.', ',')}
+                      R${' '}
+                      {Number(it.valor_unitario).toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                       <span className="text-xs text-muted-foreground block">
                         {it.tipo_item === 'servico' ? 'por hora' : 'unitário'}
                       </span>
                     </td>
                     <td className="py-3 text-right font-medium">
-                      R$ {Number(it.valor_total).toFixed(2).replace('.', ',')}
+                      R${' '}
+                      {Number(it.valor_total).toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                     </td>
                   </tr>
                 ))}
@@ -290,7 +299,13 @@ export default function QuoteView() {
           <div className="mt-8 flex flex-col items-end gap-2 text-sm border-t pt-4">
             <div className="w-full max-w-xs flex justify-between">
               <span className="text-muted-foreground">Subtotal:</span>
-              <span>R$ {Number(quote.subtotal).toFixed(2).replace('.', ',')}</span>
+              <span>
+                R${' '}
+                {Number(quote.subtotal).toLocaleString('pt-BR', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </span>
             </div>
 
             <div className="w-full max-w-xs flex justify-between text-muted-foreground">
@@ -300,20 +315,30 @@ export default function QuoteView() {
                 {(
                   Number(quote.desconto_valor) +
                   (Number(quote.subtotal) * Number(quote.desconto_percentual)) / 100
-                )
-                  .toFixed(2)
-                  .replace('.', ',')}
+                ).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
 
             <div className="w-full max-w-xs flex justify-between text-muted-foreground">
               <span>Impostos:</span>
-              <span>+ R$ {Number(quote.valor_impostos).toFixed(2).replace('.', ',')}</span>
+              <span>
+                + R${' '}
+                {Number(quote.valor_impostos).toLocaleString('pt-BR', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </span>
             </div>
 
             <div className="w-full max-w-xs flex justify-between text-lg font-bold mt-2 pt-2 border-t text-primary">
               <span>Total Final:</span>
-              <span>R$ {Number(quote.total).toFixed(2).replace('.', ',')}</span>
+              <span>
+                R${' '}
+                {Number(quote.total).toLocaleString('pt-BR', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </span>
             </div>
           </div>
         </CardContent>
