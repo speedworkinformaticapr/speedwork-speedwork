@@ -12,9 +12,9 @@ export function TestimonialsBlock({ data, id }: { data: any; id?: string }) {
     if (data.useGoogleReviews) {
       setIsLoading(true)
       const fetchReviews = async () => {
-        const { data: reviews, error } = await supabase
-          .from('google_reviews')
+        const { data: reviews, error } = await (supabase.from('google_reviews') as any)
           .select('*')
+          .eq('status', 'approved')
           .order('time', { ascending: false })
           .limit(10)
 

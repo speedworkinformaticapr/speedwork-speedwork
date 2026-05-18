@@ -1262,6 +1262,42 @@ export type Database = {
         }
         Relationships: []
       }
+      google_reviews: {
+        Row: {
+          author_name: string
+          author_url: string | null
+          created_at: string
+          id: string
+          profile_photo_url: string | null
+          rating: number
+          relative_time_description: string | null
+          text: string | null
+          time: number | null
+        }
+        Insert: {
+          author_name: string
+          author_url?: string | null
+          created_at?: string
+          id?: string
+          profile_photo_url?: string | null
+          rating: number
+          relative_time_description?: string | null
+          text?: string | null
+          time?: number | null
+        }
+        Update: {
+          author_name?: string
+          author_url?: string | null
+          created_at?: string
+          id?: string
+          profile_photo_url?: string | null
+          rating?: number
+          relative_time_description?: string | null
+          text?: string | null
+          time?: number | null
+        }
+        Relationships: []
+      }
       hero_carousel: {
         Row: {
           button_text: string | null
@@ -3336,6 +3372,16 @@ export const Constants = {
 //   conversions: integer (nullable, default: 0)
 //   date: date (not null, default: CURRENT_DATE)
 //   last_updated: timestamp with time zone (nullable, default: now())
+// Table: google_reviews
+//   id: uuid (not null, default: gen_random_uuid())
+//   author_name: text (not null)
+//   author_url: text (nullable)
+//   profile_photo_url: text (nullable)
+//   rating: integer (not null)
+//   text: text (nullable)
+//   time: integer (nullable)
+//   relative_time_description: text (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: hero_carousel
 //   id: uuid (not null, default: gen_random_uuid())
 //   title: text (nullable)
@@ -3836,6 +3882,9 @@ export const Constants = {
 // Table: google_ads_cache
 //   PRIMARY KEY google_ads_cache_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY google_ads_cache_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+// Table: google_reviews
+//   UNIQUE google_reviews_author_time_key: UNIQUE (author_name, "time")
+//   PRIMARY KEY google_reviews_pkey: PRIMARY KEY (id)
 // Table: hero_carousel
 //   PRIMARY KEY hero_carousel_pkey: PRIMARY KEY (id)
 // Table: lancamentos_financeiros
@@ -4136,6 +4185,9 @@ export const Constants = {
 //   Policy "Enable update for authenticated users" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+// Table: google_reviews
+//   Policy "google_reviews_select" (SELECT, PERMISSIVE) roles={public}
+//     USING: true
 // Table: hero_carousel
 //   Policy "hero_carousel_delete" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -4774,6 +4826,8 @@ export const Constants = {
 //   CREATE UNIQUE INDEX cart_items_user_id_product_id_key ON public.cart_items USING btree (user_id, product_id)
 // Table: contratos
 //   CREATE UNIQUE INDEX contratos_numero_contrato_key ON public.contratos USING btree (numero_contrato)
+// Table: google_reviews
+//   CREATE UNIQUE INDEX google_reviews_author_time_key ON public.google_reviews USING btree (author_name, "time")
 // Table: orcamentos
 //   CREATE UNIQUE INDEX orcamentos_numero_orcamento_key ON public.orcamentos USING btree (numero_orcamento)
 // Table: pages

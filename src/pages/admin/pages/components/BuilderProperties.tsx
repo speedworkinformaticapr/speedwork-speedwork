@@ -520,6 +520,61 @@ function DynamicForm({ block, onUpdate }: { block: any; onUpdate: (data: any) =>
   )
 }
 
+function GoogleReviewsModerator() {
+  const [reviews, setReviews] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    import('@/lib/supabase/client').then(({ supabase }) => {
+      supabase
+        .from('google_reviews')
+        .select('*')
+        .order('time', { ascending: false })
+        .then(({ data }) => {
+          setReviews(data || [])
+          setLoading(false)
+        })
+    })
+  }, [])
+
+  const toggleStatus = async (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'approved' ? 'rejected' : 'approved'
+    const { supabase } = await import('@/lib/supabase/client')
+    await (supabase.from('google_reviews') as any).update({ status: newStatus }).eq('id', id)
+    setReviews((prev) => prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r)))
+  }
+
+  if (loading) return <div className="text-xs text-muted-foreground">Carregando avaliações...</div>
+
+  if (reviews.length === 0)
+    return <div className="text-xs text-muted-foreground">Nenhuma avaliação encontrada.</div>
+
+  return (
+    <div className="space-y-3 mt-4 max-h-[400px] overflow-y-auto pr-2">
+      {reviews.map((review) => (
+        <div
+          key={review.id}
+          className="flex items-start justify-between p-3 bg-muted/50 rounded-lg border gap-3"
+        >
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-xs truncate">{review.author_name}</span>
+              <span className="text-[10px] text-yellow-500 font-bold">★ {review.rating}</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground line-clamp-2 mt-1" title={review.text}>
+              {review.text || '(Sem texto)'}
+            </p>
+          </div>
+          <Switch
+            checked={review.status === 'approved' || !review.status}
+            onCheckedChange={() => toggleStatus(review.id, review.status || 'approved')}
+          />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function BuilderProperties() {
   const { state, setState } = usePageBuilderStore()
   const selectedBlock = state.blocks.find((b) => b.id === state.selectedBlockId)
@@ -573,6 +628,15 @@ export function BuilderProperties() {
             </div>
 
             <DynamicForm block={selectedBlock} onUpdate={updateBlockData} />
+
+            {selectedBlock.type === 'testimonials' && (
+              <div className="space-y-4 bg-card p-4 rounded-xl border shadow-sm mt-6">
+                <h4 className="font-bold text-sm border-b pb-2 text-primary">
+                  Moderação Google Meu Negócio
+                </h4>
+                <GoogleReviewsModerator />
+              </div>
+            )}
           </div>
         )}
       </ScrollArea>
