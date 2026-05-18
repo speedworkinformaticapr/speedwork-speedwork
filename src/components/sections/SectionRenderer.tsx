@@ -82,11 +82,13 @@ export function SectionRenderer({ section }: { section: any }) {
       data.subtitle ||
       'Subtítulo atrativo que descreve seu produto ou serviço. Configure os detalhes nas propriedades.'
     const overlayOpacity = data.overlayOpacity !== undefined ? data.overlayOpacity : 40
+    const minHeight = data.height ? `${data.height}px` : undefined
 
     return (
       <section
         id={sectionId}
-        className="relative py-28 md:py-48 flex items-center justify-center overflow-hidden w-full"
+        className={`relative ${data.height ? 'py-12 md:py-24' : 'py-28 md:py-48'} flex items-center justify-center overflow-hidden w-full`}
+        style={minHeight ? { minHeight } : undefined}
       >
         {bgImage ? (
           <div className="absolute inset-0 z-0">

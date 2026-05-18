@@ -135,6 +135,7 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
       {
         title: 'Estilo',
         fields: [
+          { name: 'height', label: 'Altura Mínima (px)', type: 'number' },
           { name: 'backgroundColor', label: 'Cor de Fundo', type: 'color' },
           { name: 'backgroundImage', label: 'Imagem de Fundo (URL)', type: 'url' },
           { name: 'overlayOpacity', label: 'Escurecimento da Imagem (%)', type: 'range' },
