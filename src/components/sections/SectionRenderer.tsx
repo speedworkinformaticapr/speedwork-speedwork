@@ -25,6 +25,7 @@ import useEmblaCarousel from 'embla-carousel-react'
 import Autoplay from 'embla-carousel-autoplay'
 import { DynamicPricingTableBlock } from '@/components/blocks/DynamicPricingTableBlock'
 import { BlogPostsGrid } from '@/components/blocks/BlogPostsGrid'
+import { MapBlock } from '@/components/blocks/MapBlock'
 
 export function SectionRenderer({ section }: { section: any }) {
   const { type, data: rawData, id: sectionId } = section
@@ -464,6 +465,14 @@ export function SectionRenderer({ section }: { section: any }) {
     return (
       <div id={sectionId} className="w-full">
         <DynamicPricingTableBlock data={data} />
+      </div>
+    )
+  }
+
+  if (type === 'map' || type === 'map_element' || type === 'map_block') {
+    return (
+      <div id={sectionId} className="w-full">
+        <MapBlock data={data} />
       </div>
     )
   }
