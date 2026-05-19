@@ -4367,6 +4367,10 @@ export const Constants = {
 //     USING: true
 //     WITH CHECK: true
 // Table: profiles
+//   Policy "profiles_delete" (DELETE, PERMISSIVE) roles={public}
+//     USING: true
+//   Policy "profiles_insert" (INSERT, PERMISSIVE) roles={public}
+//     WITH CHECK: true
 //   Policy "profiles_select" (SELECT, PERMISSIVE) roles={public}
 //     USING: true
 //   Policy "profiles_update" (UPDATE, PERMISSIVE) roles={public}
