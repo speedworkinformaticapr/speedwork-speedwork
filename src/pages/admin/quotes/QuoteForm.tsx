@@ -86,7 +86,7 @@ export default function QuoteForm() {
       .then((res) => setProducts(res.data || []))
     supabase
       .from('services' as any)
-      .select('id, title, sale_value')
+      .select('id, title, sale_value, exec_time')
       .then((res) => setServices(res.data || []))
     if (id) loadQuote()
   }, [id])
@@ -154,6 +154,10 @@ export default function QuoteForm() {
       if (s) {
         newItems[idx].valor_unitario = s.sale_value || 0
         newItems[idx].descricao = s.title
+        const execTime = s.exec_time || '00:00'
+        newItems[idx].tempo_estimado_str = execTime
+        const [h, m] = execTime.split(':')
+        newItems[idx].tempo_estimado = Number(h || 0) + Number(m || 0) / 60
       }
     }
 
@@ -219,6 +223,18 @@ export default function QuoteForm() {
     if (!data.cliente_id) return toast({ title: 'O cliente é obrigatório', variant: 'destructive' })
     if (items.length === 0)
       return toast({ title: 'Adicione pelo menos 1 item', variant: 'destructive' })
+
+    for (const item of items) {
+      if (item.tipo_item === 'servico' && (!item.tempo_estimado || item.tempo_estimado <= 0)) {
+        return toast({
+          title: 'Tempo de execução inválido (00:00) para o serviço.',
+          variant: 'destructive',
+        })
+      }
+      if (item.tipo_item === 'produto' && (!item.quantidade || item.quantidade <= 0)) {
+        return toast({ title: 'Quantidade inválida para o produto.', variant: 'destructive' })
+      }
+    }
 
     const payload: any = { ...data, subtotal, total, status }
     if (!payload.conta_id) payload.conta_id = null
@@ -510,11 +526,22 @@ export default function QuoteForm() {
                     </Select>
                   </div>
                 </div>
+                {it.tipo_item === 'servico' && (
+                  <div className="w-full md:w-24 space-y-2">
+                    <Label>Tempo (hh:mm)</Label>
+                    <Input
+                      type="time"
+                      value={it.tempo_estimado_str || ''}
+                      onChange={(e) => updateItem(idx, 'tempo_estimado_str', e.target.value)}
+                    />
+                  </div>
+                )}
                 <div className="w-full md:w-20 space-y-2">
                   <Label>Qtd</Label>
                   <Input
                     type="number"
-                    min="1"
+                    min="0.01"
+                    step="0.01"
                     value={it.quantidade || 1}
                     onChange={(e) => updateItem(idx, 'quantidade', e.target.value)}
                   />

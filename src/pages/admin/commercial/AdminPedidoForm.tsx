@@ -77,7 +77,7 @@ export default function AdminPedidoForm() {
       .then(({ data }) => setProdutos(data || []))
     supabase
       .from('services' as any)
-      .select('id, title, sale_value')
+      .select('id, title, sale_value, exec_time')
       .then(({ data }) => setServicos(data || []))
 
     if (id) {
@@ -163,7 +163,13 @@ export default function AdminPedidoForm() {
     }
     if (field === 'servico_id' && newItems[index].tipo_item === 'servico') {
       const serv = servicos.find((s) => s.id === value)
-      if (serv) newItems[index].valor_unitario = serv.sale_value || 0
+      if (serv) {
+        newItems[index].valor_unitario = serv.sale_value || 0
+        const execTime = serv.exec_time || '00:00'
+        newItems[index].tempo_estimado_str = execTime
+        const [h, m] = execTime.split(':')
+        newItems[index].tempo_estimado = Number(h || 0) + Number(m || 0) / 60
+      }
     }
     if (field === 'tempo_estimado_str') {
       const [h, m] = (value || '00:00').split(':')
@@ -200,6 +206,18 @@ export default function AdminPedidoForm() {
             })
           }
         }
+      }
+    }
+
+    for (const item of itens) {
+      if (item.tipo_item === 'servico' && (!item.tempo_estimado || item.tempo_estimado <= 0)) {
+        return toast({
+          title: 'Tempo de execução inválido (00:00) para o serviço.',
+          variant: 'destructive',
+        })
+      }
+      if (item.tipo_item === 'produto' && (!item.quantidade || item.quantidade <= 0)) {
+        return toast({ title: 'Quantidade inválida para o produto.', variant: 'destructive' })
       }
     }
 
@@ -440,7 +458,7 @@ export default function AdminPedidoForm() {
                 </div>
                 {item.tipo_item === 'servico' && (
                   <div className="w-full md:w-24 space-y-2">
-                    <Label>Tempo</Label>
+                    <Label>Tempo (hh:mm)</Label>
                     <Input
                       type="time"
                       value={item.tempo_estimado_str || ''}
@@ -452,7 +470,8 @@ export default function AdminPedidoForm() {
                   <Label>Qtd</Label>
                   <Input
                     type="number"
-                    min="1"
+                    min="0.01"
+                    step="0.01"
                     value={item.quantidade || 1}
                     onChange={(e) => updateItem(idx, 'quantidade', +e.target.value)}
                   />

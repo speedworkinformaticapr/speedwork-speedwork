@@ -1048,56 +1048,6 @@ export type Database = {
           },
         ]
       }
-      financial_master_records: {
-        Row: {
-          category: string | null
-          client_id: string | null
-          client_name: string
-          created_at: string
-          description: string
-          id: string
-          reference_id: string | null
-          reference_type: string | null
-          status: string
-          total_amount: number
-          type: string | null
-        }
-        Insert: {
-          category?: string | null
-          client_id?: string | null
-          client_name: string
-          created_at?: string
-          description: string
-          id?: string
-          reference_id?: string | null
-          reference_type?: string | null
-          status?: string
-          total_amount?: number
-          type?: string | null
-        }
-        Update: {
-          category?: string | null
-          client_id?: string | null
-          client_name?: string
-          created_at?: string
-          description?: string
-          id?: string
-          reference_id?: string | null
-          reference_type?: string | null
-          status?: string
-          total_amount?: number
-          type?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'financial_master_records_client_id_fkey'
-            columns: ['client_id']
-            isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
-          },
-        ]
-      }
       events: {
         Row: {
           category: string | null
@@ -1283,6 +1233,56 @@ export type Database = {
           {
             foreignKeyName: 'financial_charges_profile_id_fkey'
             columns: ['profile_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      financial_master_records: {
+        Row: {
+          category: string | null
+          client_id: string | null
+          client_name: string
+          created_at: string
+          description: string
+          id: string
+          reference_id: string | null
+          reference_type: string | null
+          status: string
+          total_amount: number
+          type: string | null
+        }
+        Insert: {
+          category?: string | null
+          client_id?: string | null
+          client_name: string
+          created_at?: string
+          description: string
+          id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: string
+          total_amount?: number
+          type?: string | null
+        }
+        Update: {
+          category?: string | null
+          client_id?: string | null
+          client_name?: string
+          created_at?: string
+          description?: string
+          id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: string
+          total_amount?: number
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'financial_master_records_client_id_fkey'
+            columns: ['client_id']
             isOneToOne: false
             referencedRelation: 'profiles'
             referencedColumns: ['id']
@@ -3478,6 +3478,19 @@ export const Constants = {
 //   parcela_numero: integer (nullable)
 //   parcela_total: integer (nullable)
 //   profile_id: uuid (nullable)
+//   master_record_id: uuid (nullable)
+// Table: financial_master_records
+//   id: uuid (not null, default: gen_random_uuid())
+//   description: text (not null)
+//   client_id: uuid (nullable)
+//   client_name: text (not null)
+//   total_amount: numeric (not null, default: 0)
+//   status: text (not null, default: 'pendente'::text)
+//   type: text (nullable, default: 'receivable'::text)
+//   category: text (nullable, default: 'general'::text)
+//   reference_id: uuid (nullable)
+//   reference_type: text (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: financial_partners
 //   id: uuid (not null, default: gen_random_uuid())
 //   name: text (not null)
@@ -4010,9 +4023,13 @@ export const Constants = {
 // Table: financial_charges
 //   FOREIGN KEY financial_charges_athlete_id_fkey: FOREIGN KEY (athlete_id) REFERENCES athletes(id) ON DELETE SET NULL
 //   FOREIGN KEY financial_charges_conta_id_fkey: FOREIGN KEY (conta_id) REFERENCES plano_contas(id) ON DELETE SET NULL
+//   FOREIGN KEY financial_charges_master_record_id_fkey: FOREIGN KEY (master_record_id) REFERENCES financial_master_records(id) ON DELETE CASCADE
 //   FOREIGN KEY financial_charges_orcamento_id_fkey: FOREIGN KEY (orcamento_id) REFERENCES orcamentos(id) ON DELETE SET NULL
 //   PRIMARY KEY financial_charges_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY financial_charges_profile_id_fkey: FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE SET NULL
+// Table: financial_master_records
+//   FOREIGN KEY financial_master_records_client_id_fkey: FOREIGN KEY (client_id) REFERENCES profiles(id) ON DELETE SET NULL
+//   PRIMARY KEY financial_master_records_pkey: PRIMARY KEY (id)
 // Table: financial_partners
 //   PRIMARY KEY financial_partners_pkey: PRIMARY KEY (id)
 // Table: google_ads_cache
@@ -4304,6 +4321,10 @@ export const Constants = {
 //     WITH CHECK: true
 // Table: financial_charges
 //   Policy "financial_charges_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: financial_master_records
+//   Policy "financial_master_records_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
 // Table: financial_partners
@@ -4650,6 +4671,44 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION handle_orcamento_financial_master()
+//   CREATE OR REPLACE FUNCTION public.handle_orcamento_financial_master()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   DECLARE
+//     v_master_id UUID;
+//     v_client_name TEXT;
+//     v_parcelas INT := 1;
+//     v_valor_parcela NUMERIC;
+//     i INT;
+//   BEGIN
+//     IF NEW.status IN ('aprovado', 'convertido') AND (OLD.status IS NULL OR OLD.status NOT IN ('aprovado', 'convertido')) THEN
+//       IF NOT EXISTS (SELECT 1 FROM public.financial_master_records WHERE reference_id = NEW.id AND reference_type = 'orcamento') THEN
+//
+//         SELECT name INTO v_client_name FROM public.profiles WHERE id = NEW.cliente_id;
+//         v_client_name := COALESCE(v_client_name, 'Cliente ' || NEW.id);
+//
+//         v_master_id := gen_random_uuid();
+//         INSERT INTO public.financial_master_records (id, description, client_id, client_name, total_amount, status, reference_id, reference_type, type, category)
+//         VALUES (v_master_id, 'Orçamento ' || COALESCE(NEW.numero_orcamento, NEW.id::text), NEW.cliente_id, v_client_name, NEW.total, 'pendente', NEW.id, 'orcamento', 'receivable', 'orcamento');
+//
+//         IF NOT EXISTS (SELECT 1 FROM public.financial_charges WHERE orcamento_id = NEW.id) THEN
+//           v_valor_parcela := NEW.total / v_parcelas;
+//           FOR i IN 1..v_parcelas LOOP
+//             INSERT INTO public.financial_charges (master_record_id, client_name, amount, due_date, description, status, type, category, orcamento_id, profile_id)
+//             VALUES (v_master_id, v_client_name, v_valor_parcela, NEW.data_emissao::date + ((i-1) || ' month')::interval, 'Parcela ' || i || '/' || v_parcelas, 'pendente', 'receivable', 'orcamento', NEW.id, NEW.cliente_id);
+//           END LOOP;
+//         ELSE
+//           UPDATE public.financial_charges SET master_record_id = v_master_id WHERE orcamento_id = NEW.id;
+//         END IF;
+//       END IF;
+//     END IF;
+//     RETURN NEW;
+//   END;
+//   $function$
+//
 // FUNCTION handle_pedido_financeiro_estoque()
 //   CREATE OR REPLACE FUNCTION public.handle_pedido_financeiro_estoque()
 //    RETURNS trigger
@@ -4972,6 +5031,7 @@ export const Constants = {
 // Table: orcamentos
 //   trg_generate_numero_orcamento: CREATE TRIGGER trg_generate_numero_orcamento BEFORE INSERT ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION generate_numero_orcamento()
 //   trg_orcamento_financeiro: CREATE TRIGGER trg_orcamento_financeiro AFTER UPDATE ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION handle_orcamento_financeiro()
+//   trg_orcamento_financial_master: CREATE TRIGGER trg_orcamento_financial_master AFTER UPDATE ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION handle_orcamento_financial_master()
 // Table: orders
 //   trigger_notify_order_payment: CREATE TRIGGER trigger_notify_order_payment AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION notify_order_payment()
 // Table: pedidos

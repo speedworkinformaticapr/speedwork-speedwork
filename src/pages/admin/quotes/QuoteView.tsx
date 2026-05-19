@@ -291,7 +291,10 @@ export default function QuoteView() {
                     <td className="py-3 text-center">
                       {it.tipo_item === 'servico'
                         ? `${decimalToTime(it.tempo_estimado)} ${it.quantidade > 1 ? `(x${it.quantidade})` : ''}`
-                        : it.quantidade}
+                        : Number(it.quantidade).toLocaleString('pt-BR', {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 2,
+                          })}
                     </td>
                     <td className="py-3 text-right">
                       R${' '}
