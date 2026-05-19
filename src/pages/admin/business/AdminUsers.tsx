@@ -38,6 +38,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/use-auth'
@@ -110,6 +111,8 @@ export default function AdminUsers() {
     observacoes: '',
     photo_url: '',
     is_author: false,
+    is_client: false,
+    is_supplier: false,
   })
 
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -214,6 +217,8 @@ export default function AdminUsers() {
         observacoes: u.observacoes || '',
         photo_url: u.photo_url || '',
         is_author: u.is_author || false,
+        is_client: u.is_client || false,
+        is_supplier: u.is_supplier || false,
       })
     } else {
       setEditingUser(null)
@@ -238,16 +243,18 @@ export default function AdminUsers() {
         observacoes: '',
         photo_url: '',
         is_author: false,
+        is_client: false,
+        is_supplier: false,
       })
     }
     setIsModalOpen(true)
   }
 
   const handleSave = async () => {
-    if (!formData.email)
+    if (!formData.name)
       return toast({
         title: 'Atenção',
-        description: 'O email é obrigatório.',
+        description: 'O nome é obrigatório.',
         variant: 'destructive',
       })
 
@@ -274,6 +281,8 @@ export default function AdminUsers() {
         observacoes: formData.observacoes || null,
         is_athlete: isAthlete,
         is_author: formData.is_author,
+        is_client: formData.is_client,
+        is_supplier: formData.is_supplier,
         autoriza_whatsapp: formData.autoriza_whatsapp,
         telefone_whatsapp: formData.telefone_whatsapp,
         photo_url: formData.photo_url || null,
@@ -293,7 +302,7 @@ export default function AdminUsers() {
         if (error) throw error
         toast({
           title: 'Sucesso',
-          description: 'Usuário criado e convite enviado com sucesso.',
+          description: 'Usuário salvo com sucesso.',
         })
       }
 
@@ -617,355 +626,401 @@ export default function AdminUsers() {
       </Card>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
-              {viewOnly ? 'Detalhes do Usuário' : editingUser ? 'Editar Usuário' : 'Novo Usuário'}
+              {viewOnly
+                ? 'Detalhes do Usuário/Cliente'
+                : editingUser
+                  ? 'Editar Usuário/Cliente'
+                  : 'Novo Usuário/Cliente'}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto px-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2 col-span-1 sm:col-span-2 bg-muted/30 p-4 rounded-md border border-dashed flex flex-col items-center justify-center">
-                <Label className="text-muted-foreground uppercase text-xs font-bold tracking-wider">
-                  Nº Registro Federativo
-                </Label>
-                <div className="text-2xl font-bold text-primary mt-1">
-                  {formatRegistro(formData.numero_registro_federativo)}
-                </div>
-              </div>
 
-              <div className="space-y-2 col-span-1 sm:col-span-2 flex flex-col items-center justify-center p-4 border rounded-md bg-muted/10">
-                <Label className="mb-2">Foto de Perfil / Scouting</Label>
-                <div className="flex flex-col items-center gap-4 w-full">
-                  {formData.photo_url ? (
-                    <div className="relative group rounded-md overflow-hidden border bg-background">
-                      <img
-                        src={formData.photo_url}
-                        alt="Profile"
-                        className="w-32 h-32 object-cover object-center"
+          <Tabs defaultValue="geral" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-4 h-auto p-1">
+              <TabsTrigger value="geral">Geral</TabsTrigger>
+              <TabsTrigger value="documentos">Documentos</TabsTrigger>
+              <TabsTrigger value="contato">Contato</TabsTrigger>
+              <TabsTrigger value="observacoes">Observações</TabsTrigger>
+            </TabsList>
+
+            <div className="py-2 max-h-[60vh] overflow-y-auto px-1">
+              <TabsContent value="geral" className="space-y-4 mt-0">
+                <div className="space-y-2 flex flex-col items-center justify-center p-4 border rounded-md bg-muted/10">
+                  <Label className="mb-2">Foto de Perfil / Scouting</Label>
+                  <div className="flex flex-col items-center gap-4 w-full">
+                    {formData.photo_url ? (
+                      <div className="relative group rounded-md overflow-hidden border bg-background">
+                        <img
+                          src={formData.photo_url}
+                          alt="Profile"
+                          className="w-32 h-32 object-cover object-center"
+                        />
+                        {!viewOnly && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-white hover:text-white hover:bg-destructive"
+                              onClick={() => setFormData({ ...formData, photo_url: '' })}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="w-32 h-32 rounded-md border-2 border-dashed flex items-center justify-center bg-muted/30">
+                        <span className="text-xs text-muted-foreground text-center px-2">
+                          Sem foto
+                        </span>
+                      </div>
+                    )}
+                    {!viewOnly && (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          id="photo-upload"
+                          onChange={handleImageUpload}
+                          disabled={uploadingImage}
+                        />
+                        <Label
+                          htmlFor="photo-upload"
+                          className={`cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 ${uploadingImage ? 'opacity-50' : ''}`}
+                        >
+                          {uploadingImage ? 'Enviando...' : 'Carregar Imagem'}
+                        </Label>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Nome Completo</Label>
+                    <Input
+                      disabled={viewOnly}
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input
+                      type="email"
+                      disabled={!!editingUser || viewOnly}
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Permissão de Acesso</Label>
+                    <Select
+                      disabled={viewOnly}
+                      value={formData.role}
+                      onValueChange={(v) => setFormData({ ...formData, role: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(ROLE_MAP).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>
+                            {v}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Categoria de Cadastro</Label>
+                    <Select
+                      disabled={viewOnly}
+                      value={formData.tipo_usuario}
+                      onValueChange={(v) => setFormData({ ...formData, tipo_usuario: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="atleta">Atleta</SelectItem>
+                        <SelectItem value="dirigente">Dirigente</SelectItem>
+                        <SelectItem value="federacao">Federação</SelectItem>
+                        <SelectItem value="cliente">Cliente/Parceiro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Select
+                      disabled={viewOnly}
+                      value={formData.status}
+                      onValueChange={(v) => setFormData({ ...formData, status: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Ativo</SelectItem>
+                        <SelectItem value="inactive">Inativo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Status Financeiro</Label>
+                    <Select
+                      disabled={viewOnly}
+                      value={formData.financial_status}
+                      onValueChange={(v) => setFormData({ ...formData, financial_status: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(FIN_MAP).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>
+                            {v}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 mt-4 bg-muted/20 p-4 rounded-md border">
+                  <Label className="font-semibold text-primary">Papéis Complementares</Label>
+                  <div className="flex flex-wrap gap-6 mt-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        disabled={viewOnly}
+                        id="is_client"
+                        checked={formData.is_client}
+                        onCheckedChange={(c) => setFormData({ ...formData, is_client: !!c })}
                       />
-                      {!viewOnly && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-white hover:text-white hover:bg-destructive"
-                            onClick={() => setFormData({ ...formData, photo_url: '' })}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="w-32 h-32 rounded-md border-2 border-dashed flex items-center justify-center bg-muted/30">
-                      <span className="text-xs text-muted-foreground text-center px-2">
-                        Sem foto
-                      </span>
-                    </div>
-                  )}
-                  {!viewOnly && (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        id="photo-upload"
-                        onChange={handleImageUpload}
-                        disabled={uploadingImage}
-                      />
-                      <Label
-                        htmlFor="photo-upload"
-                        className={`cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 ${uploadingImage ? 'opacity-50' : ''}`}
-                      >
-                        {uploadingImage ? 'Enviando...' : 'Carregar Imagem'}
+                      <Label htmlFor="is_client" className="text-sm font-normal">
+                        Cliente (Orçamentos e Pedidos)
                       </Label>
                     </div>
-                  )}
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        disabled={viewOnly}
+                        id="is_supplier"
+                        checked={formData.is_supplier}
+                        onCheckedChange={(c) => setFormData({ ...formData, is_supplier: !!c })}
+                      />
+                      <Label htmlFor="is_supplier" className="text-sm font-normal">
+                        Fornecedor (Parceiro Comercial)
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        disabled={viewOnly}
+                        id="is_author"
+                        checked={formData.is_author}
+                        onCheckedChange={(c) => setFormData({ ...formData, is_author: !!c })}
+                      />
+                      <Label htmlFor="is_author" className="text-sm font-normal">
+                        Autor (Blog e Publicações)
+                      </Label>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </TabsContent>
 
-              <div className="space-y-2">
-                <Label>Nome Completo</Label>
-                <Input
-                  disabled={viewOnly}
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <Input
-                  type="email"
-                  disabled={!!editingUser || viewOnly}
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Permissão de Sistema</Label>
-                <Select
-                  disabled={viewOnly}
-                  value={formData.role}
-                  onValueChange={(v) => setFormData({ ...formData, role: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(ROLE_MAP).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>
-                        {v}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Tipo de Usuário</Label>
-                <Select
-                  disabled={viewOnly}
-                  value={formData.tipo_usuario}
-                  onValueChange={(v) => setFormData({ ...formData, tipo_usuario: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="atleta">Atleta</SelectItem>
-                    <SelectItem value="dirigente">Dirigente</SelectItem>
-                    <SelectItem value="federacao">Federação</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select
-                  disabled={viewOnly}
-                  value={formData.status}
-                  onValueChange={(v) => setFormData({ ...formData, status: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Ativo</SelectItem>
-                    <SelectItem value="inactive">Inativo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Status Financeiro</Label>
-                <Select
-                  disabled={viewOnly}
-                  value={formData.financial_status}
-                  onValueChange={(v) => setFormData({ ...formData, financial_status: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(FIN_MAP).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>
-                        {v}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Data de Nascimento</Label>
-                <Input
-                  disabled={viewOnly}
-                  type="date"
-                  value={formData.birth_date}
-                  onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Gênero</Label>
-                <Select
-                  disabled={viewOnly}
-                  value={formData.genero}
-                  onValueChange={(v) => setFormData({ ...formData, genero: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="masculino">Masculino</SelectItem>
-                    <SelectItem value="feminino">Feminino</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>CPF/CNPJ</Label>
-                <Input
-                  disabled={viewOnly}
-                  value={formData.cpf}
-                  onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
-                  placeholder="000.000.000-00"
-                  maxLength={18}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Documento de Identidade (RG)</Label>
-                <Input
-                  disabled={viewOnly}
-                  value={formData.documento_identidade}
-                  onChange={(e) =>
-                    setFormData({ ...formData, documento_identidade: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Nacionalidade</Label>
-                <Input
-                  disabled={viewOnly}
-                  value={formData.nacionalidade}
-                  onChange={(e) => setFormData({ ...formData, nacionalidade: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Naturalidade</Label>
-                <Input
-                  disabled={viewOnly}
-                  value={formData.naturalidade}
-                  onChange={(e) => setFormData({ ...formData, naturalidade: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Telefone</Label>
-                <Input
-                  disabled={viewOnly}
-                  value={formData.telefone}
-                  onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                />
-              </div>
-
-              <div className="col-span-1 sm:col-span-2 space-y-2">
-                <Label>Endereço Completo</Label>
-                <Input
-                  disabled={viewOnly}
-                  value={formData.endereco_completo}
-                  onChange={(e) => setFormData({ ...formData, endereco_completo: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2 col-span-1 sm:col-span-2">
-                <Label>Telefone WhatsApp</Label>
-                <Input
-                  disabled={viewOnly}
-                  value={formData.telefone_whatsapp}
-                  onChange={(e) => {
-                    let v = e.target.value.replace(/\D/g, '')
-                    if (v.startsWith('55') && v.length > 11) {
-                      v = v.slice(2)
-                    }
-                    v = v.slice(0, 11)
-                    let formatted = ''
-                    if (v.length === 0) formatted = ''
-                    else if (v.length <= 2) formatted = `+55 ${v}`
-                    else if (v.length <= 7) formatted = `+55 ${v.slice(0, 2)} ${v.slice(2)}`
-                    else formatted = `+55 ${v.slice(0, 2)} ${v.slice(2, 7)}-${v.slice(7, 11)}`
-
-                    setFormData({ ...formData, telefone_whatsapp: formatted })
-                  }}
-                  placeholder="+55 11 99999-9999"
-                  maxLength={17}
-                />
-              </div>
-
-              <div className="flex items-center space-x-2 col-span-1 sm:col-span-2 mt-2">
-                <Checkbox
-                  disabled={viewOnly}
-                  id="autoriza_whatsapp"
-                  checked={formData.autoriza_whatsapp}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, autoriza_whatsapp: !!checked })
-                  }
-                />
-                <Label htmlFor="autoriza_whatsapp" className="text-sm font-normal">
-                  Autorizo receber mensagens via WhatsApp
-                </Label>
-              </div>
-
-              <div className="flex items-center space-x-2 col-span-1 sm:col-span-2 mt-2">
-                <Checkbox
-                  disabled={viewOnly}
-                  id="is_author"
-                  checked={formData.is_author}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_author: !!checked })}
-                />
-                <Label htmlFor="is_author" className="text-sm font-normal">
-                  Este usuário é um Autor (pode escrever e ser vinculado a posts no Blog)
-                </Label>
-              </div>
-
-              <div className="col-span-1 sm:col-span-2 space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Observações</Label>
-                  {!viewOnly && (
-                    <AIGenerateButton
-                      fieldContext={`Observações internas e profissionais sobre o usuário ${formData.name || ''} do tipo ${formData.tipo_usuario || formData.role}`}
-                      currentText={formData.observacoes}
-                      onGenerate={(text) => setFormData({ ...formData, observacoes: text })}
-                      maxLength={1000}
-                    />
-                  )}
+              <TabsContent value="documentos" className="space-y-4 mt-0">
+                <div className="space-y-2 bg-muted/30 p-4 rounded-md border border-dashed flex flex-col items-center justify-center">
+                  <Label className="text-muted-foreground uppercase text-xs font-bold tracking-wider">
+                    Nº Registro Federativo
+                  </Label>
+                  <div className="text-2xl font-bold text-primary mt-1">
+                    {formatRegistro(formData.numero_registro_federativo)}
+                  </div>
                 </div>
-                <Textarea
-                  disabled={viewOnly}
-                  value={formData.observacoes}
-                  onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-                  rows={3}
-                />
-              </div>
 
-              {editingUser && (
-                <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Data de Cadastro</Label>
+                    <Label>CPF/CNPJ</Label>
                     <Input
-                      disabled
-                      value={
-                        editingUser.created_at
-                          ? new Date(editingUser.created_at).toLocaleDateString('pt-BR')
-                          : '-'
+                      disabled={viewOnly}
+                      value={formData.cpf}
+                      onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
+                      placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                      maxLength={18}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Documento de Identidade (RG)</Label>
+                    <Input
+                      disabled={viewOnly}
+                      value={formData.documento_identidade}
+                      onChange={(e) =>
+                        setFormData({ ...formData, documento_identidade: e.target.value })
                       }
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>ID do Sistema</Label>
+                    <Label>Data de Nascimento</Label>
                     <Input
-                      disabled
-                      value={editingUser.id || '-'}
-                      className="font-mono text-xs text-muted-foreground"
+                      disabled={viewOnly}
+                      type="date"
+                      value={formData.birth_date}
+                      onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
                     />
                   </div>
-                </>
-              )}
+                  <div className="space-y-2">
+                    <Label>Gênero</Label>
+                    <Select
+                      disabled={viewOnly}
+                      value={formData.genero}
+                      onValueChange={(v) => setFormData({ ...formData, genero: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="masculino">Masculino</SelectItem>
+                        <SelectItem value="feminino">Feminino</SelectItem>
+                        <SelectItem value="outro">Outro/Empresa</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Nacionalidade</Label>
+                    <Input
+                      disabled={viewOnly}
+                      value={formData.nacionalidade}
+                      onChange={(e) => setFormData({ ...formData, nacionalidade: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Naturalidade</Label>
+                    <Input
+                      disabled={viewOnly}
+                      value={formData.naturalidade}
+                      onChange={(e) => setFormData({ ...formData, naturalidade: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="contato" className="space-y-4 mt-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Telefone Principal</Label>
+                    <Input
+                      disabled={viewOnly}
+                      value={formData.telefone}
+                      onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Telefone WhatsApp</Label>
+                    <Input
+                      disabled={viewOnly}
+                      value={formData.telefone_whatsapp}
+                      onChange={(e) => {
+                        let v = e.target.value.replace(/\D/g, '')
+                        if (v.startsWith('55') && v.length > 11) {
+                          v = v.slice(2)
+                        }
+                        v = v.slice(0, 11)
+                        let formatted = ''
+                        if (v.length === 0) formatted = ''
+                        else if (v.length <= 2) formatted = `+55 ${v}`
+                        else if (v.length <= 7) formatted = `+55 ${v.slice(0, 2)} ${v.slice(2)}`
+                        else formatted = `+55 ${v.slice(0, 2)} ${v.slice(2, 7)}-${v.slice(7, 11)}`
+
+                        setFormData({ ...formData, telefone_whatsapp: formatted })
+                      }}
+                      placeholder="+55 11 99999-9999"
+                      maxLength={17}
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2 col-span-1 sm:col-span-2">
+                    <Checkbox
+                      disabled={viewOnly}
+                      id="autoriza_whatsapp"
+                      checked={formData.autoriza_whatsapp}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, autoriza_whatsapp: !!checked })
+                      }
+                    />
+                    <Label htmlFor="autoriza_whatsapp" className="text-sm font-normal">
+                      Autorizo receber comunicações oficiais via WhatsApp
+                    </Label>
+                  </div>
+                  <div className="col-span-1 sm:col-span-2 space-y-2">
+                    <Label>Endereço Completo</Label>
+                    <Input
+                      disabled={viewOnly}
+                      value={formData.endereco_completo}
+                      onChange={(e) =>
+                        setFormData({ ...formData, endereco_completo: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="observacoes" className="space-y-4 mt-0">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Observações Internas</Label>
+                    {!viewOnly && (
+                      <AIGenerateButton
+                        fieldContext={`Observações internas e profissionais sobre o usuário ${formData.name || ''} do tipo ${formData.tipo_usuario || formData.role}`}
+                        currentText={formData.observacoes}
+                        onGenerate={(text) => setFormData({ ...formData, observacoes: text })}
+                        maxLength={1000}
+                      />
+                    )}
+                  </div>
+                  <Textarea
+                    disabled={viewOnly}
+                    value={formData.observacoes}
+                    onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
+                    rows={6}
+                    placeholder="Adicione notas, preferências ou detalhes importantes sobre o cadastro..."
+                  />
+                </div>
+
+                {editingUser && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 p-4 bg-muted/10 rounded-md border">
+                    <div className="space-y-2">
+                      <Label>Data de Cadastro</Label>
+                      <Input
+                        disabled
+                        value={
+                          editingUser.created_at
+                            ? new Date(editingUser.created_at).toLocaleDateString('pt-BR')
+                            : '-'
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>ID do Sistema</Label>
+                      <Input
+                        disabled
+                        value={editingUser.id || '-'}
+                        className="font-mono text-xs text-muted-foreground"
+                      />
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
             </div>
-          </div>
-          <DialogFooter>
+          </Tabs>
+          <DialogFooter className="mt-4 pt-4 border-t">
             {viewOnly ? (
               <Button variant="outline" onClick={() => setIsModalOpen(false)}>
                 Fechar
               </Button>
             ) : (
-              <Button onClick={handleSave} disabled={isSaving}>
-                {isSaving ? 'Salvando...' : 'Salvar'}
+              <Button onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto">
+                {isSaving ? 'Salvando...' : 'Salvar Alterações'}
               </Button>
             )}
           </DialogFooter>

@@ -67,8 +67,10 @@ export default function QuoteForm() {
       .order('codigo_estrutural')
       .then((res) => setPlanoContas(res.data || []))
     supabase
-      .from('clientes')
-      .select('id, nome')
+      .from('profiles')
+      .select('id, name')
+      .eq('is_client', true)
+      .order('name')
       .then((res) => setClients(res.data || []))
     supabase
       .from('products')
@@ -213,17 +215,23 @@ export default function QuoteForm() {
 
   const handleQuickAddClient = async () => {
     if (!newClientName) return
-    const { data } = await supabase
-      .from('clientes')
-      .insert([{ nome: newClientName }])
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert([{ name: newClientName, is_client: true }])
       .select()
       .single()
-    if (data) {
+    if (data && !error) {
       setClients([...clients, data])
       setData({ ...data, cliente_id: data.id })
       setNewClientOpen(false)
       setNewClientName('')
       toast({ title: 'Cliente adicionado' })
+    } else {
+      toast({
+        title: 'Erro ao adicionar cliente',
+        variant: 'destructive',
+        description: error?.message,
+      })
     }
   }
 
@@ -310,7 +318,7 @@ export default function QuoteForm() {
                     <SelectContent>
                       {clients.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
-                          {c.nome || 'Sem Nome'}
+                          {c.name || 'Sem Nome'}
                         </SelectItem>
                       ))}
                     </SelectContent>
