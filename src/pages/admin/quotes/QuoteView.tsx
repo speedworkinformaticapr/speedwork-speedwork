@@ -22,7 +22,7 @@ export default function QuoteView() {
   const load = async () => {
     const { data: q } = await supabase
       .from('orcamentos')
-      .select('*, clientes(nome, email)')
+      .select('*, profiles(name, email)')
       .eq('id', id)
       .single()
 
@@ -217,8 +217,8 @@ export default function QuoteView() {
         <CardContent className="grid gap-6 md:grid-cols-3">
           <div>
             <p className="text-muted-foreground text-sm">Cliente</p>
-            <p className="font-medium text-base">{quote.clientes?.nome || 'Não informado'}</p>
-            <p className="text-sm text-muted-foreground">{quote.clientes?.email}</p>
+            <p className="font-medium text-base">{quote.profiles?.name || 'Não informado'}</p>
+            <p className="text-sm text-muted-foreground">{quote.profiles?.email}</p>
           </div>
           <div>
             <p className="text-muted-foreground text-sm">Data de Emissão</p>

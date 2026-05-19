@@ -86,7 +86,7 @@ export default function AdminQuotes() {
     try {
       const { data, error: err } = await supabase
         .from('orcamentos')
-        .select('*, clientes(nome)')
+        .select('*, profiles(name)')
         .order('created_at', { ascending: false })
       if (err) throw err
       setQuotes(data || [])
@@ -100,7 +100,7 @@ export default function AdminQuotes() {
   const filtered = quotes.filter(
     (q) =>
       q.numero_orcamento?.toLowerCase().includes(search.toLowerCase()) ||
-      q.clientes?.nome?.toLowerCase().includes(search.toLowerCase()),
+      q.profiles?.name?.toLowerCase().includes(search.toLowerCase()),
   )
 
   const handleDelete = async (id: string) => {
@@ -272,7 +272,7 @@ export default function AdminQuotes() {
                       className="border-b last:border-0 hover:bg-muted/50 transition-colors"
                     >
                       <td className="py-3 font-medium">{q.numero_orcamento}</td>
-                      <td className="py-3">{q.clientes?.nome || 'N/A'}</td>
+                      <td className="py-3">{q.profiles?.name || 'N/A'}</td>
                       <td className="py-3">
                         {new Date(q.data_emissao).toLocaleDateString('pt-BR')}
                       </td>
