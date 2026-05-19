@@ -42,13 +42,10 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$;
+$$;
 
-DO $$
-BEGIN
-  DROP TRIGGER IF EXISTS trg_pedido_financeiro_estoque ON public.pedidos;
-  CREATE TRIGGER trg_pedido_financeiro_estoque AFTER UPDATE ON public.pedidos FOR EACH ROW EXECUTE FUNCTION public.handle_pedido_financeiro_estoque();
-END $$;
+DROP TRIGGER IF EXISTS trg_pedido_financeiro_estoque ON public.pedidos;
+CREATE TRIGGER trg_pedido_financeiro_estoque AFTER UPDATE ON public.pedidos FOR EACH ROW EXECUTE FUNCTION public.handle_pedido_financeiro_estoque();
 
 DO $$
 DECLARE
