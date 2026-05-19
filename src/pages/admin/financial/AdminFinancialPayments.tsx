@@ -44,6 +44,7 @@ import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { cn, formatCurrencyInput, parseCurrencyInput } from '@/lib/utils'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Edit2,
   Plus,
@@ -57,13 +58,25 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  ChevronRight as ChevronRightIcon,
   Printer,
   Phone,
 } from 'lucide-react'
 import { PaymentModal } from '@/components/financial/PaymentModal'
 import { generateTermsPDF } from '@/lib/pdf-utils'
+
+type MasterRecord = {
+  id: string
+  description: string
+  client_id: string | null
+  client_name: string
+  total_amount: number
+  status: string
+  type: string
+  category: string
+  reference_id: string | null
+  reference_type: string | null
+  created_at: string
+}
 
 type Charge = {
   id: string
@@ -79,7 +92,7 @@ type Charge = {
   athlete_id?: string | null
   club_id?: string | null
   orcamento_id?: string | null
-  orcamentos?: { numero_orcamento: string; status: string } | null
+  master_record_id?: string | null
   profiles?: { phone: string | null; telefone_whatsapp: string | null } | null
   athletes?: { phone: string | null } | null
   asaas_id?: string | null
@@ -89,47 +102,41 @@ type Charge = {
   parcela_total?: number | null
 }
 
-type ChargeGroup = {
-  id: string
-  isGroup: boolean
-  numero_orcamento?: string
-  client_name: string
-  description: string
-  total_amount: number
-  total_paid: number
-  balance_due: number
-  charges: Charge[]
-  status: string
-  due_date: string
-}
-
 export default function AdminFinancialPayments() {
-  const [charges, setCharges] = useState<Charge[]>([])
-  const [filteredCharges, setFilteredCharges] = useState<Charge[]>([])
+  const [masters, setMasters] = useState<MasterRecord[]>([])
+  const [filteredMasters, setFilteredMasters] = useState<MasterRecord[]>([])
+  const [detailCharges, setDetailCharges] = useState<Charge[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [selectedMasterId, setSelectedMasterId] = useState<string | null>(null)
+
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingChargeId, setEditingChargeId] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
   const [activeFilter, setActiveFilter] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
   const [selectedCharge, setSelectedCharge] = useState<Charge | null>(null)
-  const [itemToDelete, setItemToDelete] = useState<string | null>(null)
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
-  const [detailLoading, setDetailLoading] = useState(false)
+  const [itemToDelete, setItemToDelete] = useState<{
+    id: string
+    type: 'master' | 'charge'
+  } | null>(null)
 
   const navigate = useNavigate()
+  const { toast } = useToast()
+  const { data: systemData } = useSystemData()
 
+  const itemsPerPage = systemData?.records_per_page || 50
+  const [page, setPage] = useState(1)
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(
     null,
   )
-  const [page, setPage] = useState(1)
-
-  const { data: systemData } = useSystemData()
-  const itemsPerPage = systemData?.records_per_page || 50
 
   const [planoContas, setPlanoContas] = useState<any[]>([])
   const [profiles, setProfiles] = useState<any[]>([])
+
+  const [summary, setSummary] = useState({ expected: 0, realized: 0, overdue: 0 })
 
   const [formData, setFormData] = useState({
     description: '',
@@ -154,30 +161,28 @@ export default function AdminFinancialPayments() {
   const [parcelasGeradas, setParcelasGeradas] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState('geral')
 
-  // Quick Add States
   const [newContaOpen, setNewContaOpen] = useState(false)
   const [newConta, setNewConta] = useState({ nome: '', codigo_estrutural: '', natureza: 'receita' })
   const [newProfileOpen, setNewProfileOpen] = useState(false)
   const [newProfileName, setNewProfileName] = useState('')
 
-  const { toast } = useToast()
+  useEffect(() => {
+    loadDependencies()
+    fetchMasterRecords()
+    calculateGlobalSummary()
+  }, [])
 
-  const summary = {
-    expected: filteredCharges
-      .filter((c) => c.type === 'receivable')
-      .reduce((acc, c) => acc + Number(c.amount), 0),
-    realized: filteredCharges
-      .filter((c) => c.type === 'receivable' && (c.status === 'pago' || c.status === 'recebido'))
-      .reduce((acc, c) => acc + Number(c.amount), 0),
-    overdue: filteredCharges
-      .filter(
-        (c) =>
-          c.type === 'receivable' &&
-          (c.status === 'atrasado' ||
-            (c.status === 'pendente' && new Date(c.due_date) < new Date())),
-      )
-      .reduce((acc, c) => acc + Number(c.amount), 0),
-  }
+  useEffect(() => {
+    applyFilters(masters, activeFilter, searchTerm)
+  }, [activeFilter, searchTerm, masters])
+
+  useEffect(() => {
+    if (selectedMasterId) {
+      fetchDetails(selectedMasterId)
+    } else {
+      setDetailCharges([])
+    }
+  }, [selectedMasterId])
 
   const loadDependencies = async () => {
     const { data: contas } = await supabase
@@ -193,30 +198,21 @@ export default function AdminFinancialPayments() {
     if (profs) setProfiles(profs)
   }
 
-  const fetchCharges = async () => {
+  const fetchMasterRecords = async () => {
     setIsLoading(true)
     try {
       const { data, error } = await supabase
-        .from('financial_charges' as any)
-        .select(`
-          *,
-          orcamentos(numero_orcamento, status),
-          profiles!financial_charges_profile_id_fkey(phone, telefone_whatsapp),
-          athletes!financial_charges_athlete_id_fkey(phone)
-        `)
-        .order('due_date', { ascending: false })
+        .from('financial_master_records')
+        .select('*')
+        .order('created_at', { ascending: false })
 
       if (error) throw error
+      const records = (data as MasterRecord[]) || []
+      setMasters(records)
 
-      // Only show financial charges from quotes that are already approved or converted
-      const validCharges = (data || []).filter((c: any) => {
-        if (!c.orcamento_id) return true
-        const qStatus = c.orcamentos?.status
-        return qStatus === 'aprovado' || qStatus === 'convertido'
-      })
-
-      setCharges(validCharges)
-      applyFilters(validCharges, activeFilter, searchTerm)
+      if (!selectedMasterId && records.length > 0) {
+        setSelectedMasterId(records[0].id)
+      }
     } catch (err: any) {
       console.error(err)
     } finally {
@@ -224,89 +220,90 @@ export default function AdminFinancialPayments() {
     }
   }
 
-  useEffect(() => {
-    loadDependencies()
-    fetchCharges()
-  }, [])
+  const calculateGlobalSummary = async () => {
+    const { data } = await supabase
+      .from('financial_charges')
+      .select('amount, status, type, due_date')
+    if (!data) return
 
-  useEffect(() => {
-    applyFilters(charges, activeFilter, searchTerm)
-  }, [activeFilter, searchTerm, charges])
-
-  const groupedFilteredCharges = useMemo(() => {
-    const groupsMap = new Map<string, ChargeGroup>()
-
-    filteredCharges.forEach((c) => {
-      const groupId = c.orcamento_id || c.id
-      if (!groupsMap.has(groupId)) {
-        groupsMap.set(groupId, {
-          id: groupId,
-          isGroup: !!c.orcamento_id,
-          numero_orcamento: c.orcamentos?.numero_orcamento,
-          client_name: c.client_name || '-',
-          description: c.orcamento_id
-            ? `Orçamento ${c.orcamentos?.numero_orcamento || ''}`
-            : c.description,
-          total_amount: 0,
-          total_paid: 0,
-          balance_due: 0,
-          charges: [],
-          status: c.status,
-          due_date: c.due_date,
-        })
-      }
-      const g = groupsMap.get(groupId)!
-      g.charges.push(c)
-      g.total_amount += Number(c.amount)
-      if (c.status === 'pago' || c.status === 'recebido') {
-        g.total_paid += Number(c.amount)
-      }
-    })
-
-    const groups = Array.from(groupsMap.values())
-    groups.forEach((g) => {
-      g.balance_due = g.total_amount - g.total_paid
-      if (g.isGroup) {
-        if (g.balance_due <= 0) g.status = 'pago'
-        else if (
-          g.charges.some(
-            (c) =>
-              c.status === 'atrasado' ||
-              (new Date(c.due_date) < new Date() && c.status !== 'pago' && c.status !== 'recebido'),
-          )
-        ) {
-          g.status = 'atrasado'
-        } else {
-          g.status = 'pendente'
+    const stats = { expected: 0, realized: 0, overdue: 0 }
+    data.forEach((c) => {
+      if (c.type === 'receivable') {
+        stats.expected += Number(c.amount)
+        if (c.status === 'pago' || c.status === 'recebido') {
+          stats.realized += Number(c.amount)
         }
-
-        g.charges.sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
-
-        const pending = g.charges.filter((c) => c.status !== 'pago' && c.status !== 'recebido')
-        if (pending.length > 0) g.due_date = pending[0].due_date
-        else g.due_date = g.charges[g.charges.length - 1].due_date
+        if (
+          c.status === 'atrasado' ||
+          (c.status === 'pendente' && new Date(c.due_date) < new Date())
+        ) {
+          stats.overdue += Number(c.amount)
+        }
       }
     })
+    setSummary(stats)
+  }
 
-    return groups.sort((a, b) => {
-      if (!sortConfig) return new Date(b.due_date).getTime() - new Date(a.due_date).getTime()
-      const aVal = a[sortConfig.key as keyof ChargeGroup] || ''
-      const bVal = b[sortConfig.key as keyof ChargeGroup] || ''
+  const fetchDetails = async (masterId: string) => {
+    setDetailLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('financial_charges' as any)
+        .select(`
+          *,
+          profiles!financial_charges_profile_id_fkey(phone, telefone_whatsapp),
+          athletes!financial_charges_athlete_id_fkey(phone)
+        `)
+        .eq('master_record_id', masterId)
+        .order('due_date', { ascending: true })
+
+      if (error) throw error
+      setDetailCharges(data || [])
+    } catch (err: any) {
+      console.error(err)
+    } finally {
+      setDetailLoading(false)
+    }
+  }
+
+  const applyFilters = (data: MasterRecord[], filter: string, search: string) => {
+    let result = data
+
+    if (filter === 'receivable' || filter === 'payable') {
+      result = result.filter((c) => c.type === filter)
+    } else if (filter !== 'all') {
+      result = result.filter(
+        (c) =>
+          c.category === filter || (filter === 'orcamento' && c.reference_type === 'orcamento'),
+      )
+    }
+
+    if (search) {
+      const lower = search.toLowerCase()
+      result = result.filter(
+        (c) =>
+          c.description.toLowerCase().includes(lower) ||
+          c.client_name.toLowerCase().includes(lower),
+      )
+    }
+
+    setFilteredMasters(result)
+    setPage(1)
+  }
+
+  const sortedMasters = useMemo(() => {
+    if (!sortConfig) return filteredMasters
+    return [...filteredMasters].sort((a, b) => {
+      const aVal = a[sortConfig.key as keyof MasterRecord] || ''
+      const bVal = b[sortConfig.key as keyof MasterRecord] || ''
       if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1
       if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1
       return 0
     })
-  }, [filteredCharges, sortConfig])
+  }, [filteredMasters, sortConfig])
 
-  const paginatedGroups = groupedFilteredCharges.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage,
-  )
-  const totalPages = Math.ceil(groupedFilteredCharges.length / itemsPerPage)
-
-  useEffect(() => {
-    setPage(1)
-  }, [activeFilter, searchTerm, itemsPerPage])
+  const paginatedMasters = sortedMasters.slice((page - 1) * itemsPerPage, page * itemsPerPage)
+  const totalPages = Math.ceil(sortedMasters.length / itemsPerPage)
 
   const handleSort = (key: string) => {
     setSortConfig((current) => ({
@@ -326,68 +323,9 @@ export default function AdminFinancialPayments() {
     </TableHead>
   )
 
-  const applyFilters = (data: Charge[], filter: string, search: string) => {
-    let result = data
-
-    if (filter === 'receivable') {
-      result = result.filter((c) => c.type === 'receivable')
-    } else if (filter === 'payable') {
-      result = result.filter((c) => c.type === 'payable')
-    } else if (filter === 'club') {
-      result = result.filter(
-        (c) =>
-          c.category === 'club' ||
-          c.club_id != null ||
-          c.description?.toLowerCase().includes('clube'),
-      )
-    } else if (filter === 'athlete') {
-      result = result.filter(
-        (c) =>
-          c.category === 'athlete' ||
-          c.athlete_id != null ||
-          c.description?.toLowerCase().includes('atleta'),
-      )
-    } else if (filter === 'ecommerce') {
-      result = result.filter((c) => c.category === 'ecommerce')
-    } else if (filter === 'affiliation') {
-      result = result.filter(
-        (c) => c.category === 'filiação' || c.description?.toLowerCase().includes('anuidade'),
-      )
-    } else if (filter !== 'all') {
-      result = result.filter((c) => c.category === filter)
-    }
-
-    if (search) {
-      const lower = search.toLowerCase()
-      result = result.filter(
-        (c) =>
-          c.description?.toLowerCase().includes(lower) ||
-          c.client_name?.toLowerCase().includes(lower) ||
-          c.document?.includes(lower) ||
-          c.category?.toLowerCase().includes(lower) ||
-          c.orcamentos?.numero_orcamento?.toLowerCase().includes(lower),
-      )
-    }
-
-    setFilteredCharges(result)
-  }
-
-  const selectedGroup = useMemo(() => {
-    if (!selectedGroupId) return null
-    return groupedFilteredCharges.find((g) => g.id === selectedGroupId) || null
-  }, [selectedGroupId, groupedFilteredCharges])
-
-  const handleSelectGroup = (id: string) => {
-    if (id === selectedGroupId) return
-    setDetailLoading(true)
-    setSelectedGroupId(id)
-    // Small delay to simulate fetching installments and satisfy visual feedback requirement
-    setTimeout(() => setDetailLoading(false), 300)
-  }
-
   const handleOpenModal = (charge?: Charge) => {
     if (charge) {
-      setEditingId(charge.id)
+      setEditingChargeId(charge.id)
       setFormData({
         description: charge.description || '',
         type: charge.type || 'receivable',
@@ -404,7 +342,7 @@ export default function AdminFinancialPayments() {
       setParcelasGeradas([])
       setActiveTab('geral')
     } else {
-      setEditingId(null)
+      setEditingChargeId(null)
       setFormData({
         description: '',
         type: 'receivable',
@@ -418,11 +356,7 @@ export default function AdminFinancialPayments() {
         conta_id: 'none',
         profile_id: 'none',
       })
-      setCondicoes({
-        parcelas: 1,
-        diaVencimento: new Date().getDate(),
-        primeiraHoje: false,
-      })
+      setCondicoes({ parcelas: 1, diaVencimento: new Date().getDate(), primeiraHoje: false })
       setParcelasGeradas([])
       setActiveTab('geral')
     }
@@ -447,14 +381,10 @@ export default function AdminFinancialPayments() {
 
     for (let i = 0; i < qtd; i++) {
       let dataVenc = new Date(hoje.getFullYear(), hoje.getMonth() + i, condicoes.diaVencimento)
-
-      if (i === 0 && condicoes.primeiraHoje) {
-        dataVenc = new Date()
-      } else if (i === 0 && !condicoes.primeiraHoje) {
-        if (hoje.getDate() >= condicoes.diaVencimento) {
-          dataVenc = new Date(hoje.getFullYear(), hoje.getMonth() + 1, condicoes.diaVencimento)
-        }
-      } else {
+      if (i === 0 && condicoes.primeiraHoje) dataVenc = hoje
+      else if (i === 0 && !condicoes.primeiraHoje && hoje.getDate() >= condicoes.diaVencimento) {
+        dataVenc = new Date(hoje.getFullYear(), hoje.getMonth() + 1, condicoes.diaVencimento)
+      } else if (i > 0) {
         const firstDate = new Date(novasParcelas[0].due_date + 'T00:00:00')
         dataVenc = new Date(
           firstDate.getFullYear(),
@@ -477,19 +407,26 @@ export default function AdminFinancialPayments() {
     toast({ title: `${qtd} parcelas geradas com sucesso!` })
   }
 
-  const handleDelete = (id: string) => {
-    setItemToDelete(id)
+  const handleDelete = (id: string, type: 'master' | 'charge') => {
+    setItemToDelete({ id, type })
   }
 
   const confirmDelete = async () => {
     if (!itemToDelete) return
     try {
-      await supabase
-        .from('financial_charges' as any)
-        .delete()
-        .eq('id', itemToDelete)
+      if (itemToDelete.type === 'master') {
+        await supabase.from('financial_master_records').delete().eq('id', itemToDelete.id)
+        if (selectedMasterId === itemToDelete.id) setSelectedMasterId(null)
+      } else {
+        await supabase
+          .from('financial_charges' as any)
+          .delete()
+          .eq('id', itemToDelete.id)
+      }
       toast({ title: 'Excluído com sucesso' })
-      fetchCharges()
+      fetchMasterRecords()
+      if (itemToDelete.type === 'charge' && selectedMasterId) fetchDetails(selectedMasterId)
+      calculateGlobalSummary()
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' })
     } finally {
@@ -510,7 +447,7 @@ export default function AdminFinancialPayments() {
         profile_id: formData.profile_id === 'none' ? null : formData.profile_id,
       }
 
-      if (editingId) {
+      if (editingChargeId) {
         const payload = {
           ...basePayload,
           description: formData.description,
@@ -519,52 +456,62 @@ export default function AdminFinancialPayments() {
           payment_date: formData.payment_date || null,
           status: formData.status,
         }
-
-        const originalCharge = charges.find((c) => c.id === editingId)
-        if (
-          originalCharge?.asaas_id &&
-          payload.status === 'pago' &&
-          originalCharge.status !== 'pago'
-        ) {
-          await supabase.functions
-            .invoke('webhook-asaas-manual', {
-              body: { asaas_id: originalCharge.asaas_id },
-            })
-            .catch(() => {})
-        }
-
         await supabase
           .from('financial_charges' as any)
           .update(payload)
-          .eq('id', editingId)
-        toast({ title: 'Atualizado com sucesso' })
+          .eq('id', editingChargeId)
+        toast({ title: 'Parcela atualizada com sucesso' })
+        if (selectedMasterId) fetchDetails(selectedMasterId)
       } else {
-        if (parcelasGeradas.length > 0) {
-          const payloads = parcelasGeradas.map((p) => ({
-            ...basePayload,
-            description: p.description,
-            amount: parseFloat(p.amount),
-            due_date: p.due_date,
-            status: p.status,
-            payment_date: p.payment_date || null,
-          }))
-          await supabase.from('financial_charges' as any).insert(payloads)
-          toast({ title: `${payloads.length} lançamentos criados` })
-        } else {
-          const payload = {
-            ...basePayload,
-            description: formData.description,
-            amount: parseFloat(formData.amount),
-            due_date: formData.due_date,
-            payment_date: formData.payment_date || null,
-            status: formData.status,
-          }
-          await supabase.from('financial_charges' as any).insert([payload])
-          toast({ title: 'Lançamento criado' })
+        // Create Master Record first
+        const masterPayload = {
+          description: formData.description,
+          client_id: formData.profile_id !== 'none' ? formData.profile_id : null,
+          client_name: formData.client_name,
+          total_amount: parseFloat(formData.amount),
+          type: formData.type,
+          category: formData.category,
+          status: 'pendente',
         }
+
+        const { data: master, error: masterError } = await supabase
+          .from('financial_master_records')
+          .insert(masterPayload)
+          .select()
+          .single()
+        if (masterError) throw masterError
+
+        const chargesToInsert =
+          parcelasGeradas.length > 0
+            ? parcelasGeradas.map((p) => ({
+                ...basePayload,
+                master_record_id: master.id,
+                description: p.description,
+                amount: parseFloat(p.amount),
+                due_date: p.due_date,
+                status: p.status,
+                payment_date: p.payment_date || null,
+              }))
+            : [
+                {
+                  ...basePayload,
+                  master_record_id: master.id,
+                  description: formData.description,
+                  amount: parseFloat(formData.amount),
+                  due_date: formData.due_date,
+                  status: formData.status,
+                  payment_date: formData.payment_date || null,
+                },
+              ]
+
+        await supabase.from('financial_charges' as any).insert(chargesToInsert)
+        toast({ title: 'Lançamento criado com sucesso' })
+
+        fetchMasterRecords()
+        setSelectedMasterId(master.id)
       }
       setIsModalOpen(false)
-      fetchCharges()
+      calculateGlobalSummary()
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' })
     } finally {
@@ -606,23 +553,20 @@ export default function AdminFinancialPayments() {
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '-'
-    const [y, m, d] = dateStr.split('-')
+    const [y, m, d] = dateStr.split('T')[0].split('-')
     if (y && m && d) return `${d}/${m}/${y}`
     return dateStr
   }
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
-  }
+  const formatCurrency = (val: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
 
-  const getStatusBadge = (status: string, dueDate: string) => {
-    if (status === 'pago' || status === 'recebido') {
+  const getStatusBadge = (status: string, dueDate?: string) => {
+    if (status === 'pago' || status === 'recebido')
       return <Badge className="bg-green-500 hover:bg-green-600">Pago</Badge>
-    }
-    const isLate = new Date(dueDate) < new Date() && status !== 'pago' && status !== 'recebido'
-    if (isLate || status === 'atrasado') {
-      return <Badge variant="destructive">Atrasado</Badge>
-    }
+    const isLate =
+      dueDate && new Date(dueDate) < new Date() && status !== 'pago' && status !== 'recebido'
+    if (isLate || status === 'atrasado') return <Badge variant="destructive">Atrasado</Badge>
     return <Badge className="bg-yellow-500 hover:bg-yellow-600 text-black">Pendente</Badge>
   }
 
@@ -634,22 +578,20 @@ export default function AdminFinancialPayments() {
   const handlePrint = (charge: Charge) => {
     generateTermsPDF(
       'Recibo / Cobrança',
-      `Identificação do Lançamento:\n\nDescrição: ${charge.description}\nCliente/Fornecedor: ${charge.client_name}\nDocumento: ${charge.document || 'N/A'}\n\nValor: R$ ${Number(charge.amount).toFixed(2)}\nVencimento: ${formatDate(charge.due_date)}\nStatus: ${charge.status.toUpperCase()}\n\nReferência ID: ${charge.id}`,
+      `Identificação do Lançamento:\n\nDescrição: ${charge.description}\nCliente: ${charge.client_name}\n\nValor: R$ ${Number(charge.amount).toFixed(2)}\nVencimento: ${formatDate(charge.due_date)}\nStatus: ${charge.status.toUpperCase()}`,
     )
   }
 
   const handleWhatsApp = async (charge: Charge) => {
     const text = encodeURIComponent(
-      `Olá, segue a cobrança referente a ${charge.description || 'sua parcela'}. Valor: R$ ${Number(charge.amount).toFixed(2).replace('.', ',')}. Vencimento: ${formatDate(charge.due_date)}.`,
+      `Olá, segue a cobrança referente a ${charge.description}. Valor: R$ ${Number(charge.amount).toFixed(2).replace('.', ',')}. Vencimento: ${formatDate(charge.due_date)}.`,
     )
     const phone =
       charge.profiles?.telefone_whatsapp || charge.profiles?.phone || charge.athletes?.phone
-
     if (!phone) {
       window.open(`https://wa.me/?text=${text}`, '_blank')
       return
     }
-
     try {
       const { data, error } = await supabase.functions.invoke('enviar_whatsapp', {
         body: {
@@ -657,51 +599,13 @@ export default function AdminFinancialPayments() {
           mensagem_customizada: decodeURIComponent(text),
         },
       })
-
-      if (error || data?.status === 'erro_config' || data?.status === 'falha') {
-        throw new Error(data?.erro || data?.mensagem || 'Erro ao enviar via API')
-      }
+      if (error || data?.status === 'erro_config' || data?.status === 'falha')
+        throw new Error(data?.erro || 'Erro ao enviar via API')
       toast({ title: 'Mensagem enviada com sucesso!' })
     } catch (err: any) {
-      console.error(err)
-      toast({ title: 'Redirecionando para o WhatsApp Web...' })
       window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${text}`, '_blank')
     }
   }
-
-  const SingleChargeActions = ({ charge }: { charge: Charge }) => (
-    <>
-      {charge.status !== 'pago' && charge.type === 'receivable' && (
-        <>
-          <Button
-            variant="ghost"
-            size="icon"
-            title="Pagar via PIX/Cartão"
-            onClick={() => handleOpenPayment(charge)}
-          >
-            <CreditCard className="w-4 h-4 text-emerald-600" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            title="Enviar Cobrança WhatsApp"
-            onClick={() => handleWhatsApp(charge)}
-          >
-            <Phone className="w-4 h-4 text-green-500" />
-          </Button>
-        </>
-      )}
-      <Button variant="ghost" size="icon" title="Imprimir" onClick={() => handlePrint(charge)}>
-        <Printer className="w-4 h-4 text-blue-500" />
-      </Button>
-      <Button variant="ghost" size="icon" onClick={() => handleOpenModal(charge)}>
-        <Edit2 className="w-4 h-4" />
-      </Button>
-      <Button variant="ghost" size="icon" onClick={() => handleDelete(charge.id)}>
-        <Trash2 className="w-4 h-4 text-destructive" />
-      </Button>
-    </>
-  )
 
   return (
     <div className="p-6 space-y-6 max-w-[1200px] mx-auto w-full">
@@ -709,7 +613,9 @@ export default function AdminFinancialPayments() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Fluxo de Caixa</h1>
-            <p className="text-muted-foreground mt-1">Controle de contas a pagar e receber.</p>
+            <p className="text-muted-foreground mt-1">
+              Gerencie registros financeiros com visão Mestre-Detalhe.
+            </p>
           </div>
           <Button onClick={() => handleOpenModal()}>
             <Plus className="w-4 h-4 mr-2" /> Novo Lançamento
@@ -760,137 +666,116 @@ export default function AdminFinancialPayments() {
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar lançamento..."
+              placeholder="Buscar registro mestre..."
               className="pl-9 h-10 border-0 shadow-none focus-visible:ring-0"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant={activeFilter === 'all' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveFilter('all')}
-            >
-              Todos
-            </Button>
-            <Button
-              variant={activeFilter === 'receivable' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveFilter('receivable')}
-            >
-              Receber
-            </Button>
-            <Button
-              variant={activeFilter === 'payable' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveFilter('payable')}
-            >
-              Pagar
-            </Button>
-            <Button
-              variant={activeFilter === 'orcamento' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveFilter('orcamento')}
-            >
-              Orçamentos
-            </Button>
-            <Button
-              variant={activeFilter === 'club' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveFilter('club')}
-            >
-              Clube
-            </Button>
-            <Button
-              variant={activeFilter === 'athlete' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveFilter('athlete')}
-            >
-              Atleta
-            </Button>
-            <Button
-              variant={activeFilter === 'affiliation' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveFilter('affiliation')}
-            >
-              Filiações
-            </Button>
+            {['all', 'receivable', 'payable', 'orcamento', 'club', 'athlete', 'affiliation'].map(
+              (f) => (
+                <Button
+                  key={f}
+                  variant={activeFilter === f ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setActiveFilter(f)}
+                >
+                  {f === 'all'
+                    ? 'Todos'
+                    : f === 'receivable'
+                      ? 'Receber'
+                      : f === 'payable'
+                        ? 'Pagar'
+                        : f === 'orcamento'
+                          ? 'Orçamentos'
+                          : f === 'club'
+                            ? 'Clube'
+                            : f === 'athlete'
+                              ? 'Atleta'
+                              : 'Filiações'}
+                </Button>
+              ),
+            )}
           </div>
         </div>
       </div>
 
-      <Card className="overflow-hidden h-[600px] flex flex-col">
+      <Card className="overflow-hidden h-[650px] flex flex-col border shadow-sm">
         <ResizablePanelGroup direction="vertical" className="flex-1">
-          <ResizablePanel defaultSize={50} minSize={20} className="flex flex-col">
+          {/* MASTER GRID */}
+          <ResizablePanel defaultSize={50} minSize={30} className="flex flex-col bg-background">
+            <div className="p-3 border-b bg-muted/20 font-semibold text-sm flex items-center shrink-0 text-muted-foreground">
+              Registros Consolidados (Mestre)
+            </div>
             <div className="flex-1 overflow-auto">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                   <TableRow>
                     <SortHead label="Descrição" sortKey="description" />
                     <SortHead label="Cliente/Fornecedor" sortKey="client_name" />
                     <SortHead label="Valor Total" sortKey="total_amount" />
-                    <SortHead label="Valor Pago" sortKey="total_paid" />
-                    <SortHead label="Saldo Devedor" sortKey="balance_due" />
-                    <SortHead label="Status Geral" sortKey="status" />
+                    <SortHead label="Criado Em" sortKey="created_at" />
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell colSpan={5}>
+                          <Skeleton className="h-8 w-full" />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : paginatedMasters.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8">
-                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
-                      </TableCell>
-                    </TableRow>
-                  ) : paginatedGroups.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        Nenhum lançamento encontrado.
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        Nenhum registro encontrado.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginatedGroups.map((group) => (
+                    paginatedMasters.map((master) => (
                       <TableRow
-                        key={group.id}
+                        key={master.id}
                         className={cn(
                           'cursor-pointer transition-colors',
-                          selectedGroupId === group.id ? 'bg-muted/80' : 'hover:bg-muted/40',
+                          selectedMasterId === master.id
+                            ? 'bg-muted/80 border-l-4 border-l-primary'
+                            : 'hover:bg-muted/40 border-l-4 border-l-transparent',
                         )}
-                        onClick={() => handleSelectGroup(group.id)}
+                        onClick={() => setSelectedMasterId(master.id)}
                       >
                         <TableCell>
-                          <div className="font-medium">{group.description || '-'}</div>
-                          {group.charges[0] && (
-                            <div className="text-xs text-muted-foreground font-normal">
-                              {group.charges[0].type === 'payable' ? 'A Pagar' : 'A Receber'} •{' '}
-                              {group.charges[0].category === 'club'
-                                ? 'Clube'
-                                : group.charges[0].category === 'athlete'
-                                  ? 'Atleta'
-                                  : group.charges[0].category === 'ecommerce'
-                                    ? 'E-Commerce'
-                                    : group.charges[0].category === 'filiação'
-                                      ? 'Filiação'
-                                      : 'Geral'}
-                            </div>
-                          )}
+                          <div className="font-medium text-primary">{master.description}</div>
+                          <div className="text-xs text-muted-foreground font-normal capitalize">
+                            {master.type === 'receivable' ? 'Receita' : 'Despesa'} •{' '}
+                            {master.category}
+                          </div>
                         </TableCell>
-                        <TableCell>{group.client_name}</TableCell>
+                        <TableCell>{master.client_name}</TableCell>
                         <TableCell
                           className={
-                            group.charges[0]?.type === 'payable' ? 'text-red-500' : 'text-green-600'
+                            master.type === 'payable'
+                              ? 'text-red-500 font-medium'
+                              : 'text-green-600 font-medium'
                           }
                         >
-                          {group.charges[0]?.type === 'payable' ? '- ' : '+ '}
-                          {formatCurrency(group.total_amount)}
+                          {formatCurrency(master.total_amount)}
                         </TableCell>
-                        <TableCell className="text-green-600">
-                          {formatCurrency(group.total_paid)}
+                        <TableCell>{formatDate(master.created_at)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDelete(master.id, 'master')
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
                         </TableCell>
-                        <TableCell className={group.balance_due > 0 ? 'text-red-500' : ''}>
-                          {formatCurrency(group.balance_due)}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(group.status, group.due_date)}</TableCell>
                       </TableRow>
                     ))
                   )}
@@ -898,9 +783,9 @@ export default function AdminFinancialPayments() {
               </Table>
             </div>
             {totalPages > 0 && (
-              <div className="p-2 border-t flex items-center justify-between bg-muted/20 shrink-0">
+              <div className="p-2 border-t flex items-center justify-between bg-muted/10 shrink-0">
                 <span className="text-xs text-muted-foreground">
-                  Mostrando {paginatedGroups.length} de {groupedFilteredCharges.length} grupos
+                  Mostrando {paginatedMasters.length} de {filteredMasters.length} registros
                 </span>
                 <div className="flex gap-2 items-center">
                   <Button
@@ -929,38 +814,52 @@ export default function AdminFinancialPayments() {
             )}
           </ResizablePanel>
 
-          <ResizableHandle withHandle />
+          <ResizableHandle withHandle className="bg-border hover:bg-primary/50 transition-colors" />
 
-          <ResizablePanel defaultSize={50} minSize={20} className="flex flex-col bg-muted/5">
-            <div className="p-3 border-b bg-muted/30 font-medium text-sm flex items-center justify-between shrink-0">
-              <span>
-                Detalhes das Parcelas {selectedGroup ? `- ${selectedGroup.description}` : ''}
+          {/* DETAIL GRID */}
+          <ResizablePanel defaultSize={50} minSize={20} className="flex flex-col bg-muted/10">
+            <div className="p-3 border-b bg-muted/40 font-semibold text-sm flex items-center justify-between shrink-0">
+              <span className="flex items-center gap-2">
+                Parcelas do Registro
+                {selectedMasterId && (
+                  <Badge variant="outline" className="text-xs font-normal ml-2">
+                    {masters.find((m) => m.id === selectedMasterId)?.description}
+                  </Badge>
+                )}
               </span>
-              {selectedGroup?.isGroup && (
+              {masters.find((m) => m.id === selectedMasterId)?.reference_type === 'orcamento' && (
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8"
-                  onClick={() => navigate(`/admin/quotes/${selectedGroup.id}`)}
+                  className="h-7 text-xs"
+                  onClick={() =>
+                    navigate(
+                      `/admin/quotes/${masters.find((m) => m.id === selectedMasterId)?.reference_id}`,
+                    )
+                  }
                 >
                   Ver Orçamento
                 </Button>
               )}
             </div>
             <div className="flex-1 overflow-auto">
-              {!selectedGroup ? (
-                <div className="h-full flex items-center justify-center text-muted-foreground p-8 text-center text-sm">
-                  Selecione um registro acima para ver os detalhes das parcelas.
+              {!selectedMasterId ? (
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                  Selecione um registro mestre acima para visualizar as parcelas.
                 </div>
               ) : detailLoading ? (
-                <div className="h-full flex items-center justify-center py-8">
+                <div className="h-full flex items-center justify-center">
                   <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : detailCharges.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                  Nenhuma parcela associada a este registro.
                 </div>
               ) : (
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="sticky top-0 bg-muted/10 z-10 shadow-sm backdrop-blur-sm">
                     <TableRow>
-                      <TableHead>Nº Parcela / Descrição</TableHead>
+                      <TableHead>Descrição / Nº</TableHead>
                       <TableHead>Vencimento</TableHead>
                       <TableHead>Valor</TableHead>
                       <TableHead>Status</TableHead>
@@ -968,20 +867,61 @@ export default function AdminFinancialPayments() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {selectedGroup.charges.map((charge, idx) => (
-                      <TableRow key={charge.id} className="bg-background hover:bg-muted/50">
-                        <TableCell className="font-medium">
+                    {detailCharges.map((charge, idx) => (
+                      <TableRow key={charge.id} className="bg-background/50 hover:bg-background">
+                        <TableCell className="font-medium text-sm">
                           {charge.description ||
-                            `Parcela ${charge.parcela_numero || idx + 1}/${
-                              charge.parcela_total || selectedGroup.charges.length
-                            }`}
+                            `Parcela ${charge.parcela_numero || idx + 1}/${charge.parcela_total || detailCharges.length}`}
                         </TableCell>
-                        <TableCell>{formatDate(charge.due_date)}</TableCell>
-                        <TableCell>{formatCurrency(charge.amount)}</TableCell>
+                        <TableCell className="text-sm">{formatDate(charge.due_date)}</TableCell>
+                        <TableCell className="text-sm font-medium">
+                          {formatCurrency(charge.amount)}
+                        </TableCell>
                         <TableCell>{getStatusBadge(charge.status, charge.due_date)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <SingleChargeActions charge={charge} />
+                            {charge.status !== 'pago' && charge.type === 'receivable' && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  title="Pagar"
+                                  onClick={() => handleOpenPayment(charge)}
+                                >
+                                  <CreditCard className="w-4 h-4 text-emerald-600" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  title="WhatsApp"
+                                  onClick={() => handleWhatsApp(charge)}
+                                >
+                                  <Phone className="w-4 h-4 text-green-500" />
+                                </Button>
+                              </>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Imprimir"
+                              onClick={() => handlePrint(charge)}
+                            >
+                              <Printer className="w-4 h-4 text-blue-500" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenModal(charge)}
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(charge.id, 'charge')}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -997,7 +937,9 @@ export default function AdminFinancialPayments() {
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>{editingId ? 'Editar Lançamento' : 'Novo Lançamento'}</DialogTitle>
+            <DialogTitle>
+              {editingChargeId ? 'Editar Parcela' : 'Novo Lançamento Financeiro'}
+            </DialogTitle>
           </DialogHeader>
 
           <Tabs
@@ -1007,8 +949,8 @@ export default function AdminFinancialPayments() {
           >
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="geral">1. Identificação</TabsTrigger>
-              {!editingId && <TabsTrigger value="condicoes">2. Condições</TabsTrigger>}
-              {!editingId && <TabsTrigger value="parcelas">3. Parcelas</TabsTrigger>}
+              {!editingChargeId && <TabsTrigger value="condicoes">2. Condições</TabsTrigger>}
+              {!editingChargeId && <TabsTrigger value="parcelas">3. Parcelas</TabsTrigger>}
             </TabsList>
 
             <div className="flex-1 overflow-y-auto py-4">
@@ -1019,6 +961,7 @@ export default function AdminFinancialPayments() {
                     <Select
                       value={formData.type}
                       onValueChange={(v) => setFormData({ ...formData, type: v })}
+                      disabled={!!editingChargeId}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -1034,6 +977,7 @@ export default function AdminFinancialPayments() {
                     <Select
                       value={formData.category}
                       onValueChange={(v) => setFormData({ ...formData, category: v })}
+                      disabled={!!editingChargeId}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -1084,6 +1028,7 @@ export default function AdminFinancialPayments() {
                   <div className="flex gap-2">
                     <Select
                       value={formData.profile_id}
+                      disabled={!!editingChargeId}
                       onValueChange={(v) => {
                         const prof = profiles.find((p) => p.id === v)
                         setFormData({
@@ -1106,14 +1051,16 @@ export default function AdminFinancialPayments() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setNewProfileOpen(true)}
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
+                    {!editingChargeId && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setNewProfileOpen(true)}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
 
@@ -1122,6 +1069,7 @@ export default function AdminFinancialPayments() {
                     <div className="space-y-2">
                       <Label>Nome (Avulso)</Label>
                       <Input
+                        disabled={!!editingChargeId}
                         value={formData.client_name}
                         onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
                       />
@@ -1129,6 +1077,7 @@ export default function AdminFinancialPayments() {
                     <div className="space-y-2">
                       <Label>Documento (Avulso)</Label>
                       <Input
+                        disabled={!!editingChargeId}
                         value={formData.document}
                         onChange={(e) => setFormData({ ...formData, document: e.target.value })}
                       />
@@ -1145,7 +1094,7 @@ export default function AdminFinancialPayments() {
                   />
                 </div>
 
-                {editingId && (
+                {editingChargeId && (
                   <div className="grid grid-cols-3 gap-4 bg-muted/20 p-4 rounded-md border mt-4">
                     <div className="space-y-2">
                       <Label>Valor</Label>
@@ -1189,7 +1138,7 @@ export default function AdminFinancialPayments() {
                 )}
               </TabsContent>
 
-              {!editingId && (
+              {!editingChargeId && (
                 <TabsContent value="condicoes" className="space-y-4 m-0">
                   <div className="grid grid-cols-2 gap-6 bg-muted/20 p-6 rounded-lg border">
                     <div className="space-y-4">
@@ -1256,7 +1205,7 @@ export default function AdminFinancialPayments() {
                 </TabsContent>
               )}
 
-              {!editingId && (
+              {!editingChargeId && (
                 <TabsContent value="parcelas" className="m-0">
                   <div className="space-y-4">
                     {parcelasGeradas.length === 0 ? (
@@ -1333,17 +1282,16 @@ export default function AdminFinancialPayments() {
               </Button>
               <Button
                 onClick={handleSave}
-                disabled={isSubmitting || (!editingId && parcelasGeradas.length === 0)}
+                disabled={isSubmitting || (!editingChargeId && parcelasGeradas.length === 0)}
               >
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                Salvar Lançamentos
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null} Salvar
+                Lançamentos
               </Button>
             </DialogFooter>
           </Tabs>
         </DialogContent>
       </Dialog>
 
-      {/* Quick Add Modals */}
       <Dialog open={newContaOpen} onOpenChange={setNewContaOpen}>
         <DialogContent>
           <DialogHeader>
@@ -1402,8 +1350,7 @@ export default function AdminFinancialPayments() {
           <AlertDialogHeader>
             <AlertDialogTitle>Tem certeza que deseja excluir?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. O lançamento financeiro será permanentemente
-              removido.
+              Esta ação não pode ser desfeita. O registro será permanentemente removido.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1426,7 +1373,10 @@ export default function AdminFinancialPayments() {
           athleteId={selectedCharge.athlete_id || selectedCharge.profile_id || null}
           amount={selectedCharge.amount}
           description={selectedCharge.description || `Pagamento de ${selectedCharge.client_name}`}
-          onSuccess={fetchCharges}
+          onSuccess={() => {
+            if (selectedMasterId) fetchDetails(selectedMasterId)
+            calculateGlobalSummary()
+          }}
         />
       )}
     </div>

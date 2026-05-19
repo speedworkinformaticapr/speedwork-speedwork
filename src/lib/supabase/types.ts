@@ -1048,6 +1048,56 @@ export type Database = {
           },
         ]
       }
+      financial_master_records: {
+        Row: {
+          category: string | null
+          client_id: string | null
+          client_name: string
+          created_at: string
+          description: string
+          id: string
+          reference_id: string | null
+          reference_type: string | null
+          status: string
+          total_amount: number
+          type: string | null
+        }
+        Insert: {
+          category?: string | null
+          client_id?: string | null
+          client_name: string
+          created_at?: string
+          description: string
+          id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: string
+          total_amount?: number
+          type?: string | null
+        }
+        Update: {
+          category?: string | null
+          client_id?: string | null
+          client_name?: string
+          created_at?: string
+          description?: string
+          id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: string
+          total_amount?: number
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'financial_master_records_client_id_fkey'
+            columns: ['client_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       events: {
         Row: {
           category: string | null
@@ -1150,6 +1200,7 @@ export type Database = {
           document: string | null
           due_date: string
           id: string
+          master_record_id: string | null
           orcamento_id: string | null
           parcela_numero: number | null
           parcela_total: number | null
@@ -1170,6 +1221,7 @@ export type Database = {
           document?: string | null
           due_date: string
           id?: string
+          master_record_id?: string | null
           orcamento_id?: string | null
           parcela_numero?: number | null
           parcela_total?: number | null
@@ -1190,6 +1242,7 @@ export type Database = {
           document?: string | null
           due_date?: string
           id?: string
+          master_record_id?: string | null
           orcamento_id?: string | null
           parcela_numero?: number | null
           parcela_total?: number | null
@@ -1211,6 +1264,13 @@ export type Database = {
             columns: ['conta_id']
             isOneToOne: false
             referencedRelation: 'plano_contas'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'financial_charges_master_record_id_fkey'
+            columns: ['master_record_id']
+            isOneToOne: false
+            referencedRelation: 'financial_master_records'
             referencedColumns: ['id']
           },
           {
