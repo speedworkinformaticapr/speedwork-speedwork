@@ -6,9 +6,38 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Plus, Search, Eye, Edit, Copy, Trash, RefreshCw, Share2, Printer } from 'lucide-react'
+import {
+  Plus,
+  Search,
+  Eye,
+  Edit,
+  Copy,
+  Trash,
+  RefreshCw,
+  Share2,
+  Printer,
+  Link as LinkIcon,
+  DollarSign,
+  Loader2,
+} from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { ShareDocumentDialog } from '@/components/ShareDocumentDialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 
 export const MOCK_CATALOG_SERVICES = [
   { id: 's1', name: 'Consultoria Esportiva', price: 150.0 },
@@ -35,6 +64,17 @@ export default function AdminQuotes() {
     type: 'quote' | 'order'
     autoPrint?: boolean
   } | null>(null)
+
+  const [billingModal, setBillingModal] = useState<{ open: boolean; quote: any | null }>({
+    open: false,
+    quote: null,
+  })
+  const [billingConfig, setBillingConfig] = useState({
+    billingType: 'PIX',
+    installmentCount: '1',
+    dueDate: new Date().toISOString().split('T')[0],
+  })
+  const [isGenerating, setIsGenerating] = useState(false)
 
   useEffect(() => {
     fetchQuotes()
@@ -107,6 +147,31 @@ export default function AdminQuotes() {
 
     toast({ title: 'Orçamento duplicado com sucesso!' })
     fetchQuotes()
+  }
+
+  const handleGenerateBilling = async () => {
+    if (!billingModal.quote) return
+    setIsGenerating(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('create-asaas-charge', {
+        body: {
+          orcamento_id: billingModal.quote.id,
+          billingType: billingConfig.billingType,
+          installmentCount: parseInt(billingConfig.installmentCount),
+          dueDate: billingConfig.dueDate,
+        },
+      })
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
+
+      toast({ title: 'Cobrança gerada com sucesso!' })
+      setBillingModal({ open: false, quote: null })
+      fetchQuotes()
+    } catch (err: any) {
+      toast({ title: 'Erro ao gerar cobrança', description: err.message, variant: 'destructive' })
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   const getStatusColor = (s: string) => {
@@ -187,6 +252,7 @@ export default function AdminQuotes() {
                     <th className="pb-3 font-medium">Emissão</th>
                     <th className="pb-3 font-medium">Validade</th>
                     <th className="pb-3 font-medium">Status</th>
+                    <th className="pb-3 font-medium">Pagamento</th>
                     <th className="pb-3 font-medium">Total</th>
                     <th className="pb-3 font-medium text-right">Ações</th>
                   </tr>
@@ -210,8 +276,45 @@ export default function AdminQuotes() {
                       <td className="py-3">
                         <Badge className={getStatusColor(q.status)}>{q.status}</Badge>
                       </td>
+                      <td className="py-3">
+                        {q.link_pagamento ? (
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant="outline"
+                              className={
+                                q.status_pagamento === 'pago'
+                                  ? 'bg-green-100 text-green-800 border-green-200'
+                                  : 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                              }
+                            >
+                              {q.status_pagamento === 'pago' ? 'Pago' : 'Pendente'}
+                            </Badge>
+                            <a
+                              href={q.link_pagamento}
+                              target="_blank"
+                              rel="noreferrer"
+                              title="Abrir Link de Pagamento"
+                              className="text-blue-500 hover:text-blue-700"
+                            >
+                              <LinkIcon className="w-4 h-4" />
+                            </a>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">-</span>
+                        )}
+                      </td>
                       <td className="py-3">R$ {Number(q.total).toFixed(2).replace('.', ',')}</td>
                       <td className="py-3 flex justify-end gap-1">
+                        {!q.link_pagamento && q.total > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setBillingModal({ open: true, quote: q })}
+                            title="Gerar Cobrança Asaas"
+                          >
+                            <DollarSign className="w-4 h-4 text-emerald-600" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -267,6 +370,79 @@ export default function AdminQuotes() {
           autoPrint={shareDoc.autoPrint}
         />
       )}
+
+      <Dialog
+        open={billingModal.open}
+        onOpenChange={(open) => setBillingModal({ open, quote: open ? billingModal.quote : null })}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Gerar Cobrança</DialogTitle>
+            <DialogDescription>
+              Gere o link de pagamento via Asaas para este orçamento.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Forma de Pagamento</Label>
+              <Select
+                value={billingConfig.billingType}
+                onValueChange={(v) => setBillingConfig((prev) => ({ ...prev, billingType: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PIX">PIX</SelectItem>
+                  <SelectItem value="BOLETO">Boleto</SelectItem>
+                  <SelectItem value="CREDIT_CARD">Cartão de Crédito</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Parcelas</Label>
+              <Select
+                value={billingConfig.installmentCount}
+                onValueChange={(v) =>
+                  setBillingConfig((prev) => ({ ...prev, installmentCount: v }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
+                    <SelectItem key={n} value={n.toString()}>
+                      {n}x
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Vencimento da 1ª Parcela</Label>
+              <Input
+                type="date"
+                value={billingConfig.dueDate}
+                onChange={(e) => setBillingConfig((prev) => ({ ...prev, dueDate: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBillingModal({ open: false, quote: null })}>
+              Cancelar
+            </Button>
+            <Button onClick={handleGenerateBilling} disabled={isGenerating}>
+              {isGenerating ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <DollarSign className="w-4 h-4 mr-2" />
+              )}
+              Gerar Link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

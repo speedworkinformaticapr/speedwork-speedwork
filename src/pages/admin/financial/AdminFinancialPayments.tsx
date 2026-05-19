@@ -69,6 +69,8 @@ type Charge = {
   status: string
   athlete_id?: string | null
   club_id?: string | null
+  orcamento_id?: string | null
+  asaas_id?: string | null
 }
 
 export default function AdminFinancialPayments() {
@@ -290,6 +292,19 @@ export default function AdminFinancialPayments() {
       }
 
       if (editingId) {
+        const originalCharge = charges.find((c) => c.id === editingId)
+        if (
+          originalCharge?.asaas_id &&
+          payload.status === 'pago' &&
+          originalCharge.status !== 'pago'
+        ) {
+          await supabase.functions
+            .invoke('webhook-asaas-manual', {
+              body: { asaas_id: originalCharge.asaas_id },
+            })
+            .catch(() => {})
+        }
+
         await supabase
           .from('financial_charges' as any)
           .update(payload)
@@ -505,7 +520,13 @@ export default function AdminFinancialPayments() {
                               ? 'E-Commerce'
                               : charge.category === 'filiação'
                                 ? 'Filiação'
-                                : 'Geral'}
+                                : charge.category === 'orcamento'
+                                  ? 'Orçamento'
+                                  : 'Geral'}
+                        {charge.orcamento_id && (
+                          <span className="ml-1 text-blue-500">(Vinculado)</span>
+                        )}
+                        {charge.asaas_id && <span className="ml-1 text-emerald-600">(Asaas)</span>}
                       </div>
                     </TableCell>
                     <TableCell>

@@ -73,6 +73,28 @@ Deno.serve(async (req: Request) => {
               payment_date: now.split('T')[0],
             })
             .eq('id', stripePayment.charge_id)
+        } else {
+          const { data: charge } = await supabase
+            .from('financial_charges')
+            .update({ status: 'pago', payment_date: now.split('T')[0] })
+            .eq('asaas_id', paymentId)
+            .select('orcamento_id')
+            .maybeSingle()
+
+          if (charge?.orcamento_id) {
+            const { data: pendingCharges } = await supabase
+              .from('financial_charges')
+              .select('id')
+              .eq('orcamento_id', charge.orcamento_id)
+              .neq('status', 'pago')
+
+            if (pendingCharges && pendingCharges.length === 0) {
+              await supabase
+                .from('orcamentos')
+                .update({ status_pagamento: 'pago' })
+                .eq('id', charge.orcamento_id)
+            }
+          }
         }
       }
     } else if (
