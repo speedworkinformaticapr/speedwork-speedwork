@@ -4440,13 +4440,13 @@ export const Constants = {
 //     WITH CHECK: true
 // Table: usuarios
 //   Policy "usuarios_delete" (DELETE, PERMISSIVE) roles={public}
-//     USING: (user_id = auth.uid())
+//     USING: true
 //   Policy "usuarios_insert" (INSERT, PERMISSIVE) roles={public}
-//     WITH CHECK: (user_id = auth.uid())
+//     WITH CHECK: true
 //   Policy "usuarios_select" (SELECT, PERMISSIVE) roles={public}
-//     USING: (user_id = auth.uid())
+//     USING: true
 //   Policy "usuarios_update" (UPDATE, PERMISSIVE) roles={public}
-//     USING: (user_id = auth.uid())
+//     USING: true
 // Table: whatsapp_config
 //   Policy "whatsapp_config_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -4742,6 +4742,7 @@ export const Constants = {
 //   CREATE OR REPLACE FUNCTION public.sync_profile_to_usuarios()
 //    RETURNS trigger
 //    LANGUAGE plpgsql
+//    SECURITY DEFINER
 //   AS $function$
 //   BEGIN
 //     -- Prevent infinite recursion
@@ -4771,6 +4772,7 @@ export const Constants = {
 //   CREATE OR REPLACE FUNCTION public.sync_usuarios_to_profiles()
 //    RETURNS trigger
 //    LANGUAGE plpgsql
+//    SECURITY DEFINER
 //   AS $function$
 //   BEGIN
 //     -- Prevent infinite recursion

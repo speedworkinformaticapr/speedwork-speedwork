@@ -303,7 +303,7 @@ export default function AdminUsers() {
       } else {
         const { error } = await supabase.from('profiles').insert({
           ...payload,
-          email: formData.email,
+          email: formData.email || null,
         })
 
         if (error) throw error
