@@ -58,6 +58,7 @@ Deno.serve(async (req: Request) => {
       confirmationLink,
       subject: customSubject,
       html: customHtml,
+      attachments = [],
     } = body
 
     let subject = ''
@@ -164,6 +165,11 @@ Deno.serve(async (req: Request) => {
             to: [email],
             subject: subject,
             html_body: finalHtml,
+            attachments: attachments.map((a: any) => ({
+              filename: a.filename,
+              fileblob: a.content,
+              mimetype: a.mimetype || 'text/plain',
+            })),
           }),
         })
 
@@ -186,6 +192,10 @@ Deno.serve(async (req: Request) => {
             to: [email],
             subject: subject,
             html: finalHtml,
+            attachments: attachments.map((a: any) => ({
+              filename: a.filename,
+              content: a.content,
+            })),
           }),
         })
         const data = await res.json()

@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Plus, Search, Eye, Edit, Copy, Trash, RefreshCw } from 'lucide-react'
+import { Plus, Search, Eye, Edit, Copy, Trash, RefreshCw, Share2, Printer } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { ShareDocumentDialog } from '@/components/ShareDocumentDialog'
 
 export const MOCK_CATALOG_SERVICES = [
   { id: 's1', name: 'Consultoria Esportiva', price: 150.0 },
@@ -28,6 +29,12 @@ export default function AdminQuotes() {
   const [search, setSearch] = useState('')
   const navigate = useNavigate()
   const { toast } = useToast()
+  const [shareDoc, setShareDoc] = useState<{
+    open: boolean
+    id: string
+    type: 'quote' | 'order'
+    autoPrint?: boolean
+  } | null>(null)
 
   useEffect(() => {
     fetchQuotes()
@@ -222,6 +229,22 @@ export default function AdminQuotes() {
                         <Button variant="ghost" size="icon" onClick={() => handleDuplicate(q)}>
                           <Copy className="w-4 h-4" />
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            setShareDoc({ open: true, id: q.id, type: 'quote', autoPrint: true })
+                          }
+                        >
+                          <Printer className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setShareDoc({ open: true, id: q.id, type: 'quote' })}
+                        >
+                          <Share2 className="w-4 h-4 text-blue-500" />
+                        </Button>
                         <Button variant="ghost" size="icon" onClick={() => handleDelete(q.id)}>
                           <Trash className="w-4 h-4 text-destructive" />
                         </Button>
@@ -234,6 +257,16 @@ export default function AdminQuotes() {
           )}
         </CardContent>
       </Card>
+
+      {shareDoc && (
+        <ShareDocumentDialog
+          open={shareDoc.open}
+          onOpenChange={(open) => setShareDoc(open ? shareDoc : null)}
+          documentId={shareDoc.id}
+          type={shareDoc.type}
+          autoPrint={shareDoc.autoPrint}
+        />
+      )}
     </div>
   )
 }

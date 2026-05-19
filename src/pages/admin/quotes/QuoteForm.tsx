@@ -149,9 +149,9 @@ export default function QuoteForm() {
     0,
     Math.round(
       (subtotal -
-        Number(data.desconto_valor) -
-        (subtotal * Number(data.desconto_percentual)) / 100 +
-        Number(data.valor_impostos)) *
+        (Number(data.desconto_valor) || 0) -
+        (subtotal * (Number(data.desconto_percentual) || 0)) / 100 +
+        (Number(data.valor_impostos) || 0)) *
         100,
     ) / 100,
   )

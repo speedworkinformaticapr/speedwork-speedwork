@@ -173,7 +173,8 @@ export default function AdminPedidoForm() {
     setItems(newItems)
   }
 
-  const subtotal = Math.round(itens.reduce((acc, i) => acc + (i.valor_total || 0), 0) * 100) / 100
+  const subtotal =
+    Math.round(itens.reduce((acc, i) => acc + (Number(i.valor_total) || 0), 0) * 100) / 100
 
   const handleSave = async (status: string) => {
     if (!formData.cliente_id)

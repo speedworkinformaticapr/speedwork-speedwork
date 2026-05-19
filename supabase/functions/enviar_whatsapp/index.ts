@@ -16,7 +16,14 @@ Deno.serve(async (req: Request) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const { empresa_id, cliente_id, tipo_mensagem, variaveis, telefone_destino } = await req.json()
+    const {
+      empresa_id,
+      cliente_id,
+      tipo_mensagem,
+      variaveis,
+      telefone_destino,
+      mensagem_customizada,
+    } = await req.json()
 
     const { data: config } = await supabase
       .from('whatsapp_config')
@@ -28,7 +35,9 @@ Deno.serve(async (req: Request) => {
 
     let conteudoFinal = ''
 
-    if (tipo_mensagem === 'teste_conexao') {
+    if (mensagem_customizada) {
+      conteudoFinal = mensagem_customizada
+    } else if (tipo_mensagem === 'teste_conexao') {
       conteudoFinal = 'TESTE'
     } else {
       const { data: template } = await supabase

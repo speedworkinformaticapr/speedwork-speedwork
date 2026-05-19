@@ -19,14 +19,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Plus, Search, Eye, Edit, Trash, Package } from 'lucide-react'
+import { Plus, Search, Eye, Edit, Trash, Package, Share2, Printer } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
+import { ShareDocumentDialog } from '@/components/ShareDocumentDialog'
 
 export default function AdminPedidosList() {
   const [pedidos, setPedidos] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [shareDoc, setShareDoc] = useState<{
+    open: boolean
+    id: string
+    type: 'quote' | 'order'
+    autoPrint?: boolean
+  } | null>(null)
 
   useEffect(() => {
     fetchPedidos()
@@ -163,6 +170,22 @@ export default function AdminPedidosList() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        onClick={() =>
+                          setShareDoc({ open: true, id: p.id, type: 'order', autoPrint: true })
+                        }
+                      >
+                        <Printer className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setShareDoc({ open: true, id: p.id, type: 'order' })}
+                      >
+                        <Share2 className="w-4 h-4 text-blue-500" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => handleDelete(p.id)}
                         className="text-destructive"
                       >
@@ -176,6 +199,16 @@ export default function AdminPedidosList() {
           </TableBody>
         </Table>
       </div>
+
+      {shareDoc && (
+        <ShareDocumentDialog
+          open={shareDoc.open}
+          onOpenChange={(open) => setShareDoc(open ? shareDoc : null)}
+          documentId={shareDoc.id}
+          type={shareDoc.type}
+          autoPrint={shareDoc.autoPrint}
+        />
+      )}
     </div>
   )
 }
