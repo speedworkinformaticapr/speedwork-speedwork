@@ -33,7 +33,12 @@ export default function AdminContratosList() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Deseja excluir?')) return
-    await supabase.from('contratos').delete().eq('id', id)
+    const { error } = await supabase.from('contratos').delete().eq('id', id)
+    if (error) {
+      toast({ title: 'Erro ao excluir', description: error.message, variant: 'destructive' })
+      return
+    }
+    toast({ title: 'Contrato excluído com sucesso' })
     fetchContratos()
   }
 
