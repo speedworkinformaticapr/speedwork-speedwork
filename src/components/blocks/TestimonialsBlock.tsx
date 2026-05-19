@@ -12,11 +12,18 @@ export function TestimonialsBlock({ data, id }: { data: any; id?: string }) {
     if (data.useGoogleReviews) {
       setIsLoading(true)
       const fetchReviews = async () => {
-        const { data: reviews, error } = await (supabase.from('google_reviews') as any)
-          .select('*')
-          .eq('status', 'approved')
-          .order('time', { ascending: false })
-          .limit(10)
+        const limit = data.googleReviewsLimit ? parseInt(data.googleReviewsLimit, 10) : 10
+        const order = data.googleReviewsOrder || 'time_desc'
+
+        let query = (supabase.from('google_reviews') as any).select('*').eq('status', 'approved')
+
+        if (order === 'rating_desc') {
+          query = query.order('rating', { ascending: false }).order('time', { ascending: false })
+        } else {
+          query = query.order('time', { ascending: false })
+        }
+
+        const { data: reviews, error } = await query.limit(limit)
 
         if (!error && reviews) {
           setGoogleReviews(reviews)
@@ -25,7 +32,7 @@ export function TestimonialsBlock({ data, id }: { data: any; id?: string }) {
       }
       fetchReviews()
     }
-  }, [data.useGoogleReviews])
+  }, [data.useGoogleReviews, data.googleReviewsLimit, data.googleReviewsOrder])
 
   const manualItems = data.items || []
 

@@ -1271,6 +1271,7 @@ export type Database = {
           profile_photo_url: string | null
           rating: number
           relative_time_description: string | null
+          status: string | null
           text: string | null
           time: number | null
         }
@@ -1282,6 +1283,7 @@ export type Database = {
           profile_photo_url?: string | null
           rating: number
           relative_time_description?: string | null
+          status?: string | null
           text?: string | null
           time?: number | null
         }
@@ -1293,6 +1295,7 @@ export type Database = {
           profile_photo_url?: string | null
           rating?: number
           relative_time_description?: string | null
+          status?: string | null
           text?: string | null
           time?: number | null
         }
@@ -3382,6 +3385,7 @@ export const Constants = {
 //   time: integer (nullable)
 //   relative_time_description: text (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
+//   status: text (nullable, default: 'approved'::text)
 // Table: hero_carousel
 //   id: uuid (not null, default: gen_random_uuid())
 //   title: text (nullable)
@@ -4188,6 +4192,9 @@ export const Constants = {
 // Table: google_reviews
 //   Policy "google_reviews_select" (SELECT, PERMISSIVE) roles={public}
 //     USING: true
+//   Policy "google_reviews_update" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: hero_carousel
 //   Policy "hero_carousel_delete" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: true

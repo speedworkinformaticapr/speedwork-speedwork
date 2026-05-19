@@ -177,6 +177,16 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
         fields: [
           { name: 'title', label: 'Título da Seção', type: 'text' },
           { name: 'useGoogleReviews', label: 'Exibir Avaliações do Google', type: 'boolean' },
+          { name: 'googleReviewsLimit', label: 'Limite de Avaliações do Google', type: 'number' },
+          {
+            name: 'googleReviewsOrder',
+            label: 'Ordenar Avaliações do Google',
+            type: 'select',
+            options: [
+              { label: 'Mais Recentes', value: 'time_desc' },
+              { label: 'Maior Nota', value: 'rating_desc' },
+            ],
+          },
         ],
       },
     ],
