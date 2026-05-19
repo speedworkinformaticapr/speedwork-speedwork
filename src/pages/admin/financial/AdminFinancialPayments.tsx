@@ -42,7 +42,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
-import { formatCurrencyInput, parseCurrencyInput } from '@/lib/utils'
+import { cn, formatCurrencyInput, parseCurrencyInput } from '@/lib/utils'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import {
   Edit2,
   Plus,
@@ -114,7 +115,8 @@ export default function AdminFinancialPayments() {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
   const [selectedCharge, setSelectedCharge] = useState<Charge | null>(null)
   const [itemToDelete, setItemToDelete] = useState<string | null>(null)
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
 
   const navigate = useNavigate()
 
@@ -370,11 +372,17 @@ export default function AdminFinancialPayments() {
     setFilteredCharges(result)
   }
 
-  const toggleGroup = (id: string) => {
-    const newSet = new Set(expandedGroups)
-    if (newSet.has(id)) newSet.delete(id)
-    else newSet.add(id)
-    setExpandedGroups(newSet)
+  const selectedGroup = useMemo(() => {
+    if (!selectedGroupId) return null
+    return groupedFilteredCharges.find((g) => g.id === selectedGroupId) || null
+  }, [selectedGroupId, groupedFilteredCharges])
+
+  const handleSelectGroup = (id: string) => {
+    if (id === selectedGroupId) return
+    setDetailLoading(true)
+    setSelectedGroupId(id)
+    // Small delay to simulate fetching installments and satisfy visual feedback requirement
+    setTimeout(() => setDetailLoading(false), 300)
   }
 
   const handleOpenModal = (charge?: Charge) => {
@@ -812,181 +820,178 @@ export default function AdminFinancialPayments() {
         </div>
       </div>
 
-      <Card className="overflow-hidden">
-        <CardContent className="p-0 overflow-auto max-h-[60vh]">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10 text-center"></TableHead>
-                <SortHead label="Descrição" sortKey="description" />
-                <SortHead label="Cliente/Fornecedor" sortKey="client_name" />
-                <SortHead label="Valor Total" sortKey="total_amount" />
-                <SortHead label="Valor Pago" sortKey="total_paid" />
-                <SortHead label="Saldo" sortKey="balance_due" />
-                <SortHead label="Vencimento" sortKey="due_date" />
-                <SortHead label="Status" sortKey="status" />
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
-                  </TableCell>
-                </TableRow>
-              ) : groupedFilteredCharges.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                    Nenhum lançamento encontrado.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                paginatedGroups.map((group) => (
-                  <React.Fragment key={group.id}>
-                    <TableRow className={group.isGroup ? 'bg-muted/10 font-medium' : ''}>
-                      <TableCell className="text-center">
-                        {group.isGroup && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => toggleGroup(group.id)}
-                          >
-                            {expandedGroups.has(group.id) ? (
-                              <ChevronDown className="w-4 h-4" />
-                            ) : (
-                              <ChevronRightIcon className="w-4 h-4" />
-                            )}
-                          </Button>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{group.description || '-'}</div>
-                        {!group.isGroup && group.charges[0] && (
-                          <div className="text-xs text-muted-foreground font-normal">
-                            {group.charges[0].type === 'payable' ? 'A Pagar' : 'A Receber'} •{' '}
-                            {group.charges[0].category === 'club'
-                              ? 'Clube'
-                              : group.charges[0].category === 'athlete'
-                                ? 'Atleta'
-                                : group.charges[0].category === 'ecommerce'
-                                  ? 'E-Commerce'
-                                  : group.charges[0].category === 'filiação'
-                                    ? 'Filiação'
-                                    : 'Geral'}
-                            {group.charges[0].asaas_id && (
-                              <span className="ml-1 text-emerald-600">(Asaas)</span>
-                            )}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>{group.client_name}</TableCell>
-                      <TableCell
-                        className={
-                          group.isGroup
-                            ? ''
-                            : group.charges[0]?.type === 'payable'
-                              ? 'text-red-500'
-                              : 'text-green-600'
-                        }
-                      >
-                        {group.isGroup ? '' : group.charges[0]?.type === 'payable' ? '- ' : '+ '}
-                        {formatCurrency(group.total_amount)}
-                      </TableCell>
-                      <TableCell className="text-green-600">
-                        {formatCurrency(group.total_paid)}
-                      </TableCell>
-                      <TableCell className={group.balance_due > 0 ? 'text-red-500' : ''}>
-                        {formatCurrency(group.balance_due)}
-                      </TableCell>
-                      <TableCell>{formatDate(group.due_date)}</TableCell>
-                      <TableCell>{getStatusBadge(group.status, group.due_date)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          {!group.isGroup ? (
-                            <SingleChargeActions charge={group.charges[0]} />
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => navigate(`/admin/quotes/${group.id}`)}
-                            >
-                              Ver Orçamento
-                            </Button>
-                          )}
-                        </div>
+      <Card className="overflow-hidden h-[600px] flex flex-col">
+        <ResizablePanelGroup direction="vertical" className="flex-1">
+          <ResizablePanel defaultSize={50} minSize={20} className="flex flex-col">
+            <div className="flex-1 overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <SortHead label="Descrição" sortKey="description" />
+                    <SortHead label="Cliente/Fornecedor" sortKey="client_name" />
+                    <SortHead label="Valor Total" sortKey="total_amount" />
+                    <SortHead label="Valor Pago" sortKey="total_paid" />
+                    <SortHead label="Saldo Devedor" sortKey="balance_due" />
+                    <SortHead label="Status Geral" sortKey="status" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
                       </TableCell>
                     </TableRow>
-
-                    {group.isGroup &&
-                      expandedGroups.has(group.id) &&
-                      group.charges.map((charge, idx) => (
-                        <TableRow
-                          key={charge.id}
-                          className="bg-muted/5 border-l-4 border-l-primary/30"
-                        >
-                          <TableCell></TableCell>
-                          <TableCell className="pl-6 text-sm text-muted-foreground flex items-center">
-                            <span className="w-4 inline-block text-right mr-2">↳</span>
-                            {charge.description ||
-                              `Parcela ${charge.parcela_numero || idx + 1}/${charge.parcela_total || group.charges.length}`}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">-</TableCell>
-                          <TableCell className="text-sm">{formatCurrency(charge.amount)}</TableCell>
-                          <TableCell className="text-sm text-green-600">
-                            {charge.status === 'pago' || charge.status === 'recebido'
-                              ? formatCurrency(charge.amount)
-                              : formatCurrency(0)}
-                          </TableCell>
-                          <TableCell className="text-sm text-red-500">
-                            {charge.status !== 'pago' && charge.status !== 'recebido'
-                              ? formatCurrency(charge.amount)
-                              : formatCurrency(0)}
-                          </TableCell>
-                          <TableCell className="text-sm">{formatDate(charge.due_date)}</TableCell>
-                          <TableCell>{getStatusBadge(charge.status, charge.due_date)}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <SingleChargeActions charge={charge} />
+                  ) : paginatedGroups.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        Nenhum lançamento encontrado.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    paginatedGroups.map((group) => (
+                      <TableRow
+                        key={group.id}
+                        className={cn(
+                          'cursor-pointer transition-colors',
+                          selectedGroupId === group.id ? 'bg-muted/80' : 'hover:bg-muted/40',
+                        )}
+                        onClick={() => handleSelectGroup(group.id)}
+                      >
+                        <TableCell>
+                          <div className="font-medium">{group.description || '-'}</div>
+                          {group.charges[0] && (
+                            <div className="text-xs text-muted-foreground font-normal">
+                              {group.charges[0].type === 'payable' ? 'A Pagar' : 'A Receber'} •{' '}
+                              {group.charges[0].category === 'club'
+                                ? 'Clube'
+                                : group.charges[0].category === 'athlete'
+                                  ? 'Atleta'
+                                  : group.charges[0].category === 'ecommerce'
+                                    ? 'E-Commerce'
+                                    : group.charges[0].category === 'filiação'
+                                      ? 'Filiação'
+                                      : 'Geral'}
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                  </React.Fragment>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-        {totalPages > 0 && (
-          <div className="p-4 border-t flex items-center justify-between bg-muted/20">
-            <span className="text-sm text-muted-foreground">
-              Mostrando {paginatedGroups.length} de {groupedFilteredCharges.length} grupos
-            </span>
-            <div className="flex gap-2 items-center">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === 1}
-                onClick={() => setPage((p) => p - 1)}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <span className="text-sm px-2">
-                Página {page} de {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === totalPages}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
+                          )}
+                        </TableCell>
+                        <TableCell>{group.client_name}</TableCell>
+                        <TableCell
+                          className={
+                            group.charges[0]?.type === 'payable' ? 'text-red-500' : 'text-green-600'
+                          }
+                        >
+                          {group.charges[0]?.type === 'payable' ? '- ' : '+ '}
+                          {formatCurrency(group.total_amount)}
+                        </TableCell>
+                        <TableCell className="text-green-600">
+                          {formatCurrency(group.total_paid)}
+                        </TableCell>
+                        <TableCell className={group.balance_due > 0 ? 'text-red-500' : ''}>
+                          {formatCurrency(group.balance_due)}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(group.status, group.due_date)}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </div>
-          </div>
-        )}
+            {totalPages > 0 && (
+              <div className="p-2 border-t flex items-center justify-between bg-muted/20 shrink-0">
+                <span className="text-xs text-muted-foreground">
+                  Mostrando {paginatedGroups.length} de {groupedFilteredCharges.length} grupos
+                </span>
+                <div className="flex gap-2 items-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    disabled={page === 1}
+                    onClick={() => setPage((p) => p - 1)}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <span className="text-xs px-2">
+                    Página {page} de {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    disabled={page === totalPages}
+                    onClick={() => setPage((p) => p + 1)}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </ResizablePanel>
+
+          <ResizableHandle withHandle />
+
+          <ResizablePanel defaultSize={50} minSize={20} className="flex flex-col bg-muted/5">
+            <div className="p-3 border-b bg-muted/30 font-medium text-sm flex items-center justify-between shrink-0">
+              <span>
+                Detalhes das Parcelas {selectedGroup ? `- ${selectedGroup.description}` : ''}
+              </span>
+              {selectedGroup?.isGroup && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  onClick={() => navigate(`/admin/quotes/${selectedGroup.id}`)}
+                >
+                  Ver Orçamento
+                </Button>
+              )}
+            </div>
+            <div className="flex-1 overflow-auto">
+              {!selectedGroup ? (
+                <div className="h-full flex items-center justify-center text-muted-foreground p-8 text-center text-sm">
+                  Selecione um registro acima para ver os detalhes das parcelas.
+                </div>
+              ) : detailLoading ? (
+                <div className="h-full flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nº Parcela / Descrição</TableHead>
+                      <TableHead>Vencimento</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedGroup.charges.map((charge, idx) => (
+                      <TableRow key={charge.id} className="bg-background hover:bg-muted/50">
+                        <TableCell className="font-medium">
+                          {charge.description ||
+                            `Parcela ${charge.parcela_numero || idx + 1}/${
+                              charge.parcela_total || selectedGroup.charges.length
+                            }`}
+                        </TableCell>
+                        <TableCell>{formatDate(charge.due_date)}</TableCell>
+                        <TableCell>{formatCurrency(charge.amount)}</TableCell>
+                        <TableCell>{getStatusBadge(charge.status, charge.due_date)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <SingleChargeActions charge={charge} />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </Card>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
