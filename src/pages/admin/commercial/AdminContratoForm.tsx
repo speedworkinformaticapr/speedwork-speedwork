@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -12,15 +13,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
 import { formatCurrencyInput, parseCurrencyInput } from '@/lib/utils'
+import { ArrowLeft, Plus } from 'lucide-react'
 
 export default function AdminContratoForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const [clientes, setClientes] = useState<any[]>([])
 
+  const [clientes, setClientes] = useState<any[]>([])
   const [planoContas, setPlanoContas] = useState<any[]>([])
   const [slas, setSlas] = useState<any[]>([])
 
@@ -35,6 +45,16 @@ export default function AdminContratoForm() {
     renovacao_automatica: true,
     observacoes: '',
   })
+
+  // Quick Add States
+  const [newClientOpen, setNewClientOpen] = useState(false)
+  const [newClientName, setNewClientName] = useState('')
+
+  const [newContaOpen, setNewContaOpen] = useState(false)
+  const [newConta, setNewConta] = useState({ nome: '', codigo_estrutural: '', natureza: 'receita' })
+
+  const [newSlaOpen, setNewSlaOpen] = useState(false)
+  const [newSlaName, setNewSlaName] = useState('')
 
   useEffect(() => {
     supabase
@@ -51,13 +71,14 @@ export default function AdminContratoForm() {
       .select('id, name')
       .then(({ data }) => setSlas(data || []))
 
-    if (id)
+    if (id) {
       supabase
         .from('contratos')
         .select('*')
         .eq('id', id)
         .single()
         .then(({ data }) => data && setForm((prev) => ({ ...prev, ...data })))
+    }
   }, [id])
 
   const handleSave = async (status: string) => {
@@ -77,99 +98,230 @@ export default function AdminContratoForm() {
     if (id) await supabase.from('contratos').update(payload).eq('id', id)
     else await supabase.from('contratos').insert([payload])
 
-    toast({ title: 'Contrato salvo' })
+    toast({ title: 'Contrato salvo com sucesso' })
     navigate('/admin/commercial/contratos')
   }
 
+  const handleQuickAddClient = async () => {
+    if (!newClientName) return
+    const { data } = await supabase
+      .from('clientes')
+      .insert([{ nome: newClientName }])
+      .select()
+      .single()
+    if (data) {
+      setClientes([...clientes, data])
+      setForm({ ...form, cliente_id: data.id })
+      setNewClientOpen(false)
+      setNewClientName('')
+      toast({ title: 'Cliente adicionado' })
+    }
+  }
+
+  const handleQuickAddConta = async () => {
+    if (!newConta.nome || !newConta.codigo_estrutural) return
+    const { data } = await supabase
+      .from('plano_contas')
+      .insert([{ ...newConta, is_active: true }])
+      .select()
+      .single()
+    if (data) {
+      setPlanoContas([...planoContas, data])
+      setForm({ ...form, conta_id: data.id })
+      setNewContaOpen(false)
+      setNewConta({ nome: '', codigo_estrutural: '', natureza: 'receita' })
+      toast({ title: 'Conta financeira adicionada' })
+    }
+  }
+
+  const handleQuickAddSla = async () => {
+    if (!newSlaName) return
+    const { data } = await supabase
+      .from('sla_types')
+      .insert([{ name: newSlaName }])
+      .select()
+      .single()
+    if (data) {
+      setSlas([...slas, data])
+      setForm({ ...form, sla_id: data.id })
+      setNewSlaOpen(false)
+      setNewSlaName('')
+      toast({ title: 'SLA adicionado' })
+    }
+  }
+
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">{id ? 'Editar Contrato' : 'Novo Contrato'}</h1>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Cliente *</Label>
-          <Select
-            value={form.cliente_id}
-            onValueChange={(v) => setForm({ ...form, cliente_id: v })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione" />
-            </SelectTrigger>
-            <SelectContent>
-              {clientes.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Tipo de Contrato</Label>
-          <Select
-            value={form.tipo_contrato}
-            onValueChange={(v) => setForm({ ...form, tipo_contrato: v })}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="assinatura">Assinatura</SelectItem>
-              <SelectItem value="manutencao">Manutenção</SelectItem>
-              <SelectItem value="suporte">Suporte</SelectItem>
-              <SelectItem value="consultoria">Consultoria</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>Data Início</Label>
-          <Input
-            type="date"
-            value={form.data_inicio}
-            onChange={(e) => setForm({ ...form, data_inicio: e.target.value })}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Valor do Ciclo (R$)</Label>
-          <Input
-            value={formatCurrencyInput(form.valor_ciclo)}
-            onChange={(e) => setForm({ ...form, valor_ciclo: parseCurrencyInput(e.target.value) })}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Conta Financeira (DRE)</Label>
-          <Select
-            value={form.conta_id || ''}
-            onValueChange={(v) => setForm({ ...form, conta_id: v })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione a conta" />
-            </SelectTrigger>
-            <SelectContent>
-              {planoContas.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.codigo_estrutural} - {c.nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>SLA Associado</Label>
-          <Select value={form.sla_id || ''} onValueChange={(v) => setForm({ ...form, sla_id: v })}>
-            <SelectTrigger>
-              <SelectValue placeholder="Nenhum SLA selecionado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Nenhum SLA</SelectItem>
-              {slas.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {s.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="flex items-center gap-4 mb-6">
+        <Button variant="ghost" onClick={() => navigate(-1)}>
+          <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
+        </Button>
+        <h1 className="text-2xl font-bold">{id ? 'Editar Contrato' : 'Novo Contrato'}</h1>
       </div>
+
+      <Tabs defaultValue="cliente" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsTrigger value="cliente">Cliente e Tipo</TabsTrigger>
+          <TabsTrigger value="faturamento">Faturamento</TabsTrigger>
+          <TabsTrigger value="sla">SLA e Termos</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="cliente" className="space-y-4 bg-card p-6 border rounded-xl">
+          <div className="space-y-2">
+            <Label>Cliente *</Label>
+            <div className="flex gap-2">
+              <Select
+                value={form.cliente_id}
+                onValueChange={(v) => setForm({ ...form, cliente_id: v })}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Selecione o cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientes.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setNewClientOpen(true)}
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Tipo de Contrato</Label>
+            <Select
+              value={form.tipo_contrato}
+              onValueChange={(v) => setForm({ ...form, tipo_contrato: v })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="assinatura">Assinatura</SelectItem>
+                <SelectItem value="manutencao">Manutenção</SelectItem>
+                <SelectItem value="suporte">Suporte</SelectItem>
+                <SelectItem value="consultoria">Consultoria</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="faturamento" className="space-y-4 bg-card p-6 border rounded-xl">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Data Início</Label>
+              <Input
+                type="date"
+                value={form.data_inicio}
+                onChange={(e) => setForm({ ...form, data_inicio: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Duração do Ciclo</Label>
+              <Select
+                value={form.duracao_ciclo}
+                onValueChange={(v) => setForm({ ...form, duracao_ciclo: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mensal">Mensal</SelectItem>
+                  <SelectItem value="trimestral">Trimestral</SelectItem>
+                  <SelectItem value="semestral">Semestral</SelectItem>
+                  <SelectItem value="anual">Anual</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Valor do Ciclo (R$)</Label>
+              <Input
+                value={formatCurrencyInput(form.valor_ciclo)}
+                onChange={(e) =>
+                  setForm({ ...form, valor_ciclo: parseCurrencyInput(e.target.value) })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Conta Financeira (DRE)</Label>
+              <div className="flex gap-2">
+                <Select
+                  value={form.conta_id || ''}
+                  onValueChange={(v) => setForm({ ...form, conta_id: v })}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Selecione a conta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {planoContas.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.codigo_estrutural} - {c.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setNewContaOpen(true)}
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="sla" className="space-y-4 bg-card p-6 border rounded-xl">
+          <div className="space-y-2">
+            <Label>SLA Associado</Label>
+            <div className="flex gap-2">
+              <Select
+                value={form.sla_id || ''}
+                onValueChange={(v) => setForm({ ...form, sla_id: v })}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Nenhum SLA selecionado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Nenhum SLA</SelectItem>
+                  {slas.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setNewSlaOpen(true)}
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Observações e Termos Adicionais</Label>
+            <Textarea
+              rows={5}
+              value={form.observacoes}
+              onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
+
       <div className="flex justify-end gap-4 mt-8">
         <Button variant="outline" onClick={() => navigate(-1)}>
           Cancelar
@@ -179,6 +331,75 @@ export default function AdminContratoForm() {
         </Button>
         <Button onClick={() => handleSave('ativo')}>Ativar Contrato</Button>
       </div>
+
+      {/* Quick Add Modals */}
+      <Dialog open={newClientOpen} onOpenChange={setNewClientOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo Cliente</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Nome</Label>
+            <Input value={newClientName} onChange={(e) => setNewClientName(e.target.value)} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewClientOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleQuickAddClient}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={newContaOpen} onOpenChange={setNewContaOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nova Conta Financeira</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Código Estrutural</Label>
+              <Input
+                placeholder="Ex: 1.01.01"
+                value={newConta.codigo_estrutural}
+                onChange={(e) => setNewConta({ ...newConta, codigo_estrutural: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Nome da Conta</Label>
+              <Input
+                placeholder="Ex: Receitas Diversas"
+                value={newConta.nome}
+                onChange={(e) => setNewConta({ ...newConta, nome: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewContaOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleQuickAddConta}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={newSlaOpen} onOpenChange={setNewSlaOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo SLA</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Nome do SLA</Label>
+            <Input value={newSlaName} onChange={(e) => setNewSlaName(e.target.value)} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewSlaOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleQuickAddSla}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

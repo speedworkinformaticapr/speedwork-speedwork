@@ -1140,6 +1140,7 @@ export type Database = {
       financial_charges: {
         Row: {
           amount: number
+          asaas_id: string | null
           athlete_id: string | null
           category: string | null
           client_name: string
@@ -1148,12 +1149,14 @@ export type Database = {
           document: string | null
           due_date: string
           id: string
+          orcamento_id: string | null
           payment_date: string | null
           status: string
           type: string | null
         }
         Insert: {
           amount: number
+          asaas_id?: string | null
           athlete_id?: string | null
           category?: string | null
           client_name: string
@@ -1162,12 +1165,14 @@ export type Database = {
           document?: string | null
           due_date: string
           id?: string
+          orcamento_id?: string | null
           payment_date?: string | null
           status?: string
           type?: string | null
         }
         Update: {
           amount?: number
+          asaas_id?: string | null
           athlete_id?: string | null
           category?: string | null
           client_name?: string
@@ -1176,6 +1181,7 @@ export type Database = {
           document?: string | null
           due_date?: string
           id?: string
+          orcamento_id?: string | null
           payment_date?: string | null
           status?: string
           type?: string | null
@@ -1186,6 +1192,13 @@ export type Database = {
             columns: ['athlete_id']
             isOneToOne: false
             referencedRelation: 'athletes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'financial_charges_orcamento_id_fkey'
+            columns: ['orcamento_id']
+            isOneToOne: false
+            referencedRelation: 'orcamentos'
             referencedColumns: ['id']
           },
         ]
@@ -1579,6 +1592,7 @@ export type Database = {
       }
       orcamentos: {
         Row: {
+          asaas_id: string | null
           cliente_id: string | null
           conta_id: string | null
           created_at: string
@@ -1588,12 +1602,15 @@ export type Database = {
           desconto_percentual: number | null
           desconto_valor: number | null
           id: string
+          link_enviado: boolean | null
+          link_pagamento: string | null
           motivo_rejeicao: string | null
           numero_orcamento: string | null
           observacoes: string | null
           pedido_id: string | null
           responsavel_id: string | null
           status: string
+          status_pagamento: string | null
           subtotal: number | null
           total: number | null
           updated_at: string
@@ -1604,6 +1621,7 @@ export type Database = {
           veiculo_placa: string | null
         }
         Insert: {
+          asaas_id?: string | null
           cliente_id?: string | null
           conta_id?: string | null
           created_at?: string
@@ -1613,12 +1631,15 @@ export type Database = {
           desconto_percentual?: number | null
           desconto_valor?: number | null
           id?: string
+          link_enviado?: boolean | null
+          link_pagamento?: string | null
           motivo_rejeicao?: string | null
           numero_orcamento?: string | null
           observacoes?: string | null
           pedido_id?: string | null
           responsavel_id?: string | null
           status?: string
+          status_pagamento?: string | null
           subtotal?: number | null
           total?: number | null
           updated_at?: string
@@ -1629,6 +1650,7 @@ export type Database = {
           veiculo_placa?: string | null
         }
         Update: {
+          asaas_id?: string | null
           cliente_id?: string | null
           conta_id?: string | null
           created_at?: string
@@ -1638,12 +1660,15 @@ export type Database = {
           desconto_percentual?: number | null
           desconto_valor?: number | null
           id?: string
+          link_enviado?: boolean | null
+          link_pagamento?: string | null
           motivo_rejeicao?: string | null
           numero_orcamento?: string | null
           observacoes?: string | null
           pedido_id?: string | null
           responsavel_id?: string | null
           status?: string
+          status_pagamento?: string | null
           subtotal?: number | null
           total?: number | null
           updated_at?: string
@@ -3355,6 +3380,8 @@ export const Constants = {
 //   document: text (nullable)
 //   payment_date: date (nullable)
 //   athlete_id: uuid (nullable)
+//   asaas_id: text (nullable)
+//   orcamento_id: uuid (nullable)
 // Table: financial_partners
 //   id: uuid (not null, default: gen_random_uuid())
 //   name: text (not null)
@@ -3480,6 +3507,10 @@ export const Constants = {
 //   veiculo_modelo: text (nullable)
 //   veiculo_km: text (nullable)
 //   conta_id: uuid (nullable)
+//   link_pagamento: text (nullable)
+//   asaas_id: text (nullable)
+//   status_pagamento: text (nullable, default: 'pendente'::text)
+//   link_enviado: boolean (nullable, default: false)
 // Table: order_items
 //   id: uuid (not null, default: gen_random_uuid())
 //   order_id: uuid (nullable)
@@ -3880,6 +3911,7 @@ export const Constants = {
 //   PRIMARY KEY events_pkey: PRIMARY KEY (id)
 // Table: financial_charges
 //   FOREIGN KEY financial_charges_athlete_id_fkey: FOREIGN KEY (athlete_id) REFERENCES athletes(id) ON DELETE SET NULL
+//   FOREIGN KEY financial_charges_orcamento_id_fkey: FOREIGN KEY (orcamento_id) REFERENCES orcamentos(id) ON DELETE SET NULL
 //   PRIMARY KEY financial_charges_pkey: PRIMARY KEY (id)
 // Table: financial_partners
 //   PRIMARY KEY financial_partners_pkey: PRIMARY KEY (id)
