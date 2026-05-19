@@ -844,7 +844,7 @@ export type Database = {
             foreignKeyName: 'contratos_cliente_id_fkey'
             columns: ['cliente_id']
             isOneToOne: false
-            referencedRelation: 'clientes'
+            referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
           {
@@ -1683,7 +1683,7 @@ export type Database = {
             foreignKeyName: 'orcamentos_cliente_id_fkey'
             columns: ['cliente_id']
             isOneToOne: false
-            referencedRelation: 'clientes'
+            referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
           {
@@ -2000,7 +2000,7 @@ export type Database = {
             foreignKeyName: 'pedidos_cliente_id_fkey'
             columns: ['cliente_id']
             isOneToOne: false
-            referencedRelation: 'clientes'
+            referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
           {
@@ -2224,7 +2224,9 @@ export type Database = {
           id: string
           is_athlete: boolean | null
           is_author: boolean | null
+          is_client: boolean | null
           is_club: boolean | null
+          is_supplier: boolean | null
           name: string | null
           nationality: string | null
           naturalness: string | null
@@ -2250,10 +2252,12 @@ export type Database = {
           email?: string | null
           financial_status?: string | null
           gender?: string | null
-          id: string
+          id?: string
           is_athlete?: boolean | null
           is_author?: boolean | null
+          is_client?: boolean | null
           is_club?: boolean | null
+          is_supplier?: boolean | null
           name?: string | null
           nationality?: string | null
           naturalness?: string | null
@@ -2282,7 +2286,9 @@ export type Database = {
           id?: string
           is_athlete?: boolean | null
           is_author?: boolean | null
+          is_client?: boolean | null
           is_club?: boolean | null
+          is_supplier?: boolean | null
           name?: string | null
           nationality?: string | null
           naturalness?: string | null
@@ -3628,7 +3634,7 @@ export const Constants = {
 //   description_en: text (nullable)
 //   description_es: text (nullable)
 // Table: profiles
-//   id: uuid (not null)
+//   id: uuid (not null, default: gen_random_uuid())
 //   email: text (nullable)
 //   name: text (nullable)
 //   role: text (nullable, default: 'athlete'::text)
@@ -3655,6 +3661,8 @@ export const Constants = {
 //   numero_registro_federativo: text (nullable)
 //   club_id: uuid (nullable)
 //   is_author: boolean (nullable, default: false)
+//   is_client: boolean (nullable, default: false)
+//   is_supplier: boolean (nullable, default: false)
 // Table: rankings
 //   id: uuid (not null, default: gen_random_uuid())
 //   athlete_id: uuid (nullable)
@@ -3887,7 +3895,7 @@ export const Constants = {
 // Table: contract_templates
 //   PRIMARY KEY contract_templates_pkey: PRIMARY KEY (id)
 // Table: contratos
-//   FOREIGN KEY contratos_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+//   FOREIGN KEY contratos_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES profiles(id) ON DELETE CASCADE
 //   FOREIGN KEY contratos_conta_id_fkey: FOREIGN KEY (conta_id) REFERENCES plano_contas(id) ON DELETE SET NULL
 //   UNIQUE contratos_numero_contrato_key: UNIQUE (numero_contrato)
 //   PRIMARY KEY contratos_pkey: PRIMARY KEY (id)
@@ -3943,7 +3951,7 @@ export const Constants = {
 //   FOREIGN KEY orcamento_itens_servico_id_fkey: FOREIGN KEY (servico_id) REFERENCES services(id) ON DELETE SET NULL
 //   FOREIGN KEY orcamento_itens_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id)
 // Table: orcamentos
-//   FOREIGN KEY orcamentos_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+//   FOREIGN KEY orcamentos_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES profiles(id) ON DELETE CASCADE
 //   FOREIGN KEY orcamentos_conta_id_fkey: FOREIGN KEY (conta_id) REFERENCES plano_contas(id) ON DELETE SET NULL
 //   FOREIGN KEY orcamentos_pedido_id_fkey: FOREIGN KEY (pedido_id) REFERENCES pedidos(id)
 //   PRIMARY KEY orcamentos_pkey: PRIMARY KEY (id)
@@ -3967,7 +3975,7 @@ export const Constants = {
 //   FOREIGN KEY pedido_itens_servico_id_fkey: FOREIGN KEY (servico_id) REFERENCES services(id) ON DELETE SET NULL
 //   FOREIGN KEY pedido_itens_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: pedidos
-//   FOREIGN KEY pedidos_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+//   FOREIGN KEY pedidos_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES profiles(id) ON DELETE CASCADE
 //   FOREIGN KEY pedidos_conta_id_fkey: FOREIGN KEY (conta_id) REFERENCES plano_contas(id) ON DELETE SET NULL
 //   UNIQUE pedidos_numero_pedido_key: UNIQUE (numero_pedido)
 //   FOREIGN KEY pedidos_orcamento_id_fkey: FOREIGN KEY (orcamento_id) REFERENCES orcamentos(id)
@@ -3988,7 +3996,6 @@ export const Constants = {
 //   PRIMARY KEY products_pkey: PRIMARY KEY (id)
 // Table: profiles
 //   FOREIGN KEY profiles_club_id_fkey: FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE SET NULL
-//   FOREIGN KEY profiles_id_fkey: FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
 //   PRIMARY KEY profiles_pkey: PRIMARY KEY (id)
 // Table: rankings
 //   FOREIGN KEY rankings_athlete_id_fkey: FOREIGN KEY (athlete_id) REFERENCES athletes(id) ON DELETE CASCADE

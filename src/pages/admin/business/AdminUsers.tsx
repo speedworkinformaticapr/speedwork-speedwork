@@ -150,12 +150,17 @@ export default function AdminUsers() {
     }
   }
 
-  const formatCPF = (value: string) => {
+  const formatCpfCnpj = (value: string) => {
     const v = value.replace(/\D/g, '')
-    if (v.length <= 3) return v
-    if (v.length <= 6) return `${v.slice(0, 3)}.${v.slice(3)}`
-    if (v.length <= 9) return `${v.slice(0, 3)}.${v.slice(3, 6)}.${v.slice(6)}`
-    return `${v.slice(0, 3)}.${v.slice(3, 6)}.${v.slice(6, 9)}-${v.slice(9, 11)}`
+    if (v.length <= 11) {
+      if (v.length <= 3) return v
+      if (v.length <= 6) return `${v.slice(0, 3)}.${v.slice(3)}`
+      if (v.length <= 9) return `${v.slice(0, 3)}.${v.slice(3, 6)}.${v.slice(6)}`
+      return `${v.slice(0, 3)}.${v.slice(3, 6)}.${v.slice(6, 9)}-${v.slice(9, 11)}`
+    } else {
+      if (v.length <= 12) return `${v.slice(0, 2)}.${v.slice(2, 5)}.${v.slice(5, 8)}/${v.slice(8)}`
+      return `${v.slice(0, 2)}.${v.slice(2, 5)}.${v.slice(5, 8)}/${v.slice(8, 12)}-${v.slice(12, 14)}`
+    }
   }
 
   const formatRegistro = (val?: string) => {
@@ -199,7 +204,7 @@ export default function AdminUsers() {
       setFormData({
         name: u.name || '',
         email: u.email || '',
-        cpf: u.cpf_cnpj || u.document || '',
+        cpf: formatCpfCnpj(u.cpf_cnpj || u.document || ''),
         birth_date: u.birth_date || '',
         role: u.role || 'user',
         status: u.status || 'active',
@@ -262,14 +267,16 @@ export default function AdminUsers() {
     try {
       const isAthlete = formData.role === 'athlete' || formData.tipo_usuario === 'atleta'
 
+      const cleanCpfCnpj = formData.cpf.replace(/\D/g, '')
+
       const payload = {
         role: formData.role,
         tipo_usuario: formData.tipo_usuario || formData.role,
         status: formData.status,
         financial_status: formData.financial_status,
         name: formData.name,
-        document: formData.cpf,
-        cpf_cnpj: formData.cpf,
+        document: cleanCpfCnpj,
+        cpf_cnpj: cleanCpfCnpj,
         birth_date: formData.birth_date || null,
         gender: formData.genero || null,
         phone: formData.telefone || null,
@@ -378,10 +385,12 @@ export default function AdminUsers() {
   const filteredItems = users
     .filter((u) => {
       const doc = u.cpf_cnpj || u.document || ''
+      const cleanSearch = search.replace(/\D/g, '')
       const matchSearch =
         u.name?.toLowerCase().includes(search.toLowerCase()) ||
         u.email?.toLowerCase().includes(search.toLowerCase()) ||
-        doc.includes(search)
+        doc.includes(search) ||
+        (cleanSearch.length > 0 && doc.includes(cleanSearch))
       const matchRole = roleFilter === 'all' || u.role === roleFilter
       return matchSearch && matchRole
     })
@@ -532,7 +541,7 @@ export default function AdminUsers() {
                   <TableCell className="font-medium whitespace-nowrap">{u.name || '-'}</TableCell>
                   <TableCell>{u.email}</TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {u.cpf_cnpj || u.document || '-'}
+                    {u.cpf_cnpj || u.document ? formatCpfCnpj(u.cpf_cnpj || u.document) : '-'}
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
                     {u.birth_date
@@ -846,7 +855,9 @@ export default function AdminUsers() {
                     <Input
                       disabled={viewOnly}
                       value={formData.cpf}
-                      onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, cpf: formatCpfCnpj(e.target.value) })
+                      }
                       placeholder="000.000.000-00 ou 00.000.000/0000-00"
                       maxLength={18}
                     />
