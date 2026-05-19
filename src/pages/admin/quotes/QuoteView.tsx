@@ -22,7 +22,7 @@ export default function QuoteView() {
   const load = async () => {
     const { data: q } = await supabase
       .from('orcamentos')
-      .select('*, clientes!orcamentos_cliente_id_fkey(nome, email)')
+      .select('*, clientes(nome, email)')
       .eq('id', id)
       .single()
 
@@ -57,6 +57,7 @@ export default function QuoteView() {
         .insert({
           cliente_id: quote.cliente_id,
           orcamento_id: quote.id,
+          conta_id: quote.conta_id,
           responsavel_id: quote.responsavel_id,
           valor_total: quote.total,
           status: 'pendente',

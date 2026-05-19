@@ -86,7 +86,7 @@ export default function AdminQuotes() {
     try {
       const { data, error: err } = await supabase
         .from('orcamentos')
-        .select('*, clientes!orcamentos_cliente_id_fkey(nome)')
+        .select('*, clientes(nome)')
         .order('created_at', { ascending: false })
       if (err) throw err
       setQuotes(data || [])

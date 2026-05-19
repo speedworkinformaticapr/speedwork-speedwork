@@ -55,6 +55,11 @@ export default function QuoteForm() {
   const [newContaOpen, setNewContaOpen] = useState(false)
   const [newConta, setNewConta] = useState({ nome: '', codigo_estrutural: '', natureza: 'receita' })
 
+  const [newProductOpen, setNewProductOpen] = useState(false)
+  const [newProduct, setNewProduct] = useState({ name: '', price: 0 })
+  const [newServiceOpen, setNewServiceOpen] = useState(false)
+  const [newService, setNewService] = useState({ title: '', sale_value: 0 })
+
   useEffect(() => {
     supabase
       .from('plano_contas')
@@ -175,25 +180,35 @@ export default function QuoteForm() {
     const payload: any = { ...data, subtotal, total, status }
     if (!payload.conta_id) payload.conta_id = null
 
-    let orcId = id
-    if (id) {
-      await supabase.from('orcamentos').update(payload).eq('id', id)
-      await supabase.from('orcamento_itens').delete().eq('orcamento_id', id)
-    } else {
-      const res = await supabase.from('orcamentos').insert(payload).select().single()
-      orcId = res.data?.id
-    }
+    try {
+      let orcId = id
+      if (id) {
+        const { error: updateError } = await supabase
+          .from('orcamentos')
+          .update(payload)
+          .eq('id', id)
+        if (updateError) throw updateError
+        await supabase.from('orcamento_itens').delete().eq('orcamento_id', id)
+      } else {
+        const res = await supabase.from('orcamentos').insert(payload).select().single()
+        if (res.error) throw res.error
+        orcId = res.data?.id
+      }
 
-    if (orcId) {
-      const itemsPayload = items.map((i) => {
-        const { id, tempo_estimado_str, ...cleanItem } = i
-        return { ...cleanItem, orcamento_id: orcId }
-      })
-      await supabase.from('orcamento_itens').insert(itemsPayload)
-    }
+      if (orcId) {
+        const itemsPayload = items.map((i) => {
+          const { id, tempo_estimado_str, ...cleanItem } = i
+          return { ...cleanItem, orcamento_id: orcId }
+        })
+        const { error: itemsError } = await supabase.from('orcamento_itens').insert(itemsPayload)
+        if (itemsError) throw itemsError
+      }
 
-    toast({ title: 'Orçamento salvo com sucesso!' })
-    navigate('/admin/quotes')
+      toast({ title: 'Orçamento salvo com sucesso!' })
+      navigate('/admin/quotes')
+    } catch (e: any) {
+      toast({ title: 'Erro ao salvar orçamento', description: e.message, variant: 'destructive' })
+    }
   }
 
   const handleQuickAddClient = async () => {
@@ -225,6 +240,40 @@ export default function QuoteForm() {
       setNewContaOpen(false)
       setNewConta({ nome: '', codigo_estrutural: '', natureza: 'receita' })
       toast({ title: 'Conta financeira adicionada' })
+    }
+  }
+
+  const handleQuickAddProduct = async () => {
+    if (!newProduct.name) return
+    const { data, error } = await supabase
+      .from('products')
+      .insert([{ name: newProduct.name, price: newProduct.price }])
+      .select()
+      .single()
+    if (data && !error) {
+      setProducts([...products, data])
+      setNewProductOpen(false)
+      setNewProduct({ name: '', price: 0 })
+      toast({ title: 'Produto adicionado' })
+    } else {
+      toast({ title: 'Erro ao adicionar produto', variant: 'destructive' })
+    }
+  }
+
+  const handleQuickAddService = async () => {
+    if (!newService.title) return
+    const { data, error } = await supabase
+      .from('services' as any)
+      .insert([{ title: newService.title, sale_value: newService.sale_value }])
+      .select()
+      .single()
+    if (data && !error) {
+      setServices([...services, data])
+      setNewServiceOpen(false)
+      setNewService({ title: '', sale_value: 0 })
+      toast({ title: 'Serviço adicionado' })
+    } else {
+      toast({ title: 'Erro ao adicionar serviço', variant: 'destructive' })
     }
   }
 
@@ -385,29 +434,43 @@ export default function QuoteForm() {
                 </div>
                 <div className="flex-1 w-full space-y-2">
                   <Label>{it.tipo_item === 'servico' ? 'Serviço' : 'Produto'}</Label>
-                  <Select
-                    value={it.tipo_item === 'servico' ? it.servico_id || '' : it.produto_id || ''}
-                    onValueChange={(v) =>
-                      updateItem(idx, it.tipo_item === 'servico' ? 'servico_id' : 'produto_id', v)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {it.tipo_item === 'servico'
-                        ? services.map((s) => (
-                            <SelectItem key={s.id} value={s.id}>
-                              {s.title}
-                            </SelectItem>
-                          ))
-                        : products.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.name}
-                            </SelectItem>
-                          ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Select
+                      value={it.tipo_item === 'servico' ? it.servico_id || '' : it.produto_id || ''}
+                      onValueChange={(v) =>
+                        updateItem(idx, it.tipo_item === 'servico' ? 'servico_id' : 'produto_id', v)
+                      }
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {it.tipo_item === 'servico'
+                          ? services.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {s.title}
+                              </SelectItem>
+                            ))
+                          : products.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.name}
+                              </SelectItem>
+                            ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() =>
+                        it.tipo_item === 'servico'
+                          ? setNewServiceOpen(true)
+                          : setNewProductOpen(true)
+                      }
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
                 {it.tipo_item === 'servico' && (
                   <div className="w-full md:w-24 space-y-2">
@@ -567,6 +630,70 @@ export default function QuoteForm() {
               Cancelar
             </Button>
             <Button onClick={handleQuickAddConta}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={newProductOpen} onOpenChange={setNewProductOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo Produto</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nome do Produto</Label>
+              <Input
+                value={newProduct.name}
+                onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Preço Unitário (R$)</Label>
+              <Input
+                value={formatCurrencyInput(newProduct.price)}
+                onChange={(e) =>
+                  setNewProduct({ ...newProduct, price: parseCurrencyInput(e.target.value) })
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewProductOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleQuickAddProduct}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={newServiceOpen} onOpenChange={setNewServiceOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo Serviço</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Título do Serviço</Label>
+              <Input
+                value={newService.title}
+                onChange={(e) => setNewService({ ...newService, title: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Valor Base (R$)</Label>
+              <Input
+                value={formatCurrencyInput(newService.sale_value)}
+                onChange={(e) =>
+                  setNewService({ ...newService, sale_value: parseCurrencyInput(e.target.value) })
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewServiceOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleQuickAddService}>Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
