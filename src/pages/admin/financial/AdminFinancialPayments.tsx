@@ -37,6 +37,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Checkbox } from '@/components/ui/checkbox'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { formatCurrencyInput, parseCurrencyInput } from '@/lib/utils'
@@ -53,8 +55,11 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
+  Printer,
+  Phone,
 } from 'lucide-react'
 import { PaymentModal } from '@/components/financial/PaymentModal'
+import { generateTermsPDF } from '@/lib/pdf-utils'
 
 type Charge = {
   id: string
@@ -71,6 +76,8 @@ type Charge = {
   club_id?: string | null
   orcamento_id?: string | null
   asaas_id?: string | null
+  conta_id?: string | null
+  profile_id?: string | null
 }
 
 export default function AdminFinancialPayments() {
@@ -94,6 +101,9 @@ export default function AdminFinancialPayments() {
   const { data: systemData } = useSystemData()
   const itemsPerPage = systemData?.records_per_page || 50
 
+  const [planoContas, setPlanoContas] = useState<any[]>([])
+  const [profiles, setProfiles] = useState<any[]>([])
+
   const [formData, setFormData] = useState({
     description: '',
     type: 'receivable',
@@ -104,7 +114,24 @@ export default function AdminFinancialPayments() {
     due_date: '',
     payment_date: '',
     status: 'pendente',
+    conta_id: 'none',
+    profile_id: 'none',
   })
+
+  const [condicoes, setCondicoes] = useState({
+    parcelas: 1,
+    diaVencimento: new Date().getDate(),
+    primeiraHoje: false,
+  })
+
+  const [parcelasGeradas, setParcelasGeradas] = useState<any[]>([])
+  const [activeTab, setActiveTab] = useState('geral')
+
+  // Quick Add States
+  const [newContaOpen, setNewContaOpen] = useState(false)
+  const [newConta, setNewConta] = useState({ nome: '', codigo_estrutural: '', natureza: 'receita' })
+  const [newProfileOpen, setNewProfileOpen] = useState(false)
+  const [newProfileName, setNewProfileName] = useState('')
 
   const { toast } = useToast()
 
@@ -121,6 +148,20 @@ export default function AdminFinancialPayments() {
             (c.status === 'pendente' && new Date(c.due_date) < new Date())),
       )
       .reduce((acc, c) => acc + c.amount, 0),
+  }
+
+  const loadDependencies = async () => {
+    const { data: contas } = await supabase
+      .from('plano_contas')
+      .select('id, nome, codigo_estrutural')
+      .order('codigo_estrutural')
+    if (contas) setPlanoContas(contas)
+
+    const { data: profs } = await supabase
+      .from('profiles')
+      .select('id, name, document, cpf_cnpj')
+      .order('name')
+    if (profs) setProfiles(profs)
   }
 
   const fetchCharges = async () => {
@@ -142,6 +183,7 @@ export default function AdminFinancialPayments() {
   }
 
   useEffect(() => {
+    loadDependencies()
     fetchCharges()
   }, [])
 
@@ -243,7 +285,11 @@ export default function AdminFinancialPayments() {
         due_date: charge.due_date,
         payment_date: charge.payment_date || '',
         status: charge.status,
+        conta_id: charge.conta_id || 'none',
+        profile_id: charge.profile_id || 'none',
       })
+      setParcelasGeradas([])
+      setActiveTab('geral')
     } else {
       setEditingId(null)
       setFormData({
@@ -256,9 +302,66 @@ export default function AdminFinancialPayments() {
         due_date: '',
         payment_date: '',
         status: 'pendente',
+        conta_id: 'none',
+        profile_id: 'none',
       })
+      setCondicoes({
+        parcelas: 1,
+        diaVencimento: new Date().getDate(),
+        primeiraHoje: false,
+      })
+      setParcelasGeradas([])
+      setActiveTab('geral')
     }
     setIsModalOpen(true)
+  }
+
+  const handleGerarParcelas = () => {
+    const qtd = Number(condicoes.parcelas)
+    const total = parseFloat(formData.amount)
+
+    if (!qtd || isNaN(total) || total <= 0) {
+      return toast({
+        title: 'Dados inválidos',
+        description: 'Informe um valor total e um número de parcelas válido.',
+        variant: 'destructive',
+      })
+    }
+
+    const valorParcela = total / qtd
+    const novasParcelas = []
+    const hoje = new Date()
+
+    for (let i = 0; i < qtd; i++) {
+      let dataVenc = new Date(hoje.getFullYear(), hoje.getMonth() + i, condicoes.diaVencimento)
+
+      if (i === 0 && condicoes.primeiraHoje) {
+        dataVenc = new Date()
+      } else if (i === 0 && !condicoes.primeiraHoje) {
+        if (hoje.getDate() >= condicoes.diaVencimento) {
+          dataVenc = new Date(hoje.getFullYear(), hoje.getMonth() + 1, condicoes.diaVencimento)
+        }
+      } else {
+        const firstDate = new Date(novasParcelas[0].due_date + 'T00:00:00')
+        dataVenc = new Date(
+          firstDate.getFullYear(),
+          firstDate.getMonth() + i,
+          condicoes.diaVencimento,
+        )
+      }
+
+      novasParcelas.push({
+        id: `temp_${i}`,
+        description: `${formData.description} - Parcela ${i + 1}/${qtd}`,
+        amount: valorParcela.toFixed(2),
+        due_date: dataVenc.toISOString().split('T')[0],
+        status: i === 0 && condicoes.primeiraHoje ? 'pago' : 'pendente',
+        payment_date: i === 0 && condicoes.primeiraHoje ? hoje.toISOString().split('T')[0] : '',
+      })
+    }
+    setParcelasGeradas(novasParcelas)
+    setActiveTab('parcelas')
+    toast({ title: `${qtd} parcelas geradas com sucesso!` })
   }
 
   const handleDelete = (id: string) => {
@@ -281,17 +384,30 @@ export default function AdminFinancialPayments() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     try {
-      const payload = {
-        ...formData,
-        amount: parseFloat(formData.amount),
-        payment_date: formData.payment_date || null,
+      const basePayload = {
+        type: formData.type,
+        category: formData.category,
+        client_name: formData.client_name,
+        document: formData.document,
+        conta_id: formData.conta_id === 'none' ? null : formData.conta_id,
+        profile_id: formData.profile_id === 'none' ? null : formData.profile_id,
       }
 
       if (editingId) {
+        // Edit single
+        const payload = {
+          ...basePayload,
+          description: formData.description,
+          amount: parseFloat(formData.amount),
+          due_date: formData.due_date,
+          payment_date: formData.payment_date || null,
+          status: formData.status,
+        }
+
         const originalCharge = charges.find((c) => c.id === editingId)
         if (
           originalCharge?.asaas_id &&
@@ -311,8 +427,30 @@ export default function AdminFinancialPayments() {
           .eq('id', editingId)
         toast({ title: 'Atualizado com sucesso' })
       } else {
-        await supabase.from('financial_charges' as any).insert([payload])
-        toast({ title: 'Lançamento criado' })
+        // Create new
+        if (parcelasGeradas.length > 0) {
+          const payloads = parcelasGeradas.map((p) => ({
+            ...basePayload,
+            description: p.description,
+            amount: parseFloat(p.amount),
+            due_date: p.due_date,
+            status: p.status,
+            payment_date: p.payment_date || null,
+          }))
+          await supabase.from('financial_charges' as any).insert(payloads)
+          toast({ title: `${payloads.length} lançamentos criados` })
+        } else {
+          const payload = {
+            ...basePayload,
+            description: formData.description,
+            amount: parseFloat(formData.amount),
+            due_date: formData.due_date,
+            payment_date: formData.payment_date || null,
+            status: formData.status,
+          }
+          await supabase.from('financial_charges' as any).insert([payload])
+          toast({ title: 'Lançamento criado' })
+        }
       }
       setIsModalOpen(false)
       fetchCharges()
@@ -320,6 +458,38 @@ export default function AdminFinancialPayments() {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' })
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleQuickAddConta = async () => {
+    if (!newConta.nome || !newConta.codigo_estrutural) return
+    const { data } = await supabase
+      .from('plano_contas')
+      .insert([{ ...newConta, is_active: true }])
+      .select()
+      .single()
+    if (data) {
+      setPlanoContas([...planoContas, data])
+      setFormData({ ...formData, conta_id: data.id })
+      setNewContaOpen(false)
+      setNewConta({ nome: '', codigo_estrutural: '', natureza: 'receita' })
+      toast({ title: 'Conta financeira adicionada' })
+    }
+  }
+
+  const handleQuickAddProfile = async () => {
+    if (!newProfileName) return
+    const { data } = await supabase
+      .from('profiles')
+      .insert([{ name: newProfileName, is_client: true }])
+      .select()
+      .single()
+    if (data) {
+      setProfiles([...profiles, data])
+      setFormData({ ...formData, profile_id: data.id, client_name: data.name })
+      setNewProfileOpen(false)
+      setNewProfileName('')
+      toast({ title: 'Cliente adicionado' })
     }
   }
 
@@ -334,19 +504,30 @@ export default function AdminFinancialPayments() {
     if (status === 'pago' || status === 'recebido') {
       return <Badge className="bg-green-500 hover:bg-green-600">Pago</Badge>
     }
-
     const isLate = new Date(dueDate) < new Date() && status !== 'pago' && status !== 'recebido'
-
     if (isLate || status === 'atrasado') {
       return <Badge variant="destructive">Atrasado</Badge>
     }
-
     return <Badge className="bg-yellow-500 hover:bg-yellow-600 text-black">Pendente</Badge>
   }
 
   const handleOpenPayment = (charge: Charge) => {
     setSelectedCharge(charge)
     setPaymentModalOpen(true)
+  }
+
+  const handlePrint = (charge: Charge) => {
+    generateTermsPDF(
+      'Recibo / Cobrança',
+      `Identificação do Lançamento:\n\nDescrição: ${charge.description}\nCliente/Fornecedor: ${charge.client_name}\nDocumento: ${charge.document || 'N/A'}\n\nValor: R$ ${charge.amount.toFixed(2)}\nVencimento: ${formatDate(charge.due_date)}\nStatus: ${charge.status.toUpperCase()}\n\nReferência ID: ${charge.id}`,
+    )
+  }
+
+  const handleWhatsApp = (charge: Charge) => {
+    const text = encodeURIComponent(
+      `Olá, segue a cobrança referente a ${charge.description}. Valor: R$ ${charge.amount.toFixed(2)}. Vencimento: ${formatDate(charge.due_date)}.`,
+    )
+    window.open(`https://wa.me/?text=${text}`, '_blank')
   }
 
   return (
@@ -447,6 +628,13 @@ export default function AdminFinancialPayments() {
               Pagar
             </Button>
             <Button
+              variant={activeFilter === 'orcamento' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveFilter('orcamento')}
+            >
+              Orçamentos
+            </Button>
+            <Button
               variant={activeFilter === 'club' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveFilter('club')}
@@ -459,13 +647,6 @@ export default function AdminFinancialPayments() {
               onClick={() => setActiveFilter('athlete')}
             >
               Atleta
-            </Button>
-            <Button
-              variant={activeFilter === 'ecommerce' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveFilter('ecommerce')}
-            >
-              E-Commerce
             </Button>
             <Button
               variant={activeFilter === 'affiliation' ? 'default' : 'outline'}
@@ -487,7 +668,6 @@ export default function AdminFinancialPayments() {
                 <SortHead label="Cliente/Fornecedor" sortKey="client_name" />
                 <SortHead label="Valor" sortKey="amount" />
                 <SortHead label="Vencimento" sortKey="due_date" />
-                <SortHead label="Pagamento" sortKey="payment_date" />
                 <SortHead label="Status" sortKey="status" />
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -495,13 +675,13 @@ export default function AdminFinancialPayments() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={6} className="text-center py-8">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
                   </TableCell>
                 </TableRow>
               ) : sortedFilteredCharges.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     Nenhum lançamento encontrado.
                   </TableCell>
                 </TableRow>
@@ -548,20 +728,44 @@ export default function AdminFinancialPayments() {
                         currency: 'BRL',
                       }).format(charge.amount)}
                     </TableCell>
-                    <TableCell>{formatDate(charge.due_date)}</TableCell>
-                    <TableCell>{formatDate(charge.payment_date || '')}</TableCell>
+                    <TableCell>
+                      {formatDate(charge.due_date)}
+                      {charge.payment_date && (
+                        <div className="text-xs text-muted-foreground">
+                          Pago em: {formatDate(charge.payment_date)}
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell>{getStatusBadge(charge.status, charge.due_date)}</TableCell>
                     <TableCell className="text-right">
                       {charge.status !== 'pago' && charge.type === 'receivable' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mr-2"
-                          onClick={() => handleOpenPayment(charge)}
-                        >
-                          <CreditCard className="w-4 h-4 mr-1" /> Pagar
-                        </Button>
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Pagar via PIX/Cartão"
+                            onClick={() => handleOpenPayment(charge)}
+                          >
+                            <CreditCard className="w-4 h-4 text-emerald-600" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Enviar Cobrança WhatsApp"
+                            onClick={() => handleWhatsApp(charge)}
+                          >
+                            <Phone className="w-4 h-4 text-green-500" />
+                          </Button>
+                        </>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Imprimir"
+                        onClick={() => handlePrint(charge)}
+                      >
+                        <Printer className="w-4 h-4 text-blue-500" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => handleOpenModal(charge)}>
                         <Edit2 className="w-4 h-4" />
                       </Button>
@@ -606,131 +810,405 @@ export default function AdminFinancialPayments() {
       </Card>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>{editingId ? 'Editar Lançamento' : 'Novo Lançamento'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Tipo</Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(v) => setFormData({ ...formData, type: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="receivable">A Receber</SelectItem>
-                    <SelectItem value="payable">A Pagar</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Categoria</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(v) => setFormData({ ...formData, category: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="general">Geral</SelectItem>
-                    <SelectItem value="club">Clube</SelectItem>
-                    <SelectItem value="athlete">Atleta</SelectItem>
-                    <SelectItem value="ecommerce">E-Commerce</SelectItem>
-                    <SelectItem value="filiação">Filiação</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="flex-1 overflow-hidden flex flex-col"
+          >
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="geral">1. Identificação</TabsTrigger>
+              {!editingId && <TabsTrigger value="condicoes">2. Condições</TabsTrigger>}
+              {!editingId && <TabsTrigger value="parcelas">3. Parcelas</TabsTrigger>}
+            </TabsList>
+
+            <div className="flex-1 overflow-y-auto py-4">
+              <TabsContent value="geral" className="space-y-4 m-0">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Tipo</Label>
+                    <Select
+                      value={formData.type}
+                      onValueChange={(v) => setFormData({ ...formData, type: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="receivable">A Receber</SelectItem>
+                        <SelectItem value="payable">A Pagar</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Categoria</Label>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(v) => setFormData({ ...formData, category: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="general">Geral</SelectItem>
+                        <SelectItem value="club">Clube</SelectItem>
+                        <SelectItem value="athlete">Atleta</SelectItem>
+                        <SelectItem value="orcamento">Orçamento</SelectItem>
+                        <SelectItem value="filiação">Filiação</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Conta Financeira (DRE)</Label>
+                  <div className="flex gap-2">
+                    <Select
+                      value={formData.conta_id}
+                      onValueChange={(v) => setFormData({ ...formData, conta_id: v })}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Selecione a conta" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhuma</SelectItem>
+                        {planoContas.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.codigo_estrutural} - {c.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setNewContaOpen(true)}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Cliente / Fornecedor</Label>
+                  <div className="flex gap-2">
+                    <Select
+                      value={formData.profile_id}
+                      onValueChange={(v) => {
+                        const prof = profiles.find((p) => p.id === v)
+                        setFormData({
+                          ...formData,
+                          profile_id: v,
+                          client_name: prof?.name || '',
+                          document: prof?.cpf_cnpj || prof?.document || '',
+                        })
+                      }}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Selecione o Cliente" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Avulso / Sem Cadastro</SelectItem>
+                        {profiles.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setNewProfileOpen(true)}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {formData.profile_id === 'none' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Nome (Avulso)</Label>
+                      <Input
+                        value={formData.client_name}
+                        onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Documento (Avulso)</Label>
+                      <Input
+                        value={formData.document}
+                        onChange={(e) => setFormData({ ...formData, document: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label>Descrição</Label>
+                  <Input
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Ex: Mensalidade, Serviço prestado..."
+                  />
+                </div>
+
+                {editingId && (
+                  <div className="grid grid-cols-3 gap-4 bg-muted/20 p-4 rounded-md border mt-4">
+                    <div className="space-y-2">
+                      <Label>Valor</Label>
+                      <Input
+                        required
+                        value={formatCurrencyInput(formData.amount)}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            amount: parseCurrencyInput(e.target.value).toString(),
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Vencimento</Label>
+                      <Input
+                        type="date"
+                        required
+                        value={formData.due_date}
+                        onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Status</Label>
+                      <Select
+                        value={formData.status}
+                        onValueChange={(v) => setFormData({ ...formData, status: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pendente">Pendente</SelectItem>
+                          <SelectItem value="pago">Pago</SelectItem>
+                          <SelectItem value="atrasado">Atrasado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+
+              {!editingId && (
+                <TabsContent value="condicoes" className="space-y-4 m-0">
+                  <div className="grid grid-cols-2 gap-6 bg-muted/20 p-6 rounded-lg border">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Valor Total (R$)</Label>
+                        <Input
+                          required
+                          className="text-lg font-bold text-primary h-12"
+                          value={formatCurrencyInput(formData.amount)}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              amount: parseCurrencyInput(e.target.value).toString(),
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Quantidade de Parcelas</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="48"
+                          value={condicoes.parcelas}
+                          onChange={(e) =>
+                            setCondicoes({ ...condicoes, parcelas: parseInt(e.target.value) || 1 })
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Dia de Vencimento Fixo</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="31"
+                          value={condicoes.diaVencimento}
+                          onChange={(e) =>
+                            setCondicoes({
+                              ...condicoes,
+                              diaVencimento: parseInt(e.target.value) || 1,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center space-x-2 pt-4">
+                        <Checkbox
+                          id="primeiraHoje"
+                          checked={condicoes.primeiraHoje}
+                          onCheckedChange={(c) => setCondicoes({ ...condicoes, primeiraHoje: !!c })}
+                        />
+                        <Label htmlFor="primeiraHoje" className="cursor-pointer">
+                          Pagamento da 1ª parcela hoje? (Status = Pago)
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-end pt-4">
+                    <Button onClick={handleGerarParcelas} size="lg">
+                      Gerar Parcelas
+                    </Button>
+                  </div>
+                </TabsContent>
+              )}
+
+              {!editingId && (
+                <TabsContent value="parcelas" className="m-0">
+                  <div className="space-y-4">
+                    {parcelasGeradas.length === 0 ? (
+                      <div className="text-center p-8 text-muted-foreground border rounded-md">
+                        Nenhuma parcela gerada ainda. Volte para Condições.
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+                        {parcelasGeradas.map((p, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-3 p-3 bg-muted/30 border rounded-md"
+                          >
+                            <div className="w-12 text-center font-medium">{idx + 1}</div>
+                            <Input
+                              className="flex-1"
+                              value={p.description}
+                              onChange={(e) => {
+                                const newP = [...parcelasGeradas]
+                                newP[idx].description = e.target.value
+                                setParcelasGeradas(newP)
+                              }}
+                            />
+                            <Input
+                              type="date"
+                              className="w-40"
+                              value={p.due_date}
+                              onChange={(e) => {
+                                const newP = [...parcelasGeradas]
+                                newP[idx].due_date = e.target.value
+                                setParcelasGeradas(newP)
+                              }}
+                            />
+                            <Input
+                              className="w-32"
+                              value={formatCurrencyInput(p.amount)}
+                              onChange={(e) => {
+                                const newP = [...parcelasGeradas]
+                                newP[idx].amount = parseCurrencyInput(e.target.value).toString()
+                                setParcelasGeradas(newP)
+                              }}
+                            />
+                            <Select
+                              value={p.status}
+                              onValueChange={(v) => {
+                                const newP = [...parcelasGeradas]
+                                newP[idx].status = v
+                                if (v === 'pago')
+                                  newP[idx].payment_date = new Date().toISOString().split('T')[0]
+                                else newP[idx].payment_date = ''
+                                setParcelasGeradas(newP)
+                              }}
+                            >
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pendente">Pendente</SelectItem>
+                                <SelectItem value="pago">Pago</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+              )}
             </div>
 
-            <div>
-              <Label>Descrição</Label>
-              <Input
-                required
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Cliente / Fornecedor</Label>
-                <Input
-                  required
-                  value={formData.client_name}
-                  onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>CPF / CNPJ</Label>
-                <Input
-                  value={formData.document}
-                  onChange={(e) => setFormData({ ...formData, document: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label>Valor</Label>
-                <Input
-                  required
-                  value={formatCurrencyInput(formData.amount)}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      amount: parseCurrencyInput(e.target.value).toString(),
-                    })
-                  }
-                />
-              </div>
-              <div>
-                <Label>Vencimento</Label>
-                <Input
-                  type="date"
-                  required
-                  value={formData.due_date}
-                  onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Data Pagamento</Label>
-                <Input
-                  type="date"
-                  value={formData.payment_date}
-                  onChange={(e) => setFormData({ ...formData, payment_date: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label>Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(v) => setFormData({ ...formData, status: v })}
+            <DialogFooter className="mt-4 border-t pt-4 shrink-0">
+              <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={isSubmitting || (!editingId && parcelasGeradas.length === 0)}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pendente">Pendente</SelectItem>
-                  <SelectItem value="pago">Pago / Recebido</SelectItem>
-                  <SelectItem value="atrasado">Atrasado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <DialogFooter className="mt-4">
-              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                Salvar
+                Salvar Lançamentos
               </Button>
             </DialogFooter>
-          </form>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick Add Modals */}
+      <Dialog open={newContaOpen} onOpenChange={setNewContaOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nova Conta Financeira</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Código Estrutural</Label>
+              <Input
+                placeholder="Ex: 1.01.01"
+                value={newConta.codigo_estrutural}
+                onChange={(e) => setNewConta({ ...newConta, codigo_estrutural: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Nome da Conta</Label>
+              <Input
+                value={newConta.nome}
+                onChange={(e) => setNewConta({ ...newConta, nome: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewContaOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleQuickAddConta}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={newProfileOpen} onOpenChange={setNewProfileOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo Cliente Rápido</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Nome do Cliente</Label>
+            <Input
+              value={newProfileName}
+              onChange={(e) => setNewProfileName(e.target.value)}
+              placeholder="Ex: João da Silva"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewProfileOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleQuickAddProfile}>Salvar</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -760,7 +1238,7 @@ export default function AdminFinancialPayments() {
           open={paymentModalOpen}
           onOpenChange={setPaymentModalOpen}
           chargeId={selectedCharge.id}
-          athleteId={selectedCharge.athlete_id || null}
+          athleteId={selectedCharge.athlete_id || selectedCharge.profile_id || null}
           amount={selectedCharge.amount}
           description={selectedCharge.description || `Pagamento de ${selectedCharge.client_name}`}
           onSuccess={fetchCharges}

@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -21,8 +22,9 @@ import {
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
-import { Trash, ArrowLeft, Plus } from 'lucide-react'
+import { Trash, ArrowLeft, Plus, MessageCircle, Printer, QrCode } from 'lucide-react'
 import { decimalToTime, formatCurrencyInput, parseCurrencyInput } from '@/lib/utils'
+import { generateTermsPDF } from '@/lib/pdf-utils'
 
 export default function QuoteForm() {
   const { id } = useParams()
@@ -48,6 +50,12 @@ export default function QuoteForm() {
   const [clients, setClients] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
   const [services, setServices] = useState<any[]>([])
+
+  // Financeiro / Parcelas
+  const [installments, setInstallments] = useState<any[]>([])
+  const [condParcelas, setCondParcelas] = useState(1)
+  const [condVencimento, setCondVencimento] = useState(new Date().toISOString().split('T')[0])
+  const [condHoje, setCondHoje] = useState(false)
 
   // Quick Add States
   const [newClientOpen, setNewClientOpen] = useState(false)
@@ -92,6 +100,13 @@ export default function QuoteForm() {
         it?.map((item) => ({ ...item, tempo_estimado_str: decimalToTime(item.tempo_estimado) })) ||
           [],
       )
+
+      const { data: fin } = await supabase
+        .from('financial_charges' as any)
+        .select('*')
+        .eq('orcamento_id', id)
+        .order('due_date', { ascending: true })
+      if (fin) setInstallments(fin)
     }
   }
 
@@ -110,7 +125,6 @@ export default function QuoteForm() {
         descricao: '',
       },
     ])
-
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx))
 
   const updateItem = (idx: number, field: string, val: any) => {
@@ -172,12 +186,39 @@ export default function QuoteForm() {
     ) / 100,
   )
 
+  const generateInstallments = () => {
+    if (total <= 0) return toast({ title: 'Valor total inválido.', variant: 'destructive' })
+    if (installments.some((i) => i.status === 'pago'))
+      return toast({
+        title: 'Já existem parcelas pagas, não é possível re-gerar.',
+        variant: 'destructive',
+      })
+
+    const num = condParcelas || 1
+    const val = total / num
+    let start = condHoje ? new Date() : new Date(condVencimento || Date.now())
+    const newInst = []
+    for (let i = 0; i < num; i++) {
+      const d = new Date(start)
+      d.setMonth(d.getMonth() + i)
+      newInst.push({
+        id: `temp_${Date.now()}_${i}`,
+        description: num > 1 ? `Parcela ${i + 1}/${num}` : 'Pagamento Integral',
+        amount: val,
+        due_date: d.toISOString().split('T')[0],
+        status: 'pendente',
+        parcela_numero: i + 1,
+        parcela_total: num,
+      })
+    }
+    setInstallments(newInst)
+    toast({ title: 'Parcelas geradas!' })
+  }
+
   const handleSave = async (status: string) => {
     if (!data.cliente_id) return toast({ title: 'O cliente é obrigatório', variant: 'destructive' })
     if (items.length === 0)
       return toast({ title: 'Adicione pelo menos 1 item', variant: 'destructive' })
-    if (data.data_validade && data.data_validade < data.data_emissao)
-      return toast({ title: 'Data de validade inválida', variant: 'destructive' })
 
     const payload: any = { ...data, subtotal, total, status }
     if (!payload.conta_id) payload.conta_id = null
@@ -185,11 +226,7 @@ export default function QuoteForm() {
     try {
       let orcId = id
       if (id) {
-        const { error: updateError } = await supabase
-          .from('orcamentos')
-          .update(payload)
-          .eq('id', id)
-        if (updateError) throw updateError
+        await supabase.from('orcamentos').update(payload).eq('id', id)
         await supabase.from('orcamento_itens').delete().eq('orcamento_id', id)
       } else {
         const res = await supabase.from('orcamentos').insert(payload).select().single()
@@ -202,8 +239,51 @@ export default function QuoteForm() {
           const { id, tempo_estimado_str, ...cleanItem } = i
           return { ...cleanItem, orcamento_id: orcId }
         })
-        const { error: itemsError } = await supabase.from('orcamento_itens').insert(itemsPayload)
-        if (itemsError) throw itemsError
+        await supabase.from('orcamento_itens').insert(itemsPayload)
+
+        // Save Installments
+        const currentIds = installments.filter((i) => !i.id.startsWith('temp_')).map((i) => i.id)
+        if (currentIds.length > 0) {
+          await supabase
+            .from('financial_charges' as any)
+            .delete()
+            .eq('orcamento_id', orcId)
+            .eq('status', 'pendente')
+            .not('id', 'in', `(${currentIds.join(',')})`)
+        } else {
+          await supabase
+            .from('financial_charges' as any)
+            .delete()
+            .eq('orcamento_id', orcId)
+            .eq('status', 'pendente')
+        }
+
+        const clientName = clients.find((c) => c.id === data.cliente_id)?.name || 'Cliente'
+
+        for (const inst of installments) {
+          const chargePayload = {
+            orcamento_id: orcId,
+            client_name: clientName,
+            amount: inst.amount,
+            due_date: inst.due_date,
+            description: `Orçamento ${orcId.slice(0, 6)} - ${inst.description}`,
+            status: inst.status || 'pendente',
+            type: 'receivable',
+            category: 'orcamento',
+            conta_id: data.conta_id || null,
+            parcela_numero: inst.parcela_numero || 1,
+            parcela_total: inst.parcela_total || 1,
+          }
+
+          if (inst.id && !inst.id.startsWith('temp_')) {
+            await supabase
+              .from('financial_charges' as any)
+              .update(chargePayload)
+              .eq('id', inst.id)
+          } else {
+            await supabase.from('financial_charges' as any).insert(chargePayload)
+          }
+        }
       }
 
       toast({ title: 'Orçamento salvo com sucesso!' })
@@ -226,12 +306,6 @@ export default function QuoteForm() {
       setNewClientOpen(false)
       setNewClientName('')
       toast({ title: 'Cliente adicionado' })
-    } else {
-      toast({
-        title: 'Erro ao adicionar cliente',
-        variant: 'destructive',
-        description: error?.message,
-      })
     }
   }
 
@@ -251,58 +325,27 @@ export default function QuoteForm() {
     }
   }
 
-  const handleQuickAddProduct = async () => {
-    if (!newProduct.name) return
-    const { data, error } = await supabase
-      .from('products')
-      .insert([{ name: newProduct.name, price: newProduct.price }])
-      .select()
-      .single()
-    if (data && !error) {
-      setProducts([...products, data])
-      setNewProductOpen(false)
-      setNewProduct({ name: '', price: 0 })
-      toast({ title: 'Produto adicionado' })
-    } else {
-      toast({ title: 'Erro ao adicionar produto', variant: 'destructive' })
-    }
-  }
-
-  const handleQuickAddService = async () => {
-    if (!newService.title) return
-    const { data, error } = await supabase
-      .from('services' as any)
-      .insert([{ title: newService.title, sale_value: newService.sale_value }])
-      .select()
-      .single()
-    if (data && !error) {
-      setServices([...services, data])
-      setNewServiceOpen(false)
-      setNewService({ title: '', sale_value: 0 })
-      toast({ title: 'Serviço adicionado' })
-    } else {
-      toast({ title: 'Erro ao adicionar serviço', variant: 'destructive' })
-    }
-  }
-
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="p-6 max-w-6xl mx-auto space-y-6">
       <div className="flex items-center gap-4 mb-4">
         <Button variant="ghost" onClick={() => navigate('/admin/quotes')}>
           <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
         </Button>
-        <h1 className="text-2xl font-bold">{id ? 'Editar Orçamento' : 'Novo Orçamento'}</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {id ? 'Editar Orçamento' : 'Novo Orçamento'}
+        </h1>
       </div>
 
       <Tabs defaultValue="identificacao" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
+        <TabsList className="grid w-full grid-cols-4 mb-6">
           <TabsTrigger value="identificacao">Identificação</TabsTrigger>
           <TabsTrigger value="itens">Itens e Serviços</TabsTrigger>
           <TabsTrigger value="fechamento">Fechamento</TabsTrigger>
+          <TabsTrigger value="financeiro">Forma de Pagamento</TabsTrigger>
         </TabsList>
 
         <TabsContent value="identificacao" className="space-y-6">
-          <div className="bg-card p-6 rounded-xl border space-y-4">
+          <div className="bg-card p-6 rounded-xl border space-y-4 shadow-sm">
             <h3 className="font-semibold text-lg">Dados Básicos</h3>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -379,8 +422,7 @@ export default function QuoteForm() {
               </div>
             </div>
           </div>
-
-          <div className="bg-card p-6 rounded-xl border space-y-4">
+          <div className="bg-card p-6 rounded-xl border space-y-4 shadow-sm">
             <h3 className="font-semibold text-lg">Dados do Veículo (Opcional)</h3>
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
@@ -412,7 +454,7 @@ export default function QuoteForm() {
           </div>
         </TabsContent>
 
-        <TabsContent value="itens" className="space-y-4 bg-card p-6 border rounded-xl">
+        <TabsContent value="itens" className="space-y-4 bg-card p-6 border rounded-xl shadow-sm">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-semibold text-lg">Lista de Itens</h3>
             <Button onClick={addItem} size="sm">
@@ -435,7 +477,7 @@ export default function QuoteForm() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="produto">Peça/Produto</SelectItem>
+                      <SelectItem value="produto">Produto</SelectItem>
                       <SelectItem value="servico">Serviço</SelectItem>
                     </SelectContent>
                   </Select>
@@ -466,30 +508,8 @@ export default function QuoteForm() {
                             ))}
                       </SelectContent>
                     </Select>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() =>
-                        it.tipo_item === 'servico'
-                          ? setNewServiceOpen(true)
-                          : setNewProductOpen(true)
-                      }
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
                   </div>
                 </div>
-                {it.tipo_item === 'servico' && (
-                  <div className="w-full md:w-24 space-y-2">
-                    <Label>Tempo</Label>
-                    <Input
-                      type="time"
-                      value={it.tempo_estimado_str || ''}
-                      onChange={(e) => updateItem(idx, 'tempo_estimado_str', e.target.value)}
-                    />
-                  </div>
-                )}
                 <div className="w-full md:w-20 space-y-2">
                   <Label>Qtd</Label>
                   <Input
@@ -500,7 +520,7 @@ export default function QuoteForm() {
                   />
                 </div>
                 <div className="w-full md:w-28 space-y-2">
-                  <Label>{it.tipo_item === 'servico' ? 'Valor/h (R$)' : 'Unit. (R$)'}</Label>
+                  <Label>Valor Unit.</Label>
                   <Input
                     value={formatCurrencyInput(it.valor_unitario)}
                     onChange={(e) =>
@@ -509,7 +529,7 @@ export default function QuoteForm() {
                   />
                 </div>
                 <div className="w-full md:w-32 space-y-2">
-                  <Label>Total (R$)</Label>
+                  <Label>Total</Label>
                   <Input
                     readOnly
                     value={formatCurrencyInput(it.valor_total)}
@@ -527,14 +547,15 @@ export default function QuoteForm() {
               </div>
             ))}
             {items.length === 0 && (
-              <p className="text-muted-foreground text-center py-4">
-                Nenhum item adicionado ainda.
-              </p>
+              <p className="text-muted-foreground text-center py-4">Nenhum item adicionado.</p>
             )}
           </div>
         </TabsContent>
 
-        <TabsContent value="fechamento" className="space-y-6 bg-card p-6 border rounded-xl">
+        <TabsContent
+          value="fechamento"
+          className="space-y-6 bg-card p-6 border rounded-xl shadow-sm"
+        >
           <div className="grid gap-4 md:grid-cols-4">
             <div className="space-y-2">
               <Label>Subtotal (R$)</Label>
@@ -573,25 +594,187 @@ export default function QuoteForm() {
             <span className="text-2xl font-bold text-primary">R$ {formatCurrencyInput(total)}</span>
           </div>
           <div className="space-y-2">
-            <Label>Observações para o Cliente</Label>
+            <Label>Observações</Label>
             <Textarea
               rows={4}
               value={data.observacoes}
               onChange={(e) => setData({ ...data, observacoes: e.target.value })}
-              placeholder="Termos adicionais, condições..."
+              placeholder="Termos adicionais..."
             />
           </div>
         </TabsContent>
+
+        <TabsContent
+          value="financeiro"
+          className="space-y-6 bg-card p-6 border rounded-xl shadow-sm"
+        >
+          <div className="grid gap-4 md:grid-cols-4 items-end bg-muted/20 p-4 rounded-lg border">
+            <div className="space-y-2">
+              <Label>Número de Parcelas</Label>
+              <Input
+                type="number"
+                min="1"
+                value={condParcelas}
+                onChange={(e) => setCondParcelas(Number(e.target.value))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Data do 1º Vencimento</Label>
+              <Input
+                type="date"
+                value={condVencimento}
+                onChange={(e) => setCondVencimento(e.target.value)}
+                disabled={condHoje}
+              />
+            </div>
+            <div className="flex items-center space-x-2 pb-3">
+              <Checkbox
+                id="condHojeQuote"
+                checked={condHoje}
+                onCheckedChange={(c) => setCondHoje(!!c)}
+              />
+              <Label htmlFor="condHojeQuote" className="font-normal">
+                Pgto 1ª Parcela Hoje?
+              </Label>
+            </div>
+            <Button type="button" onClick={generateInstallments} className="w-full">
+              Gerar Parcelas
+            </Button>
+          </div>
+
+          {installments.length > 0 && (
+            <div className="space-y-4">
+              <h4 className="font-semibold text-lg border-b pb-2">
+                Parcelas Geradas (Fluxo de Caixa)
+              </h4>
+              {installments.map((inst, idx) => (
+                <div
+                  key={idx}
+                  className="flex gap-2 items-center bg-background p-3 rounded-lg border"
+                >
+                  <div className="flex-1">
+                    <Label className="text-xs text-muted-foreground">Descrição</Label>
+                    <Input
+                      value={inst.description}
+                      onChange={(e) => {
+                        const newI = [...installments]
+                        newI[idx].description = e.target.value
+                        setInstallments(newI)
+                      }}
+                    />
+                  </div>
+                  <div className="w-32">
+                    <Label className="text-xs text-muted-foreground">Valor (R$)</Label>
+                    <Input
+                      value={formatCurrencyInput(inst.amount)}
+                      onChange={(e) => {
+                        const newI = [...installments]
+                        newI[idx].amount = parseCurrencyInput(e.target.value)
+                        setInstallments(newI)
+                      }}
+                    />
+                  </div>
+                  <div className="w-40">
+                    <Label className="text-xs text-muted-foreground">Vencimento</Label>
+                    <Input
+                      type="date"
+                      value={inst.due_date}
+                      onChange={(e) => {
+                        const newI = [...installments]
+                        newI[idx].due_date = e.target.value
+                        setInstallments(newI)
+                      }}
+                    />
+                  </div>
+                  <div className="w-36">
+                    <Label className="text-xs text-muted-foreground">Status</Label>
+                    <Select
+                      value={inst.status}
+                      onValueChange={(v) => {
+                        const newI = [...installments]
+                        newI[idx].status = v
+                        setInstallments(newI)
+                      }}
+                    >
+                      <SelectTrigger className="h-10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pendente">Pendente</SelectItem>
+                        <SelectItem value="pago">Pago</SelectItem>
+                        <SelectItem value="atrasado">Atrasado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex mt-5">
+                    {inst.id && !inst.id.startsWith('temp_') && (
+                      <>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          title="PIX"
+                          onClick={() =>
+                            toast({ title: 'Vá para o Fluxo de Caixa para gerar PIX' })
+                          }
+                        >
+                          <QrCode className="w-4 h-4 text-emerald-600" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          title="WhatsApp"
+                          onClick={() =>
+                            window.open(
+                              `https://wa.me/?text=Olá! Segue cobrança da ${inst.description}. Valor: R$ ${inst.amount}. Vencimento: ${new Date(inst.due_date).toLocaleDateString('pt-BR')}`,
+                              '_blank',
+                            )
+                          }
+                        >
+                          <MessageCircle className="w-4 h-4 text-green-500" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          title="Imprimir"
+                          onClick={() =>
+                            generateTermsPDF(
+                              `Cobrança - ${inst.description}`,
+                              `Valor: R$ ${inst.amount}\nVencimento: ${new Date(inst.due_date).toLocaleDateString('pt-BR')}`,
+                            )
+                          }
+                        >
+                          <Printer className="w-4 h-4 text-blue-500" />
+                        </Button>
+                      </>
+                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive"
+                      onClick={() => setInstallments(installments.filter((_, i) => i !== idx))}
+                    >
+                      <Trash className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
 
-      <div className="flex justify-end gap-3 mt-6">
+      <div className="flex justify-end gap-3 mt-6 border-t pt-6">
         <Button variant="outline" onClick={() => navigate('/admin/quotes')}>
           Cancelar
         </Button>
         <Button variant="secondary" onClick={() => handleSave('rascunho')}>
           Salvar Rascunho
         </Button>
-        <Button onClick={() => handleSave('enviado')}>Salvar e Enviar</Button>
+        <Button onClick={() => handleSave('enviado')}>Salvar Orçamento</Button>
       </div>
 
       <Dialog open={newClientOpen} onOpenChange={setNewClientOpen}>
@@ -620,7 +803,7 @@ export default function QuoteForm() {
             <div className="space-y-2">
               <Label>Código Estrutural</Label>
               <Input
-                placeholder="Ex: 1.01.01"
+                placeholder="Ex: 1.01"
                 value={newConta.codigo_estrutural}
                 onChange={(e) => setNewConta({ ...newConta, codigo_estrutural: e.target.value })}
               />
@@ -638,70 +821,6 @@ export default function QuoteForm() {
               Cancelar
             </Button>
             <Button onClick={handleQuickAddConta}>Salvar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={newProductOpen} onOpenChange={setNewProductOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Novo Produto</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Nome do Produto</Label>
-              <Input
-                value={newProduct.name}
-                onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Preço Unitário (R$)</Label>
-              <Input
-                value={formatCurrencyInput(newProduct.price)}
-                onChange={(e) =>
-                  setNewProduct({ ...newProduct, price: parseCurrencyInput(e.target.value) })
-                }
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setNewProductOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleQuickAddProduct}>Salvar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={newServiceOpen} onOpenChange={setNewServiceOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Novo Serviço</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Título do Serviço</Label>
-              <Input
-                value={newService.title}
-                onChange={(e) => setNewService({ ...newService, title: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Valor Base (R$)</Label>
-              <Input
-                value={formatCurrencyInput(newService.sale_value)}
-                onChange={(e) =>
-                  setNewService({ ...newService, sale_value: parseCurrencyInput(e.target.value) })
-                }
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setNewServiceOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleQuickAddService}>Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

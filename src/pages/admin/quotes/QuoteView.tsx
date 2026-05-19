@@ -5,8 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
-import { Check, X, ArrowLeft, Send, ShoppingCart, Info, Printer } from 'lucide-react'
+import {
+  Check,
+  X,
+  ArrowLeft,
+  Send,
+  ShoppingCart,
+  Info,
+  Printer,
+  QrCode,
+  MessageCircle,
+} from 'lucide-react'
 import { decimalToTime } from '@/lib/utils'
+import { generateTermsPDF } from '@/lib/pdf-utils'
 
 export default function QuoteView() {
   const { id } = useParams()
@@ -14,6 +25,7 @@ export default function QuoteView() {
   const { toast } = useToast()
   const [quote, setQuote] = useState<any>(null)
   const [items, setItems] = useState<any[]>([])
+  const [charges, setCharges] = useState<any[]>([])
 
   useEffect(() => {
     load()
@@ -33,6 +45,13 @@ export default function QuoteView() {
         .select('*, products(name), services(title)')
         .eq('orcamento_id', id)
       setItems(it || [])
+
+      const { data: fin } = await supabase
+        .from('financial_charges' as any)
+        .select('*')
+        .eq('orcamento_id', id)
+        .order('due_date', { ascending: true })
+      setCharges(fin || [])
     }
   }
 
@@ -344,6 +363,124 @@ export default function QuoteView() {
           </div>
         </CardContent>
       </Card>
+
+      {charges.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Forma de Pagamento (Parcelas)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b">
+                  <tr>
+                    <th className="pb-3 font-medium">Parcela</th>
+                    <th className="pb-3 font-medium text-right">Valor</th>
+                    <th className="pb-3 font-medium text-center">Vencimento</th>
+                    <th className="pb-3 font-medium text-center">Status</th>
+                    <th className="pb-3 font-medium text-right print:hidden">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {charges.map((c, idx) => (
+                    <tr key={c.id} className="border-b last:border-0">
+                      <td className="py-3">{c.description || `${idx + 1}ª Parcela`}</td>
+                      <td className="py-3 text-right">
+                        R$ {Number(c.amount).toFixed(2).replace('.', ',')}
+                      </td>
+                      <td className="py-3 text-center">
+                        {new Date(c.due_date).toLocaleDateString('pt-BR')}
+                      </td>
+                      <td className="py-3 text-center">
+                        <Badge
+                          variant={c.status === 'pago' ? 'default' : 'secondary'}
+                          className={c.status === 'pago' ? 'bg-green-500' : ''}
+                        >
+                          {c.status}
+                        </Badge>
+                      </td>
+                      <td className="py-3 text-right print:hidden flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            window.open(
+                              `https://wa.me/?text=Olá! Segue cobrança da ${c.description}. Valor: R$ ${c.amount.toFixed(2).replace('.', ',')}. Vencimento: ${new Date(c.due_date).toLocaleDateString('pt-BR')}`,
+                              '_blank',
+                            )
+                          }
+                          title="Enviar por WhatsApp"
+                        >
+                          <MessageCircle className="w-4 h-4 text-green-500" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            generateTermsPDF(
+                              `Recibo ${c.description}`,
+                              `Orçamento: ${quote.numero_orcamento}\nCliente: ${quote.profiles?.name}\nValor: R$ ${c.amount}\nVencimento: ${new Date(c.due_date).toLocaleDateString('pt-BR')}`,
+                            )
+                          }
+                          title="Imprimir Recibo"
+                        >
+                          <Printer className="w-4 h-4 text-blue-500" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {charges.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Condições de Pagamento</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b">
+                  <tr>
+                    <th className="pb-3 font-medium">Parcela</th>
+                    <th className="pb-3 font-medium">Vencimento</th>
+                    <th className="pb-3 font-medium text-right">Valor</th>
+                    <th className="pb-3 font-medium text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {charges.map((ch, i) => (
+                    <tr key={ch.id} className="border-b last:border-0">
+                      <td className="py-3">{ch.description || `Parcela ${i + 1}`}</td>
+                      <td className="py-3">{new Date(ch.due_date).toLocaleDateString('pt-BR')}</td>
+                      <td className="py-3 text-right">
+                        R$ {Number(ch.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-3 text-center">
+                        <Badge
+                          variant={
+                            ch.status === 'pago'
+                              ? 'default'
+                              : ch.status === 'atrasado'
+                                ? 'destructive'
+                                : 'secondary'
+                          }
+                        >
+                          {ch.status}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {quote.observacoes && (
         <Card>
