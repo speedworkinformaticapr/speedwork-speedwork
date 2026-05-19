@@ -1144,13 +1144,17 @@ export type Database = {
           athlete_id: string | null
           category: string | null
           client_name: string
+          conta_id: string | null
           created_at: string
           description: string | null
           document: string | null
           due_date: string
           id: string
           orcamento_id: string | null
+          parcela_numero: number | null
+          parcela_total: number | null
           payment_date: string | null
+          profile_id: string | null
           status: string
           type: string | null
         }
@@ -1160,13 +1164,17 @@ export type Database = {
           athlete_id?: string | null
           category?: string | null
           client_name: string
+          conta_id?: string | null
           created_at?: string
           description?: string | null
           document?: string | null
           due_date: string
           id?: string
           orcamento_id?: string | null
+          parcela_numero?: number | null
+          parcela_total?: number | null
           payment_date?: string | null
+          profile_id?: string | null
           status?: string
           type?: string | null
         }
@@ -1176,13 +1184,17 @@ export type Database = {
           athlete_id?: string | null
           category?: string | null
           client_name?: string
+          conta_id?: string | null
           created_at?: string
           description?: string | null
           document?: string | null
           due_date?: string
           id?: string
           orcamento_id?: string | null
+          parcela_numero?: number | null
+          parcela_total?: number | null
           payment_date?: string | null
+          profile_id?: string | null
           status?: string
           type?: string | null
         }
@@ -1195,10 +1207,24 @@ export type Database = {
             referencedColumns: ['id']
           },
           {
+            foreignKeyName: 'financial_charges_conta_id_fkey'
+            columns: ['conta_id']
+            isOneToOne: false
+            referencedRelation: 'plano_contas'
+            referencedColumns: ['id']
+          },
+          {
             foreignKeyName: 'financial_charges_orcamento_id_fkey'
             columns: ['orcamento_id']
             isOneToOne: false
             referencedRelation: 'orcamentos'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'financial_charges_profile_id_fkey'
+            columns: ['profile_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
         ]
@@ -3388,6 +3414,10 @@ export const Constants = {
 //   athlete_id: uuid (nullable)
 //   asaas_id: text (nullable)
 //   orcamento_id: uuid (nullable)
+//   conta_id: uuid (nullable)
+//   parcela_numero: integer (nullable)
+//   parcela_total: integer (nullable)
+//   profile_id: uuid (nullable)
 // Table: financial_partners
 //   id: uuid (not null, default: gen_random_uuid())
 //   name: text (not null)
@@ -3919,8 +3949,10 @@ export const Constants = {
 //   PRIMARY KEY events_pkey: PRIMARY KEY (id)
 // Table: financial_charges
 //   FOREIGN KEY financial_charges_athlete_id_fkey: FOREIGN KEY (athlete_id) REFERENCES athletes(id) ON DELETE SET NULL
+//   FOREIGN KEY financial_charges_conta_id_fkey: FOREIGN KEY (conta_id) REFERENCES plano_contas(id) ON DELETE SET NULL
 //   FOREIGN KEY financial_charges_orcamento_id_fkey: FOREIGN KEY (orcamento_id) REFERENCES orcamentos(id) ON DELETE SET NULL
 //   PRIMARY KEY financial_charges_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY financial_charges_profile_id_fkey: FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE SET NULL
 // Table: financial_partners
 //   PRIMARY KEY financial_partners_pkey: PRIMARY KEY (id)
 // Table: google_ads_cache
