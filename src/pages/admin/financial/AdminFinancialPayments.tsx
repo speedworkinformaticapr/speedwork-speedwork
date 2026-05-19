@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useSystemData } from '@/hooks/use-system-data'
 import { Card, CardContent } from '@/components/ui/card'
@@ -55,6 +56,8 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronRight as ChevronRightIcon,
   Printer,
   Phone,
 } from 'lucide-react'
@@ -75,9 +78,28 @@ type Charge = {
   athlete_id?: string | null
   club_id?: string | null
   orcamento_id?: string | null
+  orcamentos?: { numero_orcamento: string; status: string } | null
+  profiles?: { phone: string | null; telefone_whatsapp: string | null } | null
+  athletes?: { phone: string | null } | null
   asaas_id?: string | null
   conta_id?: string | null
   profile_id?: string | null
+  parcela_numero?: number | null
+  parcela_total?: number | null
+}
+
+type ChargeGroup = {
+  id: string
+  isGroup: boolean
+  numero_orcamento?: string
+  client_name: string
+  description: string
+  total_amount: number
+  total_paid: number
+  balance_due: number
+  charges: Charge[]
+  status: string
+  due_date: string
 }
 
 export default function AdminFinancialPayments() {
@@ -92,6 +114,9 @@ export default function AdminFinancialPayments() {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
   const [selectedCharge, setSelectedCharge] = useState<Charge | null>(null)
   const [itemToDelete, setItemToDelete] = useState<string | null>(null)
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+
+  const navigate = useNavigate()
 
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(
     null,
@@ -136,18 +161,20 @@ export default function AdminFinancialPayments() {
   const { toast } = useToast()
 
   const summary = {
-    expected: charges.filter((c) => c.type === 'receivable').reduce((acc, c) => acc + c.amount, 0),
-    realized: charges
+    expected: filteredCharges
+      .filter((c) => c.type === 'receivable')
+      .reduce((acc, c) => acc + Number(c.amount), 0),
+    realized: filteredCharges
       .filter((c) => c.type === 'receivable' && (c.status === 'pago' || c.status === 'recebido'))
-      .reduce((acc, c) => acc + c.amount, 0),
-    overdue: charges
+      .reduce((acc, c) => acc + Number(c.amount), 0),
+    overdue: filteredCharges
       .filter(
         (c) =>
           c.type === 'receivable' &&
           (c.status === 'atrasado' ||
             (c.status === 'pendente' && new Date(c.due_date) < new Date())),
       )
-      .reduce((acc, c) => acc + c.amount, 0),
+      .reduce((acc, c) => acc + Number(c.amount), 0),
   }
 
   const loadDependencies = async () => {
@@ -169,12 +196,25 @@ export default function AdminFinancialPayments() {
     try {
       const { data, error } = await supabase
         .from('financial_charges' as any)
-        .select('*')
+        .select(`
+          *,
+          orcamentos(numero_orcamento, status),
+          profiles!financial_charges_profile_id_fkey(phone, telefone_whatsapp),
+          athletes!financial_charges_athlete_id_fkey(phone)
+        `)
         .order('due_date', { ascending: false })
 
       if (error) throw error
-      setCharges(data || [])
-      applyFilters(data || [], activeFilter, searchTerm)
+
+      // Only show financial charges from quotes that are already approved or converted
+      const validCharges = (data || []).filter((c: any) => {
+        if (!c.orcamento_id) return true
+        const qStatus = c.orcamentos?.status
+        return qStatus === 'aprovado' || qStatus === 'convertido'
+      })
+
+      setCharges(validCharges)
+      applyFilters(validCharges, activeFilter, searchTerm)
     } catch (err: any) {
       console.error(err)
     } finally {
@@ -191,19 +231,76 @@ export default function AdminFinancialPayments() {
     applyFilters(charges, activeFilter, searchTerm)
   }, [activeFilter, searchTerm, charges])
 
-  const sortedFilteredCharges = useMemo(() => {
-    return [...filteredCharges].sort((a, b) => {
+  const groupedFilteredCharges = useMemo(() => {
+    const groupsMap = new Map<string, ChargeGroup>()
+
+    filteredCharges.forEach((c) => {
+      const groupId = c.orcamento_id || c.id
+      if (!groupsMap.has(groupId)) {
+        groupsMap.set(groupId, {
+          id: groupId,
+          isGroup: !!c.orcamento_id,
+          numero_orcamento: c.orcamentos?.numero_orcamento,
+          client_name: c.client_name || '-',
+          description: c.orcamento_id
+            ? `Orçamento ${c.orcamentos?.numero_orcamento || ''}`
+            : c.description,
+          total_amount: 0,
+          total_paid: 0,
+          balance_due: 0,
+          charges: [],
+          status: c.status,
+          due_date: c.due_date,
+        })
+      }
+      const g = groupsMap.get(groupId)!
+      g.charges.push(c)
+      g.total_amount += Number(c.amount)
+      if (c.status === 'pago' || c.status === 'recebido') {
+        g.total_paid += Number(c.amount)
+      }
+    })
+
+    const groups = Array.from(groupsMap.values())
+    groups.forEach((g) => {
+      g.balance_due = g.total_amount - g.total_paid
+      if (g.isGroup) {
+        if (g.balance_due <= 0) g.status = 'pago'
+        else if (
+          g.charges.some(
+            (c) =>
+              c.status === 'atrasado' ||
+              (new Date(c.due_date) < new Date() && c.status !== 'pago' && c.status !== 'recebido'),
+          )
+        ) {
+          g.status = 'atrasado'
+        } else {
+          g.status = 'pendente'
+        }
+
+        g.charges.sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+
+        const pending = g.charges.filter((c) => c.status !== 'pago' && c.status !== 'recebido')
+        if (pending.length > 0) g.due_date = pending[0].due_date
+        else g.due_date = g.charges[g.charges.length - 1].due_date
+      }
+    })
+
+    return groups.sort((a, b) => {
       if (!sortConfig) return new Date(b.due_date).getTime() - new Date(a.due_date).getTime()
-      const aVal = a[sortConfig.key as keyof Charge] || ''
-      const bVal = b[sortConfig.key as keyof Charge] || ''
+      const aVal = a[sortConfig.key as keyof ChargeGroup] || ''
+      const bVal = b[sortConfig.key as keyof ChargeGroup] || ''
       if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1
       if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1
       return 0
     })
   }, [filteredCharges, sortConfig])
 
-  const paginatedItems = sortedFilteredCharges.slice((page - 1) * itemsPerPage, page * itemsPerPage)
-  const totalPages = Math.ceil(sortedFilteredCharges.length / itemsPerPage)
+  const paginatedGroups = groupedFilteredCharges.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage,
+  )
+  const totalPages = Math.ceil(groupedFilteredCharges.length / itemsPerPage)
 
   useEffect(() => {
     setPage(1)
@@ -221,7 +318,7 @@ export default function AdminFinancialPayments() {
       className="cursor-pointer select-none hover:bg-muted/50"
       onClick={() => handleSort(sortKey)}
     >
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 whitespace-nowrap">
         {label} <ArrowUpDown className="w-3 h-3 opacity-50" />
       </div>
     </TableHead>
@@ -265,11 +362,19 @@ export default function AdminFinancialPayments() {
           c.description?.toLowerCase().includes(lower) ||
           c.client_name?.toLowerCase().includes(lower) ||
           c.document?.includes(lower) ||
-          c.category?.toLowerCase().includes(lower),
+          c.category?.toLowerCase().includes(lower) ||
+          c.orcamentos?.numero_orcamento?.toLowerCase().includes(lower),
       )
     }
 
     setFilteredCharges(result)
+  }
+
+  const toggleGroup = (id: string) => {
+    const newSet = new Set(expandedGroups)
+    if (newSet.has(id)) newSet.delete(id)
+    else newSet.add(id)
+    setExpandedGroups(newSet)
   }
 
   const handleOpenModal = (charge?: Charge) => {
@@ -398,7 +503,6 @@ export default function AdminFinancialPayments() {
       }
 
       if (editingId) {
-        // Edit single
         const payload = {
           ...basePayload,
           description: formData.description,
@@ -427,7 +531,6 @@ export default function AdminFinancialPayments() {
           .eq('id', editingId)
         toast({ title: 'Atualizado com sucesso' })
       } else {
-        // Create new
         if (parcelasGeradas.length > 0) {
           const payloads = parcelasGeradas.map((p) => ({
             ...basePayload,
@@ -500,6 +603,10 @@ export default function AdminFinancialPayments() {
     return dateStr
   }
 
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
+  }
+
   const getStatusBadge = (status: string, dueDate: string) => {
     if (status === 'pago' || status === 'recebido') {
       return <Badge className="bg-green-500 hover:bg-green-600">Pago</Badge>
@@ -519,16 +626,74 @@ export default function AdminFinancialPayments() {
   const handlePrint = (charge: Charge) => {
     generateTermsPDF(
       'Recibo / Cobrança',
-      `Identificação do Lançamento:\n\nDescrição: ${charge.description}\nCliente/Fornecedor: ${charge.client_name}\nDocumento: ${charge.document || 'N/A'}\n\nValor: R$ ${charge.amount.toFixed(2)}\nVencimento: ${formatDate(charge.due_date)}\nStatus: ${charge.status.toUpperCase()}\n\nReferência ID: ${charge.id}`,
+      `Identificação do Lançamento:\n\nDescrição: ${charge.description}\nCliente/Fornecedor: ${charge.client_name}\nDocumento: ${charge.document || 'N/A'}\n\nValor: R$ ${Number(charge.amount).toFixed(2)}\nVencimento: ${formatDate(charge.due_date)}\nStatus: ${charge.status.toUpperCase()}\n\nReferência ID: ${charge.id}`,
     )
   }
 
-  const handleWhatsApp = (charge: Charge) => {
+  const handleWhatsApp = async (charge: Charge) => {
     const text = encodeURIComponent(
-      `Olá, segue a cobrança referente a ${charge.description}. Valor: R$ ${charge.amount.toFixed(2)}. Vencimento: ${formatDate(charge.due_date)}.`,
+      `Olá, segue a cobrança referente a ${charge.description || 'sua parcela'}. Valor: R$ ${Number(charge.amount).toFixed(2).replace('.', ',')}. Vencimento: ${formatDate(charge.due_date)}.`,
     )
-    window.open(`https://wa.me/?text=${text}`, '_blank')
+    const phone =
+      charge.profiles?.telefone_whatsapp || charge.profiles?.phone || charge.athletes?.phone
+
+    if (!phone) {
+      window.open(`https://wa.me/?text=${text}`, '_blank')
+      return
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('enviar_whatsapp', {
+        body: {
+          telefone_destino: phone.replace(/\D/g, ''),
+          mensagem_customizada: decodeURIComponent(text),
+        },
+      })
+
+      if (error || data?.status === 'erro_config' || data?.status === 'falha') {
+        throw new Error(data?.erro || data?.mensagem || 'Erro ao enviar via API')
+      }
+      toast({ title: 'Mensagem enviada com sucesso!' })
+    } catch (err: any) {
+      console.error(err)
+      toast({ title: 'Redirecionando para o WhatsApp Web...' })
+      window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${text}`, '_blank')
+    }
   }
+
+  const SingleChargeActions = ({ charge }: { charge: Charge }) => (
+    <>
+      {charge.status !== 'pago' && charge.type === 'receivable' && (
+        <>
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Pagar via PIX/Cartão"
+            onClick={() => handleOpenPayment(charge)}
+          >
+            <CreditCard className="w-4 h-4 text-emerald-600" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Enviar Cobrança WhatsApp"
+            onClick={() => handleWhatsApp(charge)}
+          >
+            <Phone className="w-4 h-4 text-green-500" />
+          </Button>
+        </>
+      )}
+      <Button variant="ghost" size="icon" title="Imprimir" onClick={() => handlePrint(charge)}>
+        <Printer className="w-4 h-4 text-blue-500" />
+      </Button>
+      <Button variant="ghost" size="icon" onClick={() => handleOpenModal(charge)}>
+        <Edit2 className="w-4 h-4" />
+      </Button>
+      <Button variant="ghost" size="icon" onClick={() => handleDelete(charge.id)}>
+        <Trash2 className="w-4 h-4 text-destructive" />
+      </Button>
+    </>
+  )
 
   return (
     <div className="p-6 space-y-6 max-w-[1200px] mx-auto w-full">
@@ -551,11 +716,7 @@ export default function AdminFinancialPayments() {
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Saldo Esperado (Gerado)</p>
-                <h3 className="text-2xl font-bold">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                    summary.expected,
-                  )}
-                </h3>
+                <h3 className="text-2xl font-bold">{formatCurrency(summary.expected)}</h3>
               </div>
             </CardContent>
           </Card>
@@ -568,11 +729,7 @@ export default function AdminFinancialPayments() {
                 <p className="text-sm font-medium text-muted-foreground">
                   Saldo Realizado (Recebido)
                 </p>
-                <h3 className="text-2xl font-bold">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                    summary.realized,
-                  )}
-                </h3>
+                <h3 className="text-2xl font-bold">{formatCurrency(summary.realized)}</h3>
               </div>
             </CardContent>
           </Card>
@@ -585,11 +742,7 @@ export default function AdminFinancialPayments() {
                 <p className="text-sm font-medium text-muted-foreground">
                   Inadimplência (Atrasados)
                 </p>
-                <h3 className="text-2xl font-bold">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                    summary.overdue,
-                  )}
-                </h3>
+                <h3 className="text-2xl font-bold">{formatCurrency(summary.overdue)}</h3>
               </div>
             </CardContent>
           </Card>
@@ -664,9 +817,12 @@ export default function AdminFinancialPayments() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10 text-center"></TableHead>
                 <SortHead label="Descrição" sortKey="description" />
                 <SortHead label="Cliente/Fornecedor" sortKey="client_name" />
-                <SortHead label="Valor" sortKey="amount" />
+                <SortHead label="Valor Total" sortKey="total_amount" />
+                <SortHead label="Valor Pago" sortKey="total_paid" />
+                <SortHead label="Saldo" sortKey="balance_due" />
                 <SortHead label="Vencimento" sortKey="due_date" />
                 <SortHead label="Status" sortKey="status" />
                 <TableHead className="text-right">Ações</TableHead>
@@ -675,105 +831,129 @@ export default function AdminFinancialPayments() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
+                  <TableCell colSpan={9} className="text-center py-8">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
                   </TableCell>
                 </TableRow>
-              ) : sortedFilteredCharges.length === 0 ? (
+              ) : groupedFilteredCharges.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     Nenhum lançamento encontrado.
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedItems.map((charge) => (
-                  <TableRow key={charge.id}>
-                    <TableCell>
-                      <div className="font-medium">{charge.description || '-'}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {charge.type === 'payable' ? 'A Pagar' : 'A Receber'} •{' '}
-                        {charge.category === 'club'
-                          ? 'Clube'
-                          : charge.category === 'athlete'
-                            ? 'Atleta'
-                            : charge.category === 'ecommerce'
-                              ? 'E-Commerce'
-                              : charge.category === 'filiação'
-                                ? 'Filiação'
-                                : charge.category === 'orcamento'
-                                  ? 'Orçamento'
-                                  : 'Geral'}
-                        {charge.orcamento_id && (
-                          <span className="ml-1 text-blue-500">(Vinculado)</span>
+                paginatedGroups.map((group) => (
+                  <React.Fragment key={group.id}>
+                    <TableRow className={group.isGroup ? 'bg-muted/10 font-medium' : ''}>
+                      <TableCell className="text-center">
+                        {group.isGroup && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => toggleGroup(group.id)}
+                          >
+                            {expandedGroups.has(group.id) ? (
+                              <ChevronDown className="w-4 h-4" />
+                            ) : (
+                              <ChevronRightIcon className="w-4 h-4" />
+                            )}
+                          </Button>
                         )}
-                        {charge.asaas_id && <span className="ml-1 text-emerald-600">(Asaas)</span>}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>{charge.client_name}</div>
-                      {charge.document && (
-                        <div className="text-xs text-muted-foreground">{charge.document}</div>
-                      )}
-                    </TableCell>
-                    <TableCell
-                      className={
-                        charge.type === 'payable'
-                          ? 'text-red-500 font-medium'
-                          : 'text-green-600 font-medium'
-                      }
-                    >
-                      {charge.type === 'payable' ? '-' : '+'}{' '}
-                      {new Intl.NumberFormat('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL',
-                      }).format(charge.amount)}
-                    </TableCell>
-                    <TableCell>
-                      {formatDate(charge.due_date)}
-                      {charge.payment_date && (
-                        <div className="text-xs text-muted-foreground">
-                          Pago em: {formatDate(charge.payment_date)}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(charge.status, charge.due_date)}</TableCell>
-                    <TableCell className="text-right">
-                      {charge.status !== 'pago' && charge.type === 'receivable' && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title="Pagar via PIX/Cartão"
-                            onClick={() => handleOpenPayment(charge)}
-                          >
-                            <CreditCard className="w-4 h-4 text-emerald-600" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title="Enviar Cobrança WhatsApp"
-                            onClick={() => handleWhatsApp(charge)}
-                          >
-                            <Phone className="w-4 h-4 text-green-500" />
-                          </Button>
-                        </>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Imprimir"
-                        onClick={() => handlePrint(charge)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{group.description || '-'}</div>
+                        {!group.isGroup && group.charges[0] && (
+                          <div className="text-xs text-muted-foreground font-normal">
+                            {group.charges[0].type === 'payable' ? 'A Pagar' : 'A Receber'} •{' '}
+                            {group.charges[0].category === 'club'
+                              ? 'Clube'
+                              : group.charges[0].category === 'athlete'
+                                ? 'Atleta'
+                                : group.charges[0].category === 'ecommerce'
+                                  ? 'E-Commerce'
+                                  : group.charges[0].category === 'filiação'
+                                    ? 'Filiação'
+                                    : 'Geral'}
+                            {group.charges[0].asaas_id && (
+                              <span className="ml-1 text-emerald-600">(Asaas)</span>
+                            )}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>{group.client_name}</TableCell>
+                      <TableCell
+                        className={
+                          group.isGroup
+                            ? ''
+                            : group.charges[0]?.type === 'payable'
+                              ? 'text-red-500'
+                              : 'text-green-600'
+                        }
                       >
-                        <Printer className="w-4 h-4 text-blue-500" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleOpenModal(charge)}>
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(charge.id)}>
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+                        {group.isGroup ? '' : group.charges[0]?.type === 'payable' ? '- ' : '+ '}
+                        {formatCurrency(group.total_amount)}
+                      </TableCell>
+                      <TableCell className="text-green-600">
+                        {formatCurrency(group.total_paid)}
+                      </TableCell>
+                      <TableCell className={group.balance_due > 0 ? 'text-red-500' : ''}>
+                        {formatCurrency(group.balance_due)}
+                      </TableCell>
+                      <TableCell>{formatDate(group.due_date)}</TableCell>
+                      <TableCell>{getStatusBadge(group.status, group.due_date)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          {!group.isGroup ? (
+                            <SingleChargeActions charge={group.charges[0]} />
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/admin/quotes/${group.id}`)}
+                            >
+                              Ver Orçamento
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+
+                    {group.isGroup &&
+                      expandedGroups.has(group.id) &&
+                      group.charges.map((charge, idx) => (
+                        <TableRow
+                          key={charge.id}
+                          className="bg-muted/5 border-l-4 border-l-primary/30"
+                        >
+                          <TableCell></TableCell>
+                          <TableCell className="pl-6 text-sm text-muted-foreground flex items-center">
+                            <span className="w-4 inline-block text-right mr-2">↳</span>
+                            {charge.description ||
+                              `Parcela ${charge.parcela_numero || idx + 1}/${charge.parcela_total || group.charges.length}`}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">-</TableCell>
+                          <TableCell className="text-sm">{formatCurrency(charge.amount)}</TableCell>
+                          <TableCell className="text-sm text-green-600">
+                            {charge.status === 'pago' || charge.status === 'recebido'
+                              ? formatCurrency(charge.amount)
+                              : formatCurrency(0)}
+                          </TableCell>
+                          <TableCell className="text-sm text-red-500">
+                            {charge.status !== 'pago' && charge.status !== 'recebido'
+                              ? formatCurrency(charge.amount)
+                              : formatCurrency(0)}
+                          </TableCell>
+                          <TableCell className="text-sm">{formatDate(charge.due_date)}</TableCell>
+                          <TableCell>{getStatusBadge(charge.status, charge.due_date)}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <SingleChargeActions charge={charge} />
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </React.Fragment>
                 ))
               )}
             </TableBody>
@@ -782,7 +962,7 @@ export default function AdminFinancialPayments() {
         {totalPages > 0 && (
           <div className="p-4 border-t flex items-center justify-between bg-muted/20">
             <span className="text-sm text-muted-foreground">
-              Mostrando {paginatedItems.length} de {sortedFilteredCharges.length} registros
+              Mostrando {paginatedGroups.length} de {groupedFilteredCharges.length} grupos
             </span>
             <div className="flex gap-2 items-center">
               <Button
