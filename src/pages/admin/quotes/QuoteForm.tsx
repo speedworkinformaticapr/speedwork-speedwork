@@ -201,7 +201,7 @@ export default function QuoteForm() {
 
     const qtd = Number(newI[idx].quantidade) || 0
     const valUnit = Number(newI[idx].valor_unitario) || 0
-    const tempo = Number(newI[idx].tempo_estimado) || 0
+    const tempo = Number(newI[idx].tempo_executado) || 0
     newI[idx].valor_total = Math.round(tempo * valUnit * qtd * 100) / 100
     setServiceItems(newI)
   }
@@ -479,27 +479,35 @@ export default function QuoteForm() {
                 </div>
               </div>
               {selectedClient && (
-                <div className="p-4 bg-slate-50 border rounded-lg grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-2">
+                <div className="p-4 bg-background border border-input rounded-lg grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-2">
                   <div>
-                    <span className="text-slate-500">Email:</span>{' '}
+                    <span className="text-muted-foreground">Email:</span>{' '}
                     <span className="font-medium ml-1">{selectedClient.email || '-'}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500">Telefone:</span>{' '}
+                    <span className="text-muted-foreground">Telefone:</span>{' '}
                     <span className="font-medium ml-1">{selectedClient.phone || '-'}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500">Documento:</span>{' '}
+                    <span className="text-muted-foreground">Documento:</span>{' '}
                     <span className="font-medium ml-1">{selectedClient.cpf_cnpj || '-'}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500">Endereço:</span>{' '}
+                    <span className="text-muted-foreground">Endereço:</span>{' '}
                     <span className="font-medium ml-1">{selectedClient.address || '-'}</span>
                   </div>
                 </div>
               )}
 
-              <div className="grid gap-4 md:grid-cols-2 mt-4">
+              <div className="grid gap-4 md:grid-cols-3 mt-4">
+                <div className="space-y-2">
+                  <Label>Número da OS</Label>
+                  <Input
+                    disabled
+                    value={id ? data.numero_orcamento : 'Automático (AAAAMMDD-SEQ)'}
+                    className="bg-muted text-muted-foreground font-medium"
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label>Data de Emissão</Label>
                   <Input
@@ -556,7 +564,7 @@ export default function QuoteForm() {
 
         <TabsContent value="produtos" className="space-y-4 bg-card p-6 border rounded-xl shadow-sm">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-lg">Peças e Materiais</h3>
+            <h3 className="font-semibold text-lg text-primary">Peças e Materiais</h3>
             <Button onClick={addProduct} size="sm">
               <Plus className="w-4 h-4 mr-1" /> Adicionar Peça
             </Button>
@@ -565,13 +573,13 @@ export default function QuoteForm() {
             {productItems.map((it, idx) => (
               <div
                 key={idx}
-                className={`flex flex-col md:flex-row gap-4 items-end bg-slate-50 p-4 rounded-lg border transition-opacity ${!it.aprovado ? 'opacity-50 grayscale' : ''}`}
+                className={`flex flex-col md:flex-row gap-4 items-end bg-background p-4 rounded-lg border border-border transition-opacity ${!it.aprovado ? 'opacity-50 grayscale' : ''}`}
               >
                 <div className="flex-1 w-full space-y-2">
                   <div className="flex justify-between items-center h-5">
                     <Label>Produto</Label>
                     {!it.aprovado && (
-                      <span className="text-xs text-red-600 font-bold bg-red-100 px-2 rounded">
+                      <span className="text-xs text-destructive font-bold bg-destructive/10 px-2 rounded">
                         Rejeitado
                       </span>
                     )}
@@ -627,21 +635,21 @@ export default function QuoteForm() {
                   <Input
                     readOnly
                     value={formatCurrencyInput(it.valor_total)}
-                    className="bg-white font-medium"
+                    className="bg-muted font-medium"
                   />
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => removeProduct(idx)}
-                  className="h-10 w-10 shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                  className="h-10 w-10 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
                   <Trash className="w-4 h-4" />
-                </Button>
+                </Button>{' '}
               </div>
             ))}
             {productItems.length === 0 && (
-              <p className="text-slate-500 text-center py-6 border-2 border-dashed rounded-lg">
+              <p className="text-muted-foreground text-center py-6 border-2 border-dashed rounded-lg">
                 Nenhuma peça adicionada a esta Ordem de Serviço.
               </p>
             )}
@@ -650,7 +658,7 @@ export default function QuoteForm() {
 
         <TabsContent value="servicos" className="space-y-4 bg-card p-6 border rounded-xl shadow-sm">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-lg">Mão de Obra / Serviços</h3>
+            <h3 className="font-semibold text-lg text-primary">Mão de Obra / Serviços</h3>
             <Button onClick={addService} size="sm">
               <Plus className="w-4 h-4 mr-1" /> Adicionar Serviço
             </Button>
@@ -659,13 +667,13 @@ export default function QuoteForm() {
             {serviceItems.map((it, idx) => (
               <div
                 key={idx}
-                className={`flex flex-col md:flex-row gap-4 items-end bg-slate-50 p-4 rounded-lg border transition-opacity ${!it.aprovado ? 'opacity-50 grayscale' : ''}`}
+                className={`flex flex-col md:flex-row gap-4 items-end bg-background p-4 rounded-lg border border-border transition-opacity ${!it.aprovado ? 'opacity-50 grayscale' : ''}`}
               >
                 <div className="flex-1 w-full space-y-2">
                   <div className="flex justify-between items-center h-5">
                     <Label>Serviço</Label>
                     {!it.aprovado && (
-                      <span className="text-xs text-red-600 font-bold bg-red-100 px-2 rounded">
+                      <span className="text-xs text-destructive font-bold bg-destructive/10 px-2 rounded">
                         Rejeitado
                       </span>
                     )}
@@ -737,21 +745,21 @@ export default function QuoteForm() {
                   <Input
                     readOnly
                     value={formatCurrencyInput(it.valor_total)}
-                    className="bg-white font-medium"
+                    className="bg-muted font-medium"
                   />
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => removeService(idx)}
-                  className="h-10 w-10 shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                  className="h-10 w-10 shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
                   <Trash className="w-4 h-4" />
-                </Button>
+                </Button>{' '}
               </div>
             ))}
             {serviceItems.length === 0 && (
-              <p className="text-slate-500 text-center py-6 border-2 border-dashed rounded-lg">
+              <p className="text-muted-foreground text-center py-6 border-2 border-dashed rounded-lg">
                 Nenhum serviço adicionado a esta Ordem de Serviço.
               </p>
             )}
@@ -763,9 +771,9 @@ export default function QuoteForm() {
           className="space-y-6 bg-card p-6 border rounded-xl shadow-sm"
         >
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <h3 className="font-semibold text-lg">Resumo e Aprovação</h3>
+            <h3 className="font-semibold text-lg text-primary">Resumo e Aprovação</h3>
             <div className="flex gap-3 items-center w-full md:w-auto">
-              <Label className="whitespace-nowrap text-slate-500">Status da OS:</Label>
+              <Label className="whitespace-nowrap text-muted-foreground">Status da OS:</Label>
               <Select value={data.status} onValueChange={(v) => setData({ ...data, status: v })}>
                 <SelectTrigger className="w-full md:w-56">
                   <SelectValue />
@@ -788,7 +796,7 @@ export default function QuoteForm() {
               <Input
                 readOnly
                 value={formatCurrencyInput(subtotal)}
-                className="bg-slate-100 text-lg font-medium"
+                className="bg-muted text-lg font-medium"
               />
             </div>
             <div className="space-y-2">
@@ -822,19 +830,13 @@ export default function QuoteForm() {
               />
             </div>
           </div>
-          <div className="bg-emerald-50 p-6 rounded-xl flex justify-between items-center border border-emerald-100 mt-4">
-            <span className="text-xl font-medium text-emerald-800">Total da Ordem de Serviço</span>
-            <span className="text-4xl font-bold text-emerald-700">
-              R$ {formatCurrencyInput(total)}
-            </span>
+          <div className="bg-primary/10 p-6 rounded-xl flex justify-between items-center border border-primary/20 mt-4">
+            <span className="text-xl font-medium text-primary">Total da Ordem de Serviço</span>
+            <span className="text-4xl font-bold text-primary">R$ {formatCurrencyInput(total)}</span>
           </div>
 
           <div className="flex justify-end pt-6">
-            <Button
-              onClick={handleSendApproval}
-              size="lg"
-              className="bg-green-600 hover:bg-green-700 text-white w-full md:w-auto"
-            >
+            <Button onClick={handleSendApproval} size="lg" className="w-full md:w-auto">
               <MessageCircle className="w-5 h-5 mr-2" /> Enviar Link de Aprovação
             </Button>
           </div>
@@ -845,7 +847,7 @@ export default function QuoteForm() {
           className="space-y-6 bg-card p-6 border rounded-xl shadow-sm"
         >
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <h3 className="font-semibold text-lg">Fechamento Financeiro</h3>
+            <h3 className="font-semibold text-lg text-primary">Fechamento Financeiro</h3>
             <div className="space-y-2 w-full md:w-72">
               <Label>Conta Destino / DRE</Label>
               <Select
@@ -866,7 +868,7 @@ export default function QuoteForm() {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-4 items-end bg-slate-50 p-5 rounded-xl border border-slate-200">
+          <div className="grid gap-4 md:grid-cols-4 items-end bg-background p-5 rounded-xl border border-border">
             <div className="space-y-2">
               <Label>Número de Parcelas</Label>
               <Input
@@ -895,29 +897,25 @@ export default function QuoteForm() {
                 checked={condHoje}
                 onCheckedChange={(c) => setCondHoje(!!c)}
               />
-              <Label htmlFor="condHojeQuote" className="font-medium cursor-pointer text-slate-700">
+              <Label htmlFor="condHojeQuote" className="font-medium cursor-pointer text-foreground">
                 Pagar entrada hoje?
               </Label>
             </div>
-            <Button
-              type="button"
-              onClick={generateInstallments}
-              className="w-full bg-slate-800 hover:bg-slate-900"
-            >
+            <Button type="button" onClick={generateInstallments} className="w-full">
               Gerar Fluxo
             </Button>
           </div>
 
           {installments.length > 0 && (
             <div className="space-y-3 mt-4">
-              <h4 className="font-medium text-slate-700 pb-2">Previsão de Recebimento</h4>
+              <h4 className="font-medium text-foreground pb-2">Previsão de Recebimento</h4>
               {installments.map((inst, idx) => (
                 <div
                   key={idx}
-                  className="flex flex-col md:flex-row gap-3 items-end md:items-center bg-white p-4 rounded-lg border shadow-sm"
+                  className="flex flex-col md:flex-row gap-3 items-end md:items-center bg-background p-4 rounded-lg border border-border shadow-sm"
                 >
                   <div className="flex-1 w-full">
-                    <Label className="text-xs text-slate-500">Descrição da Parcela</Label>
+                    <Label className="text-xs text-muted-foreground">Descrição da Parcela</Label>
                     <Input
                       value={inst.description}
                       onChange={(e) => {
@@ -928,7 +926,7 @@ export default function QuoteForm() {
                     />
                   </div>
                   <div className="w-full md:w-36">
-                    <Label className="text-xs text-slate-500">Valor (R$)</Label>
+                    <Label className="text-xs text-muted-foreground">Valor (R$)</Label>
                     <Input
                       className={numClass}
                       value={formatCurrencyInput(inst.amount)}
@@ -940,7 +938,7 @@ export default function QuoteForm() {
                     />
                   </div>
                   <div className="w-full md:w-44">
-                    <Label className="text-xs text-slate-500">Data de Vencimento</Label>
+                    <Label className="text-xs text-muted-foreground">Data de Vencimento</Label>
                     <Input
                       type="date"
                       value={inst.due_date}
@@ -952,7 +950,7 @@ export default function QuoteForm() {
                     />
                   </div>
                   <div className="w-full md:w-40">
-                    <Label className="text-xs text-slate-500">Situação</Label>
+                    <Label className="text-xs text-muted-foreground">Situação</Label>
                     <Select
                       value={inst.status}
                       onValueChange={(v) => {
@@ -1005,11 +1003,7 @@ export default function QuoteForm() {
         <Button variant="secondary" size="lg" onClick={() => handleSave(data.status)}>
           Salvar OS Atual
         </Button>
-        <Button
-          size="lg"
-          onClick={() => handleSave('Fechado')}
-          className="bg-slate-900 hover:bg-slate-800 text-white px-8"
-        >
+        <Button size="lg" onClick={() => handleSave('Fechado')} className="px-8">
           Finalizar e Fechar OS
         </Button>
       </div>

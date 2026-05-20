@@ -1614,6 +1614,7 @@ export type Database = {
       }
       orcamento_itens: {
         Row: {
+          aprovado: boolean | null
           descricao: string | null
           id: string
           orcamento_id: string | null
@@ -1621,12 +1622,14 @@ export type Database = {
           quantidade: number
           servico_id: string | null
           tempo_estimado: number | null
+          tempo_executado: number | null
           tipo_item: string | null
           user_id: string | null
           valor_total: number
           valor_unitario: number
         }
         Insert: {
+          aprovado?: boolean | null
           descricao?: string | null
           id?: string
           orcamento_id?: string | null
@@ -1634,12 +1637,14 @@ export type Database = {
           quantidade?: number
           servico_id?: string | null
           tempo_estimado?: number | null
+          tempo_executado?: number | null
           tipo_item?: string | null
           user_id?: string | null
           valor_total?: number
           valor_unitario?: number
         }
         Update: {
+          aprovado?: boolean | null
           descricao?: string | null
           id?: string
           orcamento_id?: string | null
@@ -1647,6 +1652,7 @@ export type Database = {
           quantidade?: number
           servico_id?: string | null
           tempo_estimado?: number | null
+          tempo_executado?: number | null
           tipo_item?: string | null
           user_id?: string | null
           valor_total?: number
@@ -3592,6 +3598,8 @@ export const Constants = {
 //   servico_id: uuid (nullable)
 //   tipo_item: text (nullable, default: 'produto'::text)
 //   tempo_estimado: numeric (nullable, default: 0)
+//   aprovado: boolean (nullable, default: true)
+//   tempo_executado: numeric (nullable, default: 0)
 // Table: orcamentos
 //   id: uuid (not null, default: gen_random_uuid())
 //   numero_orcamento: text (nullable)
@@ -4392,6 +4400,11 @@ export const Constants = {
 //   Policy "orcamento_itens_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+//   Policy "orcamento_itens_anon_select" (SELECT, PERMISSIVE) roles={anon}
+//     USING: true
+//   Policy "orcamento_itens_anon_update" (UPDATE, PERMISSIVE) roles={anon}
+//     USING: true
+//     WITH CHECK: true
 //   Policy "orcamento_itens_delete" (DELETE, PERMISSIVE) roles={public}
 //     USING: (user_id = auth.uid())
 //   Policy "orcamento_itens_insert" (INSERT, PERMISSIVE) roles={public}
@@ -4402,6 +4415,11 @@ export const Constants = {
 //     USING: (user_id = auth.uid())
 // Table: orcamentos
 //   Policy "orcamentos_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+//   Policy "orcamentos_anon_select" (SELECT, PERMISSIVE) roles={anon}
+//     USING: true
+//   Policy "orcamentos_anon_update" (UPDATE, PERMISSIVE) roles={anon}
 //     USING: true
 //     WITH CHECK: true
 //   Policy "orcamentos_delete" (DELETE, PERMISSIVE) roles={public}
@@ -4480,6 +4498,8 @@ export const Constants = {
 //     USING: true
 //     WITH CHECK: true
 // Table: profiles
+//   Policy "profiles_anon_select" (SELECT, PERMISSIVE) roles={anon}
+//     USING: true
 //   Policy "profiles_delete" (DELETE, PERMISSIVE) roles={public}
 //     USING: true
 //   Policy "profiles_insert" (INSERT, PERMISSIVE) roles={public}
@@ -4534,6 +4554,8 @@ export const Constants = {
 //     USING: true
 //     WITH CHECK: true
 // Table: system_data
+//   Policy "system_data_anon_select" (SELECT, PERMISSIVE) roles={anon}
+//     USING: true
 //   Policy "system_data_insert" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: true
 //   Policy "system_data_select" (SELECT, PERMISSIVE) roles={public}
@@ -4603,9 +4625,14 @@ export const Constants = {
 //    RETURNS trigger
 //    LANGUAGE plpgsql
 //   AS $function$
+//   DECLARE
+//       year_month_day TEXT;
+//       seq_val INTEGER;
 //   BEGIN
 //       IF NEW.numero_orcamento IS NULL OR NEW.numero_orcamento = '' THEN
-//           NEW.numero_orcamento := 'ORC-' || nextval('orcamento_numero_seq')::TEXT;
+//           year_month_day := to_char(COALESCE(NEW.created_at, CURRENT_TIMESTAMP), 'YYYYMMDD');
+//           seq_val := nextval('orcamento_numero_seq');
+//           NEW.numero_orcamento := year_month_day || lpad(seq_val::TEXT, 3, '0');
 //       END IF;
 //       RETURN NEW;
 //   END;

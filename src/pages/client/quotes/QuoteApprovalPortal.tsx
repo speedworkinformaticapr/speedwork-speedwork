@@ -87,9 +87,9 @@ export default function QuoteApprovalPortal() {
   const canEdit = quote.status === 'Aguardando Aprovação' || quote.status === 'rascunho'
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8">
+    <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex flex-col md:flex-row justify-between items-center bg-white p-6 rounded-xl shadow-sm">
+        <div className="flex flex-col md:flex-row justify-between items-center bg-card border border-border p-6 rounded-xl shadow-sm">
           <div>
             {systemData?.logo_url ? (
               <img src={systemData.logo_url} alt="Logo" className="h-12 object-contain" />
@@ -98,12 +98,12 @@ export default function QuoteApprovalPortal() {
             )}
           </div>
           <div className="text-right mt-4 md:mt-0">
-            <h2 className="text-xl font-semibold text-slate-800">
+            <h2 className="text-xl font-semibold text-foreground">
               Ordem de Serviço {quote.numero_orcamento}
             </h2>
             <div className="flex items-center justify-end gap-2 mt-2">
               {isApproved ? (
-                <span className="flex items-center text-green-600 font-medium">
+                <span className="flex items-center text-primary font-medium">
                   <CheckCircle2 className="w-4 h-4 mr-1" /> Aprovado
                 </span>
               ) : (
@@ -117,20 +117,20 @@ export default function QuoteApprovalPortal() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Dados do Cliente</CardTitle>
+            <CardTitle className="text-lg text-primary">Dados do Cliente</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-slate-500">Nome</p>
+              <p className="text-sm text-muted-foreground">Nome</p>
               <p className="font-medium">{quote.profiles?.name}</p>
             </div>
             <div>
-              <p className="text-sm text-slate-500">Documento</p>
+              <p className="text-sm text-muted-foreground">Documento</p>
               <p className="font-medium">{quote.profiles?.cpf_cnpj || '-'}</p>
             </div>
             {quote.veiculo_placa && (
               <div>
-                <p className="text-sm text-slate-500">Equipamento / Veículo</p>
+                <p className="text-sm text-muted-foreground">Equipamento / Veículo</p>
                 <p className="font-medium">
                   {quote.veiculo_modelo} - {quote.veiculo_placa}
                 </p>
@@ -141,9 +141,9 @@ export default function QuoteApprovalPortal() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Itens da OS</CardTitle>
+            <CardTitle className="text-lg text-primary">Itens da OS</CardTitle>
             {canEdit && (
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-muted-foreground">
                 Selecione os itens que deseja aprovar para a realização do serviço.
               </p>
             )}
@@ -153,7 +153,7 @@ export default function QuoteApprovalPortal() {
               {items.map((item) => (
                 <div
                   key={item.id}
-                  className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${item.aprovado !== false ? 'bg-white' : 'bg-slate-100 opacity-60'}`}
+                  className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${item.aprovado !== false ? 'bg-card' : 'bg-muted opacity-60'}`}
                 >
                   <div className="flex items-center gap-4">
                     <Checkbox
@@ -165,16 +165,18 @@ export default function QuoteApprovalPortal() {
                       <p className="font-medium">
                         {item.descricao || (item.tipo_item === 'servico' ? 'Serviço' : 'Produto')}{' '}
                         {item.aprovado === false && (
-                          <span className="text-red-500 text-xs ml-2 font-bold">(Recusado)</span>
+                          <span className="text-destructive text-xs ml-2 font-bold">
+                            (Recusado)
+                          </span>
                         )}
                       </p>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-sm text-muted-foreground">
                         {item.quantidade}x de {formatCurrency(item.valor_unitario)}
                       </p>
                     </div>
                   </div>
                   <div
-                    className={`font-semibold text-lg ${item.aprovado === false ? 'line-through text-slate-400' : ''}`}
+                    className={`font-semibold text-lg ${item.aprovado === false ? 'line-through text-muted-foreground' : ''}`}
                   >
                     {formatCurrency(item.valor_total)}
                   </div>
@@ -184,11 +186,13 @@ export default function QuoteApprovalPortal() {
           </CardContent>
         </Card>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-end md:items-center">
+        <div className="bg-card border border-border p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-end md:items-center">
           <div className="space-y-1 mb-4 md:mb-0">
-            <p className="text-slate-500">Subtotal Aprovado: {formatCurrency(quote.subtotal)}</p>
+            <p className="text-muted-foreground">
+              Subtotal Aprovado: {formatCurrency(quote.subtotal)}
+            </p>
             {(quote.desconto_valor > 0 || quote.desconto_percentual > 0) && (
-              <p className="text-green-600">
+              <p className="text-primary">
                 Desconto Aplicado: -
                 {formatCurrency(
                   (Number(quote.desconto_valor) || 0) +
@@ -197,22 +201,20 @@ export default function QuoteApprovalPortal() {
               </p>
             )}
             {quote.valor_impostos > 0 && (
-              <p className="text-red-500">Acréscimos: +{formatCurrency(quote.valor_impostos)}</p>
+              <p className="text-destructive">
+                Acréscimos: +{formatCurrency(quote.valor_impostos)}
+              </p>
             )}
           </div>
           <div className="text-right">
-            <p className="text-sm text-slate-500 mb-1">Total da Ordem de Serviço</p>
-            <p className="text-4xl font-bold text-slate-800">{formatCurrency(quote.total)}</p>
+            <p className="text-sm text-muted-foreground mb-1">Total da Ordem de Serviço</p>
+            <p className="text-4xl font-bold text-foreground">{formatCurrency(quote.total)}</p>
           </div>
         </div>
 
         {canEdit && (
           <div className="flex justify-end pt-4 pb-10">
-            <Button
-              size="lg"
-              className="w-full md:w-auto text-lg px-8 bg-green-600 hover:bg-green-700"
-              onClick={handleApprove}
-            >
+            <Button size="lg" className="w-full md:w-auto text-lg px-8" onClick={handleApprove}>
               <CheckCircle2 className="w-5 h-5 mr-2" /> Aprovar Ordem de Serviço
             </Button>
           </div>
