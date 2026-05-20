@@ -261,6 +261,10 @@ export default function QuoteForm() {
     payload.data_validade = payload.data_validade || null
     payload.data_emissao = payload.data_emissao || null
 
+    if (!id && !payload.numero_orcamento) {
+      payload.numero_orcamento = ''
+    }
+
     try {
       let orcId = id
       if (id) {
