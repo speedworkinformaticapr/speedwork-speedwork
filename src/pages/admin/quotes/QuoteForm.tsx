@@ -57,9 +57,13 @@ export default function QuoteForm() {
     desconto_valor: 0,
     valor_impostos: 0,
     veiculo_placa: '',
-    veiculo_modelo: '',
+    veiculo_brand_id: '',
+    veiculo_model_id: '',
     veiculo_km: '',
   })
+
+  const [brands, setBrands] = useState<any[]>([])
+  const [models, setModels] = useState<any[]>([])
 
   const [productItems, setProductItems] = useState<any[]>([])
   const [serviceItems, setServiceItems] = useState<any[]>([])
@@ -91,6 +95,11 @@ export default function QuoteForm() {
 
   useEffect(() => {
     supabase
+      .from('vehicle_brands')
+      .select('*')
+      .order('name')
+      .then((res) => setBrands(res.data || []))
+    supabase
       .from('plano_contas')
       .select('id, codigo_estrutural, nome')
       .order('codigo_estrutural')
@@ -111,6 +120,45 @@ export default function QuoteForm() {
       .then((res) => setServices(res.data || []))
     if (id) loadQuote()
   }, [id])
+
+  useEffect(() => {
+    if (data.veiculo_brand_id) {
+      supabase
+        .from('vehicle_models')
+        .select('*')
+        .eq('brand_id', data.veiculo_brand_id)
+        .order('name')
+        .then((res) => setModels(res.data || []))
+    } else {
+      setModels([])
+    }
+  }, [data.veiculo_brand_id])
+
+  const validateVehicle = () => {
+    if (!data.veiculo_placa) return 'Placa do veículo é obrigatória'
+    if (!data.veiculo_brand_id) return 'Marca do veículo é obrigatória'
+    if (!data.veiculo_model_id) return 'Modelo do veículo é obrigatório'
+    if (!data.veiculo_km) return 'KM/Horímetro é obrigatório'
+
+    const p = data.veiculo_placa.toUpperCase().replace(/[^A-Z0-9]/g, '')
+    const isStandardMercosul = /^[A-Z]{3}[0-9][A-Z][0-9]{2}$/.test(p)
+    const isStandardOld = /^[A-Z]{3}[0-9]{4}$/.test(p)
+    const isUserMercosulLiteral = /^[A-Z][0-9]{4}[A-Z]{2}$/.test(p)
+    const isUserMercosulExample = /^[A-Z][0-9][A-Z][0-9][A-Z][0-9]{2}$/.test(p)
+    const isUserOldLiteral = /^[A-Z]{2}[0-9]{4}[A-Z]{2}$/.test(p)
+
+    if (
+      !isStandardMercosul &&
+      !isStandardOld &&
+      !isUserMercosulLiteral &&
+      !isUserMercosulExample &&
+      !isUserOldLiteral
+    ) {
+      return 'Formato de placa inválido. Padrões aceitos: Mercosul (ABC1D23), Antiga (ABC1234), ou formatos especiais (A1B2C34, AB1234CD).'
+    }
+
+    return null
+  }
 
   const loadQuote = async () => {
     const { data: q } = await supabase.from('orcamentos').select('*').eq('id', id).single()
@@ -259,6 +307,12 @@ export default function QuoteForm() {
   const handleSave = async (statusToSave: string, preventNavigation = false) => {
     if (!data.cliente_id) {
       toast({ title: 'O cliente é obrigatório', variant: 'destructive' })
+      setActiveTab('dados-cliente')
+      return null
+    }
+    const vErr = validateVehicle()
+    if (vErr) {
+      toast({ title: vErr, variant: 'destructive' })
       setActiveTab('dados-cliente')
       return null
     }
@@ -460,6 +514,13 @@ export default function QuoteForm() {
       toast({ title: 'Selecione um cliente para avançar', variant: 'destructive' })
       return
     }
+    if (val !== 'dados-cliente') {
+      const vErr = validateVehicle()
+      if (vErr) {
+        toast({ title: vErr, variant: 'destructive' })
+        return
+      }
+    }
     if (val === 'aprovacao' && !hasItems) {
       toast({ title: 'Adicione pelo menos 1 item para avançar', variant: 'destructive' })
       return
@@ -597,9 +658,9 @@ export default function QuoteForm() {
           </div>
           <div className="bg-card p-6 rounded-xl border space-y-4 shadow-sm">
             <h3 className="font-semibold text-lg">Veículo / Equipamento</h3>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-4">
               <div className="space-y-2">
-                <Label>Placa / Série</Label>
+                <Label>Placa / Série *</Label>
                 <Input
                   placeholder="Ex: ABC1D23"
                   value={data.veiculo_placa || ''}
@@ -607,15 +668,46 @@ export default function QuoteForm() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Modelo / Descrição</Label>
-                <Input
-                  placeholder="Ex: Hyundai HB20"
-                  value={data.veiculo_modelo || ''}
-                  onChange={(e) => setData({ ...data, veiculo_modelo: e.target.value })}
-                />
+                <Label>Marca *</Label>
+                <Select
+                  value={data.veiculo_brand_id || ''}
+                  onValueChange={(v) =>
+                    setData({ ...data, veiculo_brand_id: v, veiculo_model_id: '' })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {brands.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label>KM / Horímetro</Label>
+                <Label>Modelo *</Label>
+                <Select
+                  disabled={!data.veiculo_brand_id}
+                  value={data.veiculo_model_id || ''}
+                  onValueChange={(v) => setData({ ...data, veiculo_model_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {models.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>KM / Horímetro *</Label>
                 <Input
                   type="number"
                   className={numClass}

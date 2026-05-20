@@ -4717,8 +4717,9 @@ export const Constants = {
 //     v_parcelas INT := 1;
 //     v_valor_parcela NUMERIC;
 //     i INT;
+//     existing_charges_count INT;
 //   BEGIN
-//     IF NEW.status IN ('aprovado', 'convertido') AND (OLD.status IS NULL OR OLD.status NOT IN ('aprovado', 'convertido')) THEN
+//     IF NEW.status IN ('aprovado', 'convertido', 'fechado', 'pré-fechada') AND (OLD.status IS NULL OR OLD.status NOT IN ('aprovado', 'convertido', 'fechado', 'pré-fechada')) THEN
 //       IF NOT EXISTS (SELECT 1 FROM public.financial_master_records WHERE reference_id = NEW.id AND reference_type = 'orcamento') THEN
 //
 //         SELECT name INTO v_client_name FROM public.profiles WHERE id = NEW.cliente_id;
@@ -4728,11 +4729,13 @@ export const Constants = {
 //         INSERT INTO public.financial_master_records (id, description, client_id, client_name, total_amount, status, reference_id, reference_type, type, category)
 //         VALUES (v_master_id, 'Orçamento ' || COALESCE(NEW.numero_orcamento, NEW.id::text), NEW.cliente_id, v_client_name, NEW.total, 'pendente', NEW.id, 'orcamento', 'receivable', 'orcamento');
 //
-//         IF NOT EXISTS (SELECT 1 FROM public.financial_charges WHERE orcamento_id = NEW.id) THEN
+//         SELECT count(*) INTO existing_charges_count FROM public.financial_charges WHERE orcamento_id = NEW.id;
+//
+//         IF existing_charges_count = 0 THEN
 //           v_valor_parcela := NEW.total / v_parcelas;
 //           FOR i IN 1..v_parcelas LOOP
-//             INSERT INTO public.financial_charges (master_record_id, client_name, amount, due_date, description, status, type, category, orcamento_id, profile_id)
-//             VALUES (v_master_id, v_client_name, v_valor_parcela, NEW.data_emissao::date + ((i-1) || ' month')::interval, 'Parcela ' || i || '/' || v_parcelas, 'pendente', 'receivable', 'orcamento', NEW.id, NEW.cliente_id);
+//             INSERT INTO public.financial_charges (master_record_id, client_name, amount, due_date, description, status, type, category, orcamento_id, profile_id, conta_id)
+//             VALUES (v_master_id, v_client_name, v_valor_parcela, NEW.data_emissao::date + ((i-1) || ' month')::interval, 'Parcela ' || i || '/' || v_parcelas, 'pendente', 'receivable', 'orcamento', NEW.id, NEW.cliente_id, NEW.conta_id);
 //           END LOOP;
 //         ELSE
 //           UPDATE public.financial_charges SET master_record_id = v_master_id WHERE orcamento_id = NEW.id;

@@ -45,9 +45,13 @@ export default function AdminPedidoForm() {
     forma_pagamento: 'pix',
     observacoes: '',
     veiculo_placa: '',
-    veiculo_modelo: '',
+    veiculo_brand_id: '',
+    veiculo_model_id: '',
     veiculo_km: '',
   })
+
+  const [brands, setBrands] = useState<any[]>([])
+  const [models, setModels] = useState<any[]>([])
   const [itens, setItems] = useState<any[]>([])
 
   // Quick Add States
@@ -57,6 +61,12 @@ export default function AdminPedidoForm() {
   const [newConta, setNewConta] = useState({ nome: '', codigo_estrutural: '', natureza: 'receita' })
 
   useEffect(() => {
+    supabase
+      .from('vehicle_brands')
+      .select('*')
+      .order('name')
+      .then(({ data }) => setBrands(data || []))
+
     supabase
       .from('plano_contas')
       .select('id, codigo_estrutural, nome')
@@ -105,6 +115,45 @@ export default function AdminPedidoForm() {
     }
   }, [id])
 
+  useEffect(() => {
+    if (formData.veiculo_brand_id) {
+      supabase
+        .from('vehicle_models')
+        .select('*')
+        .eq('brand_id', formData.veiculo_brand_id)
+        .order('name')
+        .then(({ data }) => setModels(data || []))
+    } else {
+      setModels([])
+    }
+  }, [formData.veiculo_brand_id])
+
+  const validateVehicle = () => {
+    if (!formData.veiculo_placa) return 'Placa do veículo é obrigatória'
+    if (!formData.veiculo_brand_id) return 'Marca do veículo é obrigatória'
+    if (!formData.veiculo_model_id) return 'Modelo do veículo é obrigatório'
+    if (!formData.veiculo_km) return 'KM/Horímetro é obrigatório'
+
+    const p = formData.veiculo_placa.toUpperCase().replace(/[^A-Z0-9]/g, '')
+    const isStandardMercosul = /^[A-Z]{3}[0-9][A-Z][0-9]{2}$/.test(p)
+    const isStandardOld = /^[A-Z]{3}[0-9]{4}$/.test(p)
+    const isUserMercosulLiteral = /^[A-Z][0-9]{4}[A-Z]{2}$/.test(p)
+    const isUserMercosulExample = /^[A-Z][0-9][A-Z][0-9][A-Z][0-9]{2}$/.test(p)
+    const isUserOldLiteral = /^[A-Z]{2}[0-9]{4}[A-Z]{2}$/.test(p)
+
+    if (
+      !isStandardMercosul &&
+      !isStandardOld &&
+      !isUserMercosulLiteral &&
+      !isUserMercosulExample &&
+      !isUserOldLiteral
+    ) {
+      return 'Formato de placa inválido. Padrões aceitos: Mercosul (ABC1D23), Antiga (ABC1234), ou formatos especiais (A1B2C34, AB1234CD).'
+    }
+
+    return null
+  }
+
   const handleOrcamentoSelect = async (orcId: string) => {
     setFormData({ ...formData, orcamento_id: orcId })
     const { data: orc } = await supabase.from('orcamentos').select('*').eq('id', orcId).single()
@@ -113,7 +162,8 @@ export default function AdminPedidoForm() {
         ...p,
         cliente_id: orc.cliente_id,
         veiculo_placa: orc.veiculo_placa || '',
-        veiculo_modelo: orc.veiculo_modelo || '',
+        veiculo_brand_id: orc.veiculo_brand_id || '',
+        veiculo_model_id: orc.veiculo_model_id || '',
         veiculo_km: orc.veiculo_km || '',
       }))
     const { data: oItems } = await supabase
@@ -192,6 +242,11 @@ export default function AdminPedidoForm() {
   const handleSave = async (status: string) => {
     if (!formData.cliente_id)
       return toast({ title: 'Erro', description: 'Cliente obrigatório.', variant: 'destructive' })
+
+    const vErr = validateVehicle()
+    if (vErr) {
+      return toast({ title: 'Erro', description: vErr, variant: 'destructive' })
+    }
 
     const cliente = clientes.find((c) => c.id === formData.cliente_id)
     if (cliente && status === 'confirmado') {
@@ -520,9 +575,9 @@ export default function AdminPedidoForm() {
           <h3 className="font-semibold text-sm text-muted-foreground uppercase pt-4">
             Dados do Veículo (Oficina/Opcional)
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label>Placa</Label>
+              <Label>Placa *</Label>
               <Input
                 placeholder="Ex: ABC1D23"
                 value={formData.veiculo_placa || ''}
@@ -530,15 +585,46 @@ export default function AdminPedidoForm() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Modelo</Label>
-              <Input
-                placeholder="Ex: Hyundai HB20"
-                value={formData.veiculo_modelo || ''}
-                onChange={(e) => setFormData({ ...formData, veiculo_modelo: e.target.value })}
-              />
+              <Label>Marca *</Label>
+              <Select
+                value={formData.veiculo_brand_id || ''}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, veiculo_brand_id: v, veiculo_model_id: '' })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {brands.map((b) => (
+                    <SelectItem key={b.id} value={b.id}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
-              <Label>Quilometragem (KM)</Label>
+              <Label>Modelo *</Label>
+              <Select
+                disabled={!formData.veiculo_brand_id}
+                value={formData.veiculo_model_id || ''}
+                onValueChange={(v) => setFormData({ ...formData, veiculo_model_id: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {models.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Quilometragem (KM) *</Label>
               <Input
                 type="number"
                 placeholder="Ex: 45000"

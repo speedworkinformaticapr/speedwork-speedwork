@@ -20,7 +20,7 @@ export default function AdminPedidoView() {
   const load = async () => {
     const { data: p } = await supabase
       .from('pedidos')
-      .select('*, clientes(nome)')
+      .select('*, clientes(nome), vehicle_brands(name), vehicle_models(name)')
       .eq('id', id)
       .single()
     const { data: i } = await supabase
@@ -57,15 +57,19 @@ export default function AdminPedidoView() {
         </div>
       </div>
 
-      {(pedido.veiculo_placa || pedido.veiculo_modelo) && (
-        <div className="grid grid-cols-3 gap-4 p-4 rounded-lg bg-card border">
+      {pedido.veiculo_placa && (
+        <div className="grid grid-cols-4 gap-4 p-4 rounded-lg bg-card border">
           <div>
             <p className="text-muted-foreground text-sm">Placa</p>
             <p className="font-medium text-base">{pedido.veiculo_placa || '-'}</p>
           </div>
           <div>
+            <p className="text-muted-foreground text-sm">Marca</p>
+            <p className="font-medium text-base">{pedido.vehicle_brands?.name || '-'}</p>
+          </div>
+          <div>
             <p className="text-muted-foreground text-sm">Modelo</p>
-            <p className="font-medium text-base">{pedido.veiculo_modelo || '-'}</p>
+            <p className="font-medium text-base">{pedido.vehicle_models?.name || '-'}</p>
           </div>
           <div>
             <p className="text-muted-foreground text-sm">Quilometragem</p>

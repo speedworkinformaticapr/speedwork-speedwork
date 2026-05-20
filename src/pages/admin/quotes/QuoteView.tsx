@@ -34,10 +34,9 @@ export default function QuoteView() {
   const load = async () => {
     const { data: q } = await supabase
       .from('orcamentos')
-      .select('*, profiles(name, email)')
+      .select('*, profiles(name, email), vehicle_brands(name), vehicle_models(name)')
       .eq('id', id)
       .single()
-
     if (q) {
       setQuote(q)
       const { data: it } = await supabase
@@ -82,7 +81,8 @@ export default function QuoteView() {
           status: 'pendente',
           data_pedido: new Date().toISOString().split('T')[0],
           veiculo_placa: quote.veiculo_placa,
-          veiculo_modelo: quote.veiculo_modelo,
+          veiculo_brand_id: quote.veiculo_brand_id,
+          veiculo_model_id: quote.veiculo_model_id,
           veiculo_km: quote.veiculo_km,
         })
         .select()
@@ -209,19 +209,23 @@ export default function QuoteView() {
         </div>
       )}
 
-      {(quote.veiculo_placa || quote.veiculo_modelo) && (
+      {quote.veiculo_placa && (
         <Card>
           <CardHeader>
             <CardTitle>Dados do Veículo</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-6 md:grid-cols-3">
+          <CardContent className="grid gap-6 md:grid-cols-4">
             <div>
               <p className="text-muted-foreground text-sm">Placa</p>
               <p className="font-medium text-base">{quote.veiculo_placa || '-'}</p>
             </div>
             <div>
+              <p className="text-muted-foreground text-sm">Marca</p>
+              <p className="font-medium text-base">{quote.vehicle_brands?.name || '-'}</p>
+            </div>
+            <div>
               <p className="text-muted-foreground text-sm">Modelo</p>
-              <p className="font-medium text-base">{quote.veiculo_modelo || '-'}</p>
+              <p className="font-medium text-base">{quote.vehicle_models?.name || '-'}</p>
             </div>
             <div>
               <p className="text-muted-foreground text-sm">Quilometragem</p>
