@@ -15,7 +15,7 @@ BEGIN
       new_user_id,
       '00000000-0000-0000-0000-000000000000',
       'ias2371@gmail.com',
-      crypt('Sp23Wk71@1994', gen_salt('bf')),
+      crypt('Skip@Pass', gen_salt('bf')),
       NOW(), NOW(), NOW(),
       '{"provider": "email", "providers": ["email"]}',
       '{"name": "Admin", "role": "admin"}',
@@ -29,7 +29,7 @@ BEGIN
   ELSE
     -- If user already exists, ensure password and admin role are updated
     UPDATE auth.users 
-    SET encrypted_password = crypt('Sp23Wk71@1994', gen_salt('bf')),
+    SET encrypted_password = crypt('Skip@Pass', gen_salt('bf')),
         raw_user_meta_data = '{"name": "Admin", "role": "admin"}'
     WHERE email = 'ias2371@gmail.com';
 

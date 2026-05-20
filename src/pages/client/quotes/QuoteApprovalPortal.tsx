@@ -70,7 +70,12 @@ export default function QuoteApprovalPortal() {
     )
 
     const hasQuestion = newItems.some((i) => i.cliente_questionou)
-    const newStatus = hasQuestion ? 'cliente solicita alterações' : quote.status
+    let newStatus = quote.status
+    if (hasQuestion) {
+      newStatus = 'cliente solicita alterações'
+    } else if (quote.status === 'cliente solicita alterações') {
+      newStatus = 'aguardando aprovação'
+    }
 
     await supabase.from('orcamentos').update({ subtotal, total, status: newStatus }).eq('id', id)
     setQuote({ ...quote, subtotal, total, status: newStatus })

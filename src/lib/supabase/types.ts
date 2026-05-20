@@ -1615,6 +1615,7 @@ export type Database = {
       orcamento_itens: {
         Row: {
           aprovado: boolean | null
+          cliente_questionou: boolean | null
           descricao: string | null
           id: string
           orcamento_id: string | null
@@ -1630,6 +1631,7 @@ export type Database = {
         }
         Insert: {
           aprovado?: boolean | null
+          cliente_questionou?: boolean | null
           descricao?: string | null
           id?: string
           orcamento_id?: string | null
@@ -1645,6 +1647,7 @@ export type Database = {
         }
         Update: {
           aprovado?: boolean | null
+          cliente_questionou?: boolean | null
           descricao?: string | null
           id?: string
           orcamento_id?: string | null
@@ -2816,6 +2819,7 @@ export type Database = {
           phone: string | null
           platform_name: string | null
           quote_footer_text: string | null
+          quote_validity_days: number | null
           razao_social: string | null
           records_per_page: number | null
           responsible_cpf: string | null
@@ -2861,6 +2865,7 @@ export type Database = {
           phone?: string | null
           platform_name?: string | null
           quote_footer_text?: string | null
+          quote_validity_days?: number | null
           razao_social?: string | null
           records_per_page?: number | null
           responsible_cpf?: string | null
@@ -2906,6 +2911,7 @@ export type Database = {
           phone?: string | null
           platform_name?: string | null
           quote_footer_text?: string | null
+          quote_validity_days?: number | null
           razao_social?: string | null
           records_per_page?: number | null
           responsible_cpf?: string | null
@@ -3133,7 +3139,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      save_quote_transaction: {
+        Args: { p_charges: Json; p_items: Json; p_quote: Json }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
@@ -3690,6 +3699,7 @@ export const Constants = {
 //   tempo_estimado: numeric (nullable, default: 0)
 //   aprovado: boolean (nullable, default: true)
 //   tempo_executado: numeric (nullable, default: 0)
+//   cliente_questionou: boolean (nullable, default: false)
 // Table: orcamentos
 //   id: uuid (not null, default: gen_random_uuid())
 //   numero_orcamento: text (nullable)
@@ -3998,6 +4008,7 @@ export const Constants = {
 //   footer_links: jsonb (nullable, default: '{"links": [], "columns": 3}'::jsonb)
 //   footer_icon_size: integer (nullable, default: 100)
 //   short_description: text (nullable)
+//   quote_validity_days: integer (nullable, default: 15)
 // Table: user_roles
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (not null)
@@ -4744,6 +4755,34 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION calc_orcamento_itens_total()
+//   CREATE OR REPLACE FUNCTION public.calc_orcamento_itens_total()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//   AS $function$
+//   BEGIN
+//     IF NEW.tipo_item = 'servico' THEN
+//       NEW.valor_total := COALESCE(NEW.quantidade, 1) *
+//         CASE WHEN COALESCE(NEW.tempo_executado, 0) > 0 THEN NEW.tempo_executado ELSE COALESCE(NEW.tempo_estimado, 0) END *
+//         COALESCE(NEW.valor_unitario, 0);
+//     ELSE
+//       NEW.valor_total := COALESCE(NEW.quantidade, 1) * COALESCE(NEW.valor_unitario, 0);
+//     END IF;
+//     RETURN NEW;
+//   END;
+//   $function$
+//
+// FUNCTION calc_orcamento_total()
+//   CREATE OR REPLACE FUNCTION public.calc_orcamento_total()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//   AS $function$
+//   BEGIN
+//     NEW.total := GREATEST(0, COALESCE(NEW.subtotal, 0) - COALESCE(NEW.desconto_valor, 0) - (COALESCE(NEW.subtotal, 0) * COALESCE(NEW.desconto_percentual, 0) / 100) + COALESCE(NEW.valor_impostos, 0));
+//     RETURN NEW;
+//   END;
+//   $function$
+//
 // FUNCTION generate_numero_orcamento()
 //   CREATE OR REPLACE FUNCTION public.generate_numero_orcamento()
 //    RETURNS trigger
@@ -5043,6 +5082,113 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION save_quote_transaction(jsonb, jsonb, jsonb)
+//   CREATE OR REPLACE FUNCTION public.save_quote_transaction(p_quote jsonb, p_items jsonb, p_charges jsonb)
+//    RETURNS jsonb
+//    LANGUAGE plpgsql
+//   AS $function$
+//   DECLARE
+//     v_quote_id UUID;
+//     v_num_orc TEXT;
+//     v_item JSONB;
+//     v_charge JSONB;
+//   BEGIN
+//     -- 1. Upsert Quote
+//     IF p_quote->>'id' IS NOT NULL AND p_quote->>'id' <> '' THEN
+//       v_quote_id := (p_quote->>'id')::uuid;
+//       UPDATE public.orcamentos
+//       SET
+//         cliente_id = (p_quote->>'cliente_id')::uuid,
+//         conta_id = NULLIF(p_quote->>'conta_id', '')::uuid,
+//         data_emissao = (p_quote->>'data_emissao')::date,
+//         data_validade = NULLIF(p_quote->>'data_validade', '')::date,
+//         status = p_quote->>'status',
+//         observacoes = p_quote->>'observacoes',
+//         desconto_percentual = (p_quote->>'desconto_percentual')::numeric,
+//         desconto_valor = (p_quote->>'desconto_valor')::numeric,
+//         valor_impostos = (p_quote->>'valor_impostos')::numeric,
+//         veiculo_placa = p_quote->>'veiculo_placa',
+//         veiculo_brand_id = (p_quote->>'veiculo_brand_id')::uuid,
+//         veiculo_model_id = (p_quote->>'veiculo_model_id')::uuid,
+//         veiculo_km = p_quote->>'veiculo_km',
+//         subtotal = (p_quote->>'subtotal')::numeric
+//       WHERE id = v_quote_id
+//       RETURNING numero_orcamento INTO v_num_orc;
+//     ELSE
+//       INSERT INTO public.orcamentos (
+//         cliente_id, conta_id, data_emissao, data_validade, status, observacoes,
+//         desconto_percentual, desconto_valor, valor_impostos,
+//         veiculo_placa, veiculo_brand_id, veiculo_model_id, veiculo_km, subtotal
+//       ) VALUES (
+//         (p_quote->>'cliente_id')::uuid,
+//         NULLIF(p_quote->>'conta_id', '')::uuid,
+//         (p_quote->>'data_emissao')::date,
+//         NULLIF(p_quote->>'data_validade', '')::date,
+//         p_quote->>'status',
+//         p_quote->>'observacoes',
+//         (p_quote->>'desconto_percentual')::numeric,
+//         (p_quote->>'desconto_valor')::numeric,
+//         (p_quote->>'valor_impostos')::numeric,
+//         p_quote->>'veiculo_placa',
+//         (p_quote->>'veiculo_brand_id')::uuid,
+//         (p_quote->>'veiculo_model_id')::uuid,
+//         p_quote->>'veiculo_km',
+//         (p_quote->>'subtotal')::numeric
+//       ) RETURNING id, numero_orcamento INTO v_quote_id, v_num_orc;
+//     END IF;
+//
+//     -- 2. Replace Items
+//     DELETE FROM public.orcamento_itens WHERE orcamento_id = v_quote_id;
+//
+//     FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
+//     LOOP
+//       INSERT INTO public.orcamento_itens (
+//         orcamento_id, tipo_item, produto_id, servico_id, quantidade,
+//         valor_unitario, descricao, tempo_estimado, tempo_executado, aprovado, cliente_questionou
+//       ) VALUES (
+//         v_quote_id,
+//         v_item->>'tipo_item',
+//         NULLIF(v_item->>'produto_id', '')::uuid,
+//         NULLIF(v_item->>'servico_id', '')::uuid,
+//         (v_item->>'quantidade')::numeric,
+//         (v_item->>'valor_unitario')::numeric,
+//         v_item->>'descricao',
+//         (v_item->>'tempo_estimado')::numeric,
+//         (v_item->>'tempo_executado')::numeric,
+//         COALESCE((v_item->>'aprovado')::boolean, true),
+//         COALESCE((v_item->>'cliente_questionou')::boolean, false)
+//       );
+//     END LOOP;
+//
+//     -- 3. Replace Financial Charges (only pending)
+//     DELETE FROM public.financial_charges
+//     WHERE orcamento_id = v_quote_id AND status = 'pendente';
+//
+//     FOR v_charge IN SELECT * FROM jsonb_array_elements(p_charges)
+//     LOOP
+//       IF v_charge->>'status' = 'pendente' THEN
+//         INSERT INTO public.financial_charges (
+//           orcamento_id, client_name, amount, due_date, description, status, type, category, conta_id, parcela_numero, parcela_total
+//         ) VALUES (
+//           v_quote_id,
+//           v_charge->>'client_name',
+//           (v_charge->>'amount')::numeric,
+//           (v_charge->>'due_date')::date,
+//           v_charge->>'description',
+//           'pendente',
+//           'receivable',
+//           'orcamento',
+//           NULLIF(p_quote->>'conta_id', '')::uuid,
+//           (v_charge->>'parcela_numero')::integer,
+//           (v_charge->>'parcela_total')::integer
+//         );
+//       END IF;
+//     END LOOP;
+//
+//     RETURN jsonb_build_object('id', v_quote_id, 'numero_orcamento', v_num_orc);
+//   END;
+//   $function$
+//
 // FUNCTION sync_profile_to_usuarios()
 //   CREATE OR REPLACE FUNCTION public.sync_profile_to_usuarios()
 //    RETURNS trigger
@@ -5164,6 +5310,28 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION validate_orcamento_fields()
+//   CREATE OR REPLACE FUNCTION public.validate_orcamento_fields()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//   AS $function$
+//   BEGIN
+//     IF NEW.veiculo_placa IS NULL OR btrim(NEW.veiculo_placa) = '' THEN
+//       RAISE EXCEPTION 'A placa do veículo é obrigatória.';
+//     END IF;
+//     IF NEW.veiculo_km IS NULL OR btrim(NEW.veiculo_km) = '' THEN
+//       RAISE EXCEPTION 'A quilometragem do veículo é obrigatória.';
+//     END IF;
+//     IF NEW.veiculo_brand_id IS NULL THEN
+//       RAISE EXCEPTION 'A marca do veículo é obrigatória.';
+//     END IF;
+//     IF NEW.veiculo_model_id IS NULL THEN
+//       RAISE EXCEPTION 'O modelo do veículo é obrigatório.';
+//     END IF;
+//     RETURN NEW;
+//   END;
+//   $function$
+//
 
 // --- TRIGGERS ---
 // Table: affiliation_plans
@@ -5182,10 +5350,15 @@ export const Constants = {
 //   trigger_notify_event_registration: CREATE TRIGGER trigger_notify_event_registration AFTER INSERT ON public.event_registrations FOR EACH ROW EXECUTE FUNCTION notify_event_registration()
 // Table: financial_charges
 //   on_plan_payment_paid: CREATE TRIGGER on_plan_payment_paid AFTER UPDATE ON public.financial_charges FOR EACH ROW EXECUTE FUNCTION handle_plan_payment_contract()
+// Table: orcamento_itens
+//   trg_calc_orcamento_itens_total: CREATE TRIGGER trg_calc_orcamento_itens_total BEFORE INSERT OR UPDATE ON public.orcamento_itens FOR EACH ROW EXECUTE FUNCTION calc_orcamento_itens_total()
 // Table: orcamentos
+//   audit_orcamentos: CREATE TRIGGER audit_orcamentos AFTER INSERT OR DELETE OR UPDATE ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION audit_trigger_func()
+//   trg_calc_orcamento_total: CREATE TRIGGER trg_calc_orcamento_total BEFORE INSERT OR UPDATE ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION calc_orcamento_total()
 //   trg_generate_numero_orcamento: CREATE TRIGGER trg_generate_numero_orcamento BEFORE INSERT ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION generate_numero_orcamento()
 //   trg_orcamento_financeiro: CREATE TRIGGER trg_orcamento_financeiro AFTER UPDATE ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION handle_orcamento_financeiro()
 //   trg_orcamento_financial_master: CREATE TRIGGER trg_orcamento_financial_master AFTER UPDATE ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION handle_orcamento_financial_master()
+//   trg_validate_orcamento_fields: CREATE TRIGGER trg_validate_orcamento_fields BEFORE INSERT OR UPDATE ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION validate_orcamento_fields()
 // Table: orders
 //   trigger_notify_order_payment: CREATE TRIGGER trigger_notify_order_payment AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION notify_order_payment()
 // Table: pedidos
