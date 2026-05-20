@@ -323,6 +323,11 @@ export default function AdminFinancialPayments() {
     </TableHead>
   )
 
+  const canAccessConditions =
+    formData.description.trim() !== '' &&
+    (formData.profile_id !== 'none' || formData.client_name.trim() !== '')
+  const canAccessInstallments = parcelasGeradas.length > 0
+
   const handleOpenModal = (charge?: Charge) => {
     if (charge) {
       setEditingChargeId(charge.id)
@@ -944,13 +949,34 @@ export default function AdminFinancialPayments() {
 
           <Tabs
             value={activeTab}
-            onValueChange={setActiveTab}
+            onValueChange={(v) => {
+              if (v === 'condicoes' && !canAccessConditions) {
+                toast({
+                  title: 'Preencha a Identificação (Descrição e Cliente).',
+                  variant: 'destructive',
+                })
+                return
+              }
+              if (v === 'parcelas' && !canAccessInstallments) {
+                toast({ title: 'Gere as parcelas primeiro.', variant: 'destructive' })
+                return
+              }
+              setActiveTab(v)
+            }}
             className="flex-1 overflow-hidden flex flex-col"
           >
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="geral">1. Identificação</TabsTrigger>
-              {!editingChargeId && <TabsTrigger value="condicoes">2. Condições</TabsTrigger>}
-              {!editingChargeId && <TabsTrigger value="parcelas">3. Parcelas</TabsTrigger>}
+              {!editingChargeId && (
+                <TabsTrigger value="condicoes" disabled={!canAccessConditions}>
+                  2. Condições
+                </TabsTrigger>
+              )}
+              {!editingChargeId && (
+                <TabsTrigger value="parcelas" disabled={!canAccessInstallments}>
+                  3. Parcelas
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <div className="flex-1 overflow-y-auto py-4">
@@ -1136,6 +1162,26 @@ export default function AdminFinancialPayments() {
                     </div>
                   </div>
                 )}
+
+                {!editingChargeId && (
+                  <div className="flex justify-end pt-6 border-t mt-4">
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (!canAccessConditions) {
+                          toast({
+                            title: 'Preencha a Identificação (Descrição e Cliente).',
+                            variant: 'destructive',
+                          })
+                          return
+                        }
+                        setActiveTab('condicoes')
+                      }}
+                    >
+                      Próximo Passo: Condições <ChevronRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </div>
+                )}
               </TabsContent>
 
               {!editingChargeId && (
@@ -1197,7 +1243,10 @@ export default function AdminFinancialPayments() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex justify-end pt-4">
+                  <div className="flex justify-between pt-6 border-t mt-4">
+                    <Button variant="outline" type="button" onClick={() => setActiveTab('geral')}>
+                      <ChevronLeft className="w-4 h-4 mr-2" /> Voltar
+                    </Button>
                     <Button onClick={handleGerarParcelas} size="lg">
                       Gerar Parcelas
                     </Button>
@@ -1271,6 +1320,15 @@ export default function AdminFinancialPayments() {
                         ))}
                       </div>
                     )}
+                  </div>
+                  <div className="flex justify-start pt-6 border-t mt-4">
+                    <Button
+                      variant="outline"
+                      type="button"
+                      onClick={() => setActiveTab('condicoes')}
+                    >
+                      <ChevronLeft className="w-4 h-4 mr-2" /> Voltar
+                    </Button>
                   </div>
                 </TabsContent>
               )}

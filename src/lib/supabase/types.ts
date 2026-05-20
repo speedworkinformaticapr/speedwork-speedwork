@@ -2947,6 +2947,7 @@ export type Database = {
           created_at: string
           empresa_id: string | null
           id: string
+          instance_name: string | null
           is_active: boolean | null
           is_production: boolean | null
           phone_number: string | null
@@ -2959,6 +2960,7 @@ export type Database = {
           created_at?: string
           empresa_id?: string | null
           id?: string
+          instance_name?: string | null
           is_active?: boolean | null
           is_production?: boolean | null
           phone_number?: string | null
@@ -2971,6 +2973,7 @@ export type Database = {
           created_at?: string
           empresa_id?: string | null
           id?: string
+          instance_name?: string | null
           is_active?: boolean | null
           is_production?: boolean | null
           phone_number?: string | null
@@ -3929,6 +3932,7 @@ export const Constants = {
 //   is_production: boolean (nullable, default: false)
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
+//   instance_name: text (nullable)
 // Table: whatsapp_logs
 //   id: uuid (not null, default: gen_random_uuid())
 //   empresa_id: uuid (nullable)

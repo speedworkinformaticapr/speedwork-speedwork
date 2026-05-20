@@ -25,13 +25,22 @@ Deno.serve(async (req: Request) => {
       mensagem_customizada,
     } = await req.json()
 
-    const { data: config } = await supabase
+    if (!empresa_id) {
+      throw new Error('O ID da empresa (empresa_id) é obrigatório.')
+    }
+
+    const { data: config, error: configError } = await supabase
       .from('whatsapp_config')
       .select('*')
-      .eq('is_active', true)
-      .limit(1)
-      .single()
-    if (!config) throw new Error('Configuração do WhatsApp não encontrada ou inativa.')
+      .eq('empresa_id', empresa_id)
+      .maybeSingle()
+
+    if (configError) throw new Error(`Erro ao buscar configuração: ${configError.message}`)
+    if (!config) throw new Error('Configuração do WhatsApp não encontrada para esta empresa.')
+
+    if (!config.is_active && tipo_mensagem !== 'teste_conexao') {
+      throw new Error('A integração do WhatsApp está inativa.')
+    }
 
     let conteudoFinal = ''
 
@@ -40,14 +49,14 @@ Deno.serve(async (req: Request) => {
     } else if (tipo_mensagem === 'teste_conexao') {
       conteudoFinal = 'TESTE'
     } else {
-      const { data: template } = await supabase
+      const { data: template, error: templateError } = await supabase
         .from('whatsapp_templates')
         .select('*')
         .eq('tipo_mensagem', tipo_mensagem)
         .eq('is_active', true)
-        .limit(1)
-        .single()
+        .maybeSingle()
 
+      if (templateError) throw new Error(`Erro ao buscar template: ${templateError.message}`)
       if (!template) throw new Error(`Template para ${tipo_mensagem} não encontrado ou inativo.`)
 
       conteudoFinal = template.conteudo
@@ -62,7 +71,7 @@ Deno.serve(async (req: Request) => {
     let sucesso = true
     let respostaApi: any = { status: 'success', simulated: true, provider: config.api_provider }
 
-    if ((config as any).is_production) {
+    if ((config as any).is_production || tipo_mensagem === 'teste_conexao') {
       respostaApi.simulated = false
       try {
         if (config.api_provider === 'twilio') {
@@ -85,7 +94,9 @@ Deno.serve(async (req: Request) => {
           respostaApi.data = data
         } else if (config.api_provider === 'evolution') {
           const baseUrl = config.account_sid?.replace(/\/$/, '') || ''
-          const evolutionUrl = `${baseUrl}/message/sendText/${config.phone_number}`
+          const instName = (config as any).instance_name || config.phone_number || ''
+          const evolutionUrl = `${baseUrl}/message/sendText/${instName}`
+
           const res = await fetch(evolutionUrl, {
             method: 'POST',
             headers: {

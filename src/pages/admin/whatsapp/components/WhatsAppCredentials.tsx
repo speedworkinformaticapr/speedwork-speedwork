@@ -40,6 +40,7 @@ const formSchema = z.object({
   account_sid: z.string().optional(),
   auth_token: z.string().optional(),
   phone_number: z.string().optional(),
+  instance_name: z.string().optional(),
   is_active: z.boolean().default(false),
   is_production: z.boolean().default(false),
 })
@@ -49,6 +50,7 @@ export default function WhatsAppCredentials() {
   const [isLoading, setIsLoading] = useState(false)
   const [isFetching, setIsFetching] = useState(true)
   const [configId, setConfigId] = useState<string | null>(null)
+  const [empresaId, setEmpresaId] = useState<string | null>(null)
 
   const [isTestDialogOpen, setIsTestDialogOpen] = useState(false)
   const [testPhone, setTestPhone] = useState('')
@@ -61,6 +63,7 @@ export default function WhatsAppCredentials() {
       account_sid: '',
       auth_token: '',
       phone_number: '',
+      instance_name: '',
       is_active: false,
       is_production: false,
     },
@@ -72,20 +75,40 @@ export default function WhatsAppCredentials() {
 
   async function fetchConfig() {
     try {
-      const { data, error } = await supabase.from('whatsapp_config').select('*').limit(1)
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) return
 
-      if (error) throw error
+      let currentEmpresaId = user.id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('club_id')
+        .eq('id', user.id)
+        .maybeSingle()
+      if (profile?.club_id) {
+        currentEmpresaId = profile.club_id
+      }
+      setEmpresaId(currentEmpresaId)
 
-      if (data && data.length > 0) {
-        const config = data[0]
-        setConfigId(config.id)
+      const { data, error } = await supabase
+        .from('whatsapp_config')
+        .select('*')
+        .eq('empresa_id', currentEmpresaId)
+        .maybeSingle()
+
+      if (error && error.code !== 'PGRST116') throw error
+
+      if (data) {
+        setConfigId(data.id)
         form.reset({
-          api_provider: config.api_provider || 'evolution',
-          account_sid: config.account_sid || '',
-          auth_token: config.auth_token || '',
-          phone_number: config.phone_number || '',
-          is_active: config.is_active || false,
-          is_production: (config as any).is_production || false,
+          api_provider: data.api_provider || 'evolution',
+          account_sid: data.account_sid || '',
+          auth_token: data.auth_token || '',
+          phone_number: data.phone_number || '',
+          instance_name: (data as any).instance_name || '',
+          is_active: data.is_active || false,
+          is_production: data.is_production || false,
         })
       }
     } catch (error) {
@@ -107,29 +130,31 @@ export default function WhatsAppCredentials() {
 
     setIsTesting(true)
     try {
-      const { data: userData } = await supabase.auth.getUser()
-      const { data, error } = await supabase.functions.invoke('enviar_whatsapp', {
-        body: {
-          empresa_id: userData.user?.id,
-          tipo_mensagem: 'teste_conexao',
-          telefone_destino: testPhone,
-        },
+      const values = form.getValues()
+      const payload = {
+        ...values,
+        test_phone: testPhone,
+        empresa_id: empresaId,
+      }
+
+      const { data, error } = await supabase.functions.invoke('validar_whatsapp_config', {
+        body: payload,
       })
 
       if (error) throw error
-      if (data?.status === 'erro_config') throw new Error(data.erro)
-      if (data?.status === 'falha')
-        throw new Error('Falha ao enviar a mensagem. Verifique os logs e as credenciais.')
+      if (!data?.valido) {
+        throw new Error(data?.mensagem || 'Falha ao validar a conexão.')
+      }
 
       toast({
         title: 'Sucesso',
-        description: 'Mensagem de teste enviada com sucesso! Verifique o WhatsApp de destino.',
+        description: data.mensagem || 'Mensagem de teste enviada com sucesso!',
       })
       setIsTestDialogOpen(false)
       setTestPhone('')
     } catch (error: any) {
       toast({
-        title: 'Erro no Teste',
+        title: 'Erro na Validação',
         description: error.message,
         variant: 'destructive',
       })
@@ -141,19 +166,35 @@ export default function WhatsAppCredentials() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true)
     try {
-      const { data: userData } = await supabase.auth.getUser()
-      const userId = userData.user?.id
+      if (!empresaId) throw new Error('Não foi possível identificar a empresa do usuário.')
+
+      const payload: any = { ...values, empresa_id: empresaId }
 
       if (configId) {
-        const { error } = await supabase
-          .from('whatsapp_config')
-          .update(values as any)
-          .eq('id', configId)
+        const { error } = await supabase.from('whatsapp_config').update(payload).eq('id', configId)
         if (error) throw error
       } else {
-        const payload: any = { ...values, empresa_id: userId }
-        const { error } = await supabase.from('whatsapp_config').insert(payload)
-        if (error) throw error
+        const { data: existing } = await supabase
+          .from('whatsapp_config')
+          .select('id')
+          .eq('empresa_id', empresaId)
+          .maybeSingle()
+        if (existing) {
+          const { error } = await supabase
+            .from('whatsapp_config')
+            .update(payload)
+            .eq('id', existing.id)
+          if (error) throw error
+          setConfigId(existing.id)
+        } else {
+          const { data, error } = await supabase
+            .from('whatsapp_config')
+            .insert(payload)
+            .select()
+            .single()
+          if (error) throw error
+          setConfigId(data.id)
+        }
       }
 
       toast({
@@ -171,6 +212,20 @@ export default function WhatsAppCredentials() {
       setIsLoading(false)
     }
   }
+
+  const provider = form.watch('api_provider')
+  const sid = form.watch('account_sid')
+  const token = form.watch('auth_token')
+  const instance = form.watch('instance_name')
+  const phone = form.watch('phone_number')
+
+  const isTestDisabled =
+    isLoading ||
+    isFetching ||
+    !empresaId ||
+    !sid ||
+    !token ||
+    (provider === 'evolution' ? !instance : !phone)
 
   if (isFetching) {
     return (
@@ -216,39 +271,15 @@ export default function WhatsAppCredentials() {
 
               <FormField
                 control={form.control}
-                name="phone_number"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      {form.watch('api_provider') === 'evolution'
-                        ? 'Nome da Instância'
-                        : 'Número de Telefone'}
-                    </FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: footgolf-bot" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="account_sid"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      {form.watch('api_provider') === 'evolution'
-                        ? 'URL da API (Base URL)'
-                        : 'Account SID'}
+                      {provider === 'evolution' ? 'URL da API (Base URL)' : 'Account SID'}
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={
-                          form.watch('api_provider') === 'evolution'
-                            ? 'https://sua-api.com'
-                            : 'AC...'
-                        }
+                        placeholder={provider === 'evolution' ? 'https://sua-api.com' : 'AC...'}
                         {...field}
                       />
                     </FormControl>
@@ -263,7 +294,7 @@ export default function WhatsAppCredentials() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      {form.watch('api_provider') === 'evolution' ? 'Global API Key' : 'Auth Token'}
+                      {provider === 'evolution' ? 'Global API Key' : 'Auth Token'}
                     </FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="***" {...field} />
@@ -272,6 +303,36 @@ export default function WhatsAppCredentials() {
                   </FormItem>
                 )}
               />
+
+              {provider === 'evolution' ? (
+                <FormField
+                  control={form.control}
+                  name="instance_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome da Instância</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: footgolf-bot" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : (
+                <FormField
+                  control={form.control}
+                  name="phone_number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Número de Telefone (Sender)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: +1234567890" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
 
             <div className="flex flex-col sm:flex-row gap-6 pt-4 border-t">
@@ -302,8 +363,8 @@ export default function WhatsAppCredentials() {
                       </FormLabel>
                       <FormDescription>
                         {field.value
-                          ? 'Ativo: As mensagens serão enviadas de verdade.'
-                          : 'Inativo: Modo Sandbox. Envios serão apenas simulados.'}
+                          ? 'Ativo: Mensagens enviadas de verdade.'
+                          : 'Inativo: Modo Sandbox (Twilio).'}
                       </FormDescription>
                     </div>
                     <FormControl>
@@ -323,7 +384,7 @@ export default function WhatsAppCredentials() {
                 type="button"
                 variant="outline"
                 onClick={() => setIsTestDialogOpen(true)}
-                disabled={isLoading || isFetching}
+                disabled={isTestDisabled}
                 className="w-full sm:w-auto"
               >
                 <Send className="mr-2 h-4 w-4" />
@@ -339,8 +400,8 @@ export default function WhatsAppCredentials() {
           <DialogHeader>
             <DialogTitle>Testar Conexão WhatsApp</DialogTitle>
             <DialogDescription>
-              Será enviada uma mensagem curta ("TESTE") para o número informado. Isso evita o limite
-              de comprimento para contas Trial do Twilio.
+              Será enviada uma mensagem curta ("TESTE") para o número informado utilizando os dados
+              configurados acima.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -352,8 +413,7 @@ export default function WhatsAppCredentials() {
                 onChange={(e) => setTestPhone(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Para o Sandbox do Twilio, use o mesmo número de teste cadastrado (incluindo o código
-                do país).
+                Para o Sandbox do Twilio, use o número de teste cadastrado no painel.
               </p>
             </div>
           </div>
