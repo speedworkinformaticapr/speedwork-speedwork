@@ -39,7 +39,7 @@ export default function QuoteApprovalPortal() {
   }
 
   const toggleItem = async (itemId: string, aprovado: boolean) => {
-    if (quote?.status !== 'Aguardando Aprovação' && quote?.status !== 'rascunho') return
+    if (quote?.status !== 'aguardando aprovação' && quote?.status !== 'rascunho') return
 
     const newItems = items.map((i) => (i.id === itemId ? { ...i, aprovado } : i))
     setItems(newItems)
@@ -65,11 +65,11 @@ export default function QuoteApprovalPortal() {
     try {
       const { error } = await supabase
         .from('orcamentos')
-        .update({ status: 'Aprovado' })
+        .update({ status: 'aprovado' })
         .eq('id', id)
       if (error) throw error
 
-      setQuote({ ...quote, status: 'Aprovado' })
+      setQuote({ ...quote, status: 'aprovado' })
       toast({ title: 'Orçamento Aprovado!', description: 'Agradecemos a confiança.' })
     } catch (e: any) {
       toast({ title: 'Erro ao aprovar', description: e.message, variant: 'destructive' })
@@ -83,8 +83,8 @@ export default function QuoteApprovalPortal() {
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0)
 
   const isApproved =
-    quote.status === 'Aprovado' || quote.status === 'Pré-fechada' || quote.status === 'Fechado'
-  const canEdit = quote.status === 'Aguardando Aprovação' || quote.status === 'rascunho'
+    quote.status === 'aprovado' || quote.status === 'pré-fechada' || quote.status === 'fechado'
+  const canEdit = quote.status === 'aguardando aprovação' || quote.status === 'rascunho'
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">

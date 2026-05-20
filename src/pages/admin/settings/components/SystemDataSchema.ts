@@ -113,7 +113,8 @@ export const systemDataSchema = z.object({
 
   active_payment_gateway: z.enum(['stripe', 'asaas']).optional().nullable(),
   payment_environment: z.enum(['sandbox', 'production']).optional().nullable(),
-  asaas_api_key: z.string().optional().nullable(),
+  asaas_production_key: z.string().optional().nullable(),
+  asaas_sandbox_key: z.string().optional().nullable(),
 
   openai_api_key_test: z
     .string()

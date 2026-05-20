@@ -119,10 +119,14 @@ export default function QuoteView() {
     switch (s) {
       case 'rascunho':
         return 'bg-gray-500'
-      case 'enviado':
+      case 'aguardando aprovação':
         return 'bg-blue-500'
       case 'aprovado':
         return 'bg-green-500'
+      case 'pré-fechada':
+        return 'bg-orange-500'
+      case 'fechado':
+        return 'bg-slate-700'
       case 'rejeitado':
         return 'bg-red-500'
       case 'convertido':
@@ -153,12 +157,12 @@ export default function QuoteView() {
               <Button variant="outline" onClick={() => navigate(`/admin/quotes/${id}/edit`)}>
                 Editar
               </Button>
-              <Button onClick={() => updateStatus('enviado')}>
+              <Button onClick={() => updateStatus('aguardando aprovação')}>
                 <Send className="w-4 h-4 mr-2" /> Marcar como Enviado
               </Button>
             </>
           )}
-          {quote.status === 'enviado' && (
+          {quote.status === 'aguardando aprovação' && (
             <>
               <Button variant="destructive" onClick={() => updateStatus('rejeitado')}>
                 <X className="w-4 h-4 mr-2" /> Rejeitar

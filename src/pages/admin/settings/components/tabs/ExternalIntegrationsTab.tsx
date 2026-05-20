@@ -95,19 +95,34 @@ export function ExternalIntegrationsTab({ form }: { form: UseFormReturn<SystemDa
           )}
 
           {activeGateway === 'asaas' && (
-            <FormField
-              control={form.control}
-              name="asaas_api_key"
-              render={({ field }) => (
-                <FormItem className="col-span-1 md:col-span-2">
-                  <FormLabel>Asaas API Key (Access Token)</FormLabel>
-                  <FormControl>
-                    <Input type="password" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <>
+              <FormField
+                control={form.control}
+                name="asaas_production_key"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Asaas Production Key</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="asaas_sandbox_key"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Asaas Sandbox Key</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </>
           )}
         </div>
 

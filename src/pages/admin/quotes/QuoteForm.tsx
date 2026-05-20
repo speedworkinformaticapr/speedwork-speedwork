@@ -251,10 +251,15 @@ export default function QuoteForm() {
     toast({ title: 'Parcelas geradas!' })
   }
 
-  const handleSave = async (statusToSave: string) => {
-    if (!data.cliente_id) return toast({ title: 'O cliente é obrigatório', variant: 'destructive' })
-    if (allItems.length === 0)
-      return toast({ title: 'Adicione pelo menos 1 item', variant: 'destructive' })
+  const handleSave = async (statusToSave: string, preventNavigation = false) => {
+    if (!data.cliente_id) {
+      toast({ title: 'O cliente é obrigatório', variant: 'destructive' })
+      return null
+    }
+    if (allItems.length === 0) {
+      toast({ title: 'Adicione pelo menos 1 item', variant: 'destructive' })
+      return null
+    }
 
     const payload: any = { ...data, subtotal, total, status: statusToSave }
     if (!payload.conta_id) payload.conta_id = null
@@ -267,6 +272,8 @@ export default function QuoteForm() {
 
     try {
       let orcId = id
+      let numOrc = data.numero_orcamento
+
       if (id) {
         await supabase.from('orcamentos').update(payload).eq('id', id)
         await supabase.from('orcamento_itens').delete().eq('orcamento_id', id)
@@ -274,6 +281,9 @@ export default function QuoteForm() {
         const res = await supabase.from('orcamentos').insert(payload).select().single()
         if (res.error) throw res.error
         orcId = res.data?.id
+        numOrc = res.data?.numero_orcamento
+        setData((prev) => ({ ...prev, numero_orcamento: numOrc, status: statusToSave }))
+        window.history.replaceState(null, '', `/admin/quotes/${orcId}/edit`)
       }
 
       if (orcId) {
@@ -302,12 +312,22 @@ export default function QuoteForm() {
         const clientName = clients.find((c) => c.id === data.cliente_id)?.name || 'Cliente'
 
         for (const inst of installments) {
+          let finalDescription = inst.description
+          if (finalDescription.startsWith('OS ')) {
+            finalDescription = finalDescription.replace(
+              /OS [^-]+ - /,
+              `OS ${numOrc || orcId.slice(0, 6)} - `,
+            )
+          } else {
+            finalDescription = `OS ${numOrc || orcId.slice(0, 6)} - ${finalDescription}`
+          }
+
           const chargePayload = {
             orcamento_id: orcId,
             client_name: clientName,
             amount: inst.amount,
             due_date: inst.due_date,
-            description: `OS ${orcId.slice(0, 6)} - ${inst.description}`,
+            description: finalDescription,
             status: inst.status || 'pendente',
             type: 'receivable',
             category: 'orcamento',
@@ -328,9 +348,13 @@ export default function QuoteForm() {
       }
 
       toast({ title: 'Ordem de Serviço salva com sucesso!' })
-      navigate('/admin/quotes')
+      if (!preventNavigation) {
+        navigate('/admin/quotes')
+      }
+      return orcId
     } catch (e: any) {
       toast({ title: 'Erro ao salvar', description: e.message, variant: 'destructive' })
+      return null
     }
   }
 
@@ -379,11 +403,13 @@ export default function QuoteForm() {
   }
 
   const handleSendApproval = async () => {
-    if (!id) return toast({ title: 'Salve o orçamento primeiro', variant: 'destructive' })
+    const savedId = await handleSave('aguardando aprovação', true)
+    if (!savedId) return
+
     const client = clients.find((c) => c.id === data.cliente_id)
     if (!client) return toast({ title: 'Selecione um cliente', variant: 'destructive' })
 
-    const link = `${window.location.origin}/quote/approval/${id}`
+    const link = `${window.location.origin}/quote/approval/${savedId}`
 
     toast({ title: 'Enviando link para o cliente...' })
 
@@ -402,13 +428,14 @@ export default function QuoteForm() {
           body: {
             type: 'custom',
             email: client.email,
-            subject: `Aprovação de Ordem de Serviço ${data.numero_orcamento}`,
+            subject: `Aprovação de Ordem de Serviço ${data.numero_orcamento || savedId.slice(0, 6)}`,
             html: `<p>Olá <strong>${client.name}</strong>,</p><p>Seu orçamento está pronto. Acesse o portal abaixo para verificar os itens e realizar a aprovação online.</p><div style="text-align:center; margin-top:20px;"><a href="${link}" style="background:#2563eb;color:white;padding:12px 24px;text-decoration:none;border-radius:5px;display:inline-block;font-weight:bold;">Acessar Portal de Aprovação</a></div>`,
           },
         })
       }
 
-      await handleSave('Aguardando Aprovação')
+      toast({ title: 'Link enviado com sucesso!' })
+      setData((prev) => ({ ...prev, status: 'aguardando aprovação' }))
     } catch (err) {
       console.error(err)
       toast({ title: 'Erro ao notificar', variant: 'destructive' })
@@ -784,10 +811,10 @@ export default function QuoteForm() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="rascunho">Rascunho</SelectItem>
-                  <SelectItem value="Aguardando Aprovação">Aguardando Aprovação</SelectItem>
-                  <SelectItem value="Aprovado">Aprovado pelo Cliente</SelectItem>
-                  <SelectItem value="Pré-fechada">OS Pré-fechada</SelectItem>
-                  <SelectItem value="Fechado">OS Fechada</SelectItem>
+                  <SelectItem value="aguardando aprovação">Aguardando Aprovação</SelectItem>
+                  <SelectItem value="aprovado">Aprovado pelo Cliente</SelectItem>
+                  <SelectItem value="pré-fechada">OS Pré-fechada</SelectItem>
+                  <SelectItem value="fechado">OS Fechada</SelectItem>
                   <SelectItem value="rejeitado">OS Rejeitada</SelectItem>
                 </SelectContent>
               </Select>
@@ -1007,7 +1034,7 @@ export default function QuoteForm() {
         <Button variant="secondary" size="lg" onClick={() => handleSave(data.status)}>
           Salvar OS Atual
         </Button>
-        <Button size="lg" onClick={() => handleSave('Fechado')} className="px-8">
+        <Button size="lg" onClick={() => handleSave('fechado')} className="px-8">
           Finalizar e Fechar OS
         </Button>
       </div>

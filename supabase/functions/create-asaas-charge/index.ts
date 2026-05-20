@@ -20,8 +20,9 @@ Deno.serve(async (req: Request) => {
 
     const { data: sysData } = await supabase.from('system_data').select('integrations').single()
     const integrations = (sysData?.integrations as any) || {}
-    const asaasApiKey = integrations.asaas_api_key
     const env = integrations.payment_environment || 'sandbox'
+    const asaasApiKey =
+      env === 'production' ? integrations.asaas_production_key : integrations.asaas_sandbox_key
 
     if (!asaasApiKey) throw new Error('Asaas API Key não configurada.')
 

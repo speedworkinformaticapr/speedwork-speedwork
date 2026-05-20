@@ -7,8 +7,8 @@
     "enviar_whatsapp": 2,
     "generate-affiliation-billing": 1,
     "get-athlete-comparison": 1,
-    "process-registration-payment": 1,
-    "process-stripe-payment": 2,
+    "process-registration-payment": 2,
+    "process-stripe-payment": 3,
     "registration-payment-webhook": 1,
     "request-password-reset": 1,
     "send-email": 2,
@@ -21,7 +21,7 @@
     "translate-text": 1,
     "webhook-asaas": 2,
     "sync-google-reviews": 1,
-    "create-asaas-charge": 1,
-    "webhook-asaas-manual": 1
+    "create-asaas-charge": 2,
+    "webhook-asaas-manual": 2
   }
 }

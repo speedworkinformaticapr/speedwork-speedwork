@@ -105,7 +105,8 @@ Deno.serve(async (req: Request) => {
         pixCopyPaste = pixDetails?.pix_string || ''
       }
     } else if (gateway === 'asaas') {
-      const asaasApiKey = integrations.asaas_api_key
+      const asaasApiKey =
+        env === 'production' ? integrations.asaas_production_key : integrations.asaas_sandbox_key
       if (!asaasApiKey)
         throw new Error(
           'Asaas API Key não configurada no sistema. Ajuste na tela Dados do Sistema.',
