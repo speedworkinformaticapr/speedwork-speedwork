@@ -72,19 +72,20 @@ export default function WhatsAppCredentials() {
 
   async function fetchConfig() {
     try {
-      const { data, error } = await supabase.from('whatsapp_config').select('*').limit(1).single()
+      const { data, error } = await supabase.from('whatsapp_config').select('*').limit(1)
 
-      if (error && error.code !== 'PGRST116') throw error
+      if (error) throw error
 
-      if (data) {
-        setConfigId(data.id)
+      if (data && data.length > 0) {
+        const config = data[0]
+        setConfigId(config.id)
         form.reset({
-          api_provider: data.api_provider || 'evolution',
-          account_sid: data.account_sid || '',
-          auth_token: data.auth_token || '',
-          phone_number: data.phone_number || '',
-          is_active: data.is_active || false,
-          is_production: (data as any).is_production || false,
+          api_provider: config.api_provider || 'evolution',
+          account_sid: config.account_sid || '',
+          auth_token: config.auth_token || '',
+          phone_number: config.phone_number || '',
+          is_active: config.is_active || false,
+          is_production: (config as any).is_production || false,
         })
       }
     } catch (error) {
