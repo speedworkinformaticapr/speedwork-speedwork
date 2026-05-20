@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/hooks/use-toast'
-import { Plug, CreditCard, Mail, BarChart, Server, Loader2, CheckCircle2, Map } from 'lucide-react'
+import { Plug, CreditCard, Loader2, CheckCircle2, Globe, Database } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
 export default function IntegrationSettings() {
@@ -46,16 +46,6 @@ export default function IntegrationSettings() {
 
   const handleChange = (key: string, value: any) => {
     setIntegrations((prev) => ({ ...prev, [key]: value }))
-  }
-
-  const handleDeepChange = (key: string, subKey: string, value: any) => {
-    setIntegrations((prev) => ({
-      ...prev,
-      [key]: {
-        ...(prev[key] || {}),
-        [subKey]: value,
-      },
-    }))
   }
 
   const handleStripeChange = (key: string, value: any) => {
@@ -103,21 +93,6 @@ export default function IntegrationSettings() {
       if (error) throw error
       if (resultData?.status === 'error') throw new Error(resultData.error)
 
-      if (stripeConfig.pix_enabled) {
-        const { data: pixResultData, error: pixError } = await supabase.functions.invoke(
-          'process-stripe-payment',
-          {
-            body: {
-              tenant_id: '00000000-0000-0000-0000-000000000001',
-              valor: 1.0,
-              metodo_pagamento: 'pix',
-            },
-          },
-        )
-        if (pixError) throw pixError
-        if (pixResultData?.status === 'error') throw new Error(pixResultData.error)
-      }
-
       toast({
         title: 'Conexão bem-sucedida!',
         description: 'As chaves do Stripe são válidas e a API respondeu corretamente.',
@@ -142,12 +117,170 @@ export default function IntegrationSettings() {
     )
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
+    <div className="space-y-6 animate-fade-in-up pb-10">
+      <Card>
+        <CardHeader className="pb-3 border-b bg-muted/20">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Globe className="w-4 h-4" /> APIs e Serviços Externos
+          </CardTitle>
+          <CardDescription>
+            Configure chaves e tokens de serviços de terceiros usados na plataforma.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-6">
+            <div className="space-y-2">
+              <Label>Google Maps API Key</Label>
+              <Input
+                type="password"
+                value={integrations.google_maps_key || ''}
+                onChange={(e) => handleChange('google_maps_key', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Google Place ID</Label>
+              <Input
+                value={integrations.place_id || ''}
+                onChange={(e) => handleChange('place_id', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-6">
+            <div className="space-y-2 md:col-span-2">
+              <Label>Ambiente OpenAI</Label>
+              <Select
+                value={integrations.openai_environment || 'production'}
+                onValueChange={(v) => handleChange('openai_environment', v)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="test">Testes</SelectItem>
+                  <SelectItem value="production">Produção</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>OpenAI API Key (Testes)</Label>
+              <Input
+                type="password"
+                value={integrations.openai_api_key_test || ''}
+                onChange={(e) => handleChange('openai_api_key_test', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>OpenAI API Key (Produção)</Label>
+              <Input
+                type="password"
+                value={integrations.openai_api_key_production || ''}
+                onChange={(e) => handleChange('openai_api_key_production', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-6">
+            <div className="space-y-2">
+              <Label>Google reCaptcha Site Key</Label>
+              <Input
+                value={integrations.recaptcha_site_key || integrations.recaptcha_key || ''}
+                onChange={(e) => handleChange('recaptcha_site_key', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Google reCaptcha Secret Key</Label>
+              <Input
+                type="password"
+                value={integrations.recaptcha_secret_key || integrations.recaptcha_secret || ''}
+                onChange={(e) => handleChange('recaptcha_secret_key', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>SMTP2GO API Key</Label>
+              <Input
+                type="password"
+                value={integrations.smtp_key || ''}
+                onChange={(e) => handleChange('smtp_key', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Correios Token</Label>
+              <Input
+                type="password"
+                value={integrations.correios_token || ''}
+                onChange={(e) => handleChange('correios_token', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Mercado Livre Access Token</Label>
+              <Input
+                type="password"
+                value={integrations.mercadolivre_token || ''}
+                onChange={(e) => handleChange('mercadolivre_token', e.target.value)}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3 border-b bg-muted/20">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Database className="w-4 h-4" /> Asaas (Integração)
+          </CardTitle>
+          <CardDescription>
+            Gerencie as chaves da API do Asaas para pagamentos e boletos.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2 md:col-span-2">
+            <Label>Ambiente Asaas</Label>
+            <Select
+              value={integrations.payment_environment || 'sandbox'}
+              onValueChange={(v) => handleChange('payment_environment', v)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sandbox">Homologação (Testes)</SelectItem>
+                <SelectItem value="production">Produção</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Asaas API Key (Testes)</Label>
+            <Input
+              type="password"
+              value={integrations.asaas_sandbox_key || ''}
+              onChange={(e) => handleChange('asaas_sandbox_key', e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Asaas API Key (Produção)</Label>
+            <Input
+              type="password"
+              value={integrations.asaas_production_key || ''}
+              onChange={(e) => handleChange('asaas_production_key', e.target.value)}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="pb-3 border-b bg-muted/20 flex flex-row items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
-            <CreditCard className="w-4 h-4" /> Stripe (Pagamentos)
-          </CardTitle>
+          <div>
+            <CardTitle className="text-base flex items-center gap-2">
+              <CreditCard className="w-4 h-4" /> Stripe (Pagamentos)
+            </CardTitle>
+            <CardDescription className="mt-1">
+              Configurações para processamento via Stripe.
+            </CardDescription>
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -162,7 +295,7 @@ export default function IntegrationSettings() {
             Testar Conexão
           </Button>
         </CardHeader>
-        <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Publishable Key</Label>
             <Input
@@ -199,95 +332,7 @@ export default function IntegrationSettings() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="pb-3 border-b bg-muted/20 flex flex-row items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
-            <BarChart className="w-4 h-4" /> Google Analytics & Ads
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Measurement ID (G-XXXXX)</Label>
-            <Input
-              value={integrations.googleAnalytics?.trackingId || integrations.ga_id || ''}
-              onChange={(e) => {
-                handleChange('ga_id', undefined)
-                handleDeepChange('googleAnalytics', 'trackingId', e.target.value)
-              }}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Google Ads API Token</Label>
-            <Input
-              type="password"
-              value={integrations.google_ads_token || ''}
-              onChange={(e) => handleChange('google_ads_token', e.target.value)}
-              placeholder="Token para sincronização de tráfego pago"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-3 border-b bg-muted/20 flex flex-row items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Server className="w-4 h-4" /> reCaptcha (Segurança)
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Tipo</Label>
-            <Select
-              value={integrations.recaptcha_type || 'auto'}
-              onValueChange={(v) => handleChange('recaptcha_type', v)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="auto">Automático</SelectItem>
-                <SelectItem value="invisible">Invisível</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Site Key</Label>
-            <Input
-              value={integrations.recaptcha_key || ''}
-              onChange={(e) => handleChange('recaptcha_key', e.target.value)}
-            />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label>Secret Key</Label>
-            <Input
-              type="password"
-              value={integrations.recaptcha_secret || ''}
-              onChange={(e) => handleChange('recaptcha_secret', e.target.value)}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-3 border-b bg-muted/20 flex flex-row items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Map className="w-4 h-4" /> Google Maps
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4 grid grid-cols-1 gap-4">
-          <div className="space-y-2">
-            <Label>API Key</Label>
-            <Input
-              type="password"
-              value={integrations.google_maps_key || ''}
-              onChange={(e) => handleChange('google_maps_key', e.target.value)}
-              placeholder="AIzaSy..."
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Button onClick={handleSave} className="w-full" disabled={isSaving}>
+      <Button onClick={handleSave} className="w-full" disabled={isSaving} size="lg">
         {isSaving ? (
           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
         ) : (

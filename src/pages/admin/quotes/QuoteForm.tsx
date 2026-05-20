@@ -313,13 +313,11 @@ export default function QuoteForm() {
 
         for (const inst of installments) {
           let finalDescription = inst.description
+          const docNum = numOrc || 'A gerar'
           if (finalDescription.startsWith('OS ')) {
-            finalDescription = finalDescription.replace(
-              /OS [^-]+ - /,
-              `OS ${numOrc || orcId.slice(0, 6)} - `,
-            )
+            finalDescription = finalDescription.replace(/OS [^-]+ - /, `OS ${docNum} - `)
           } else {
-            finalDescription = `OS ${numOrc || orcId.slice(0, 6)} - ${finalDescription}`
+            finalDescription = `OS ${docNum} - ${finalDescription}`
           }
 
           const chargePayload = {
@@ -351,7 +349,7 @@ export default function QuoteForm() {
       if (!preventNavigation) {
         navigate('/admin/quotes')
       }
-      return orcId
+      return { id: orcId, numero_orcamento: numOrc }
     } catch (e: any) {
       toast({ title: 'Erro ao salvar', description: e.message, variant: 'destructive' })
       return null
@@ -403,8 +401,9 @@ export default function QuoteForm() {
   }
 
   const handleSendApproval = async () => {
-    const savedId = await handleSave('aguardando aprovação', true)
-    if (!savedId) return
+    const result = await handleSave('aguardando aprovação', true)
+    if (!result || !result.id) return
+    const { id: savedId, numero_orcamento: savedNum } = result
 
     const client = clients.find((c) => c.id === data.cliente_id)
     if (!client) return toast({ title: 'Selecione um cliente', variant: 'destructive' })
@@ -428,7 +427,7 @@ export default function QuoteForm() {
           body: {
             type: 'custom',
             email: client.email,
-            subject: `Aprovação de Ordem de Serviço ${data.numero_orcamento || savedId.slice(0, 6)}`,
+            subject: `Aprovação de Ordem de Serviço ${savedNum || savedId.slice(0, 6)}`,
             html: `<p>Olá <strong>${client.name}</strong>,</p><p>Seu orçamento está pronto. Acesse o portal abaixo para verificar os itens e realizar a aprovação online.</p><div style="text-align:center; margin-top:20px;"><a href="${link}" style="background:#2563eb;color:white;padding:12px 24px;text-decoration:none;border-radius:5px;display:inline-block;font-weight:bold;">Acessar Portal de Aprovação</a></div>`,
           },
         })
@@ -945,6 +944,14 @@ export default function QuoteForm() {
                   key={idx}
                   className="flex flex-col md:flex-row gap-3 items-end md:items-center bg-background p-4 rounded-lg border border-border shadow-sm"
                 >
+                  <div className="w-full md:w-32">
+                    <Label className="text-xs text-muted-foreground">Nº da OS</Label>
+                    <Input
+                      readOnly
+                      value={data.numero_orcamento || 'A gerar'}
+                      className="bg-muted font-medium"
+                    />
+                  </div>
                   <div className="flex-1 w-full">
                     <Label className="text-xs text-muted-foreground">Descrição da Parcela</Label>
                     <Input

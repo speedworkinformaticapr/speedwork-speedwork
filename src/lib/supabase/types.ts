@@ -4366,6 +4366,9 @@ export const Constants = {
 //     USING: true
 //     WITH CHECK: true
 // Table: lancamentos_financeiros
+//   Policy "lancamentos_financeiros_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 //   Policy "lancamentos_financeiros_delete" (DELETE, PERMISSIVE) roles={public}
 //     USING: (user_id = auth.uid())
 //   Policy "lancamentos_financeiros_insert" (INSERT, PERMISSIVE) roles={public}
