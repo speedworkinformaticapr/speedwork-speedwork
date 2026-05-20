@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import { Loader2, Send } from 'lucide-react'
 import {
   Dialog,
@@ -343,7 +344,7 @@ export default function WhatsAppCredentials() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <FormLabel>Número de Destino</FormLabel>
+              <Label>Número de Destino</Label>
               <Input
                 placeholder="Ex: +5511999999999"
                 value={testPhone}
