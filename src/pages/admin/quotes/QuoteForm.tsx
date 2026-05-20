@@ -22,7 +22,8 @@ import {
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
-import { Trash, ArrowLeft, Plus, MessageCircle, Send } from 'lucide-react'
+import { useSystemData } from '@/hooks/use-system-data'
+import { Trash, ArrowLeft, Plus, MessageCircle, Send, AlertTriangle } from 'lucide-react'
 import { formatCurrencyInput, parseCurrencyInput } from '@/lib/utils'
 
 const toTime = (dec: number) => {
@@ -39,10 +40,14 @@ const toDec = (time: string) => {
 const numClass =
   '[&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
 
+let cachedBrands: any[] | null = null
+let cachedModels: Record<string, any[]> = {}
+
 export default function QuoteForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { data: systemData } = useSystemData()
 
   const [planoContas, setPlanoContas] = useState<any[]>([])
   const [data, setData] = useState({
@@ -94,11 +99,18 @@ export default function QuoteForm() {
   const hasItems = productItems.length + serviceItems.length > 0
 
   useEffect(() => {
-    supabase
-      .from('vehicle_brands')
-      .select('*')
-      .order('name')
-      .then((res) => setBrands(res.data || []))
+    if (cachedBrands) {
+      setBrands(cachedBrands)
+    } else {
+      supabase
+        .from('vehicle_brands')
+        .select('*')
+        .order('name')
+        .then((res) => {
+          cachedBrands = res.data || []
+          setBrands(cachedBrands)
+        })
+    }
     supabase
       .from('plano_contas')
       .select('id, codigo_estrutural, nome')
@@ -122,17 +134,38 @@ export default function QuoteForm() {
   }, [id])
 
   useEffect(() => {
+    if (!id && systemData && !data.data_validade) {
+      handleDataEmissaoChange(data.data_emissao)
+    }
+  }, [systemData, id])
+
+  useEffect(() => {
     if (data.veiculo_brand_id) {
-      supabase
-        .from('vehicle_models')
-        .select('*')
-        .eq('brand_id', data.veiculo_brand_id)
-        .order('name')
-        .then((res) => setModels(res.data || []))
+      if (cachedModels[data.veiculo_brand_id]) {
+        setModels(cachedModels[data.veiculo_brand_id])
+      } else {
+        supabase
+          .from('vehicle_models')
+          .select('*')
+          .eq('brand_id', data.veiculo_brand_id)
+          .order('name')
+          .then((res) => {
+            cachedModels[data.veiculo_brand_id] = res.data || []
+            setModels(res.data || [])
+          })
+      }
     } else {
       setModels([])
     }
   }, [data.veiculo_brand_id])
+
+  const handleDataEmissaoChange = (val: string) => {
+    const days = systemData?.quote_validity_days || 15
+    const emissao = new Date(val)
+    emissao.setDate(emissao.getDate() + days)
+    const validade = emissao.toISOString().split('T')[0]
+    setData({ ...data, data_emissao: val, data_validade: validade })
+  }
 
   const validateVehicle = () => {
     if (!data.veiculo_placa) return 'Placa do veículo é obrigatória'
@@ -254,7 +287,10 @@ export default function QuoteForm() {
 
     const qtd = Number(newI[idx].quantidade) || 0
     const valUnit = Number(newI[idx].valor_unitario) || 0
-    const tempo = Number(newI[idx].tempo_executado) || 0
+    const tempo =
+      Number(newI[idx].tempo_executado) > 0
+        ? Number(newI[idx].tempo_executado)
+        : Number(newI[idx].tempo_estimado) || 0
     newI[idx].valor_total = Math.round(tempo * valUnit * qtd * 100) / 100
     setServiceItems(newI)
   }
@@ -337,81 +373,64 @@ export default function QuoteForm() {
     }
 
     try {
-      let orcId = id
-      let numOrc = data.numero_orcamento
+      const clientName = clients.find((c) => c.id === data.cliente_id)?.name || 'Cliente'
+
+      const itemsPayload = allItems.map((i) => {
+        const { id: itemId, tempo_estimado_str, tempo_executado_str, ...cleanItem } = i
+        return cleanItem
+      })
+
+      const chargesPayload = installments.map((inst) => {
+        let finalDescription = inst.description
+        const docNum = data.numero_orcamento || 'A gerar'
+        if (finalDescription.startsWith('OS ')) {
+          finalDescription = finalDescription.replace(/OS [^-]+ - /, `OS ${docNum} - `)
+        } else {
+          finalDescription = `OS ${docNum} - ${finalDescription}`
+        }
+        return {
+          client_name: clientName,
+          amount: inst.amount,
+          due_date: inst.due_date,
+          description: finalDescription,
+          status: inst.status || 'pendente',
+          parcela_numero: inst.parcela_numero || 1,
+          parcela_total: inst.parcela_total || 1,
+        }
+      })
 
       if (id) {
-        await supabase.from('orcamentos').update(payload).eq('id', id)
-        await supabase.from('orcamento_itens').delete().eq('orcamento_id', id)
-      } else {
-        const res = await supabase.from('orcamentos').insert(payload).select().single()
-        if (res.error) throw res.error
-        orcId = res.data?.id
-        numOrc = res.data?.numero_orcamento
+        payload.id = id
+      }
+
+      const { data: result, error } = await supabase.rpc('save_quote_transaction', {
+        p_quote: payload,
+        p_items: itemsPayload,
+        p_charges: chargesPayload,
+      } as any)
+
+      if (error) throw error
+
+      const orcId = result?.id
+      const numOrc = result?.numero_orcamento
+
+      if (!id && orcId) {
         setData((prev) => ({ ...prev, numero_orcamento: numOrc, status: statusToSave }))
         window.history.replaceState(null, '', `/admin/quotes/${orcId}/edit`)
       }
 
+      toast({ title: 'Ordem de Serviço salva com sucesso!' })
+
+      // reload charges to sync generated IDs
       if (orcId) {
-        const itemsPayload = allItems.map((i) => {
-          const { id: itemId, tempo_estimado_str, tempo_executado_str, ...cleanItem } = i
-          return { ...cleanItem, orcamento_id: orcId }
-        })
-        await supabase.from('orcamento_itens').insert(itemsPayload)
-
-        const currentIds = installments.filter((i) => !i.id.startsWith('temp_')).map((i) => i.id)
-        if (currentIds.length > 0) {
-          await supabase
-            .from('financial_charges' as any)
-            .delete()
-            .eq('orcamento_id', orcId)
-            .eq('status', 'pendente')
-            .not('id', 'in', `(${currentIds.join(',')})`)
-        } else {
-          await supabase
-            .from('financial_charges' as any)
-            .delete()
-            .eq('orcamento_id', orcId)
-            .eq('status', 'pendente')
-        }
-
-        const clientName = clients.find((c) => c.id === data.cliente_id)?.name || 'Cliente'
-
-        for (const inst of installments) {
-          let finalDescription = inst.description
-          const docNum = numOrc || 'A gerar'
-          if (finalDescription.startsWith('OS ')) {
-            finalDescription = finalDescription.replace(/OS [^-]+ - /, `OS ${docNum} - `)
-          } else {
-            finalDescription = `OS ${docNum} - ${finalDescription}`
-          }
-
-          const chargePayload = {
-            orcamento_id: orcId,
-            client_name: clientName,
-            amount: inst.amount,
-            due_date: inst.due_date,
-            description: finalDescription,
-            status: inst.status || 'pendente',
-            type: 'receivable',
-            category: 'orcamento',
-            conta_id: data.conta_id || null,
-            parcela_numero: inst.parcela_numero || 1,
-            parcela_total: inst.parcela_total || 1,
-          }
-
-          if (inst.id && !inst.id.startsWith('temp_')) {
-            await supabase
-              .from('financial_charges' as any)
-              .update(chargePayload)
-              .eq('id', inst.id)
-          } else {
-            await supabase.from('financial_charges' as any).insert(chargePayload)
-          }
-        }
+        const { data: fin } = await supabase
+          .from('financial_charges' as any)
+          .select('*')
+          .eq('orcamento_id', orcId)
+          .order('due_date', { ascending: true })
+        if (fin) setInstallments(fin)
       }
 
-      toast({ title: 'Ordem de Serviço salva com sucesso!' })
       if (!preventNavigation) {
         navigate('/admin/quotes')
       }
@@ -642,7 +661,7 @@ export default function QuoteForm() {
                   <Input
                     type="date"
                     value={data.data_emissao || ''}
-                    onChange={(e) => setData({ ...data, data_emissao: e.target.value })}
+                    onChange={(e) => handleDataEmissaoChange(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -737,14 +756,27 @@ export default function QuoteForm() {
             {productItems.map((it, idx) => (
               <div
                 key={idx}
-                className={`flex flex-col md:flex-row gap-4 items-end bg-background p-4 rounded-lg border border-border transition-opacity ${!it.aprovado ? 'opacity-50 grayscale' : ''}`}
+                className={`flex flex-col md:flex-row gap-4 items-end bg-background p-4 rounded-lg border transition-opacity ${!it.aprovado && !it.cliente_questionou ? 'opacity-50 grayscale border-border' : it.cliente_questionou ? 'border-destructive/50 bg-destructive/5' : 'border-border'}`}
               >
                 <div className="flex-1 w-full space-y-2">
                   <div className="flex justify-between items-center h-5">
-                    <Label>Produto</Label>
-                    {!it.aprovado && (
+                    <Label
+                      className={
+                        it.cliente_questionou
+                          ? 'text-destructive font-bold flex items-center gap-1'
+                          : ''
+                      }
+                    >
+                      {it.cliente_questionou && <AlertTriangle className="w-4 h-4" />} Produto
+                    </Label>
+                    {!it.aprovado && !it.cliente_questionou && (
                       <span className="text-xs text-destructive font-bold bg-destructive/10 px-2 rounded">
                         Rejeitado
+                      </span>
+                    )}
+                    {it.cliente_questionou && (
+                      <span className="text-xs text-destructive font-bold bg-destructive/10 px-2 rounded">
+                        Questionado pelo Cliente
                       </span>
                     )}
                   </div>
@@ -839,14 +871,27 @@ export default function QuoteForm() {
             {serviceItems.map((it, idx) => (
               <div
                 key={idx}
-                className={`flex flex-col md:flex-row gap-4 items-end bg-background p-4 rounded-lg border border-border transition-opacity ${!it.aprovado ? 'opacity-50 grayscale' : ''}`}
+                className={`flex flex-col md:flex-row gap-4 items-end bg-background p-4 rounded-lg border transition-opacity ${!it.aprovado && !it.cliente_questionou ? 'opacity-50 grayscale border-border' : it.cliente_questionou ? 'border-destructive/50 bg-destructive/5' : 'border-border'}`}
               >
                 <div className="flex-1 w-full space-y-2">
                   <div className="flex justify-between items-center h-5">
-                    <Label>Serviço</Label>
-                    {!it.aprovado && (
+                    <Label
+                      className={
+                        it.cliente_questionou
+                          ? 'text-destructive font-bold flex items-center gap-1'
+                          : ''
+                      }
+                    >
+                      {it.cliente_questionou && <AlertTriangle className="w-4 h-4" />} Serviço
+                    </Label>
+                    {!it.aprovado && !it.cliente_questionou && (
                       <span className="text-xs text-destructive font-bold bg-destructive/10 px-2 rounded">
                         Rejeitado
+                      </span>
+                    )}
+                    {it.cliente_questionou && (
+                      <span className="text-xs text-destructive font-bold bg-destructive/10 px-2 rounded">
+                        Questionado pelo Cliente
                       </span>
                     )}
                   </div>
@@ -961,6 +1006,9 @@ export default function QuoteForm() {
                 <SelectContent>
                   <SelectItem value="rascunho">Rascunho</SelectItem>
                   <SelectItem value="aguardando aprovação">Aguardando Aprovação</SelectItem>
+                  <SelectItem value="cliente solicita alterações">
+                    Solicitação de Alteração
+                  </SelectItem>
                   <SelectItem value="aprovado">Aprovado pelo Cliente</SelectItem>
                   <SelectItem value="pré-fechada">OS Pré-fechada</SelectItem>
                   <SelectItem value="fechado">OS Fechada</SelectItem>

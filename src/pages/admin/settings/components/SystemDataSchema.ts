@@ -35,6 +35,7 @@ export const systemDataSchema = z.object({
   two_factor_method: z.string().optional().nullable(),
   libras_enabled: z.boolean().optional().nullable(),
   records_per_page: z.coerce.number().optional().nullable(),
+  quote_validity_days: z.coerce.number().optional().nullable(),
   quote_footer_text: z.string().optional().nullable(),
   bg_image_url: z.string().optional().nullable(),
   bg_opacity: z.coerce.number().optional().nullable(),

@@ -1708,9 +1708,11 @@ export type Database = {
           updated_at: string
           user_id: string | null
           valor_impostos: number | null
-          veiculo_km: string | null
+          veiculo_brand_id: string | null
+          veiculo_km: string
+          veiculo_model_id: string | null
           veiculo_modelo: string | null
-          veiculo_placa: string | null
+          veiculo_placa: string
         }
         Insert: {
           asaas_id?: string | null
@@ -1737,9 +1739,11 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           valor_impostos?: number | null
-          veiculo_km?: string | null
+          veiculo_brand_id?: string | null
+          veiculo_km?: string
+          veiculo_model_id?: string | null
           veiculo_modelo?: string | null
-          veiculo_placa?: string | null
+          veiculo_placa?: string
         }
         Update: {
           asaas_id?: string | null
@@ -1766,9 +1770,11 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           valor_impostos?: number | null
-          veiculo_km?: string | null
+          veiculo_brand_id?: string | null
+          veiculo_km?: string
+          veiculo_model_id?: string | null
           veiculo_modelo?: string | null
-          veiculo_placa?: string | null
+          veiculo_placa?: string
         }
         Relationships: [
           {
@@ -1797,6 +1803,20 @@ export type Database = {
             columns: ['responsavel_id']
             isOneToOne: false
             referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'orcamentos_veiculo_brand_id_fkey'
+            columns: ['veiculo_brand_id']
+            isOneToOne: false
+            referencedRelation: 'vehicle_brands'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'orcamentos_veiculo_model_id_fkey'
+            columns: ['veiculo_model_id']
+            isOneToOne: false
+            referencedRelation: 'vehicle_models'
             referencedColumns: ['id']
           },
         ]
@@ -2033,9 +2053,11 @@ export type Database = {
           user_id: string | null
           valor_pago: number | null
           valor_total: number | null
-          veiculo_km: string | null
+          veiculo_brand_id: string | null
+          veiculo_km: string
+          veiculo_model_id: string | null
           veiculo_modelo: string | null
-          veiculo_placa: string | null
+          veiculo_placa: string
         }
         Insert: {
           cliente_id?: string | null
@@ -2058,9 +2080,11 @@ export type Database = {
           user_id?: string | null
           valor_pago?: number | null
           valor_total?: number | null
-          veiculo_km?: string | null
+          veiculo_brand_id?: string | null
+          veiculo_km?: string
+          veiculo_model_id?: string | null
           veiculo_modelo?: string | null
-          veiculo_placa?: string | null
+          veiculo_placa?: string
         }
         Update: {
           cliente_id?: string | null
@@ -2083,9 +2107,11 @@ export type Database = {
           user_id?: string | null
           valor_pago?: number | null
           valor_total?: number | null
-          veiculo_km?: string | null
+          veiculo_brand_id?: string | null
+          veiculo_km?: string
+          veiculo_model_id?: string | null
           veiculo_modelo?: string | null
-          veiculo_placa?: string | null
+          veiculo_placa?: string
         }
         Relationships: [
           {
@@ -2114,6 +2140,20 @@ export type Database = {
             columns: ['responsavel_id']
             isOneToOne: false
             referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'pedidos_veiculo_brand_id_fkey'
+            columns: ['veiculo_brand_id']
+            isOneToOne: false
+            referencedRelation: 'vehicle_brands'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'pedidos_veiculo_model_id_fkey'
+            columns: ['veiculo_model_id']
+            isOneToOne: false
+            referencedRelation: 'vehicle_models'
             referencedColumns: ['id']
           },
         ]
@@ -2939,6 +2979,53 @@ export type Database = {
         }
         Relationships: []
       }
+      vehicle_brands: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      vehicle_models: {
+        Row: {
+          brand_id: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          brand_id: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          brand_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'vehicle_models_brand_id_fkey'
+            columns: ['brand_id']
+            isOneToOne: false
+            referencedRelation: 'vehicle_brands'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       whatsapp_config: {
         Row: {
           account_sid: string | null
@@ -3623,14 +3710,16 @@ export const Constants = {
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
 //   user_id: uuid (nullable, default: auth.uid())
-//   veiculo_placa: text (nullable)
+//   veiculo_placa: text (not null, default: ''::text)
 //   veiculo_modelo: text (nullable)
-//   veiculo_km: text (nullable)
+//   veiculo_km: text (not null, default: '0'::text)
 //   conta_id: uuid (nullable)
 //   link_pagamento: text (nullable)
 //   asaas_id: text (nullable)
 //   status_pagamento: text (nullable, default: 'pendente'::text)
 //   link_enviado: boolean (nullable, default: false)
+//   veiculo_brand_id: uuid (nullable)
+//   veiculo_model_id: uuid (nullable)
 // Table: order_items
 //   id: uuid (not null, default: gen_random_uuid())
 //   order_id: uuid (nullable)
@@ -3698,10 +3787,12 @@ export const Constants = {
 //   motivo_cancelamento: text (nullable)
 //   created_at: timestamp with time zone (nullable, default: now())
 //   updated_at: timestamp with time zone (nullable, default: now())
-//   veiculo_placa: text (nullable)
+//   veiculo_placa: text (not null, default: ''::text)
 //   veiculo_modelo: text (nullable)
-//   veiculo_km: text (nullable)
+//   veiculo_km: text (not null, default: '0'::text)
 //   conta_id: uuid (nullable)
+//   veiculo_brand_id: uuid (nullable)
+//   veiculo_model_id: uuid (nullable)
 // Table: plan_categories
 //   id: uuid (not null, default: gen_random_uuid())
 //   title: text (not null)
@@ -3921,6 +4012,15 @@ export const Constants = {
 //   role: text (nullable)
 //   created_at: timestamp with time zone (nullable, default: now())
 //   updated_at: timestamp with time zone (nullable, default: now())
+// Table: vehicle_brands
+//   id: uuid (not null, default: gen_random_uuid())
+//   name: text (not null)
+//   created_at: timestamp with time zone (not null, default: now())
+// Table: vehicle_models
+//   id: uuid (not null, default: gen_random_uuid())
+//   brand_id: uuid (not null)
+//   name: text (not null)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: whatsapp_config
 //   id: uuid (not null, default: gen_random_uuid())
 //   empresa_id: uuid (nullable)
@@ -4078,6 +4178,8 @@ export const Constants = {
 //   PRIMARY KEY orcamentos_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY orcamentos_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id)
 //   FOREIGN KEY orcamentos_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id)
+//   FOREIGN KEY orcamentos_veiculo_brand_id_fkey: FOREIGN KEY (veiculo_brand_id) REFERENCES vehicle_brands(id) ON DELETE SET NULL
+//   FOREIGN KEY orcamentos_veiculo_model_id_fkey: FOREIGN KEY (veiculo_model_id) REFERENCES vehicle_models(id) ON DELETE SET NULL
 // Table: order_items
 //   FOREIGN KEY order_items_order_id_fkey: FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
 //   PRIMARY KEY order_items_pkey: PRIMARY KEY (id)
@@ -4103,6 +4205,8 @@ export const Constants = {
 //   PRIMARY KEY pedidos_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY pedidos_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id)
 //   FOREIGN KEY pedidos_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+//   FOREIGN KEY pedidos_veiculo_brand_id_fkey: FOREIGN KEY (veiculo_brand_id) REFERENCES vehicle_brands(id) ON DELETE SET NULL
+//   FOREIGN KEY pedidos_veiculo_model_id_fkey: FOREIGN KEY (veiculo_model_id) REFERENCES vehicle_models(id) ON DELETE SET NULL
 // Table: plan_categories
 //   PRIMARY KEY plan_categories_pkey: PRIMARY KEY (id)
 // Table: plan_services
@@ -4152,6 +4256,13 @@ export const Constants = {
 //   UNIQUE usuarios_email_key: UNIQUE (email)
 //   PRIMARY KEY usuarios_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY usuarios_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+// Table: vehicle_brands
+//   UNIQUE vehicle_brands_name_key: UNIQUE (name)
+//   PRIMARY KEY vehicle_brands_pkey: PRIMARY KEY (id)
+// Table: vehicle_models
+//   FOREIGN KEY vehicle_models_brand_id_fkey: FOREIGN KEY (brand_id) REFERENCES vehicle_brands(id) ON DELETE CASCADE
+//   UNIQUE vehicle_models_brand_id_name_key: UNIQUE (brand_id, name)
+//   PRIMARY KEY vehicle_models_pkey: PRIMARY KEY (id)
 // Table: whatsapp_config
 //   PRIMARY KEY whatsapp_config_pkey: PRIMARY KEY (id)
 // Table: whatsapp_logs
@@ -4588,6 +4699,12 @@ export const Constants = {
 //   Policy "usuarios_select" (SELECT, PERMISSIVE) roles={public}
 //     USING: true
 //   Policy "usuarios_update" (UPDATE, PERMISSIVE) roles={public}
+//     USING: true
+// Table: vehicle_brands
+//   Policy "brands_select_all" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+// Table: vehicle_models
+//   Policy "models_select_all" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
 // Table: whatsapp_config
 //   Policy "whatsapp_config_all" (ALL, PERMISSIVE) roles={authenticated}
@@ -5111,3 +5228,7 @@ export const Constants = {
 //   CREATE UNIQUE INDEX user_roles_user_id_role_key ON public.user_roles USING btree (user_id, role)
 // Table: usuarios
 //   CREATE UNIQUE INDEX usuarios_email_key ON public.usuarios USING btree (email)
+// Table: vehicle_brands
+//   CREATE UNIQUE INDEX vehicle_brands_name_key ON public.vehicle_brands USING btree (name)
+// Table: vehicle_models
+//   CREATE UNIQUE INDEX vehicle_models_brand_id_name_key ON public.vehicle_models USING btree (brand_id, name)

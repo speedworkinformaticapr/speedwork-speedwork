@@ -43,6 +43,7 @@ export interface SystemData {
   integrations?: Record<string, any>
   terms?: Record<string, any>
   records_per_page?: number
+  quote_validity_days?: number
   quote_footer_text?: string
   business_hours?: Record<string, any>
 }

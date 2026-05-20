@@ -19,6 +19,24 @@ export function QuotesOrdersTab({ form }: { form: UseFormReturn<SystemDataFormDa
 
       <FormField
         control={form.control}
+        name="quote_validity_days"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Dias de Validade (Padrão)</FormLabel>
+            <FormControl>
+              <Input type="number" placeholder="Ex: 15" {...field} value={field.value || ''} />
+            </FormControl>
+            <FormDescription>
+              Quantidade de dias adicionados à data de emissão para calcular a validade do orçamento
+              automaticamente.
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
         name="quote_footer_text"
         render={({ field }) => (
           <FormItem>

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
-import { CheckCircle2, Clock } from 'lucide-react'
+import { CheckCircle2, Clock, MessageCircleQuestion } from 'lucide-react'
 
 export default function QuoteApprovalPortal() {
   const { id } = useParams()
@@ -39,12 +39,24 @@ export default function QuoteApprovalPortal() {
   }
 
   const toggleItem = async (itemId: string, aprovado: boolean) => {
-    if (quote?.status !== 'aguardando aprovação' && quote?.status !== 'rascunho') return
+    if (
+      quote?.status !== 'aguardando aprovação' &&
+      quote?.status !== 'rascunho' &&
+      quote?.status !== 'cliente solicita alterações'
+    )
+      return
 
-    const newItems = items.map((i) => (i.id === itemId ? { ...i, aprovado } : i))
+    const questionado = !aprovado
+
+    const newItems = items.map((i) =>
+      i.id === itemId ? { ...i, aprovado, cliente_questionou: questionado } : i,
+    )
     setItems(newItems)
 
-    await supabase.from('orcamento_itens').update({ aprovado }).eq('id', itemId)
+    await supabase
+      .from('orcamento_itens')
+      .update({ aprovado, cliente_questionou: questionado })
+      .eq('id', itemId)
 
     const subtotal = newItems
       .filter((i) => i.aprovado !== false)
@@ -57,8 +69,18 @@ export default function QuoteApprovalPortal() {
         (Number(quote.valor_impostos) || 0),
     )
 
-    await supabase.from('orcamentos').update({ subtotal, total }).eq('id', id)
-    setQuote({ ...quote, subtotal, total })
+    const hasQuestion = newItems.some((i) => i.cliente_questionou)
+    const newStatus = hasQuestion ? 'cliente solicita alterações' : quote.status
+
+    await supabase.from('orcamentos').update({ subtotal, total, status: newStatus }).eq('id', id)
+    setQuote({ ...quote, subtotal, total, status: newStatus })
+
+    if (questionado && newStatus === 'cliente solicita alterações') {
+      toast({
+        title: 'Item questionado',
+        description: 'Nossa equipe foi notificada para revisar este item.',
+      })
+    }
   }
 
   const handleApprove = async () => {
@@ -84,7 +106,10 @@ export default function QuoteApprovalPortal() {
 
   const isApproved =
     quote.status === 'aprovado' || quote.status === 'pré-fechada' || quote.status === 'fechado'
-  const canEdit = quote.status === 'aguardando aprovação' || quote.status === 'rascunho'
+  const canEdit =
+    quote.status === 'aguardando aprovação' ||
+    quote.status === 'rascunho' ||
+    quote.status === 'cliente solicita alterações'
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
@@ -144,7 +169,8 @@ export default function QuoteApprovalPortal() {
             <CardTitle className="text-lg text-primary">Itens da OS</CardTitle>
             {canEdit && (
               <p className="text-sm text-muted-foreground">
-                Selecione os itens que deseja aprovar para a realização do serviço.
+                Revise os itens do serviço. Caso não concorde com algum, você pode desmarcá-lo para
+                questioná-lo com nossa equipe.
               </p>
             )}
           </CardHeader>
@@ -153,30 +179,35 @@ export default function QuoteApprovalPortal() {
               {items.map((item) => (
                 <div
                   key={item.id}
-                  className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${item.aprovado !== false ? 'bg-card' : 'bg-muted opacity-60'}`}
+                  className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${item.aprovado !== false && !item.cliente_questionou ? 'bg-card border-border' : item.cliente_questionou ? 'bg-amber-500/5 border-amber-500/50' : 'bg-muted opacity-60'}`}
                 >
                   <div className="flex items-center gap-4">
                     <Checkbox
-                      checked={item.aprovado !== false}
+                      checked={item.aprovado !== false && !item.cliente_questionou}
                       onCheckedChange={(c) => toggleItem(item.id, !!c)}
                       disabled={!canEdit}
                     />
                     <div>
-                      <p className="font-medium">
-                        {item.descricao || (item.tipo_item === 'servico' ? 'Serviço' : 'Produto')}{' '}
-                        {item.aprovado === false && (
-                          <span className="text-destructive text-xs ml-2 font-bold">
+                      <p className="font-medium flex items-center gap-2">
+                        {item.descricao || (item.tipo_item === 'servico' ? 'Serviço' : 'Produto')}
+                        {item.cliente_questionou && (
+                          <span className="text-amber-600 text-xs font-bold flex items-center bg-amber-100 px-2 py-0.5 rounded-full dark:bg-amber-900/30">
+                            <MessageCircleQuestion className="w-3 h-3 mr-1" /> Em Análise
+                          </span>
+                        )}
+                        {!item.aprovado && !item.cliente_questionou && (
+                          <span className="text-destructive text-xs font-bold bg-destructive/10 px-2 rounded">
                             (Recusado)
                           </span>
                         )}
                       </p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-muted-foreground mt-1">
                         {item.quantidade}x de {formatCurrency(item.valor_unitario)}
                       </p>
                     </div>
                   </div>
                   <div
-                    className={`font-semibold text-lg ${item.aprovado === false ? 'line-through text-muted-foreground' : ''}`}
+                    className={`font-semibold text-lg ${!item.aprovado && !item.cliente_questionou ? 'line-through text-muted-foreground' : ''}`}
                   >
                     {formatCurrency(item.valor_total)}
                   </div>
@@ -214,8 +245,16 @@ export default function QuoteApprovalPortal() {
 
         {canEdit && (
           <div className="flex justify-end pt-4 pb-10">
-            <Button size="lg" className="w-full md:w-auto text-lg px-8" onClick={handleApprove}>
-              <CheckCircle2 className="w-5 h-5 mr-2" /> Aprovar Ordem de Serviço
+            <Button
+              size="lg"
+              className="w-full md:w-auto text-lg px-8"
+              onClick={handleApprove}
+              disabled={items.some((i) => i.cliente_questionou)}
+            >
+              <CheckCircle2 className="w-5 h-5 mr-2" />
+              {items.some((i) => i.cliente_questionou)
+                ? 'Aguardando Revisão'
+                : 'Aprovar Ordem de Serviço'}
             </Button>
           </div>
         )}
