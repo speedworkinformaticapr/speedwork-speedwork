@@ -53,7 +53,7 @@ export default function QuoteForm() {
 
   // Financeiro / Parcelas
   const [installments, setInstallments] = useState<any[]>([])
-  const [condParcelas, setCondParcelas] = useState(1)
+  const [condParcelas, setCondParcelas] = useState<number | string>(1)
   const [condVencimento, setCondVencimento] = useState(new Date().toISOString().split('T')[0])
   const [condHoje, setCondHoje] = useState(false)
 
@@ -166,7 +166,7 @@ export default function QuoteForm() {
       newItems[idx].tempo_estimado = Number(h || 0) + Number(m || 0) / 60
     }
 
-    const qtd = Number(newItems[idx].quantidade) || 0
+    const qtd = parseInt(newItems[idx].quantidade as string, 10) || 0
     const valUnit = Number(newItems[idx].valor_unitario) || 0
 
     if (newItems[idx].tipo_item === 'servico') {
@@ -238,6 +238,11 @@ export default function QuoteForm() {
 
     const payload: any = { ...data, subtotal, total, status }
     if (!payload.conta_id) payload.conta_id = null
+    if (!payload.data_validade) payload.data_validade = null
+    if (!payload.data_emissao) payload.data_emissao = null
+    if (!payload.veiculo_km) payload.veiculo_km = null
+    if (!payload.veiculo_modelo) payload.veiculo_modelo = null
+    if (!payload.veiculo_placa) payload.veiculo_placa = null
 
     try {
       let orcId = id
@@ -461,9 +466,14 @@ export default function QuoteForm() {
                 <Label>Quilometragem (KM)</Label>
                 <Input
                   type="number"
+                  min="0"
+                  step="1"
                   placeholder="Ex: 45000"
                   value={data.veiculo_km || ''}
                   onChange={(e) => setData({ ...data, veiculo_km: e.target.value })}
+                  onKeyDown={(e) => {
+                    if (e.key === '.' || e.key === ',') e.preventDefault()
+                  }}
                 />
               </div>
             </div>
@@ -540,10 +550,19 @@ export default function QuoteForm() {
                   <Label>Qtd</Label>
                   <Input
                     type="number"
-                    min="0.01"
-                    step="0.01"
-                    value={it.quantidade || 1}
-                    onChange={(e) => updateItem(idx, 'quantidade', e.target.value)}
+                    min="1"
+                    step="1"
+                    value={it.quantidade === '' ? '' : it.quantidade || 1}
+                    onChange={(e) =>
+                      updateItem(
+                        idx,
+                        'quantidade',
+                        e.target.value === '' ? '' : parseInt(e.target.value, 10),
+                      )
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === '.' || e.key === ',') e.preventDefault()
+                    }}
                   />
                 </div>
                 <div className="w-full md:w-28 space-y-2">
@@ -641,8 +660,14 @@ export default function QuoteForm() {
               <Input
                 type="number"
                 min="1"
+                step="1"
                 value={condParcelas}
-                onChange={(e) => setCondParcelas(Number(e.target.value))}
+                onChange={(e) =>
+                  setCondParcelas(e.target.value === '' ? '' : parseInt(e.target.value, 10))
+                }
+                onKeyDown={(e) => {
+                  if (e.key === '.' || e.key === ',') e.preventDefault()
+                }}
               />
             </div>
             <div className="space-y-2">

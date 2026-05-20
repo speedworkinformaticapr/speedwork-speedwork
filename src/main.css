@@ -152,6 +152,16 @@
     @apply bg-background text-foreground;
   }
 
+  /* Esconde os spinners nativos dos inputs numéricos */
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+
   /* Força o padrão de cor e estilo do tema para todos os títulos de páginas no painel, removendo inconsistências */
   main h1.text-3xl {
     @apply text-primary tracking-tight !important;
