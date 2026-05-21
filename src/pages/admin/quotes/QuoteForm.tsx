@@ -1163,6 +1163,22 @@ export default function QuoteForm() {
               <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
             </Button>
             <div className="flex gap-2">
+              {(originalStatus === 'rascunho' ||
+                originalStatus === 'cliente solicita alterações') && (
+                <Button
+                  type="button"
+                  size="lg"
+                  onClick={handleSendApproval}
+                  disabled={isSaving || !hasItems}
+                >
+                  {isSaving ? (
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  ) : (
+                    <MessageCircle className="w-5 h-5 mr-2" />
+                  )}
+                  Solicitar Aprovação
+                </Button>
+              )}
               <Button
                 type="button"
                 onClick={() => goNext('faturamento')}
@@ -1367,7 +1383,7 @@ export default function QuoteForm() {
         )}
 
         {(originalStatus === 'rascunho' || originalStatus === 'cliente solicita alterações') && (
-          <Button size="lg" onClick={handleSendApproval} disabled={isSaving}>
+          <Button size="lg" onClick={handleSendApproval} disabled={isSaving || !hasItems}>
             {isSaving ? (
               <Loader2 className="w-5 h-5 mr-2 animate-spin" />
             ) : (
@@ -1424,7 +1440,7 @@ export default function QuoteForm() {
           </Button>
         )}
 
-        {originalStatus === 'rejeitado' && (
+        {(originalStatus === 'rejeitado' || originalStatus === 'cliente solicita alterações') && (
           <Button size="lg" onClick={() => handleSave('rascunho', true)} disabled={isSaving}>
             Reabrir como Rascunho
           </Button>

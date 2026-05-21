@@ -186,7 +186,10 @@ export default function QuoteView() {
           )}
 
           {(quote.status === 'rascunho' || quote.status === 'cliente solicita alterações') && (
-            <Button onClick={() => updateStatus('aguardando aprovação')}>
+            <Button
+              onClick={() => updateStatus('aguardando aprovação')}
+              disabled={items.length === 0}
+            >
               <Send className="w-4 h-4 mr-2" /> Solicitar Aprovação
             </Button>
           )}
@@ -226,7 +229,7 @@ export default function QuoteView() {
             <Button onClick={() => navigate(`/admin/quotes/${id}/edit`)}>Revisar Fechamento</Button>
           )}
 
-          {quote.status === 'rejeitado' && (
+          {(quote.status === 'rejeitado' || quote.status === 'cliente solicita alterações') && (
             <Button onClick={() => updateStatus('rascunho')}>Reabrir como Rascunho</Button>
           )}
         </div>
