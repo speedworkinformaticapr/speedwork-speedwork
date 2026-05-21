@@ -182,12 +182,37 @@ export default function AdminQuotes() {
     }
   }
 
+  const getStatusLabel = (s: string) => {
+    switch (s) {
+      case 'rascunho':
+        return 'Rascunho'
+      case 'aguardando aprovação':
+        return 'Aguardando Aprovação'
+      case 'cliente solicita alterações':
+        return 'Solicitação de Alteração'
+      case 'aprovado':
+        return 'Aprovado pelo Cliente'
+      case 'pré-fechada':
+        return 'OS Pré-fechada'
+      case 'fechado':
+        return 'OS Fechada'
+      case 'rejeitado':
+        return 'OS Rejeitada'
+      case 'convertido':
+        return 'Convertido'
+      default:
+        return s
+    }
+  }
+
   const getStatusColor = (s: string) => {
     switch (s) {
       case 'rascunho':
         return 'bg-gray-500'
       case 'aguardando aprovação':
         return 'bg-blue-500'
+      case 'cliente solicita alterações':
+        return 'bg-amber-500'
       case 'aprovado':
         return 'bg-green-500'
       case 'pré-fechada':
@@ -286,7 +311,9 @@ export default function AdminQuotes() {
                           : '-'}
                       </td>
                       <td className="py-3">
-                        <Badge className={getStatusColor(q.status)}>{q.status}</Badge>
+                        <Badge className={getStatusColor(q.status)}>
+                          {getStatusLabel(q.status)}
+                        </Badge>
                       </td>
                       <td className="py-3">
                         {q.link_pagamento ? (

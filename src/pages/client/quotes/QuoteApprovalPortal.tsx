@@ -116,6 +116,29 @@ export default function QuoteApprovalPortal() {
     quote.status === 'rascunho' ||
     quote.status === 'cliente solicita alterações'
 
+  const getStatusLabel = (s: string) => {
+    switch (s) {
+      case 'rascunho':
+        return 'Rascunho'
+      case 'aguardando aprovação':
+        return 'Aguardando Aprovação'
+      case 'cliente solicita alterações':
+        return 'Solicitação de Alteração'
+      case 'aprovado':
+        return 'Aprovado'
+      case 'pré-fechada':
+        return 'OS Pré-fechada'
+      case 'fechado':
+        return 'OS Fechada'
+      case 'rejeitado':
+        return 'Rejeitada'
+      case 'convertido':
+        return 'Convertido'
+      default:
+        return s
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -138,7 +161,7 @@ export default function QuoteApprovalPortal() {
                 </span>
               ) : (
                 <span className="flex items-center text-amber-600 font-medium">
-                  <Clock className="w-4 h-4 mr-1" /> {quote.status}
+                  <Clock className="w-4 h-4 mr-1" /> {getStatusLabel(quote.status)}
                 </span>
               )}
             </div>

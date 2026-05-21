@@ -115,12 +115,37 @@ export default function QuoteView() {
     }
   }
 
+  const getStatusLabel = (s: string) => {
+    switch (s) {
+      case 'rascunho':
+        return 'Rascunho'
+      case 'aguardando aprovação':
+        return 'Aguardando Aprovação'
+      case 'cliente solicita alterações':
+        return 'Solicitação de Alteração'
+      case 'aprovado':
+        return 'Aprovado pelo Cliente'
+      case 'pré-fechada':
+        return 'OS Pré-fechada'
+      case 'fechado':
+        return 'OS Fechada'
+      case 'rejeitado':
+        return 'OS Rejeitada'
+      case 'convertido':
+        return 'Convertido'
+      default:
+        return s
+    }
+  }
+
   const getStatusColor = (s: string) => {
     switch (s) {
       case 'rascunho':
         return 'bg-gray-500'
       case 'aguardando aprovação':
         return 'bg-blue-500'
+      case 'cliente solicita alterações':
+        return 'bg-amber-500'
       case 'aprovado':
         return 'bg-green-500'
       case 'pré-fechada':
@@ -146,26 +171,33 @@ export default function QuoteView() {
             <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
           </Button>
           <h1 className="text-2xl font-bold">Orçamento {quote.numero_orcamento}</h1>
-          <Badge className={getStatusColor(quote.status)}>{quote.status}</Badge>
+          <Badge className={getStatusColor(quote.status)}>{getStatusLabel(quote.status)}</Badge>
         </div>
         <div className="flex flex-wrap gap-2 print:hidden">
           <Button variant="outline" onClick={() => window.print()}>
             <Printer className="w-4 h-4 mr-2" /> Imprimir / PDF
           </Button>
-          {quote.status === 'rascunho' && (
-            <>
-              <Button variant="outline" onClick={() => navigate(`/admin/quotes/${id}/edit`)}>
-                Editar
-              </Button>
-              <Button onClick={() => updateStatus('aguardando aprovação')}>
-                <Send className="w-4 h-4 mr-2" /> Marcar como Enviado
-              </Button>
-            </>
+          {['rascunho', 'cliente solicita alterações', 'aguardando aprovação'].includes(
+            quote.status,
+          ) && (
+            <Button variant="outline" onClick={() => navigate(`/admin/quotes/${id}/edit`)}>
+              Editar OS
+            </Button>
           )}
+
+          {(quote.status === 'rascunho' || quote.status === 'cliente solicita alterações') && (
+            <Button onClick={() => updateStatus('aguardando aprovação')}>
+              <Send className="w-4 h-4 mr-2" /> Marcar como Enviado
+            </Button>
+          )}
+
           {quote.status === 'aguardando aprovação' && (
             <>
               <Button variant="destructive" onClick={() => updateStatus('rejeitado')}>
                 <X className="w-4 h-4 mr-2" /> Rejeitar
+              </Button>
+              <Button variant="outline" onClick={() => updateStatus('cliente solicita alterações')}>
+                Solicitar Alteração
               </Button>
               <Button
                 className="bg-green-600 hover:bg-green-700 text-white"
@@ -175,13 +207,27 @@ export default function QuoteView() {
               </Button>
             </>
           )}
+
           {quote.status === 'aprovado' && (
-            <Button
-              className="bg-purple-600 hover:bg-purple-700 text-white"
-              onClick={handleConvert}
-            >
-              <ShoppingCart className="w-4 h-4 mr-2" /> Converter em Pedido
-            </Button>
+            <>
+              <Button
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+                onClick={handleConvert}
+              >
+                <ShoppingCart className="w-4 h-4 mr-2" /> Converter em Pedido
+              </Button>
+              <Button onClick={() => updateStatus('pré-fechada')}>
+                Iniciar Execução (Pré-fechar)
+              </Button>
+            </>
+          )}
+
+          {quote.status === 'pré-fechada' && (
+            <Button onClick={() => navigate(`/admin/quotes/${id}/edit`)}>Revisar Fechamento</Button>
+          )}
+
+          {quote.status === 'rejeitado' && (
+            <Button onClick={() => updateStatus('rascunho')}>Reabrir como Rascunho</Button>
           )}
         </div>
       </div>

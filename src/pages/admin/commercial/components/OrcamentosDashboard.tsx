@@ -44,20 +44,29 @@ export default function OrcamentosDashboard() {
       value: metrics.orcamentos.filter((o: any) => o.status === 'rascunho').length,
     },
     {
-      name: 'Enviado',
-      value: metrics.orcamentos.filter((o: any) => o.status === 'enviado').length,
+      name: 'Aguardando',
+      value: metrics.orcamentos.filter((o: any) => o.status === 'aguardando aprovação').length,
+    },
+    {
+      name: 'Alterações',
+      value: metrics.orcamentos.filter((o: any) => o.status === 'cliente solicita alterações')
+        .length,
     },
     {
       name: 'Aprovado',
       value: metrics.orcamentos.filter((o: any) => o.status === 'aprovado').length,
     },
     {
-      name: 'Rejeitado',
-      value: metrics.orcamentos.filter((o: any) => o.status === 'rejeitado').length,
+      name: 'Pré-fechada',
+      value: metrics.orcamentos.filter((o: any) => o.status === 'pré-fechada').length,
     },
     {
-      name: 'Convertido',
-      value: metrics.orcamentos.filter((o: any) => o.status === 'convertido').length,
+      name: 'Fechada',
+      value: metrics.orcamentos.filter((o: any) => o.status === 'fechado').length,
+    },
+    {
+      name: 'Rejeitado',
+      value: metrics.orcamentos.filter((o: any) => o.status === 'rejeitado').length,
     },
   ].filter((d) => d.value > 0)
 

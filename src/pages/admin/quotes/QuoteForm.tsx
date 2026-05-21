@@ -52,6 +52,7 @@ export default function QuoteForm() {
 
   const [isSaving, setIsSaving] = useState(false)
   const [planoContas, setPlanoContas] = useState<any[]>([])
+  const [originalStatus, setOriginalStatus] = useState('rascunho')
   const [data, setData] = useState({
     cliente_id: '',
     conta_id: '',
@@ -68,6 +69,40 @@ export default function QuoteForm() {
     veiculo_model_id: '',
     veiculo_km: '',
   })
+
+  const STATUS_OPTIONS = [
+    { value: 'rascunho', label: 'Rascunho' },
+    { value: 'aguardando aprovação', label: 'Aguardando Aprovação' },
+    { value: 'cliente solicita alterações', label: 'Solicitação de Alteração' },
+    { value: 'aprovado', label: 'Aprovado pelo Cliente' },
+    { value: 'pré-fechada', label: 'OS Pré-fechada' },
+    { value: 'fechado', label: 'OS Fechada' },
+    { value: 'rejeitado', label: 'OS Rejeitada' },
+    { value: 'convertido', label: 'Convertido' },
+  ]
+
+  const getAvailableStatuses = (current: string) => {
+    switch (current) {
+      case 'rascunho':
+        return ['rascunho', 'aguardando aprovação', 'rejeitado']
+      case 'aguardando aprovação':
+        return ['aguardando aprovação', 'cliente solicita alterações', 'aprovado', 'rejeitado']
+      case 'cliente solicita alterações':
+        return ['cliente solicita alterações', 'rascunho', 'aguardando aprovação', 'rejeitado']
+      case 'aprovado':
+        return ['aprovado', 'pré-fechada', 'rejeitado', 'convertido']
+      case 'pré-fechada':
+        return ['pré-fechada', 'fechado', 'rejeitado']
+      case 'fechado':
+        return ['fechado']
+      case 'rejeitado':
+        return ['rejeitado', 'rascunho']
+      case 'convertido':
+        return ['convertido']
+      default:
+        return [current]
+    }
+  }
 
   const [brands, setBrands] = useState<any[]>([])
   const [models, setModels] = useState<any[]>([])
@@ -199,6 +234,7 @@ export default function QuoteForm() {
     const { data: q } = await supabase.from('orcamentos').select('*').eq('id', targetId).single()
     if (q) {
       setData(q)
+      setOriginalStatus(q.status)
       const { data: it } = await supabase
         .from('orcamento_itens')
         .select('*')
@@ -348,6 +384,16 @@ export default function QuoteForm() {
   const handleSave = async (statusToSave: string, preventNavigation = false) => {
     if (isSaving) return null
 
+    const allowed = getAvailableStatuses(originalStatus)
+    if (!allowed.includes(statusToSave)) {
+      toast({
+        title: 'Transição inválida',
+        description: `Não é possível avançar de "${originalStatus}" para "${statusToSave}".`,
+        variant: 'destructive',
+      })
+      return null
+    }
+
     if (!data.cliente_id) {
       toast({
         title: 'Campos obrigatórios pendentes',
@@ -442,6 +488,7 @@ export default function QuoteForm() {
       } else {
         setData((prev) => ({ ...prev, status: statusToSave }))
       }
+      setOriginalStatus(statusToSave)
 
       toast({ title: 'Orçamento salvo com sucesso!' })
 
@@ -1037,15 +1084,13 @@ export default function QuoteForm() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="rascunho">Rascunho</SelectItem>
-                  <SelectItem value="aguardando aprovação">Aguardando Aprovação</SelectItem>
-                  <SelectItem value="cliente solicita alterações">
-                    Solicitação de Alteração
-                  </SelectItem>
-                  <SelectItem value="aprovado">Aprovado pelo Cliente</SelectItem>
-                  <SelectItem value="pré-fechada">OS Pré-fechada</SelectItem>
-                  <SelectItem value="fechado">OS Fechada</SelectItem>
-                  <SelectItem value="rejeitado">OS Rejeitada</SelectItem>
+                  {STATUS_OPTIONS.filter((opt) =>
+                    getAvailableStatuses(originalStatus).includes(opt.value),
+                  ).map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -1101,20 +1146,23 @@ export default function QuoteForm() {
               <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
             </Button>
             <div className="flex gap-2">
-              <Button
-                onClick={handleSendApproval}
-                size="lg"
-                className="w-full md:w-auto"
-                variant="secondary"
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                ) : (
-                  <MessageCircle className="w-5 h-5 mr-2" />
-                )}
-                Enviar Link
-              </Button>
+              {(originalStatus === 'rascunho' ||
+                originalStatus === 'cliente solicita alterações') && (
+                <Button
+                  onClick={handleSendApproval}
+                  size="lg"
+                  className="w-full md:w-auto"
+                  variant="secondary"
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  ) : (
+                    <MessageCircle className="w-5 h-5 mr-2" />
+                  )}
+                  Enviar Link ao Cliente
+                </Button>
+              )}
               <Button type="button" onClick={() => goNext('faturamento')} size="lg">
                 Fechamento <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
               </Button>
@@ -1289,33 +1337,100 @@ export default function QuoteForm() {
         </TabsContent>
       </Tabs>
 
-      <div className="flex justify-end gap-3 mt-8 border-t pt-6">
+      <div className="flex flex-wrap justify-end gap-3 mt-8 border-t pt-6">
         <Button
           variant="outline"
           size="lg"
           onClick={() => navigate('/admin/quotes')}
           disabled={isSaving}
         >
-          Cancelar
+          {originalStatus === 'fechado' ? 'Voltar' : 'Cancelar'}
         </Button>
-        <Button
-          variant="secondary"
-          size="lg"
-          onClick={() => handleSave(data.status, true)}
-          disabled={isSaving}
-        >
-          {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-          Salvar OS Atual
-        </Button>
-        <Button
-          size="lg"
-          onClick={() => handleSave('fechado')}
-          className="px-8"
-          disabled={isSaving}
-        >
-          {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-          Finalizar e Fechar OS
-        </Button>
+
+        {originalStatus !== 'fechado' && (
+          <Button
+            variant="secondary"
+            size="lg"
+            onClick={() => handleSave(data.status, true)}
+            disabled={isSaving}
+          >
+            {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            Salvar Atualizações
+          </Button>
+        )}
+
+        {originalStatus === 'rascunho' && (
+          <Button
+            size="lg"
+            onClick={() => handleSave('aguardando aprovação', true)}
+            disabled={isSaving}
+          >
+            Enviar p/ Aprovação
+          </Button>
+        )}
+
+        {originalStatus === 'aguardando aprovação' && (
+          <>
+            <Button
+              variant="destructive"
+              size="lg"
+              onClick={() => handleSave('rejeitado', true)}
+              disabled={isSaving}
+            >
+              Rejeitar
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => handleSave('cliente solicita alterações', true)}
+              disabled={isSaving}
+            >
+              Solicitar Alteração
+            </Button>
+            <Button
+              size="lg"
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => handleSave('aprovado', true)}
+              disabled={isSaving}
+            >
+              Aprovar
+            </Button>
+          </>
+        )}
+
+        {originalStatus === 'cliente solicita alterações' && (
+          <Button
+            size="lg"
+            onClick={() => handleSave('aguardando aprovação', true)}
+            disabled={isSaving}
+          >
+            Reenviar p/ Aprovação
+          </Button>
+        )}
+
+        {originalStatus === 'aprovado' && (
+          <Button size="lg" onClick={() => handleSave('pré-fechada', true)} disabled={isSaving}>
+            Iniciar Execução (Pré-fechar)
+          </Button>
+        )}
+
+        {originalStatus === 'pré-fechada' && (
+          <Button
+            size="lg"
+            onClick={() => handleSave('fechado', true)}
+            className="px-8"
+            disabled={isSaving}
+          >
+            {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            Finalizar e Fechar OS
+          </Button>
+        )}
+
+        {originalStatus === 'rejeitado' && (
+          <Button size="lg" onClick={() => handleSave('rascunho', true)} disabled={isSaving}>
+            Reabrir como Rascunho
+          </Button>
+        )}
       </div>
 
       <Dialog open={newClientOpen} onOpenChange={setNewClientOpen}>
