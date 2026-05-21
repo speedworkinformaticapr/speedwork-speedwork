@@ -1164,22 +1164,8 @@ export default function QuoteForm() {
             </Button>
             <div className="flex gap-2">
               {(originalStatus === 'rascunho' ||
-                originalStatus === 'cliente solicita alterações') && (
-                <Button
-                  onClick={handleSendApproval}
-                  size="lg"
-                  className="w-full md:w-auto"
-                  variant="secondary"
-                  disabled={isSaving}
-                >
-                  {isSaving ? (
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  ) : (
-                    <MessageCircle className="w-5 h-5 mr-2" />
-                  )}
-                  Enviar Link ao Cliente
-                </Button>
-              )}
+                originalStatus === 'cliente solicita alterações') &&
+                null}
               <Button
                 type="button"
                 onClick={() => goNext('faturamento')}
