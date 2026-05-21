@@ -1382,16 +1382,8 @@ export default function QuoteForm() {
           </Button>
         )}
 
-        {(originalStatus === 'rascunho' || originalStatus === 'cliente solicita alterações') && (
-          <Button size="lg" onClick={handleSendApproval} disabled={isSaving || !hasItems}>
-            {isSaving ? (
-              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-            ) : (
-              <MessageCircle className="w-5 h-5 mr-2" />
-            )}
-            Solicitar Aprovação
-          </Button>
-        )}
+        {(originalStatus === 'rascunho' || originalStatus === 'cliente solicita alterações') &&
+          null}
 
         {originalStatus === 'aguardando aprovação' && (
           <>
