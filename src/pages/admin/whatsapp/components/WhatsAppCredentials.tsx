@@ -59,7 +59,7 @@ export default function WhatsAppCredentials() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      api_provider: 'evolution',
+      api_provider: 'twilio',
       account_sid: '',
       auth_token: '',
       phone_number: '',
@@ -102,7 +102,7 @@ export default function WhatsAppCredentials() {
       if (data) {
         setConfigId(data.id)
         form.reset({
-          api_provider: data.api_provider || 'evolution',
+          api_provider: data.api_provider || 'twilio',
           account_sid: data.account_sid || '',
           auth_token: data.auth_token || '',
           phone_number: data.phone_number || '',

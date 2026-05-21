@@ -144,7 +144,7 @@ Deno.serve(async (req: Request) => {
 
     return new Response(JSON.stringify({ valido: false, mensagem: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
+      status: 200,
     })
   }
 })
