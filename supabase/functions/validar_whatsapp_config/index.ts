@@ -39,18 +39,24 @@ Deno.serve(async (req: Request) => {
 
     try {
       if (api_provider === 'twilio') {
+        if (!phone_number) {
+          throw new Error('Número do remetente (phone_number) não fornecido para validação Twilio.')
+        }
+
         const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${account_sid}/Messages.json`
         const formData = new URLSearchParams()
 
-        const formatTwilioNumber = (num: string) => {
-          const cleanNum = num.replace(/[^\d+]/g, '')
-          if (!cleanNum) return num
+        const formatTwilioNumber = (num: any) => {
+          if (!num) return ''
+          const strNum = String(num)
+          const cleanNum = strNum.replace(/[^\d+]/g, '')
+          if (!cleanNum) return strNum
           const withPlus = cleanNum.startsWith('+') ? cleanNum : `+${cleanNum}`
           return `whatsapp:${withPlus}`
         }
 
         formData.append('To', formatTwilioNumber(test_phone))
-        formData.append('From', formatTwilioNumber(phone_number || ''))
+        formData.append('From', formatTwilioNumber(phone_number))
         formData.append('Body', 'TESTE de Conexão')
 
         const res = await fetch(twilioUrl, {

@@ -14,7 +14,7 @@
     "send-email": 2,
     "stripe-webhook": 1,
     "sync-google-ads": 1,
-    "validar_whatsapp_config": 3,
+    "validar_whatsapp_config": 4,
     "cron-commercial-contracts": 2,
     "generate-ai-text": 2,
     "verify-recaptcha": 2,

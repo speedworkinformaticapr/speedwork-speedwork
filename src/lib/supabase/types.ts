@@ -4896,12 +4896,9 @@ export const Constants = {
 //   DECLARE
 //     v_master_id UUID;
 //     v_client_name TEXT;
-//     v_parcelas INT := 1;
-//     v_valor_parcela NUMERIC;
-//     i INT;
 //     existing_charges_count INT;
 //   BEGIN
-//     IF NEW.status IN ('aprovado', 'convertido', 'fechado', 'pré-fechada') AND (OLD.status IS NULL OR OLD.status NOT IN ('aprovado', 'convertido', 'fechado', 'pré-fechada')) THEN
+//     IF NEW.status = 'fechado' AND (OLD.status IS NULL OR OLD.status <> 'fechado') THEN
 //       IF NOT EXISTS (SELECT 1 FROM public.financial_master_records WHERE reference_id = NEW.id AND reference_type = 'orcamento') THEN
 //
 //         SELECT name INTO v_client_name FROM public.profiles WHERE id = NEW.cliente_id;
@@ -4914,11 +4911,8 @@ export const Constants = {
 //         SELECT count(*) INTO existing_charges_count FROM public.financial_charges WHERE orcamento_id = NEW.id;
 //
 //         IF existing_charges_count = 0 THEN
-//           v_valor_parcela := NEW.total / v_parcelas;
-//           FOR i IN 1..v_parcelas LOOP
-//             INSERT INTO public.financial_charges (master_record_id, client_name, amount, due_date, description, status, type, category, orcamento_id, profile_id, conta_id)
-//             VALUES (v_master_id, v_client_name, v_valor_parcela, NEW.data_emissao::date + ((i-1) || ' month')::interval, 'Parcela ' || i || '/' || v_parcelas, 'pendente', 'receivable', 'orcamento', NEW.id, NEW.cliente_id, NEW.conta_id);
-//           END LOOP;
+//           INSERT INTO public.financial_charges (master_record_id, client_name, amount, due_date, description, status, type, category, orcamento_id, profile_id, conta_id)
+//           VALUES (v_master_id, v_client_name, NEW.total, NEW.data_emissao::date, 'Pagamento Integral', 'pendente', 'receivable', 'orcamento', NEW.id, NEW.cliente_id, NEW.conta_id);
 //         ELSE
 //           UPDATE public.financial_charges SET master_record_id = v_master_id WHERE orcamento_id = NEW.id;
 //         END IF;
@@ -5118,8 +5112,8 @@ export const Constants = {
 //     v_num_orc TEXT;
 //     v_item JSONB;
 //     v_charge JSONB;
+//     v_master_record_id UUID;
 //   BEGIN
-//     -- 1. Upsert Quote
 //     IF p_quote->>'id' IS NOT NULL AND p_quote->>'id' <> '' THEN
 //       v_quote_id := (p_quote->>'id')::uuid;
 //       UPDATE public.orcamentos
@@ -5163,7 +5157,8 @@ export const Constants = {
 //       ) RETURNING id, numero_orcamento INTO v_quote_id, v_num_orc;
 //     END IF;
 //
-//     -- 2. Replace Items
+//     SELECT id INTO v_master_record_id FROM public.financial_master_records WHERE reference_id = v_quote_id AND reference_type = 'orcamento' LIMIT 1;
+//
 //     DELETE FROM public.orcamento_itens WHERE orcamento_id = v_quote_id;
 //
 //     FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
@@ -5186,30 +5181,32 @@ export const Constants = {
 //       );
 //     END LOOP;
 //
-//     -- 3. Replace Financial Charges (only pending)
-//     DELETE FROM public.financial_charges
-//     WHERE orcamento_id = v_quote_id AND status = 'pendente';
+//     IF p_quote->>'status' = 'fechado' THEN
+//       DELETE FROM public.financial_charges
+//       WHERE orcamento_id = v_quote_id AND status = 'pendente';
 //
-//     FOR v_charge IN SELECT * FROM jsonb_array_elements(p_charges)
-//     LOOP
-//       IF v_charge->>'status' = 'pendente' THEN
-//         INSERT INTO public.financial_charges (
-//           orcamento_id, client_name, amount, due_date, description, status, type, category, conta_id, parcela_numero, parcela_total
-//         ) VALUES (
-//           v_quote_id,
-//           v_charge->>'client_name',
-//           (v_charge->>'amount')::numeric,
-//           (v_charge->>'due_date')::date,
-//           v_charge->>'description',
-//           'pendente',
-//           'receivable',
-//           'orcamento',
-//           NULLIF(p_quote->>'conta_id', '')::uuid,
-//           (v_charge->>'parcela_numero')::integer,
-//           (v_charge->>'parcela_total')::integer
-//         );
-//       END IF;
-//     END LOOP;
+//       FOR v_charge IN SELECT * FROM jsonb_array_elements(p_charges)
+//       LOOP
+//         IF v_charge->>'status' = 'pendente' THEN
+//           INSERT INTO public.financial_charges (
+//             master_record_id, orcamento_id, client_name, amount, due_date, description, status, type, category, conta_id, parcela_numero, parcela_total
+//           ) VALUES (
+//             v_master_record_id,
+//             v_quote_id,
+//             v_charge->>'client_name',
+//             (v_charge->>'amount')::numeric,
+//             (v_charge->>'due_date')::date,
+//             v_charge->>'description',
+//             'pendente',
+//             'receivable',
+//             'orcamento',
+//             NULLIF(p_quote->>'conta_id', '')::uuid,
+//             (v_charge->>'parcela_numero')::integer,
+//             (v_charge->>'parcela_total')::integer
+//           );
+//         END IF;
+//       END LOOP;
+//     END IF;
 //
 //     RETURN jsonb_build_object('id', v_quote_id, 'numero_orcamento', v_num_orc);
 //   END;
