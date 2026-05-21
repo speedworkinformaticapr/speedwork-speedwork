@@ -187,7 +187,7 @@ export default function QuoteView() {
 
           {(quote.status === 'rascunho' || quote.status === 'cliente solicita alterações') && (
             <Button onClick={() => updateStatus('aguardando aprovação')}>
-              <Send className="w-4 h-4 mr-2" /> Marcar como Enviado
+              <Send className="w-4 h-4 mr-2" /> Solicitar Aprovação
             </Button>
           )}
 

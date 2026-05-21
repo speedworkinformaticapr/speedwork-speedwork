@@ -1163,9 +1163,6 @@ export default function QuoteForm() {
               <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
             </Button>
             <div className="flex gap-2">
-              {(originalStatus === 'rascunho' ||
-                originalStatus === 'cliente solicita alterações') &&
-                null}
               <Button
                 type="button"
                 onClick={() => goNext('faturamento')}
@@ -1376,7 +1373,7 @@ export default function QuoteForm() {
             ) : (
               <MessageCircle className="w-5 h-5 mr-2" />
             )}
-            Enviar Link ao Cliente
+            Solicitar Aprovação
           </Button>
         )}
 
