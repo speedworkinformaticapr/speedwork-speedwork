@@ -1247,6 +1247,7 @@ export type Database = {
           created_at: string
           description: string
           id: string
+          paid_amount: number | null
           reference_id: string | null
           reference_type: string | null
           status: string
@@ -1260,6 +1261,7 @@ export type Database = {
           created_at?: string
           description: string
           id?: string
+          paid_amount?: number | null
           reference_id?: string | null
           reference_type?: string | null
           status?: string
@@ -1273,6 +1275,7 @@ export type Database = {
           created_at?: string
           description?: string
           id?: string
+          paid_amount?: number | null
           reference_id?: string | null
           reference_type?: string | null
           status?: string
@@ -3596,6 +3599,7 @@ export const Constants = {
 //   reference_id: uuid (nullable)
 //   reference_type: text (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
+//   paid_amount: numeric (nullable, default: 0)
 // Table: financial_partners
 //   id: uuid (not null, default: gen_random_uuid())
 //   name: text (not null)
@@ -5321,6 +5325,54 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION update_master_record_status()
+//   CREATE OR REPLACE FUNCTION public.update_master_record_status()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   DECLARE
+//     v_master_id UUID;
+//     v_total INT;
+//     v_pago INT;
+//     v_atrasado INT;
+//     v_paid_amount NUMERIC;
+//   BEGIN
+//     IF TG_OP = 'DELETE' THEN
+//       v_master_id := OLD.master_record_id;
+//     ELSE
+//       v_master_id := NEW.master_record_id;
+//     END IF;
+//
+//     IF v_master_id IS NOT NULL THEN
+//       SELECT
+//         COUNT(*),
+//         COUNT(*) FILTER (WHERE status = 'pago' OR status = 'recebido'),
+//         COUNT(*) FILTER (WHERE status = 'atrasado' OR (status = 'pendente' AND due_date < CURRENT_DATE)),
+//         COALESCE(SUM(amount) FILTER (WHERE status = 'pago' OR status = 'recebido'), 0)
+//       INTO v_total, v_pago, v_atrasado, v_paid_amount
+//       FROM public.financial_charges
+//       WHERE master_record_id = v_master_id;
+//
+//       IF v_total > 0 THEN
+//         IF v_pago = v_total THEN
+//           UPDATE public.financial_master_records SET status = 'pago', paid_amount = LEAST(v_paid_amount, total_amount) WHERE id = v_master_id;
+//         ELSIF v_atrasado > 0 THEN
+//           UPDATE public.financial_master_records SET status = 'atrasado', paid_amount = LEAST(v_paid_amount, total_amount) WHERE id = v_master_id;
+//         ELSIF v_pago > 0 THEN
+//           UPDATE public.financial_master_records SET status = 'parcial', paid_amount = LEAST(v_paid_amount, total_amount) WHERE id = v_master_id;
+//         ELSE
+//           UPDATE public.financial_master_records SET status = 'pendente', paid_amount = LEAST(v_paid_amount, total_amount) WHERE id = v_master_id;
+//         END IF;
+//       ELSE
+//          UPDATE public.financial_master_records SET paid_amount = 0 WHERE id = v_master_id;
+//       END IF;
+//     END IF;
+//
+//     RETURN NULL;
+//   END;
+//   $function$
+//
 // FUNCTION update_sections_modtime()
 //   CREATE OR REPLACE FUNCTION public.update_sections_modtime()
 //    RETURNS trigger
@@ -5374,6 +5426,7 @@ export const Constants = {
 //   trigger_notify_event_registration: CREATE TRIGGER trigger_notify_event_registration AFTER INSERT ON public.event_registrations FOR EACH ROW EXECUTE FUNCTION notify_event_registration()
 // Table: financial_charges
 //   on_plan_payment_paid: CREATE TRIGGER on_plan_payment_paid AFTER UPDATE ON public.financial_charges FOR EACH ROW EXECUTE FUNCTION handle_plan_payment_contract()
+//   trg_update_master_record_status: CREATE TRIGGER trg_update_master_record_status AFTER INSERT OR DELETE OR UPDATE ON public.financial_charges FOR EACH ROW EXECUTE FUNCTION update_master_record_status()
 // Table: orcamento_itens
 //   trg_calc_orcamento_itens_total: CREATE TRIGGER trg_calc_orcamento_itens_total BEFORE INSERT OR UPDATE ON public.orcamento_itens FOR EACH ROW EXECUTE FUNCTION calc_orcamento_itens_total()
 // Table: orcamentos

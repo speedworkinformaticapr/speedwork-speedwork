@@ -428,9 +428,35 @@ export default function QuoteForm() {
       return null
     }
 
+    if (statusToSave === 'fechado' && installments.length === 0) {
+      toast({
+        title: 'Ação Necessária',
+        description:
+          'Por favor, gere o fluxo de parcelas na aba de Fechamento antes de fechar a OS.',
+        variant: 'destructive',
+      })
+      setActiveTab('faturamento')
+      return null
+    }
+
+    if (installments.length > 0) {
+      const sumInstallments = installments.reduce((acc, curr) => acc + Number(curr.amount), 0)
+      if (Math.abs(sumInstallments - total) > 0.05) {
+        toast({
+          title: 'Validação de Valores',
+          description:
+            'A soma das parcelas não confere com o total da OS. Por favor, ajuste ou gere o fluxo novamente.',
+          variant: 'destructive',
+        })
+        setActiveTab('faturamento')
+        return null
+      }
+    }
+
     setIsSaving(true)
 
     const payload: any = { ...data, subtotal, total, status: statusToSave }
+    if (payload.veiculo_placa) payload.veiculo_placa = payload.veiculo_placa.toUpperCase()
     if (!payload.conta_id) payload.conta_id = null
     payload.data_validade = payload.data_validade || null
     payload.data_emissao = payload.data_emissao || null
@@ -780,7 +806,9 @@ export default function QuoteForm() {
                 <Input
                   placeholder="Ex: ABC1D23"
                   value={data.veiculo_placa || ''}
-                  onChange={(e) => setData({ ...data, veiculo_placa: e.target.value })}
+                  onChange={(e) =>
+                    setData({ ...data, veiculo_placa: e.target.value.toUpperCase() })
+                  }
                 />
               </div>
               <div className="space-y-2">
