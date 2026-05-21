@@ -70,6 +70,7 @@ type MasterRecord = {
   client_id: string | null
   client_name: string
   total_amount: number
+  paid_amount?: number
   status: string
   type: string
   category: string
@@ -222,22 +223,17 @@ export default function AdminFinancialPayments() {
 
   const calculateGlobalSummary = async () => {
     const { data } = await supabase
-      .from('financial_charges')
-      .select('amount, status, type, due_date')
+      .from('financial_master_records')
+      .select('total_amount, paid_amount, status, type')
     if (!data) return
 
     const stats = { expected: 0, realized: 0, overdue: 0 }
-    data.forEach((c) => {
-      if (c.type === 'receivable') {
-        stats.expected += Number(c.amount)
-        if (c.status === 'pago' || c.status === 'recebido') {
-          stats.realized += Number(c.amount)
-        }
-        if (
-          c.status === 'atrasado' ||
-          (c.status === 'pendente' && new Date(c.due_date) < new Date())
-        ) {
-          stats.overdue += Number(c.amount)
+    data.forEach((m) => {
+      if (m.type === 'receivable') {
+        stats.expected += Number(m.total_amount)
+        stats.realized += Number(m.paid_amount || 0)
+        if (m.status === 'atrasado') {
+          stats.overdue += Math.max(0, Number(m.total_amount) - Number(m.paid_amount || 0))
         }
       }
     })
@@ -466,6 +462,7 @@ export default function AdminFinancialPayments() {
           .update(payload)
           .eq('id', editingChargeId)
         toast({ title: 'Parcela atualizada com sucesso' })
+        fetchMasterRecords()
         if (selectedMasterId) fetchDetails(selectedMasterId)
       } else {
         // Create Master Record first
@@ -720,6 +717,7 @@ export default function AdminFinancialPayments() {
                     <SortHead label="Descrição" sortKey="description" />
                     <SortHead label="Cliente/Fornecedor" sortKey="client_name" />
                     <SortHead label="Valor Total" sortKey="total_amount" />
+                    <SortHead label="Status" sortKey="status" />
                     <SortHead label="Criado Em" sortKey="created_at" />
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -728,14 +726,14 @@ export default function AdminFinancialPayments() {
                   {isLoading ? (
                     Array.from({ length: 5 }).map((_, i) => (
                       <TableRow key={i}>
-                        <TableCell colSpan={5}>
+                        <TableCell colSpan={6}>
                           <Skeleton className="h-8 w-full" />
                         </TableCell>
                       </TableRow>
                     ))
                   ) : paginatedMasters.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         Nenhum registro encontrado.
                       </TableCell>
                     </TableRow>
@@ -767,6 +765,19 @@ export default function AdminFinancialPayments() {
                           }
                         >
                           {formatCurrency(master.total_amount)}
+                        </TableCell>
+                        <TableCell>
+                          {master.status === 'pago' ? (
+                            <Badge className="bg-green-500 hover:bg-green-600">Pago</Badge>
+                          ) : master.status === 'atrasado' ? (
+                            <Badge variant="destructive">Atrasado</Badge>
+                          ) : master.status === 'parcial' ? (
+                            <Badge className="bg-blue-500 hover:bg-blue-600">Parcial</Badge>
+                          ) : (
+                            <Badge className="bg-yellow-500 hover:bg-yellow-600 text-black">
+                              Pendente
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell>{formatDate(master.created_at)}</TableCell>
                         <TableCell className="text-right">
@@ -1432,6 +1443,7 @@ export default function AdminFinancialPayments() {
           amount={selectedCharge.amount}
           description={selectedCharge.description || `Pagamento de ${selectedCharge.client_name}`}
           onSuccess={() => {
+            fetchMasterRecords()
             if (selectedMasterId) fetchDetails(selectedMasterId)
             calculateGlobalSummary()
           }}
