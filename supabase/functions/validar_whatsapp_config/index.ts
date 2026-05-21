@@ -41,8 +41,16 @@ Deno.serve(async (req: Request) => {
       if (api_provider === 'twilio') {
         const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${account_sid}/Messages.json`
         const formData = new URLSearchParams()
-        formData.append('To', test_phone)
-        formData.append('From', phone_number || '')
+
+        const formatTwilioNumber = (num: string) => {
+          const cleanNum = num.replace(/[^\d+]/g, '')
+          if (!cleanNum) return num
+          const withPlus = cleanNum.startsWith('+') ? cleanNum : `+${cleanNum}`
+          return `whatsapp:${withPlus}`
+        }
+
+        formData.append('To', formatTwilioNumber(test_phone))
+        formData.append('From', formatTwilioNumber(phone_number || ''))
         formData.append('Body', 'TESTE de Conexão')
 
         const res = await fetch(twilioUrl, {
