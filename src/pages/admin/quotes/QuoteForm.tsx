@@ -1405,11 +1405,8 @@ export default function QuoteForm() {
           </Button>
         )}
 
-        {(originalStatus === 'rejeitado' || originalStatus === 'cliente solicita alterações') && (
-          <Button size="lg" onClick={() => handleSave('rascunho', true)} disabled={isSaving}>
-            Reabrir como Rascunho
-          </Button>
-        )}
+        {(originalStatus === 'rejeitado' || originalStatus === 'cliente solicita alterações') &&
+          null}
       </div>
 
       <Dialog open={newClientOpen} onOpenChange={setNewClientOpen}>
