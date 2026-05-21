@@ -1385,34 +1385,7 @@ export default function QuoteForm() {
         {(originalStatus === 'rascunho' || originalStatus === 'cliente solicita alterações') &&
           null}
 
-        {originalStatus === 'aguardando aprovação' && (
-          <>
-            <Button
-              variant="destructive"
-              size="lg"
-              onClick={() => handleSave('rejeitado', true)}
-              disabled={isSaving}
-            >
-              Rejeitar
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => handleSave('cliente solicita alterações', true)}
-              disabled={isSaving}
-            >
-              Solicitar Alteração
-            </Button>
-            <Button
-              size="lg"
-              className="bg-green-600 hover:bg-green-700"
-              onClick={() => handleSave('aprovado', true)}
-              disabled={isSaving}
-            >
-              Aprovar
-            </Button>
-          </>
-        )}
+        {originalStatus === 'aguardando aprovação' && null}
 
         {originalStatus === 'aprovado' && (
           <Button size="lg" onClick={() => handleSave('pré-fechada', true)} disabled={isSaving}>
@@ -1427,7 +1400,7 @@ export default function QuoteForm() {
             className="px-8"
             disabled={isSaving}
           >
-            {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            {null}
             Finalizar e Fechar OS
           </Button>
         )}
