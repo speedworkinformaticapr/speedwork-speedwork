@@ -628,6 +628,17 @@ export default function QuoteForm() {
       toast({ title: 'O total deve ser maior que zero para o financeiro', variant: 'destructive' })
       return
     }
+    if (
+      val === 'faturamento' &&
+      !['aprovado', 'convertido', 'fechado', 'pré-fechada'].includes(originalStatus)
+    ) {
+      toast({
+        title: 'Acesso restrito',
+        description: 'O fechamento só é permitido após aprovação do orçamento.',
+        variant: 'destructive',
+      })
+      return
+    }
     setActiveTab(val)
   }
 
@@ -669,7 +680,13 @@ export default function QuoteForm() {
           <TabsTrigger value="aprovacao" disabled={!hasItems}>
             4. Aprovação
           </TabsTrigger>
-          <TabsTrigger value="faturamento" disabled={total <= 0}>
+          <TabsTrigger
+            value="faturamento"
+            disabled={
+              total <= 0 ||
+              !['aprovado', 'convertido', 'fechado', 'pré-fechada'].includes(originalStatus)
+            }
+          >
             5. Fechamento
           </TabsTrigger>
         </TabsList>
@@ -1163,7 +1180,14 @@ export default function QuoteForm() {
                   Enviar Link ao Cliente
                 </Button>
               )}
-              <Button type="button" onClick={() => goNext('faturamento')} size="lg">
+              <Button
+                type="button"
+                onClick={() => goNext('faturamento')}
+                size="lg"
+                disabled={
+                  !['aprovado', 'convertido', 'fechado', 'pré-fechada'].includes(originalStatus)
+                }
+              >
                 Fechamento <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
               </Button>
             </div>
@@ -1359,13 +1383,14 @@ export default function QuoteForm() {
           </Button>
         )}
 
-        {originalStatus === 'rascunho' && (
-          <Button
-            size="lg"
-            onClick={() => handleSave('aguardando aprovação', true)}
-            disabled={isSaving}
-          >
-            Enviar p/ Aprovação
+        {(originalStatus === 'rascunho' || originalStatus === 'cliente solicita alterações') && (
+          <Button size="lg" onClick={handleSendApproval} disabled={isSaving}>
+            {isSaving ? (
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            ) : (
+              <MessageCircle className="w-5 h-5 mr-2" />
+            )}
+            Enviar Link ao Cliente
           </Button>
         )}
 
@@ -1396,16 +1421,6 @@ export default function QuoteForm() {
               Aprovar
             </Button>
           </>
-        )}
-
-        {originalStatus === 'cliente solicita alterações' && (
-          <Button
-            size="lg"
-            onClick={() => handleSave('aguardando aprovação', true)}
-            disabled={isSaving}
-          >
-            Reenviar p/ Aprovação
-          </Button>
         )}
 
         {originalStatus === 'aprovado' && (
