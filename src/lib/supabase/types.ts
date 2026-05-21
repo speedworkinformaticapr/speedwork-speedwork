@@ -4731,6 +4731,28 @@ export const Constants = {
 //     WITH CHECK: true
 
 // --- DATABASE FUNCTIONS ---
+// FUNCTION audit_orcamento_status_func()
+//   CREATE OR REPLACE FUNCTION public.audit_orcamento_status_func()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   BEGIN
+//     IF TG_OP = 'UPDATE' AND NEW.status IS DISTINCT FROM OLD.status THEN
+//       INSERT INTO public.audit_logs (table_name, record_id, action, old_data, new_data, changed_by)
+//       VALUES (
+//         'orcamentos_status',
+//         NEW.id,
+//         'status_change',
+//         jsonb_build_object('status', OLD.status),
+//         jsonb_build_object('status', NEW.status),
+//         auth.uid()
+//       );
+//     END IF;
+//     RETURN NEW;
+//   END;
+//   $function$
+//
 // FUNCTION audit_trigger_func()
 //   CREATE OR REPLACE FUNCTION public.audit_trigger_func()
 //    RETURNS trigger
@@ -5316,17 +5338,19 @@ export const Constants = {
 //    LANGUAGE plpgsql
 //   AS $function$
 //   BEGIN
-//     IF NEW.veiculo_placa IS NULL OR btrim(NEW.veiculo_placa) = '' THEN
-//       RAISE EXCEPTION 'A placa do veículo é obrigatória.';
-//     END IF;
-//     IF NEW.veiculo_km IS NULL OR btrim(NEW.veiculo_km) = '' THEN
-//       RAISE EXCEPTION 'A quilometragem do veículo é obrigatória.';
-//     END IF;
-//     IF NEW.veiculo_brand_id IS NULL THEN
-//       RAISE EXCEPTION 'A marca do veículo é obrigatória.';
-//     END IF;
-//     IF NEW.veiculo_model_id IS NULL THEN
-//       RAISE EXCEPTION 'O modelo do veículo é obrigatório.';
+//     IF NEW.status IS DISTINCT FROM 'rascunho' THEN
+//       IF NEW.veiculo_placa IS NULL OR btrim(NEW.veiculo_placa) = '' THEN
+//         RAISE EXCEPTION 'A placa do veículo é obrigatória.';
+//       END IF;
+//       IF NEW.veiculo_km IS NULL OR btrim(NEW.veiculo_km) = '' THEN
+//         RAISE EXCEPTION 'A quilometragem do veículo é obrigatória.';
+//       END IF;
+//       IF NEW.veiculo_brand_id IS NULL THEN
+//         RAISE EXCEPTION 'A marca do veículo é obrigatória.';
+//       END IF;
+//       IF NEW.veiculo_model_id IS NULL THEN
+//         RAISE EXCEPTION 'O modelo do veículo é obrigatório.';
+//       END IF;
 //     END IF;
 //     RETURN NEW;
 //   END;
@@ -5354,6 +5378,7 @@ export const Constants = {
 //   trg_calc_orcamento_itens_total: CREATE TRIGGER trg_calc_orcamento_itens_total BEFORE INSERT OR UPDATE ON public.orcamento_itens FOR EACH ROW EXECUTE FUNCTION calc_orcamento_itens_total()
 // Table: orcamentos
 //   audit_orcamentos: CREATE TRIGGER audit_orcamentos AFTER INSERT OR DELETE OR UPDATE ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION audit_trigger_func()
+//   trg_audit_orcamento_status: CREATE TRIGGER trg_audit_orcamento_status AFTER UPDATE OF status ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION audit_orcamento_status_func()
 //   trg_calc_orcamento_total: CREATE TRIGGER trg_calc_orcamento_total BEFORE INSERT OR UPDATE ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION calc_orcamento_total()
 //   trg_generate_numero_orcamento: CREATE TRIGGER trg_generate_numero_orcamento BEFORE INSERT ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION generate_numero_orcamento()
 //   trg_orcamento_financeiro: CREATE TRIGGER trg_orcamento_financeiro AFTER UPDATE ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION handle_orcamento_financeiro()

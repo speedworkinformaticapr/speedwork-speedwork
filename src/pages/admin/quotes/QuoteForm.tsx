@@ -23,7 +23,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { useSystemData } from '@/hooks/use-system-data'
-import { Trash, ArrowLeft, Plus, MessageCircle, Send, AlertTriangle } from 'lucide-react'
+import { Trash, ArrowLeft, Plus, MessageCircle, Send, AlertTriangle, Loader2 } from 'lucide-react'
 import { formatCurrencyInput, parseCurrencyInput } from '@/lib/utils'
 
 const toTime = (dec: number) => {
@@ -45,10 +45,12 @@ let cachedModels: Record<string, any[]> = {}
 
 export default function QuoteForm() {
   const { id } = useParams()
+  const [quoteId, setQuoteId] = useState<string | undefined>(id)
   const navigate = useNavigate()
   const { toast } = useToast()
   const { data: systemData } = useSystemData()
 
+  const [isSaving, setIsSaving] = useState(false)
   const [planoContas, setPlanoContas] = useState<any[]>([])
   const [data, setData] = useState({
     cliente_id: '',
@@ -130,7 +132,7 @@ export default function QuoteForm() {
       .from('services' as any)
       .select('id, title, sale_value, exec_time')
       .then((res) => setServices(res.data || []))
-    if (id) loadQuote()
+    if (id) loadQuote(id)
   }, [id])
 
   useEffect(() => {
@@ -193,11 +195,14 @@ export default function QuoteForm() {
     return null
   }
 
-  const loadQuote = async () => {
-    const { data: q } = await supabase.from('orcamentos').select('*').eq('id', id).single()
+  const loadQuote = async (targetId: string) => {
+    const { data: q } = await supabase.from('orcamentos').select('*').eq('id', targetId).single()
     if (q) {
       setData(q)
-      const { data: it } = await supabase.from('orcamento_itens').select('*').eq('orcamento_id', id)
+      const { data: it } = await supabase
+        .from('orcamento_itens')
+        .select('*')
+        .eq('orcamento_id', targetId)
       if (it) {
         setProductItems(it.filter((i) => i.tipo_item === 'produto').map((i) => ({ ...i })))
         setServiceItems(
@@ -214,7 +219,7 @@ export default function QuoteForm() {
       const { data: fin } = await supabase
         .from('financial_charges' as any)
         .select('*')
-        .eq('orcamento_id', id)
+        .eq('orcamento_id', targetId)
         .order('due_date', { ascending: true })
       if (fin) setInstallments(fin)
     }
@@ -341,34 +346,50 @@ export default function QuoteForm() {
   }
 
   const handleSave = async (statusToSave: string, preventNavigation = false) => {
+    if (isSaving) return null
+
     if (!data.cliente_id) {
-      toast({ title: 'O cliente é obrigatório', variant: 'destructive' })
+      toast({
+        title: 'Campos obrigatórios pendentes',
+        description: 'O cliente é obrigatório',
+        variant: 'destructive',
+      })
       setActiveTab('dados-cliente')
       return null
     }
     const vErr = validateVehicle()
     if (vErr) {
-      toast({ title: vErr, variant: 'destructive' })
+      toast({ title: 'Campos obrigatórios pendentes', description: vErr, variant: 'destructive' })
       setActiveTab('dados-cliente')
       return null
     }
     if (allItems.length === 0) {
-      toast({ title: 'Adicione pelo menos 1 item', variant: 'destructive' })
+      toast({
+        title: 'Campos obrigatórios pendentes',
+        description: 'Adicione pelo menos 1 item',
+        variant: 'destructive',
+      })
       setActiveTab('produtos')
       return null
     }
     if ((statusToSave === 'fechado' || statusToSave === 'pré-fechada') && !data.conta_id) {
-      toast({ title: 'Selecione uma conta (DRE) para fechamento', variant: 'destructive' })
+      toast({
+        title: 'Campos obrigatórios pendentes',
+        description: 'Selecione uma conta (DRE) para fechamento',
+        variant: 'destructive',
+      })
       setActiveTab('faturamento')
       return null
     }
+
+    setIsSaving(true)
 
     const payload: any = { ...data, subtotal, total, status: statusToSave }
     if (!payload.conta_id) payload.conta_id = null
     payload.data_validade = payload.data_validade || null
     payload.data_emissao = payload.data_emissao || null
 
-    if (!id && !payload.numero_orcamento) {
+    if (!quoteId && !payload.numero_orcamento) {
       payload.numero_orcamento = ''
     }
 
@@ -399,8 +420,8 @@ export default function QuoteForm() {
         }
       })
 
-      if (id) {
-        payload.id = id
+      if (quoteId) {
+        payload.id = quoteId
       }
 
       const { data: result, error } = await supabase.rpc('save_quote_transaction', {
@@ -414,12 +435,15 @@ export default function QuoteForm() {
       const orcId = result?.id
       const numOrc = result?.numero_orcamento
 
-      if (!id && orcId) {
+      if (!quoteId && orcId) {
+        setQuoteId(orcId)
         setData((prev) => ({ ...prev, numero_orcamento: numOrc, status: statusToSave }))
         window.history.replaceState(null, '', `/admin/quotes/${orcId}/edit`)
+      } else {
+        setData((prev) => ({ ...prev, status: statusToSave }))
       }
 
-      toast({ title: 'Ordem de Serviço salva com sucesso!' })
+      toast({ title: 'Orçamento salvo com sucesso!' })
 
       // reload charges to sync generated IDs
       if (orcId) {
@@ -436,8 +460,14 @@ export default function QuoteForm() {
       }
       return { id: orcId, numero_orcamento: numOrc }
     } catch (e: any) {
-      toast({ title: 'Erro ao salvar', description: e.message, variant: 'destructive' })
+      toast({
+        title: 'Erro ao salvar orçamento. Por favor, tente novamente.',
+        description: e.message,
+        variant: 'destructive',
+      })
       return null
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -497,6 +527,7 @@ export default function QuoteForm() {
 
     toast({ title: 'Enviando link para o cliente...' })
 
+    setIsSaving(true)
     try {
       if (client.phone) {
         await supabase.functions.invoke('enviar_whatsapp', {
@@ -523,6 +554,8 @@ export default function QuoteForm() {
     } catch (err) {
       console.error(err)
       toast({ title: 'Erro ao notificar', variant: 'destructive' })
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -561,15 +594,15 @@ export default function QuoteForm() {
             <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
           </Button>
           <h1 className="text-3xl font-bold tracking-tight">
-            {id ? `OS ${data.numero_orcamento}` : 'Nova Ordem de Serviço'}
+            {quoteId ? `OS ${data.numero_orcamento}` : 'Nova Ordem de Serviço'}
           </h1>
         </div>
         <div className="flex gap-2">
-          {id && (
+          {quoteId && (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => window.open(`/quote/approval/${id}`, '_blank')}
+              onClick={() => window.open(`/quote/approval/${quoteId}`, '_blank')}
             >
               <Send className="w-4 h-4 mr-2 text-blue-600" /> Portal do Cliente
             </Button>
@@ -652,7 +685,7 @@ export default function QuoteForm() {
                   <Label>Número da OS</Label>
                   <Input
                     disabled
-                    value={id ? data.numero_orcamento : 'Automático (AAAAMMDD-SEQ)'}
+                    value={quoteId ? data.numero_orcamento : 'Automático (AAAAMMDD-SEQ)'}
                     className="bg-muted text-muted-foreground font-medium"
                   />
                 </div>
@@ -1073,8 +1106,14 @@ export default function QuoteForm() {
                 size="lg"
                 className="w-full md:w-auto"
                 variant="secondary"
+                disabled={isSaving}
               >
-                <MessageCircle className="w-5 h-5 mr-2" /> Enviar Link
+                {isSaving ? (
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                ) : (
+                  <MessageCircle className="w-5 h-5 mr-2" />
+                )}
+                Enviar Link
               </Button>
               <Button type="button" onClick={() => goNext('faturamento')} size="lg">
                 Fechamento <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
@@ -1251,13 +1290,30 @@ export default function QuoteForm() {
       </Tabs>
 
       <div className="flex justify-end gap-3 mt-8 border-t pt-6">
-        <Button variant="outline" size="lg" onClick={() => navigate('/admin/quotes')}>
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={() => navigate('/admin/quotes')}
+          disabled={isSaving}
+        >
           Cancelar
         </Button>
-        <Button variant="secondary" size="lg" onClick={() => handleSave(data.status)}>
+        <Button
+          variant="secondary"
+          size="lg"
+          onClick={() => handleSave(data.status, true)}
+          disabled={isSaving}
+        >
+          {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
           Salvar OS Atual
         </Button>
-        <Button size="lg" onClick={() => handleSave('fechado')} className="px-8">
+        <Button
+          size="lg"
+          onClick={() => handleSave('fechado')}
+          className="px-8"
+          disabled={isSaving}
+        >
+          {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
           Finalizar e Fechar OS
         </Button>
       </div>
