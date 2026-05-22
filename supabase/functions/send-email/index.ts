@@ -29,9 +29,8 @@ Deno.serve(async (req: Request) => {
     const smtpKey = (integrations as any).smtp_key
     const emailTemplates = (integrations as any).email_templates || {}
 
-    const senderEmail = sysData.email || 'contato@footgolfpr.com.br'
-    const senderName =
-      sysData.razao_social || sysData.platform_name || 'Federação de Footgolf do Paraná'
+    const senderEmail = sysData.email || 'contato@speedwork.com.br'
+    const senderName = sysData.razao_social || sysData.platform_name || 'Speedwork'
 
     const address =
       [
@@ -118,7 +117,7 @@ Deno.serve(async (req: Request) => {
       const baseUrl = Deno.env.get('SUPABASE_URL')?.replace(/\/$/, '') || ''
       fullLogoUrl = `${baseUrl}${fullLogoUrl}`
     } else if (fullLogoUrl && fullLogoUrl.startsWith('/')) {
-      fullLogoUrl = `https://www.footgolfpr.com.br${fullLogoUrl}`
+      fullLogoUrl = `https://www.speedworkinformatica.com${fullLogoUrl}`
     }
     const logoUrl = fullLogoUrl
       ? `<img src="${fullLogoUrl}" alt="Logo" style="max-height: 80px; max-width: 250px; display: block; margin: 0 auto;" />`
@@ -188,7 +187,7 @@ Deno.serve(async (req: Request) => {
             Authorization: `Bearer ${resendKey}`,
           },
           body: JSON.stringify({
-            from: 'Footgolf PR <onboarding@resend.dev>',
+            from: 'Speedwork <onboarding@resend.dev>',
             to: [email],
             subject: subject,
             html: finalHtml,

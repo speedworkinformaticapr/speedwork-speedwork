@@ -204,7 +204,7 @@ export function Navbar() {
               </div>
               <div className="flex flex-col justify-center">
                 <span className="font-montserrat font-black text-xl md:text-2xl tracking-tight text-foreground leading-none uppercase">
-                  {systemData?.platform_name || 'FOOTGOLF PR'}
+                  {systemData?.platform_name || 'SPEEDWORK'}
                 </span>
                 {systemData?.razao_social && (
                   <span className="text-[9px] md:text-[10px] text-muted-foreground font-semibold tracking-widest mt-1 leading-none truncate max-w-[150px] md:max-w-[200px]">
@@ -437,7 +437,7 @@ export function Navbar() {
                         </div>
                         <div className="flex flex-col justify-center">
                           <span className="font-montserrat font-black text-lg tracking-tight text-foreground leading-none uppercase">
-                            {systemData?.platform_name || 'FOOTGOLF PR'}
+                            {systemData?.platform_name || 'SPEEDWORK'}
                           </span>
                           {systemData?.razao_social && (
                             <span className="text-[9px] text-muted-foreground font-semibold tracking-widest mt-1 leading-none truncate max-w-[140px]">

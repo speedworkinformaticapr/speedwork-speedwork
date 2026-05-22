@@ -73,7 +73,7 @@ export default function Header() {
             />
           ) : (
             <span className="text-xl font-bold text-primary uppercase">
-              {systemData?.platform_name || 'FOOTGOLF PR'}
+              {systemData?.platform_name || 'SPEEDWORK'}
             </span>
           )}
         </Link>

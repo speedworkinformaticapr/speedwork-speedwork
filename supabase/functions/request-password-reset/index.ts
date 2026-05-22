@@ -26,7 +26,7 @@ Deno.serve(async (req: Request) => {
       type: 'recovery',
       email: email,
       options: {
-        redirectTo: redirectTo || 'https://www.footgolfpr.com.br/reset-password',
+        redirectTo: redirectTo || 'https://www.speedworkinformatica.com/reset-password',
       },
     })
 

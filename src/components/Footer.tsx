@@ -47,8 +47,8 @@ export function Footer() {
     }
 
     const userName = user?.user_metadata?.name || user?.email || 'Usuário'
-    const companyName = systemData?.platform_name || systemData?.razao_social || 'FootgolfPR'
-    const companyEmail = systemData?.email || 'contato@footgolfpr.com.br'
+    const companyName = systemData?.platform_name || systemData?.razao_social || 'Speedwork'
+    const companyEmail = systemData?.email || 'contato@speedwork.com.br'
     const companyCnpj = systemData?.cnpj || '00.000.000/0000-00'
     const currentDate = new Date().toLocaleDateString('pt-BR')
 
@@ -125,11 +125,7 @@ export function Footer() {
                 )}
               </div>
               <span className="font-montserrat font-black text-xl md:text-2xl tracking-tighter text-foreground uppercase line-clamp-2">
-                {systemData?.platform_name || systemData?.razao_social || (
-                  <>
-                    FOOTGOLF<span className="text-primary">PR</span>
-                  </>
-                )}
+                {systemData?.platform_name || systemData?.razao_social || <>SPEEDWORK</>}
               </span>
             </Link>
 
@@ -278,7 +274,7 @@ export function Footer() {
           <div className="flex-1 flex items-center whitespace-nowrap">
             <span>
               © {new Date().getFullYear()}{' '}
-              {systemData?.platform_name || systemData?.razao_social || 'FootgolfPR'}. Todos os
+              {systemData?.platform_name || systemData?.razao_social || 'Speedwork'}. Todos os
               direitos reservados. {systemData?.cnpj && `CNPJ: ${systemData.cnpj}`}
             </span>
           </div>

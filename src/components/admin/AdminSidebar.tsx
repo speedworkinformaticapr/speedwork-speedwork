@@ -256,7 +256,7 @@ export function AdminSidebar() {
             <ShieldCheck className="h-5 w-5" aria-hidden="true" />
           </div>
           <span className="truncate font-bold text-lg group-data-[collapsible=icon]:hidden text-primary">
-            Admin Footgolf
+            Admin Speedwork
           </span>
         </div>
       </SidebarHeader>

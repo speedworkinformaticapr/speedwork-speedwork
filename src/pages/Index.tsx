@@ -9,9 +9,9 @@ export default function Index() {
   const [loading, setLoading] = useState(true)
 
   useSeo({
-    title: 'Footgolf PR - Página Inicial',
-    description: 'Acompanhe campeonatos, rankings e notícias do esporte que mais cresce no Paraná.',
-    keywords: 'footgolf, esporte, paraná, torneio, campeonato, ranking',
+    title: 'Speedwork - Página Inicial',
+    description: 'Sua plataforma inteligente de gestão.',
+    keywords: 'gestão, plataforma, speedwork',
   })
 
   useEffect(() => {
@@ -92,7 +92,7 @@ export default function Index() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background text-center p-4">
         <h1 className="text-4xl font-extrabold text-primary mb-4 animate-fade-in-up">
-          Bem-vindo ao Footgolf PR
+          Bem-vindo à Speedwork
         </h1>
         <p
           className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto animate-fade-in-up"
