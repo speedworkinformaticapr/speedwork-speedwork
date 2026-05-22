@@ -120,15 +120,43 @@ export default function QuoteForm() {
   const [condHoje, setCondHoje] = useState(false)
 
   const [newClientOpen, setNewClientOpen] = useState(false)
-  const [newClientName, setNewClientName] = useState('')
-  const [newClientPhone, setNewClientPhone] = useState('')
-  const [newClientEmail, setNewClientEmail] = useState('')
+  const [newClient, setNewClient] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    cpf_cnpj: '',
+    rg: '',
+    autoriza_whatsapp: false,
+    birth_date: '',
+    gender: '',
+    address: '',
+    nationality: '',
+    naturalness: '',
+    observacoes: '',
+  })
 
   const [newProductOpen, setNewProductOpen] = useState(false)
-  const [newProduct, setNewProduct] = useState({ name: '', price: 0 })
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    sku: '',
+    category: '',
+    subcategory: '',
+    price: 0,
+    stock: 0,
+    dimensions: '',
+    description: '',
+  })
 
   const [newServiceOpen, setNewServiceOpen] = useState(false)
-  const [newService, setNewService] = useState({ title: '', sale_value: 0 })
+  const [newService, setNewService] = useState({
+    title: '',
+    description: '',
+    cost_value: 0,
+    sale_value: 0,
+    exec_time: '00:00:00',
+    margin_time: 0,
+    add_time: '00:00:00',
+  })
 
   const [activeTab, setActiveTab] = useState('dados-cliente')
 
@@ -545,46 +573,101 @@ export default function QuoteForm() {
   }
 
   const handleQuickAddClient = async () => {
-    if (!newClientName) return
+    if (!newClient.name) return
+    const payload = {
+      ...newClient,
+      is_client: true,
+      birth_date: newClient.birth_date || null,
+    }
     const { data: res, error } = await supabase
       .from('profiles')
-      .insert([
-        { name: newClientName, email: newClientEmail, phone: newClientPhone, is_client: true },
-      ])
-      .select()
+      .insert([payload])
+      .select('id, name, email, phone, cpf_cnpj, address')
       .single()
     if (res && !error) {
       setClients([...clients, res])
       setData({ ...data, cliente_id: res.id })
       setNewClientOpen(false)
-      setNewClientName('')
+      setNewClient({
+        name: '',
+        email: '',
+        phone: '',
+        cpf_cnpj: '',
+        rg: '',
+        autoriza_whatsapp: false,
+        birth_date: '',
+        gender: '',
+        address: '',
+        nationality: '',
+        naturalness: '',
+        observacoes: '',
+      })
       toast({ title: 'Cliente adicionado' })
+    } else if (error) {
+      toast({
+        title: 'Erro ao adicionar cliente',
+        description: error.message,
+        variant: 'destructive',
+      })
     }
   }
 
   const handleQuickAddProduct = async () => {
     if (!newProduct.name) return
-    const { data: res } = await supabase.from('products').insert([newProduct]).select().single()
-    if (res) {
+    const { data: res, error } = await supabase
+      .from('products')
+      .insert([newProduct])
+      .select()
+      .single()
+    if (res && !error) {
       setProducts([...products, res])
       setNewProductOpen(false)
-      setNewProduct({ name: '', price: 0 })
+      setNewProduct({
+        name: '',
+        sku: '',
+        category: '',
+        subcategory: '',
+        price: 0,
+        stock: 0,
+        dimensions: '',
+        description: '',
+      })
       toast({ title: 'Produto adicionado' })
+    } else if (error) {
+      toast({
+        title: 'Erro ao adicionar produto',
+        description: error.message,
+        variant: 'destructive',
+      })
     }
   }
 
   const handleQuickAddService = async () => {
     if (!newService.title) return
-    const { data: res } = await supabase
+    const { data: res, error } = await supabase
       .from('services' as any)
       .insert([newService])
       .select()
       .single()
-    if (res) {
+    if (res && !error) {
       setServices([...services, res])
       setNewServiceOpen(false)
-      setNewService({ title: '', sale_value: 0 })
+      setNewService({
+        title: '',
+        description: '',
+        cost_value: 0,
+        sale_value: 0,
+        exec_time: '00:00:00',
+        margin_time: 0,
+        add_time: '00:00:00',
+      })
       toast({ title: 'Serviço adicionado' })
+    } else if (error) {
+      toast({
+        title: 'Erro ao adicionar serviço',
+        description: error.message,
+        variant: 'destructive',
+      })
     }
   }
 
@@ -1438,24 +1521,105 @@ export default function QuoteForm() {
       </div>
 
       <Dialog open={newClientOpen} onOpenChange={setNewClientOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Cadastrar Novo Cliente</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label>Nome Completo / Razão Social</Label>
-              <Input value={newClientName} onChange={(e) => setNewClientName(e.target.value)} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+            <div className="space-y-2 md:col-span-2">
+              <Label>Nome Completo / Razão Social *</Label>
+              <Input
+                value={newClient.name}
+                onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
+              />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Telefone / WhatsApp</Label>
-                <Input value={newClientPhone} onChange={(e) => setNewClientPhone(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <Input value={newClientEmail} onChange={(e) => setNewClientEmail(e.target.value)} />
-              </div>
+            <div className="space-y-2">
+              <Label>CPF / CNPJ</Label>
+              <Input
+                value={newClient.cpf_cnpj}
+                onChange={(e) => setNewClient({ ...newClient, cpf_cnpj: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>RG / Inscrição Estadual</Label>
+              <Input
+                value={newClient.rg}
+                onChange={(e) => setNewClient({ ...newClient, rg: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input
+                value={newClient.email}
+                onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Telefone / WhatsApp</Label>
+              <Input
+                value={newClient.phone}
+                onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Data de Nascimento</Label>
+              <Input
+                type="date"
+                value={newClient.birth_date}
+                onChange={(e) => setNewClient({ ...newClient, birth_date: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Gênero</Label>
+              <Select
+                value={newClient.gender}
+                onValueChange={(v) => setNewClient({ ...newClient, gender: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="masculino">Masculino</SelectItem>
+                  <SelectItem value="feminino">Feminino</SelectItem>
+                  <SelectItem value="outro">Outro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Endereço Completo</Label>
+              <Input
+                value={newClient.address}
+                onChange={(e) => setNewClient({ ...newClient, address: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Nacionalidade</Label>
+              <Input
+                value={newClient.nationality}
+                onChange={(e) => setNewClient({ ...newClient, nationality: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Naturalidade</Label>
+              <Input
+                value={newClient.naturalness}
+                onChange={(e) => setNewClient({ ...newClient, naturalness: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Observações</Label>
+              <Textarea
+                value={newClient.observacoes}
+                onChange={(e) => setNewClient({ ...newClient, observacoes: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2 flex items-center gap-2">
+              <Checkbox
+                id="auth_zap"
+                checked={newClient.autoriza_whatsapp}
+                onCheckedChange={(c) => setNewClient({ ...newClient, autoriza_whatsapp: !!c })}
+              />
+              <Label htmlFor="auth_zap">Autoriza contato via WhatsApp</Label>
             </div>
           </div>
           <DialogFooter className="mt-6">
@@ -1468,25 +1632,79 @@ export default function QuoteForm() {
       </Dialog>
 
       <Dialog open={newProductOpen} onOpenChange={setNewProductOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Nova Peça ou Material</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label>Nome ou Descrição da Peça</Label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+            <div className="space-y-2 md:col-span-2">
+              <Label>Nome ou Descrição da Peça *</Label>
               <Input
                 value={newProduct.name}
                 onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <Label>Preço de Venda Padrão</Label>
+              <Label>SKU / Código</Label>
+              <Input
+                value={newProduct.sku}
+                onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Preço de Venda Padrão *</Label>
               <Input
                 type="number"
                 className={numClass}
                 value={newProduct.price || ''}
                 onChange={(e) => setNewProduct({ ...newProduct, price: Number(e.target.value) })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Categoria</Label>
+              <Select
+                value={newProduct.category}
+                onValueChange={(v) => setNewProduct({ ...newProduct, category: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="equipamentos">Equipamentos</SelectItem>
+                  <SelectItem value="vestuario">Vestuário</SelectItem>
+                  <SelectItem value="pecas">Peças</SelectItem>
+                  <SelectItem value="outros">Outros</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Subcategoria</Label>
+              <Input
+                value={newProduct.subcategory}
+                onChange={(e) => setNewProduct({ ...newProduct, subcategory: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Estoque Inicial</Label>
+              <Input
+                type="number"
+                className={numClass}
+                value={newProduct.stock || ''}
+                onChange={(e) => setNewProduct({ ...newProduct, stock: Number(e.target.value) })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Dimensões</Label>
+              <Input
+                value={newProduct.dimensions}
+                onChange={(e) => setNewProduct({ ...newProduct, dimensions: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Descrição Técnica</Label>
+              <Textarea
+                value={newProduct.description}
+                onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
               />
             </div>
           </div>
@@ -1500,20 +1718,38 @@ export default function QuoteForm() {
       </Dialog>
 
       <Dialog open={newServiceOpen} onOpenChange={setNewServiceOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Novo Tipo de Serviço</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label>Título / Descrição do Serviço</Label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+            <div className="space-y-2 md:col-span-2">
+              <Label>Título / Nome do Serviço *</Label>
               <Input
                 value={newService.title}
                 onChange={(e) => setNewService({ ...newService, title: e.target.value })}
               />
             </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Descrição Detalhada</Label>
+              <Textarea
+                value={newService.description}
+                onChange={(e) => setNewService({ ...newService, description: e.target.value })}
+              />
+            </div>
             <div className="space-y-2">
-              <Label>Valor Sugerido (Un/Hora)</Label>
+              <Label>Custo Sugerido (R$)</Label>
+              <Input
+                type="number"
+                className={numClass}
+                value={newService.cost_value || ''}
+                onChange={(e) =>
+                  setNewService({ ...newService, cost_value: Number(e.target.value) })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Valor Sugerido de Venda (R$)</Label>
               <Input
                 type="number"
                 className={numClass}
@@ -1522,6 +1758,63 @@ export default function QuoteForm() {
                   setNewService({ ...newService, sale_value: Number(e.target.value) })
                 }
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Tempo Execução (hh:mm:ss)</Label>
+              <Input
+                placeholder="00:00:00"
+                value={newService.exec_time}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '')
+                  let masked = val
+                  if (val.length > 6) masked = val.substring(0, 6)
+                  if (masked.length > 4)
+                    masked = masked.replace(/(\d{2})(\d{2})(\d{1,2})/, '$1:$2:$3')
+                  else if (masked.length > 2) masked = masked.replace(/(\d{2})(\d{1,2})/, '$1:$2')
+
+                  const calcAdd = () => {
+                    const margin = newService.margin_time || 0
+                    const [h, m, s] = masked.split(':').map((n) => parseInt(n || '0', 10))
+                    if (isNaN(h) || isNaN(m) || isNaN(s)) return '00:00:00'
+                    const added = Math.round((h * 3600 + m * 60 + s) * (margin / 100))
+                    return `${Math.floor(added / 3600)
+                      .toString()
+                      .padStart(2, '0')}:${Math.floor((added % 3600) / 60)
+                      .toString()
+                      .padStart(2, '0')}:${(added % 60).toString().padStart(2, '0')}`
+                  }
+
+                  setNewService({ ...newService, exec_time: masked, add_time: calcAdd() })
+                }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Margem de Tempo (%)</Label>
+              <Input
+                type="number"
+                className={numClass}
+                value={newService.margin_time || ''}
+                onChange={(e) => {
+                  const margin = Number(e.target.value)
+                  const calcAdd = () => {
+                    const [h, m, s] = newService.exec_time
+                      .split(':')
+                      .map((n) => parseInt(n || '0', 10))
+                    if (isNaN(h) || isNaN(m) || isNaN(s)) return '00:00:00'
+                    const added = Math.round((h * 3600 + m * 60 + s) * (margin / 100))
+                    return `${Math.floor(added / 3600)
+                      .toString()
+                      .padStart(2, '0')}:${Math.floor((added % 3600) / 60)
+                      .toString()
+                      .padStart(2, '0')}:${(added % 60).toString().padStart(2, '0')}`
+                  }
+                  setNewService({ ...newService, margin_time: margin, add_time: calcAdd() })
+                }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Tempo Adicional Calculado</Label>
+              <Input value={newService.add_time} readOnly className="bg-muted" />
             </div>
           </div>
           <DialogFooter className="mt-6">
