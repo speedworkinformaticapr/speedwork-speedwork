@@ -57,7 +57,6 @@ export default function AdminPedidoForm() {
 
   // Quick Add States
   const [newClientOpen, setNewClientOpen] = useState(false)
-  const [newClientOpen, setNewClientOpen] = useState(false)
   const [newClient, setNewClient] = useState({
     name: '',
     email: '',
