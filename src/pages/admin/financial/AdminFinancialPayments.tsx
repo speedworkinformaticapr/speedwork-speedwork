@@ -101,6 +101,7 @@ type Charge = {
   profile_id?: string | null
   parcela_numero?: number | null
   parcela_total?: number | null
+  realized_amount?: number | null
 }
 
 export default function AdminFinancialPayments() {
@@ -146,6 +147,7 @@ export default function AdminFinancialPayments() {
     client_name: '',
     document: '',
     amount: '',
+    realized_amount: '',
     due_date: '',
     payment_date: '',
     status: 'pendente',
@@ -334,6 +336,10 @@ export default function AdminFinancialPayments() {
         client_name: charge.client_name || '',
         document: charge.document || '',
         amount: charge.amount.toString(),
+        realized_amount:
+          charge.realized_amount !== null && charge.realized_amount !== undefined
+            ? charge.realized_amount.toString()
+            : charge.amount.toString(),
         due_date: charge.due_date,
         payment_date: charge.payment_date || '',
         status: charge.status,
@@ -351,6 +357,7 @@ export default function AdminFinancialPayments() {
         client_name: '',
         document: '',
         amount: '',
+        realized_amount: '',
         due_date: '',
         payment_date: '',
         status: 'pendente',
@@ -398,6 +405,7 @@ export default function AdminFinancialPayments() {
         id: `temp_${i}`,
         description: `${formData.description} - Parcela ${i + 1}/${qtd}`,
         amount: valorParcela.toFixed(2),
+        realized_amount: i === 0 && condicoes.primeiraHoje ? valorParcela.toFixed(2) : '0',
         due_date: dataVenc.toISOString().split('T')[0],
         status: i === 0 && condicoes.primeiraHoje ? 'pago' : 'pendente',
         payment_date: i === 0 && condicoes.primeiraHoje ? hoje.toISOString().split('T')[0] : '',
@@ -454,8 +462,15 @@ export default function AdminFinancialPayments() {
           description: formData.description,
           amount: parseFloat(formData.amount),
           due_date: formData.due_date,
-          payment_date: formData.payment_date || null,
+          payment_date:
+            formData.status === 'pago' || formData.status === 'recebido'
+              ? formData.payment_date || new Date().toISOString().split('T')[0]
+              : null,
           status: formData.status,
+          realized_amount:
+            formData.status === 'pago' || formData.status === 'recebido'
+              ? parseFloat(formData.realized_amount || formData.amount)
+              : 0,
         }
         await supabase
           .from('financial_charges' as any)
@@ -490,6 +505,8 @@ export default function AdminFinancialPayments() {
                 master_record_id: master.id,
                 description: p.description,
                 amount: parseFloat(p.amount),
+                realized_amount:
+                  p.status === 'pago' ? parseFloat(p.realized_amount || p.amount) : 0,
                 due_date: p.due_date,
                 status: p.status,
                 payment_date: p.payment_date || null,
@@ -500,9 +517,16 @@ export default function AdminFinancialPayments() {
                   master_record_id: master.id,
                   description: formData.description,
                   amount: parseFloat(formData.amount),
+                  realized_amount:
+                    formData.status === 'pago' || formData.status === 'recebido'
+                      ? parseFloat(formData.realized_amount || formData.amount)
+                      : 0,
                   due_date: formData.due_date,
                   status: formData.status,
-                  payment_date: formData.payment_date || null,
+                  payment_date:
+                    formData.status === 'pago' || formData.status === 'recebido'
+                      ? formData.payment_date || new Date().toISOString().split('T')[0]
+                      : null,
                 },
               ]
 
@@ -891,7 +915,14 @@ export default function AdminFinancialPayments() {
                         </TableCell>
                         <TableCell className="text-sm">{formatDate(charge.due_date)}</TableCell>
                         <TableCell className="text-sm font-medium">
-                          {formatCurrency(charge.amount)}
+                          <div className="flex flex-col">
+                            <span>{formatCurrency(charge.amount)}</span>
+                            {(charge.status === 'pago' || charge.status === 'recebido') && (
+                              <span className="text-[10px] text-muted-foreground font-normal">
+                                Ef: {formatCurrency(charge.realized_amount || charge.amount)}
+                              </span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>{getStatusBadge(charge.status, charge.due_date)}</TableCell>
                         <TableCell className="text-right">
@@ -1132,46 +1163,90 @@ export default function AdminFinancialPayments() {
                 </div>
 
                 {editingChargeId && (
-                  <div className="grid grid-cols-3 gap-4 bg-muted/20 p-4 rounded-md border mt-4">
-                    <div className="space-y-2">
-                      <Label>Valor</Label>
-                      <Input
-                        required
-                        value={formatCurrencyInput(formData.amount)}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            amount: parseCurrencyInput(e.target.value).toString(),
-                          })
-                        }
-                      />
+                  <>
+                    <div className="grid grid-cols-3 gap-4 bg-muted/20 p-4 rounded-md border mt-4">
+                      <div className="space-y-2">
+                        <Label>Valor Previsto</Label>
+                        <Input
+                          required
+                          value={formatCurrencyInput(formData.amount)}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              amount: parseCurrencyInput(e.target.value).toString(),
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Vencimento</Label>
+                        <Input
+                          type="date"
+                          required
+                          value={formData.due_date}
+                          onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Status</Label>
+                        <Select
+                          value={formData.status}
+                          onValueChange={(v) => {
+                            setFormData({
+                              ...formData,
+                              status: v,
+                              payment_date:
+                                (v === 'pago' || v === 'recebido') && !formData.payment_date
+                                  ? new Date().toISOString().split('T')[0]
+                                  : formData.payment_date,
+                              realized_amount:
+                                (v === 'pago' || v === 'recebido') && !formData.realized_amount
+                                  ? formData.amount
+                                  : formData.realized_amount,
+                            })
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pendente">Pendente</SelectItem>
+                            <SelectItem value="pago">Pago</SelectItem>
+                            <SelectItem value="recebido">Recebido</SelectItem>
+                            <SelectItem value="atrasado">Atrasado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Vencimento</Label>
-                      <Input
-                        type="date"
-                        required
-                        value={formData.due_date}
-                        onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Status</Label>
-                      <Select
-                        value={formData.status}
-                        onValueChange={(v) => setFormData({ ...formData, status: v })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pendente">Pendente</SelectItem>
-                          <SelectItem value="pago">Pago</SelectItem>
-                          <SelectItem value="atrasado">Atrasado</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                    {(formData.status === 'pago' || formData.status === 'recebido') && (
+                      <div className="grid grid-cols-2 gap-4 bg-muted/20 p-4 rounded-md border mt-2">
+                        <div className="space-y-2">
+                          <Label>Valor Efetivado</Label>
+                          <Input
+                            required
+                            value={formatCurrencyInput(formData.realized_amount)}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                realized_amount: parseCurrencyInput(e.target.value).toString(),
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Data do Pagamento</Label>
+                          <Input
+                            type="date"
+                            required
+                            value={formData.payment_date || new Date().toISOString().split('T')[0]}
+                            onChange={(e) =>
+                              setFormData({ ...formData, payment_date: e.target.value })
+                            }
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {!editingChargeId && (

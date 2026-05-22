@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase/client'
 import { Loader2, Copy, CreditCard, QrCode, CheckCircle2 } from 'lucide-react'
+import { cn, formatCurrencyInput, parseCurrencyInput } from '@/lib/utils'
 
 interface PaymentModalProps {
   open: boolean
@@ -43,6 +44,8 @@ export function PaymentModal({
   const [cardNumber, setCardNumber] = useState('')
   const [cardExpiry, setCardExpiry] = useState('')
   const [cardCvc, setCardCvc] = useState('')
+  const [manualAmount, setManualAmount] = useState('')
+  const [manualDate, setManualDate] = useState('')
 
   useEffect(() => {
     if (!currentIntentId) return
@@ -180,8 +183,10 @@ export function PaymentModal({
         .then(({ data }) => {
           if (data) setStripeConfig(data)
         })
+      setManualAmount(amount.toString())
+      setManualDate(new Date().toISOString().split('T')[0])
     }
-  }, [open])
+  }, [open, amount])
 
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
@@ -221,12 +226,15 @@ export function PaymentModal({
           </div>
         ) : (
           <Tabs defaultValue="card" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="card">
                 <CreditCard className="w-4 h-4 mr-2" /> Cartão
               </TabsTrigger>
               <TabsTrigger value="pix">
                 <QrCode className="w-4 h-4 mr-2" /> Pix
+              </TabsTrigger>
+              <TabsTrigger value="manual">
+                <CheckCircle2 className="w-4 h-4 mr-2" /> Manual
               </TabsTrigger>
             </TabsList>
 
@@ -324,6 +332,65 @@ export function PaymentModal({
                   </Button>
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="manual" className="mt-4">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Valor Efetivado</Label>
+                  <Input
+                    value={formatCurrencyInput(manualAmount)}
+                    onChange={(e) => setManualAmount(parseCurrencyInput(e.target.value).toString())}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Data do Pagamento</Label>
+                  <Input
+                    type="date"
+                    value={manualDate}
+                    onChange={(e) => setManualDate(e.target.value)}
+                  />
+                </div>
+                <div className="pt-2">
+                  <Button
+                    className="w-full"
+                    onClick={async () => {
+                      setIsProcessing(true)
+                      try {
+                        const parsed = parseFloat(manualAmount) || amount
+                        await supabase
+                          .from('financial_charges' as any)
+                          .update({
+                            status: 'pago',
+                            payment_date: manualDate,
+                            realized_amount: parsed,
+                          })
+                          .eq('id', chargeId)
+
+                        setIsSuccess(true)
+                        toast({ title: 'Pagamento confirmado manualmente!' })
+                        setTimeout(() => {
+                          onSuccess()
+                          onOpenChange(false)
+                          setIsSuccess(false)
+                        }, 2000)
+                      } catch (err: any) {
+                        toast({
+                          title: 'Erro ao processar',
+                          description: err.message,
+                          variant: 'destructive',
+                        })
+                      } finally {
+                        setIsProcessing(false)
+                      }
+                    }}
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    Confirmar Recebimento Manual
+                  </Button>
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         )}
