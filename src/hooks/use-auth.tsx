@@ -5,10 +5,6 @@ import { supabase } from '@/lib/supabase/client'
 interface AuthContextType {
   user: User | null
   session: Session | null
-  profile: any | null
-  roles: string[]
-  activeRole: string | null
-  setActiveRole: (role: string) => void
   signUp: (email: string, password: string) => Promise<{ error: any }>
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signOut: () => Promise<{ error: any }>
@@ -26,75 +22,21 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
-  const [profile, setProfile] = useState<any | null>(null)
-  const [roles, setRoles] = useState<string[]>([])
-  const [activeRole, setActiveRole] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchProfileAndRoles = async (currentUser: User) => {
-      try {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', currentUser.id)
-          .single()
-
-        setProfile(profileData)
-
-        // Tenta buscar da tabela user_roles, ignora falha caso ela não exista
-        const { data: rolesData, error: rolesError } = await supabase
-          .from('user_roles' as any)
-          .select('role')
-          .eq('user_id', currentUser.id)
-
-        if (rolesError) {
-          console.warn(
-            'Tabela user_roles não encontrada ou erro na consulta. Ignorando e utilizando o role do profile.',
-          )
-        }
-
-        const userRoles = rolesData?.map((r: any) => r.role) || []
-
-        if (profileData?.role && !userRoles.includes(profileData.role)) {
-          userRoles.push(profileData.role)
-        }
-
-        setRoles(userRoles)
-        setActiveRole((prev) => {
-          if (!prev && userRoles.length > 0) return userRoles[0]
-          return prev
-        })
-      } catch (err) {
-        console.error('Error fetching profile/roles:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
-      if (!session?.user) {
-        setProfile(null)
-        setRoles([])
-        setActiveRole(null)
-        setLoading(false)
-      }
+      setLoading(false)
     })
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
-      if (session?.user) {
-        fetchProfileAndRoles(session.user)
-      } else {
-        setLoading(false)
-      }
+      setLoading(false)
     })
-
     return () => subscription.unsubscribe()
   }, [])
 
@@ -116,20 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        session,
-        profile,
-        roles,
-        activeRole,
-        setActiveRole,
-        signUp,
-        signIn,
-        signOut,
-        loading,
-      }}
-    >
+    <AuthContext.Provider value={{ user, session, signUp, signIn, signOut, loading }}>
       {children}
     </AuthContext.Provider>
   )

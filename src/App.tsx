@@ -149,61 +149,17 @@ const App = () => (
               <AccessibilityWidget />
               <Analytics />
               <Routes>
-                <Route
-                  element={
-                    <MaintenanceGuard>
-                      <Layout />
-                    </MaintenanceGuard>
-                  }
-                >
-                  <Route path="/" element={<Index />} />
-                  <Route path="/blog/:id" element={<BlogPost />} />
-
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/athlete/:id" element={<AthleteProfile />} />
-                  <Route path="/cart" element={<Cart />} />
-                  <Route path="/checkout" element={<Checkout />} />
-                  <Route path="/orders" element={<Orders />} />
-                  <Route
-                    path="/club/dashboard"
-                    element={
-                      <RoleGuard allowedRoles={['club', 'admin', 'master']}>
-                        <ClubDashboard />
-                      </RoleGuard>
-                    }
-                  />
-
-                  <Route
-                    path="/staff/dashboard"
-                    element={
-                      <RoleGuard allowedRoles={['staff', 'admin', 'master']}>
-                        <StaffDashboard />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/client/quotes"
-                    element={
-                      <RoleGuard allowedRoles={['client', 'admin', 'master']}>
-                        <ClientQuotes />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route
-                    path="/client/dashboard"
-                    element={
-                      <RoleGuard allowedRoles={['client', 'admin', 'master']}>
-                        <ClientDashboard />
-                      </RoleGuard>
-                    }
-                  />
-                  <Route path="/scheduling" element={<Scheduling />} />
-
-                  <Route path="/quote/approval/:id" element={<QuoteApprovalPortal />} />
-
-                  <Route path="/:slug" element={<PublicPage />} />
+                {/* Auth Routes - Evaluated first to ensure static paths take precedence */}
+                <Route element={<AuthLayout />}>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/register-club" element={<RegisterClub />} />
+                  <Route path="/email-confirmation" element={<EmailConfirmation />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                 </Route>
 
+                {/* Admin Routes - Evaluated second to guarantee static paths precedence */}
                 <Route
                   element={
                     <RoleGuard allowedRoles={['admin', 'master']}>
@@ -302,13 +258,63 @@ const App = () => (
                   <Route path="/admin/ecommerce/logistics" element={<AdminLogistics />} />
                 </Route>
 
-                <Route element={<AuthLayout />}>
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/email-confirmation" element={<EmailConfirmation />} />
-                  <Route path="/forgot-password" element={<ForgotPassword />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
+                {/* Public and Dynamic Routes - Placed last so the catch-all dynamic route does not intercept static ones */}
+                <Route
+                  element={
+                    <MaintenanceGuard>
+                      <Layout />
+                    </MaintenanceGuard>
+                  }
+                >
+                  <Route path="/" element={<Index />} />
+                  <Route path="/blog/:id" element={<BlogPost />} />
+
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/athlete/:id" element={<AthleteProfile />} />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/orders" element={<Orders />} />
+                  <Route
+                    path="/club/dashboard"
+                    element={
+                      <RoleGuard allowedRoles={['club', 'admin', 'master']}>
+                        <ClubDashboard />
+                      </RoleGuard>
+                    }
+                  />
+
+                  <Route
+                    path="/staff/dashboard"
+                    element={
+                      <RoleGuard allowedRoles={['staff', 'admin', 'master']}>
+                        <StaffDashboard />
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/client/quotes"
+                    element={
+                      <RoleGuard allowedRoles={['client', 'admin', 'master']}>
+                        <ClientQuotes />
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/client/dashboard"
+                    element={
+                      <RoleGuard allowedRoles={['client', 'admin', 'master']}>
+                        <ClientDashboard />
+                      </RoleGuard>
+                    }
+                  />
+                  <Route path="/scheduling" element={<Scheduling />} />
+
+                  <Route path="/quote/approval/:id" element={<QuoteApprovalPortal />} />
+
+                  {/* Catch-all dynamic routing evaluated only if everything above fails */}
+                  <Route path="/:slug" element={<PublicPage />} />
                 </Route>
+
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <FloatingWidgets />
