@@ -24,7 +24,7 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
   const hasAccess = activeRole && allowedRoles.includes(activeRole)
 
   if (!hasAccess) {
-    const availableAllowedRoles = roles.filter((r) => allowedRoles.includes(r))
+    const availableAllowedRoles = (roles || []).filter((r) => allowedRoles.includes(r))
 
     const getRoleName = (role: string) => {
       const names: Record<string, string> = {
