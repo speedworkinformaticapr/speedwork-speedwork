@@ -1,17 +1,11 @@
 // AVOID UPDATING THIS FILE DIRECTLY. It is automatically generated.
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: '14.5'
   }
   public: {
     Tables: {
@@ -132,18 +126,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "athlete_attribute_values_athlete_id_fkey"
-            columns: ["athlete_id"]
+            foreignKeyName: 'athlete_attribute_values_athlete_id_fkey'
+            columns: ['athlete_id']
             isOneToOne: false
-            referencedRelation: "athletes"
-            referencedColumns: ["id"]
+            referencedRelation: 'athletes'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "athlete_attribute_values_attribute_id_fkey"
-            columns: ["attribute_id"]
+            foreignKeyName: 'athlete_attribute_values_attribute_id_fkey'
+            columns: ['attribute_id']
             isOneToOne: false
-            referencedRelation: "athlete_attributes"
-            referencedColumns: ["id"]
+            referencedRelation: 'athlete_attributes'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -198,18 +192,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "athlete_categories_athlete_id_fkey"
-            columns: ["athlete_id"]
+            foreignKeyName: 'athlete_categories_athlete_id_fkey'
+            columns: ['athlete_id']
             isOneToOne: false
-            referencedRelation: "athletes"
-            referencedColumns: ["id"]
+            referencedRelation: 'athletes'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "athlete_categories_category_id_fkey"
-            columns: ["category_id"]
+            foreignKeyName: 'athlete_categories_category_id_fkey'
+            columns: ['category_id']
             isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
+            referencedRelation: 'categories'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -285,18 +279,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "athletes_category_id_fkey"
-            columns: ["category_id"]
+            foreignKeyName: 'athletes_category_id_fkey'
+            columns: ['category_id']
             isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
+            referencedRelation: 'categories'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "athletes_club_id_fkey"
-            columns: ["club_id"]
+            foreignKeyName: 'athletes_club_id_fkey'
+            columns: ['club_id']
             isOneToOne: false
-            referencedRelation: "clubs"
-            referencedColumns: ["id"]
+            referencedRelation: 'clubs'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -459,18 +453,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "billing_reminders_log_athlete_id_fkey"
-            columns: ["athlete_id"]
+            foreignKeyName: 'billing_reminders_log_athlete_id_fkey'
+            columns: ['athlete_id']
             isOneToOne: false
-            referencedRelation: "athletes"
-            referencedColumns: ["id"]
+            referencedRelation: 'athletes'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "billing_reminders_log_charge_id_fkey"
-            columns: ["charge_id"]
+            foreignKeyName: 'billing_reminders_log_charge_id_fkey'
+            columns: ['charge_id']
             isOneToOne: false
-            referencedRelation: "financial_charges"
-            referencedColumns: ["id"]
+            referencedRelation: 'financial_charges'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -501,11 +495,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "blog_comments_post_id_fkey"
-            columns: ["post_id"]
+            foreignKeyName: 'blog_comments_post_id_fkey'
+            columns: ['post_id']
             isOneToOne: false
-            referencedRelation: "blog_posts"
-            referencedColumns: ["id"]
+            referencedRelation: 'blog_posts'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -614,11 +608,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "cart_items_product_id_fkey"
-            columns: ["product_id"]
+            foreignKeyName: 'cart_items_product_id_fkey'
+            columns: ['product_id']
             isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
+            referencedRelation: 'products'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -847,32 +841,32 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "contratos_cliente_id_fkey"
-            columns: ["cliente_id"]
+            foreignKeyName: 'contratos_cliente_id_fkey'
+            columns: ['cliente_id']
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "contratos_conta_id_fkey"
-            columns: ["conta_id"]
+            foreignKeyName: 'contratos_conta_id_fkey'
+            columns: ['conta_id']
             isOneToOne: false
-            referencedRelation: "plano_contas"
-            referencedColumns: ["id"]
+            referencedRelation: 'plano_contas'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "contratos_responsavel_id_fkey"
-            columns: ["responsavel_id"]
+            foreignKeyName: 'contratos_responsavel_id_fkey'
+            columns: ['responsavel_id']
             isOneToOne: false
-            referencedRelation: "usuarios"
-            referencedColumns: ["id"]
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "contratos_sla_id_fkey"
-            columns: ["sla_id"]
+            foreignKeyName: 'contratos_sla_id_fkey'
+            columns: ['sla_id']
             isOneToOne: false
-            referencedRelation: "sla_types"
-            referencedColumns: ["id"]
+            referencedRelation: 'sla_types'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -942,11 +936,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "courses_club_id_fkey"
-            columns: ["club_id"]
+            foreignKeyName: 'courses_club_id_fkey'
+            columns: ['club_id']
             isOneToOne: false
-            referencedRelation: "clubs"
-            referencedColumns: ["id"]
+            referencedRelation: 'clubs'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1004,11 +998,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "event_photos_event_id_fkey"
-            columns: ["event_id"]
+            foreignKeyName: 'event_photos_event_id_fkey'
+            columns: ['event_id']
             isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
+            referencedRelation: 'events'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1039,18 +1033,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "event_registrations_athlete_id_fkey"
-            columns: ["athlete_id"]
+            foreignKeyName: 'event_registrations_athlete_id_fkey'
+            columns: ['athlete_id']
             isOneToOne: false
-            referencedRelation: "athletes"
-            referencedColumns: ["id"]
+            referencedRelation: 'athletes'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "event_registrations_event_id_fkey"
-            columns: ["event_id"]
+            foreignKeyName: 'event_registrations_event_id_fkey'
+            columns: ['event_id']
             isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
+            referencedRelation: 'events'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1135,11 +1129,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "events_club_id_fkey"
-            columns: ["club_id"]
+            foreignKeyName: 'events_club_id_fkey'
+            columns: ['club_id']
             isOneToOne: false
-            referencedRelation: "clubs"
-            referencedColumns: ["id"]
+            referencedRelation: 'clubs'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1209,39 +1203,39 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "financial_charges_athlete_id_fkey"
-            columns: ["athlete_id"]
+            foreignKeyName: 'financial_charges_athlete_id_fkey'
+            columns: ['athlete_id']
             isOneToOne: false
-            referencedRelation: "athletes"
-            referencedColumns: ["id"]
+            referencedRelation: 'athletes'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "financial_charges_conta_id_fkey"
-            columns: ["conta_id"]
+            foreignKeyName: 'financial_charges_conta_id_fkey'
+            columns: ['conta_id']
             isOneToOne: false
-            referencedRelation: "plano_contas"
-            referencedColumns: ["id"]
+            referencedRelation: 'plano_contas'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "financial_charges_master_record_id_fkey"
-            columns: ["master_record_id"]
+            foreignKeyName: 'financial_charges_master_record_id_fkey'
+            columns: ['master_record_id']
             isOneToOne: false
-            referencedRelation: "financial_master_records"
-            referencedColumns: ["id"]
+            referencedRelation: 'financial_master_records'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "financial_charges_orcamento_id_fkey"
-            columns: ["orcamento_id"]
+            foreignKeyName: 'financial_charges_orcamento_id_fkey'
+            columns: ['orcamento_id']
             isOneToOne: false
-            referencedRelation: "orcamentos"
-            referencedColumns: ["id"]
+            referencedRelation: 'orcamentos'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "financial_charges_profile_id_fkey"
-            columns: ["profile_id"]
+            foreignKeyName: 'financial_charges_profile_id_fkey'
+            columns: ['profile_id']
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1290,11 +1284,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "financial_master_records_client_id_fkey"
-            columns: ["client_id"]
+            foreignKeyName: 'financial_master_records_client_id_fkey'
+            columns: ['client_id']
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1496,11 +1490,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "lancamentos_financeiros_conta_id_fkey"
-            columns: ["conta_id"]
+            foreignKeyName: 'lancamentos_financeiros_conta_id_fkey'
+            columns: ['conta_id']
             isOneToOne: false
-            referencedRelation: "plano_contas"
-            referencedColumns: ["id"]
+            referencedRelation: 'plano_contas'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1672,25 +1666,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "orcamento_itens_orcamento_id_fkey"
-            columns: ["orcamento_id"]
+            foreignKeyName: 'orcamento_itens_orcamento_id_fkey'
+            columns: ['orcamento_id']
             isOneToOne: false
-            referencedRelation: "orcamentos"
-            referencedColumns: ["id"]
+            referencedRelation: 'orcamentos'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "orcamento_itens_produto_id_fkey"
-            columns: ["produto_id"]
+            foreignKeyName: 'orcamento_itens_produto_id_fkey'
+            columns: ['produto_id']
             isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
+            referencedRelation: 'products'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "orcamento_itens_servico_id_fkey"
-            columns: ["servico_id"]
+            foreignKeyName: 'orcamento_itens_servico_id_fkey'
+            columns: ['servico_id']
             isOneToOne: false
-            referencedRelation: "services"
-            referencedColumns: ["id"]
+            referencedRelation: 'services'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1790,46 +1784,46 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "orcamentos_cliente_id_fkey"
-            columns: ["cliente_id"]
+            foreignKeyName: 'orcamentos_cliente_id_fkey'
+            columns: ['cliente_id']
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "orcamentos_conta_id_fkey"
-            columns: ["conta_id"]
+            foreignKeyName: 'orcamentos_conta_id_fkey'
+            columns: ['conta_id']
             isOneToOne: false
-            referencedRelation: "plano_contas"
-            referencedColumns: ["id"]
+            referencedRelation: 'plano_contas'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "orcamentos_pedido_id_fkey"
-            columns: ["pedido_id"]
+            foreignKeyName: 'orcamentos_pedido_id_fkey'
+            columns: ['pedido_id']
             isOneToOne: false
-            referencedRelation: "pedidos"
-            referencedColumns: ["id"]
+            referencedRelation: 'pedidos'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "orcamentos_responsavel_id_fkey"
-            columns: ["responsavel_id"]
+            foreignKeyName: 'orcamentos_responsavel_id_fkey'
+            columns: ['responsavel_id']
             isOneToOne: false
-            referencedRelation: "usuarios"
-            referencedColumns: ["id"]
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "orcamentos_veiculo_brand_id_fkey"
-            columns: ["veiculo_brand_id"]
+            foreignKeyName: 'orcamentos_veiculo_brand_id_fkey'
+            columns: ['veiculo_brand_id']
             isOneToOne: false
-            referencedRelation: "vehicle_brands"
-            referencedColumns: ["id"]
+            referencedRelation: 'vehicle_brands'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "orcamentos_veiculo_model_id_fkey"
-            columns: ["veiculo_model_id"]
+            foreignKeyName: 'orcamentos_veiculo_model_id_fkey'
+            columns: ['veiculo_model_id']
             isOneToOne: false
-            referencedRelation: "vehicle_models"
-            referencedColumns: ["id"]
+            referencedRelation: 'vehicle_models'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1857,18 +1851,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "order_items_order_id_fkey"
-            columns: ["order_id"]
+            foreignKeyName: 'order_items_order_id_fkey'
+            columns: ['order_id']
             isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
+            referencedRelation: 'orders'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "order_items_product_id_fkey"
-            columns: ["product_id"]
+            foreignKeyName: 'order_items_product_id_fkey'
+            columns: ['product_id']
             isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
+            referencedRelation: 'products'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1908,11 +1902,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "orders_athlete_id_fkey"
-            columns: ["athlete_id"]
+            foreignKeyName: 'orders_athlete_id_fkey'
+            columns: ['athlete_id']
             isOneToOne: false
-            referencedRelation: "athletes"
-            referencedColumns: ["id"]
+            referencedRelation: 'athletes'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2021,25 +2015,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "pedido_itens_pedido_id_fkey"
-            columns: ["pedido_id"]
+            foreignKeyName: 'pedido_itens_pedido_id_fkey'
+            columns: ['pedido_id']
             isOneToOne: false
-            referencedRelation: "pedidos"
-            referencedColumns: ["id"]
+            referencedRelation: 'pedidos'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "pedido_itens_produto_id_fkey"
-            columns: ["produto_id"]
+            foreignKeyName: 'pedido_itens_produto_id_fkey'
+            columns: ['produto_id']
             isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
+            referencedRelation: 'products'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "pedido_itens_servico_id_fkey"
-            columns: ["servico_id"]
+            foreignKeyName: 'pedido_itens_servico_id_fkey'
+            columns: ['servico_id']
             isOneToOne: false
-            referencedRelation: "services"
-            referencedColumns: ["id"]
+            referencedRelation: 'services'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2127,46 +2121,46 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "pedidos_cliente_id_fkey"
-            columns: ["cliente_id"]
+            foreignKeyName: 'pedidos_cliente_id_fkey'
+            columns: ['cliente_id']
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "pedidos_conta_id_fkey"
-            columns: ["conta_id"]
+            foreignKeyName: 'pedidos_conta_id_fkey'
+            columns: ['conta_id']
             isOneToOne: false
-            referencedRelation: "plano_contas"
-            referencedColumns: ["id"]
+            referencedRelation: 'plano_contas'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "pedidos_orcamento_id_fkey"
-            columns: ["orcamento_id"]
+            foreignKeyName: 'pedidos_orcamento_id_fkey'
+            columns: ['orcamento_id']
             isOneToOne: false
-            referencedRelation: "orcamentos"
-            referencedColumns: ["id"]
+            referencedRelation: 'orcamentos'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "pedidos_responsavel_id_fkey"
-            columns: ["responsavel_id"]
+            foreignKeyName: 'pedidos_responsavel_id_fkey'
+            columns: ['responsavel_id']
             isOneToOne: false
-            referencedRelation: "usuarios"
-            referencedColumns: ["id"]
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "pedidos_veiculo_brand_id_fkey"
-            columns: ["veiculo_brand_id"]
+            foreignKeyName: 'pedidos_veiculo_brand_id_fkey'
+            columns: ['veiculo_brand_id']
             isOneToOne: false
-            referencedRelation: "vehicle_brands"
-            referencedColumns: ["id"]
+            referencedRelation: 'vehicle_brands'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "pedidos_veiculo_model_id_fkey"
-            columns: ["veiculo_model_id"]
+            foreignKeyName: 'pedidos_veiculo_model_id_fkey'
+            columns: ['veiculo_model_id']
             isOneToOne: false
-            referencedRelation: "vehicle_models"
-            referencedColumns: ["id"]
+            referencedRelation: 'vehicle_models'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2239,18 +2233,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "plan_services_category_id_fkey"
-            columns: ["category_id"]
+            foreignKeyName: 'plan_services_category_id_fkey'
+            columns: ['category_id']
             isOneToOne: false
-            referencedRelation: "plan_categories"
-            referencedColumns: ["id"]
+            referencedRelation: 'plan_categories'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "plan_services_contract_template_id_fkey"
-            columns: ["contract_template_id"]
+            foreignKeyName: 'plan_services_contract_template_id_fkey'
+            columns: ['contract_template_id']
             isOneToOne: false
-            referencedRelation: "contract_templates"
-            referencedColumns: ["id"]
+            referencedRelation: 'contract_templates'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2287,11 +2281,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "plano_contas_conta_pai_id_fkey"
-            columns: ["conta_pai_id"]
+            foreignKeyName: 'plano_contas_conta_pai_id_fkey'
+            columns: ['conta_pai_id']
             isOneToOne: false
-            referencedRelation: "plano_contas"
-            referencedColumns: ["id"]
+            referencedRelation: 'plano_contas'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2448,11 +2442,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "profiles_club_id_fkey"
-            columns: ["club_id"]
+            foreignKeyName: 'profiles_club_id_fkey'
+            columns: ['club_id']
             isOneToOne: false
-            referencedRelation: "clubs"
-            referencedColumns: ["id"]
+            referencedRelation: 'clubs'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2489,11 +2483,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "rankings_athlete_id_fkey"
-            columns: ["athlete_id"]
+            foreignKeyName: 'rankings_athlete_id_fkey'
+            columns: ['athlete_id']
             isOneToOne: true
-            referencedRelation: "athletes"
-            referencedColumns: ["id"]
+            referencedRelation: 'athletes'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2563,11 +2557,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "rule_versions_rule_id_fkey"
-            columns: ["rule_id"]
+            foreignKeyName: 'rule_versions_rule_id_fkey'
+            columns: ['rule_id']
             isOneToOne: false
-            referencedRelation: "rules"
-            referencedColumns: ["id"]
+            referencedRelation: 'rules'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2784,18 +2778,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "stripe_payments_atleta_id_fkey"
-            columns: ["atleta_id"]
+            foreignKeyName: 'stripe_payments_atleta_id_fkey'
+            columns: ['atleta_id']
             isOneToOne: false
-            referencedRelation: "athletes"
-            referencedColumns: ["id"]
+            referencedRelation: 'athletes'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "stripe_payments_charge_id_fkey"
-            columns: ["charge_id"]
+            foreignKeyName: 'stripe_payments_charge_id_fkey'
+            columns: ['charge_id']
             isOneToOne: false
-            referencedRelation: "financial_charges"
-            referencedColumns: ["id"]
+            referencedRelation: 'financial_charges'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -3033,11 +3027,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "vehicle_models_brand_id_fkey"
-            columns: ["brand_id"]
+            foreignKeyName: 'vehicle_models_brand_id_fkey'
+            columns: ['brand_id']
             isOneToOne: false
-            referencedRelation: "vehicle_brands"
-            referencedColumns: ["id"]
+            referencedRelation: 'vehicle_brands'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -3162,33 +3156,31 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -3197,23 +3189,23 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
+    | keyof DefaultSchema['Tables']
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -3222,23 +3214,23 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
+    | keyof DefaultSchema['Tables']
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -3247,36 +3239,36 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
+    | keyof DefaultSchema['Enums']
     | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
+    | keyof DefaultSchema['CompositeTypes']
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
@@ -3284,7 +3276,6 @@ export const Constants = {
     Enums: {},
   },
 } as const
-
 
 // ====== DATABASE EXTENDED CONTEXT (auto-generated) ======
 // This section contains actual PostgreSQL column types, constraints, RLS policies,
@@ -4754,18 +4745,18 @@ export const Constants = {
 //     IF TG_OP = 'UPDATE' AND NEW.status IS DISTINCT FROM OLD.status THEN
 //       INSERT INTO public.audit_logs (table_name, record_id, action, old_data, new_data, changed_by)
 //       VALUES (
-//         'orcamentos_status', 
-//         NEW.id, 
-//         'status_change', 
-//         jsonb_build_object('status', OLD.status), 
-//         jsonb_build_object('status', NEW.status), 
+//         'orcamentos_status',
+//         NEW.id,
+//         'status_change',
+//         jsonb_build_object('status', OLD.status),
+//         jsonb_build_object('status', NEW.status),
 //         auth.uid()
 //       );
 //     END IF;
 //     RETURN NEW;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION audit_trigger_func()
 //   CREATE OR REPLACE FUNCTION public.audit_trigger_func()
 //    RETURNS trigger
@@ -4789,7 +4780,7 @@ export const Constants = {
 //     RETURN NULL;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION calc_orcamento_itens_total()
 //   CREATE OR REPLACE FUNCTION public.calc_orcamento_itens_total()
 //    RETURNS trigger
@@ -4797,8 +4788,8 @@ export const Constants = {
 //   AS $function$
 //   BEGIN
 //     IF NEW.tipo_item = 'servico' THEN
-//       NEW.valor_total := COALESCE(NEW.quantidade, 1) * 
-//         CASE WHEN COALESCE(NEW.tempo_executado, 0) > 0 THEN NEW.tempo_executado ELSE COALESCE(NEW.tempo_estimado, 0) END * 
+//       NEW.valor_total := COALESCE(NEW.quantidade, 1) *
+//         CASE WHEN COALESCE(NEW.tempo_executado, 0) > 0 THEN NEW.tempo_executado ELSE COALESCE(NEW.tempo_estimado, 0) END *
 //         COALESCE(NEW.valor_unitario, 0);
 //     ELSE
 //       NEW.valor_total := COALESCE(NEW.quantidade, 1) * COALESCE(NEW.valor_unitario, 0);
@@ -4806,7 +4797,7 @@ export const Constants = {
 //     RETURN NEW;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION calc_orcamento_total()
 //   CREATE OR REPLACE FUNCTION public.calc_orcamento_total()
 //    RETURNS trigger
@@ -4817,7 +4808,7 @@ export const Constants = {
 //     RETURN NEW;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION generate_numero_orcamento()
 //   CREATE OR REPLACE FUNCTION public.generate_numero_orcamento()
 //    RETURNS trigger
@@ -4835,7 +4826,7 @@ export const Constants = {
 //       RETURN NEW;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION generate_numero_registro_federativo()
 //   CREATE OR REPLACE FUNCTION public.generate_numero_registro_federativo()
 //    RETURNS trigger
@@ -4853,7 +4844,7 @@ export const Constants = {
 //       RETURN NEW;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION handle_new_user()
 //   CREATE OR REPLACE FUNCTION public.handle_new_user()
 //    RETURNS trigger
@@ -4867,7 +4858,7 @@ export const Constants = {
 //     RETURN NEW;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION handle_orcamento_financeiro()
 //   CREATE OR REPLACE FUNCTION public.handle_orcamento_financeiro()
 //    RETURNS trigger
@@ -4895,7 +4886,7 @@ export const Constants = {
 //     RETURN NEW;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION handle_orcamento_financial_master()
 //   CREATE OR REPLACE FUNCTION public.handle_orcamento_financial_master()
 //    RETURNS trigger
@@ -4909,16 +4900,16 @@ export const Constants = {
 //   BEGIN
 //     IF NEW.status = 'fechado' AND (OLD.status IS NULL OR OLD.status <> 'fechado') THEN
 //       IF NOT EXISTS (SELECT 1 FROM public.financial_master_records WHERE reference_id = NEW.id AND reference_type = 'orcamento') THEN
-//   
+//
 //         SELECT name INTO v_client_name FROM public.profiles WHERE id = NEW.cliente_id;
 //         v_client_name := COALESCE(v_client_name, 'Cliente ' || NEW.id);
-//   
+//
 //         v_master_id := gen_random_uuid();
 //         INSERT INTO public.financial_master_records (id, description, client_id, client_name, total_amount, status, reference_id, reference_type, type, category)
 //         VALUES (v_master_id, 'Orçamento ' || COALESCE(NEW.numero_orcamento, NEW.id::text), NEW.cliente_id, v_client_name, NEW.total, 'pendente', NEW.id, 'orcamento', 'receivable', 'orcamento');
-//   
+//
 //         SELECT count(*) INTO existing_charges_count FROM public.financial_charges WHERE orcamento_id = NEW.id;
-//   
+//
 //         IF existing_charges_count = 0 THEN
 //           INSERT INTO public.financial_charges (master_record_id, client_name, amount, due_date, description, status, type, category, orcamento_id, profile_id, conta_id)
 //           VALUES (v_master_id, v_client_name, NEW.total, NEW.data_emissao::date, 'Pagamento Integral', 'pendente', 'receivable', 'orcamento', NEW.id, NEW.cliente_id, NEW.conta_id);
@@ -4930,7 +4921,7 @@ export const Constants = {
 //     RETURN NEW;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION handle_pedido_financeiro_estoque()
 //   CREATE OR REPLACE FUNCTION public.handle_pedido_financeiro_estoque()
 //    RETURNS trigger
@@ -4966,7 +4957,7 @@ export const Constants = {
 //     RETURN NEW;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION handle_plan_payment_contract()
 //   CREATE OR REPLACE FUNCTION public.handle_plan_payment_contract()
 //    RETURNS trigger
@@ -4979,14 +4970,14 @@ export const Constants = {
 //     IF NEW.status = 'pago' AND (OLD.status IS DISTINCT FROM 'pago') AND NEW.category = 'plano' THEN
 //       IF NEW.athlete_id IS NOT NULL THEN
 //          SELECT id INTO v_cliente_id FROM public.clientes WHERE user_id = NEW.athlete_id LIMIT 1;
-//          
+//
 //          IF v_cliente_id IS NULL THEN
 //             INSERT INTO public.clientes (user_id, nome)
 //             SELECT id, name FROM public.profiles WHERE id = NEW.athlete_id
 //             RETURNING id INTO v_cliente_id;
 //          END IF;
 //       END IF;
-//   
+//
 //       INSERT INTO public.contratos (
 //         cliente_id,
 //         tipo_contrato,
@@ -5007,11 +4998,11 @@ export const Constants = {
 //         'Contrato gerado automaticamente após pagamento do ' || COALESCE(NEW.description, 'Plano')
 //       );
 //     END IF;
-//     
+//
 //     RETURN NEW;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION notify_club_suspension()
 //   CREATE OR REPLACE FUNCTION public.notify_club_suspension()
 //    RETURNS trigger
@@ -5028,7 +5019,7 @@ export const Constants = {
 //       RETURN NEW;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION notify_event_registration()
 //   CREATE OR REPLACE FUNCTION public.notify_event_registration()
 //    RETURNS trigger
@@ -5048,7 +5039,7 @@ export const Constants = {
 //       RETURN NEW;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION notify_new_blog_post()
 //   CREATE OR REPLACE FUNCTION public.notify_new_blog_post()
 //    RETURNS trigger
@@ -5062,7 +5053,7 @@ export const Constants = {
 //       RETURN NEW;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION notify_order_payment()
 //   CREATE OR REPLACE FUNCTION public.notify_order_payment()
 //    RETURNS trigger
@@ -5079,7 +5070,7 @@ export const Constants = {
 //       RETURN NEW;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION rls_auto_enable()
 //   CREATE OR REPLACE FUNCTION public.rls_auto_enable()
 //    RETURNS event_trigger
@@ -5110,7 +5101,7 @@ export const Constants = {
 //     END LOOP;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION save_quote_transaction(jsonb, jsonb, jsonb)
 //   CREATE OR REPLACE FUNCTION public.save_quote_transaction(p_quote jsonb, p_items jsonb, p_charges jsonb)
 //    RETURNS jsonb
@@ -5126,7 +5117,7 @@ export const Constants = {
 //     IF p_quote->>'id' IS NOT NULL AND p_quote->>'id' <> '' THEN
 //       v_quote_id := (p_quote->>'id')::uuid;
 //       UPDATE public.orcamentos
-//       SET 
+//       SET
 //         cliente_id = (p_quote->>'cliente_id')::uuid,
 //         conta_id = NULLIF(p_quote->>'conta_id', '')::uuid,
 //         data_emissao = (p_quote->>'data_emissao')::date,
@@ -5145,8 +5136,8 @@ export const Constants = {
 //       RETURNING numero_orcamento INTO v_num_orc;
 //     ELSE
 //       INSERT INTO public.orcamentos (
-//         cliente_id, conta_id, data_emissao, data_validade, status, observacoes, 
-//         desconto_percentual, desconto_valor, valor_impostos, 
+//         cliente_id, conta_id, data_emissao, data_validade, status, observacoes,
+//         desconto_percentual, desconto_valor, valor_impostos,
 //         veiculo_placa, veiculo_brand_id, veiculo_model_id, veiculo_km, subtotal
 //       ) VALUES (
 //         (p_quote->>'cliente_id')::uuid,
@@ -5165,15 +5156,15 @@ export const Constants = {
 //         (p_quote->>'subtotal')::numeric
 //       ) RETURNING id, numero_orcamento INTO v_quote_id, v_num_orc;
 //     END IF;
-//   
+//
 //     SELECT id INTO v_master_record_id FROM public.financial_master_records WHERE reference_id = v_quote_id AND reference_type = 'orcamento' LIMIT 1;
-//   
+//
 //     DELETE FROM public.orcamento_itens WHERE orcamento_id = v_quote_id;
-//     
+//
 //     FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
 //     LOOP
 //       INSERT INTO public.orcamento_itens (
-//         orcamento_id, tipo_item, produto_id, servico_id, quantidade, 
+//         orcamento_id, tipo_item, produto_id, servico_id, quantidade,
 //         valor_unitario, descricao, tempo_estimado, tempo_executado, aprovado, cliente_questionou
 //       ) VALUES (
 //         v_quote_id,
@@ -5189,11 +5180,11 @@ export const Constants = {
 //         COALESCE((v_item->>'cliente_questionou')::boolean, false)
 //       );
 //     END LOOP;
-//   
+//
 //     IF p_quote->>'status' = 'fechado' THEN
-//       DELETE FROM public.financial_charges 
+//       DELETE FROM public.financial_charges
 //       WHERE orcamento_id = v_quote_id AND status = 'pendente';
-//   
+//
 //       FOR v_charge IN SELECT * FROM jsonb_array_elements(p_charges)
 //       LOOP
 //         IF v_charge->>'status' = 'pendente' THEN
@@ -5216,11 +5207,11 @@ export const Constants = {
 //         END IF;
 //       END LOOP;
 //     END IF;
-//   
+//
 //     RETURN jsonb_build_object('id', v_quote_id, 'numero_orcamento', v_num_orc);
 //   END;
 //   $function$
-//   
+//
 // FUNCTION sync_profile_to_usuarios()
 //   CREATE OR REPLACE FUNCTION public.sync_profile_to_usuarios()
 //    RETURNS trigger
@@ -5235,27 +5226,27 @@ export const Constants = {
 //     IF pg_trigger_depth() > 1 THEN
 //       RETURN NEW;
 //     END IF;
-//   
+//
 //     -- Treat empty string as NULL for email to prevent unique constraint violations
 //     v_email := NULLIF(TRIM(NEW.email), '');
-//   
+//
 //     -- Check if the ID exists in auth.users
 //     SELECT EXISTS(SELECT 1 FROM auth.users WHERE id = NEW.id) INTO v_user_exists;
-//   
+//
 //     IF TG_OP = 'INSERT' THEN
 //       IF v_email IS NOT NULL THEN
 //         INSERT INTO public.usuarios (user_id, email, nome, role)
 //         VALUES (CASE WHEN v_user_exists THEN NEW.id ELSE NULL END, v_email, NEW.name, NEW.role)
-//         ON CONFLICT (email) DO UPDATE 
-//         SET user_id = COALESCE(public.usuarios.user_id, EXCLUDED.user_id), 
-//             nome = EXCLUDED.nome, 
+//         ON CONFLICT (email) DO UPDATE
+//         SET user_id = COALESCE(public.usuarios.user_id, EXCLUDED.user_id),
+//             nome = EXCLUDED.nome,
 //             role = EXCLUDED.role;
 //       END IF;
 //     ELSIF TG_OP = 'UPDATE' THEN
 //       IF v_email IS NOT NULL THEN
 //         UPDATE public.usuarios
-//         SET email = v_email, 
-//             nome = NEW.name, 
+//         SET email = v_email,
+//             nome = NEW.name,
 //             role = NEW.role,
 //             user_id = CASE WHEN v_user_exists THEN NEW.id ELSE public.usuarios.user_id END
 //         WHERE user_id = NEW.id OR email = OLD.email OR email = v_email;
@@ -5264,7 +5255,7 @@ export const Constants = {
 //     RETURN NEW;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION sync_usuarios_to_profiles()
 //   CREATE OR REPLACE FUNCTION public.sync_usuarios_to_profiles()
 //    RETURNS trigger
@@ -5278,9 +5269,9 @@ export const Constants = {
 //     IF pg_trigger_depth() > 1 THEN
 //       RETURN NEW;
 //     END IF;
-//   
+//
 //     v_email := NULLIF(TRIM(NEW.email), '');
-//   
+//
 //     IF TG_OP = 'INSERT' THEN
 //       IF NEW.user_id IS NOT NULL THEN
 //         INSERT INTO public.profiles (id, email, name, role)
@@ -5310,7 +5301,7 @@ export const Constants = {
 //     RETURN NEW;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION update_event_participants()
 //   CREATE OR REPLACE FUNCTION public.update_event_participants()
 //    RETURNS trigger
@@ -5319,18 +5310,18 @@ export const Constants = {
 //   AS $function$
 //   BEGIN
 //       IF TG_OP = 'INSERT' THEN
-//           UPDATE public.events 
-//           SET current_participants = COALESCE(current_participants, 0) + 1 
+//           UPDATE public.events
+//           SET current_participants = COALESCE(current_participants, 0) + 1
 //           WHERE id = NEW.event_id;
 //       ELSIF TG_OP = 'DELETE' THEN
-//           UPDATE public.events 
-//           SET current_participants = GREATEST(COALESCE(current_participants, 0) - 1, 0) 
+//           UPDATE public.events
+//           SET current_participants = GREATEST(COALESCE(current_participants, 0) - 1, 0)
 //           WHERE id = OLD.event_id;
 //       END IF;
 //       RETURN NEW;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION update_master_record_status()
 //   CREATE OR REPLACE FUNCTION public.update_master_record_status()
 //    RETURNS trigger
@@ -5349,9 +5340,9 @@ export const Constants = {
 //     ELSE
 //       v_master_id := NEW.master_record_id;
 //     END IF;
-//   
+//
 //     IF v_master_id IS NOT NULL THEN
-//       SELECT 
+//       SELECT
 //         COUNT(*),
 //         COUNT(*) FILTER (WHERE status = 'pago' OR status = 'recebido'),
 //         COUNT(*) FILTER (WHERE status = 'atrasado' OR (status = 'pendente' AND due_date < CURRENT_DATE)),
@@ -5359,7 +5350,7 @@ export const Constants = {
 //       INTO v_total, v_pago, v_atrasado, v_paid_amount
 //       FROM public.financial_charges
 //       WHERE master_record_id = v_master_id;
-//   
+//
 //       IF v_total > 0 THEN
 //         IF v_pago = v_total THEN
 //           UPDATE public.financial_master_records SET status = 'pago', paid_amount = LEAST(v_paid_amount, total_amount) WHERE id = v_master_id;
@@ -5374,11 +5365,11 @@ export const Constants = {
 //          UPDATE public.financial_master_records SET paid_amount = 0 WHERE id = v_master_id;
 //       END IF;
 //     END IF;
-//     
+//
 //     RETURN NULL;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION update_sections_modtime()
 //   CREATE OR REPLACE FUNCTION public.update_sections_modtime()
 //    RETURNS trigger
@@ -5389,7 +5380,7 @@ export const Constants = {
 //       RETURN NEW;
 //   END;
 //   $function$
-//   
+//
 // FUNCTION validate_orcamento_fields()
 //   CREATE OR REPLACE FUNCTION public.validate_orcamento_fields()
 //    RETURNS trigger
@@ -5413,7 +5404,7 @@ export const Constants = {
 //     RETURN NEW;
 //   END;
 //   $function$
-//   
+//
 
 // --- TRIGGERS ---
 // Table: affiliation_plans
@@ -5489,4 +5480,3 @@ export const Constants = {
 //   CREATE UNIQUE INDEX vehicle_brands_name_key ON public.vehicle_brands USING btree (name)
 // Table: vehicle_models
 //   CREATE UNIQUE INDEX vehicle_models_brand_id_name_key ON public.vehicle_models USING btree (brand_id, name)
-

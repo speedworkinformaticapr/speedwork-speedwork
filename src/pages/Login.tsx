@@ -47,9 +47,17 @@ export default function Login() {
     setIsLoading(false)
 
     if (error) {
+      const err = error as any
+      const isInvalidCredentials =
+        err?.code === 'invalid_credentials' ||
+        err?.message === 'Invalid login credentials' ||
+        err?.status === 400
+
       toast({
         title: 'Erro ao entrar',
-        description: 'Credenciais inválidas. Verifique seu e-mail e senha.',
+        description: isInvalidCredentials
+          ? 'E-mail ou senha incorretos'
+          : 'Ocorreu um erro ao tentar fazer login. Tente novamente mais tarde.',
         className: 'bg-[#EF4444] text-white border-none',
       })
       return
