@@ -60,6 +60,9 @@ import {
   ChevronRight,
   Printer,
   Phone,
+  CheckCircle,
+  MessageCircle,
+  Mail,
 } from 'lucide-react'
 import { PaymentModal } from '@/components/financial/PaymentModal'
 import { generateTermsPDF } from '@/lib/pdf-utils'
@@ -120,6 +123,9 @@ export default function AdminFinancialPayments() {
   const [searchTerm, setSearchTerm] = useState('')
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
   const [selectedCharge, setSelectedCharge] = useState<Charge | null>(null)
+
+  const [masterToEdit, setMasterToEdit] = useState<MasterRecord | null>(null)
+  const [masterToSettle, setMasterToSettle] = useState<MasterRecord | null>(null)
   const [itemToDelete, setItemToDelete] = useState<{
     id: string
     type: 'master' | 'charge'
@@ -287,6 +293,13 @@ export default function AdminFinancialPayments() {
 
     setFilteredMasters(result)
     setPage(1)
+
+    // Automatically select the first record of the filtered results
+    if (result.length > 0) {
+      setSelectedMasterId(result[0].id)
+    } else {
+      setSelectedMasterId(null)
+    }
   }
 
   const sortedMasters = useMemo(() => {
@@ -596,6 +609,164 @@ export default function AdminFinancialPayments() {
     return <Badge className="bg-yellow-500 hover:bg-yellow-600 text-black">Pendente</Badge>
   }
 
+  const handleEditMaster = (master: MasterRecord) => {
+    setMasterToEdit(master)
+  }
+
+  const handleSaveMasterEdit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!masterToEdit) return
+    setIsSubmitting(true)
+    try {
+      await supabase
+        .from('financial_master_records')
+        .update({
+          description: masterToEdit.description,
+          client_name: masterToEdit.client_name,
+        })
+        .eq('id', masterToEdit.id)
+      toast({ title: 'Registro mestre atualizado.' })
+      setMasterToEdit(null)
+      fetchMasterRecords()
+    } catch (err: any) {
+      toast({ title: 'Erro ao atualizar', description: err.message, variant: 'destructive' })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleSettleMaster = (master: MasterRecord) => {
+    setMasterToSettle(master)
+  }
+
+  const confirmSettleMaster = async () => {
+    if (!masterToSettle) return
+    setIsSubmitting(true)
+    try {
+      // Find all pending charges
+      const { data: pendingCharges } = await supabase
+        .from('financial_charges' as any)
+        .select('id, amount')
+        .eq('master_record_id', masterToSettle.id)
+        .neq('status', 'pago')
+        .neq('status', 'recebido')
+
+      if (pendingCharges && pendingCharges.length > 0) {
+        const today = new Date().toISOString().split('T')[0]
+
+        // Settle each pending charge with realized_amount = amount
+        for (const charge of pendingCharges) {
+          await supabase
+            .from('financial_charges' as any)
+            .update({
+              status: 'pago',
+              payment_date: today,
+              realized_amount: charge.amount,
+            })
+            .eq('id', charge.id)
+        }
+      }
+      toast({ title: 'Parcelas baixadas com sucesso.' })
+      setMasterToSettle(null)
+      fetchMasterRecords()
+      if (selectedMasterId === masterToSettle.id) fetchDetails(masterToSettle.id)
+      calculateGlobalSummary()
+    } catch (err: any) {
+      toast({ title: 'Erro ao dar baixa', description: err.message, variant: 'destructive' })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleWhatsAppMaster = async (master: MasterRecord) => {
+    try {
+      let phone = ''
+      if (master.client_id) {
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('phone, telefone_whatsapp')
+          .eq('id', master.client_id)
+          .single()
+        phone = prof?.telefone_whatsapp || prof?.phone || ''
+      }
+
+      const text = encodeURIComponent(
+        `Olá ${master.client_name}, segue a posição financeira referente a ${master.description}. Total: R$ ${Number(master.total_amount).toFixed(2).replace('.', ',')}.`,
+      )
+
+      if (!phone) {
+        window.open(`https://wa.me/?text=${text}`, '_blank')
+        return
+      }
+
+      const { data, error } = await supabase.functions.invoke('enviar_whatsapp', {
+        body: {
+          telefone_destino: phone.replace(/\D/g, ''),
+          mensagem_customizada: decodeURIComponent(text),
+        },
+      })
+      if (error || data?.status === 'erro_config' || data?.status === 'falha')
+        throw new Error(data?.erro || 'Erro ao enviar via API')
+      toast({ title: 'WhatsApp enviado com sucesso!' })
+    } catch (err: any) {
+      toast({ title: 'Tentando abrir o WhatsApp Web...' })
+      // Fallback
+      let phone = ''
+      if (master.client_id) {
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('phone, telefone_whatsapp')
+          .eq('id', master.client_id)
+          .single()
+        phone = prof?.telefone_whatsapp || prof?.phone || ''
+      }
+      const text = encodeURIComponent(
+        `Olá ${master.client_name}, segue a posição financeira referente a ${master.description}. Total: R$ ${Number(master.total_amount).toFixed(2).replace('.', ',')}.`,
+      )
+      window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${text}`, '_blank')
+    }
+  }
+
+  const handleEmailMaster = async (master: MasterRecord) => {
+    try {
+      let email = ''
+      if (master.client_id) {
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', master.client_id)
+          .single()
+        email = prof?.email || ''
+      }
+
+      if (!email) {
+        toast({ title: 'Cliente não possui e-mail cadastrado.', variant: 'destructive' })
+        return
+      }
+
+      const { error } = await supabase.functions.invoke('send-email', {
+        body: {
+          type: 'custom',
+          email: email,
+          subject: `Posição Financeira - ${master.description}`,
+          html: `<p>Olá <strong>${master.client_name}</strong>,</p><p>Este é um aviso sobre seu registro financeiro: <strong>${master.description}</strong>.</p><p>Valor Total: R$ ${Number(master.total_amount).toFixed(2).replace('.', ',')}</p><p>Atenciosamente.</p>`,
+        },
+      })
+
+      if (error) throw error
+      toast({ title: 'E-mail enviado com sucesso!' })
+    } catch (err: any) {
+      toast({ title: 'Erro ao enviar e-mail', description: err.message, variant: 'destructive' })
+    }
+  }
+
+  const handlePrintMaster = (master: MasterRecord) => {
+    generateTermsPDF(
+      'Resumo Financeiro',
+      `Identificação do Registro Mestre:\n\nDescrição: ${master.description}\nCliente: ${master.client_name}\n\nValor Total: R$ ${Number(master.total_amount).toFixed(2)}\nValor Pago: R$ ${Number(master.paid_amount || 0).toFixed(2)}\nStatus: ${master.status.toUpperCase()}\nCriado Em: ${formatDate(master.created_at)}`,
+    )
+  }
+
   const handleOpenPayment = (charge: Charge) => {
     setSelectedCharge(charge)
     setPaymentModalOpen(true)
@@ -805,16 +976,74 @@ export default function AdminFinancialPayments() {
                         </TableCell>
                         <TableCell>{formatDate(master.created_at)}</TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDelete(master.id, 'master')
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Editar"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleEditMaster(master)
+                              }}
+                            >
+                              <Edit2 className="w-4 h-4 text-blue-500" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Baixa Automática"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleSettleMaster(master)
+                              }}
+                            >
+                              <CheckCircle className="w-4 h-4 text-emerald-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="WhatsApp"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleWhatsAppMaster(master)
+                              }}
+                            >
+                              <MessageCircle className="w-4 h-4 text-green-500" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Email"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleEmailMaster(master)
+                              }}
+                            >
+                              <Mail className="w-4 h-4 text-primary" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Imprimir"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handlePrintMaster(master)
+                              }}
+                            >
+                              <Printer className="w-4 h-4 text-muted-foreground" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Excluir"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDelete(master.id, 'master')
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -1488,6 +1717,75 @@ export default function AdminFinancialPayments() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!masterToEdit} onOpenChange={(open) => !open && setMasterToEdit(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Registro Mestre</DialogTitle>
+          </DialogHeader>
+          {masterToEdit && (
+            <form onSubmit={handleSaveMasterEdit} className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label>Descrição</Label>
+                <Input
+                  value={masterToEdit.description}
+                  onChange={(e) =>
+                    setMasterToEdit({ ...masterToEdit, description: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Cliente / Fornecedor</Label>
+                <Input
+                  value={masterToEdit.client_name}
+                  onChange={(e) =>
+                    setMasterToEdit({ ...masterToEdit, client_name: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <DialogFooter className="mt-4">
+                <Button variant="outline" type="button" onClick={() => setMasterToEdit(null)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null} Salvar
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={!!masterToSettle}
+        onOpenChange={(open) => !open && setMasterToSettle(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Baixar todas as parcelas?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja dar baixa em todas as parcelas pendentes deste registro mestre? O status será
+              alterado para "Pago".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSubmitting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault()
+                confirmSettleMaster()
+              }}
+              disabled={isSubmitting}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null} Confirmar
+              Baixa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
         <AlertDialogContent>
