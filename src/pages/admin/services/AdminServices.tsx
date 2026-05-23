@@ -11,8 +11,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
-import { Edit, Trash2, Plus, Search } from 'lucide-react'
+import { Edit, Trash2, Plus, Search, Settings2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { ServiceSettingsModal } from './ServiceSettingsModal'
 import {
   Table,
   TableBody,
@@ -49,6 +50,8 @@ export default function AdminServices() {
   const [formData, setFormData] = useState<Partial<Service>>({})
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -303,6 +306,12 @@ export default function AdminServices() {
         </Select>
       </div>
 
+      <ServiceSettingsModal
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        serviceId={selectedServiceId}
+      />
+
       <div className="rounded-xl border border-border/50 bg-card/40 backdrop-blur-md shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
@@ -362,6 +371,18 @@ export default function AdminServices() {
                   </TableCell>
                   <TableCell className="text-right py-4 pr-4">
                     <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setSelectedServiceId(s.id)
+                          setSettingsOpen(true)
+                        }}
+                        className="h-8 w-8 hover:text-purple-600"
+                        title="Configurar Agendamento"
+                      >
+                        <Settings2 className="w-4 h-4 text-purple-500" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"

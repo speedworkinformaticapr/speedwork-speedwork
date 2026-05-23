@@ -81,6 +81,8 @@ import StaffDashboard from './pages/staff/dashboard/StaffDashboard'
 import ClientQuotes from './pages/client/quotes/ClientQuotes'
 import ClientDashboard from './pages/client/dashboard/ClientDashboard'
 import Scheduling from './pages/Scheduling'
+import PublicScheduling from './pages/PublicScheduling'
+import PublicSchedulingCancel from './pages/PublicSchedulingCancel'
 import QuoteApprovalPortal from './pages/client/quotes/QuoteApprovalPortal'
 import { AuthProvider } from './hooks/use-auth'
 import { TranslationProvider } from './hooks/use-translation'
@@ -308,6 +310,8 @@ const App = () => (
                     }
                   />
                   <Route path="/scheduling" element={<Scheduling />} />
+                  <Route path="/agendar/:id" element={<PublicScheduling />} />
+                  <Route path="/agendar/cancelar/:id" element={<PublicSchedulingCancel />} />
 
                   <Route path="/quote/approval/:id" element={<QuoteApprovalPortal />} />
 
