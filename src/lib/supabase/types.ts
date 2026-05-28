@@ -63,6 +63,11 @@ export type Database = {
           start_time: string
           status: string
           updated_at: string
+          vehicle_brand: string | null
+          vehicle_id: string | null
+          vehicle_model: string | null
+          vehicle_plate: string | null
+          vehicle_year: string | null
           whatsapp_enviado: boolean | null
         }
         Insert: {
@@ -85,6 +90,11 @@ export type Database = {
           start_time: string
           status?: string
           updated_at?: string
+          vehicle_brand?: string | null
+          vehicle_id?: string | null
+          vehicle_model?: string | null
+          vehicle_plate?: string | null
+          vehicle_year?: string | null
           whatsapp_enviado?: boolean | null
         }
         Update: {
@@ -107,6 +117,11 @@ export type Database = {
           start_time?: string
           status?: string
           updated_at?: string
+          vehicle_brand?: string | null
+          vehicle_id?: string | null
+          vehicle_model?: string | null
+          vehicle_plate?: string | null
+          vehicle_year?: string | null
           whatsapp_enviado?: boolean | null
         }
         Relationships: [
@@ -129,6 +144,13 @@ export type Database = {
             columns: ['professional_id']
             isOneToOne: false
             referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'appointments_vehicle_id_fkey'
+            columns: ['vehicle_id']
+            isOneToOne: false
+            referencedRelation: 'vehicles'
             referencedColumns: ['id']
           },
         ]
@@ -2958,6 +2980,7 @@ export type Database = {
           responsible_name: string | null
           responsible_phone: string | null
           responsible_role: string | null
+          scheduling_interval_minutes: number | null
           session_lifetime: number | null
           short_description: string | null
           show_cnpj: boolean | null
@@ -3004,6 +3027,7 @@ export type Database = {
           responsible_name?: string | null
           responsible_phone?: string | null
           responsible_role?: string | null
+          scheduling_interval_minutes?: number | null
           session_lifetime?: number | null
           short_description?: string | null
           show_cnpj?: boolean | null
@@ -3050,6 +3074,7 @@ export type Database = {
           responsible_name?: string | null
           responsible_phone?: string | null
           responsible_role?: string | null
+          scheduling_interval_minutes?: number | null
           session_lifetime?: number | null
           short_description?: string | null
           show_cnpj?: boolean | null
@@ -3159,6 +3184,60 @@ export type Database = {
             columns: ['brand_id']
             isOneToOne: false
             referencedRelation: 'vehicle_brands'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      vehicles: {
+        Row: {
+          brand_id: string | null
+          chassis: string | null
+          created_at: string | null
+          id: string
+          manufacturing_year: number | null
+          model_id: string | null
+          model_year: number | null
+          plate: string
+          updated_at: string | null
+          version: string | null
+        }
+        Insert: {
+          brand_id?: string | null
+          chassis?: string | null
+          created_at?: string | null
+          id?: string
+          manufacturing_year?: number | null
+          model_id?: string | null
+          model_year?: number | null
+          plate: string
+          updated_at?: string | null
+          version?: string | null
+        }
+        Update: {
+          brand_id?: string | null
+          chassis?: string | null
+          created_at?: string | null
+          id?: string
+          manufacturing_year?: number | null
+          model_id?: string | null
+          model_year?: number | null
+          plate?: string
+          updated_at?: string | null
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'vehicles_brand_id_fkey'
+            columns: ['brand_id']
+            isOneToOne: false
+            referencedRelation: 'vehicle_brands'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'vehicles_model_id_fkey'
+            columns: ['model_id']
+            isOneToOne: false
+            referencedRelation: 'vehicle_models'
             referencedColumns: ['id']
           },
         ]
@@ -3445,6 +3524,11 @@ export const Constants = {
 //   orcamento_id: uuid (nullable)
 //   problema_descricao: text (nullable)
 //   professional_id: uuid (nullable)
+//   vehicle_id: uuid (nullable)
+//   vehicle_plate: text (nullable)
+//   vehicle_brand: text (nullable)
+//   vehicle_model: text (nullable)
+//   vehicle_year: text (nullable)
 // Table: athlete_attribute_values
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (nullable)
@@ -4167,6 +4251,7 @@ export const Constants = {
 //   footer_icon_size: integer (nullable, default: 100)
 //   short_description: text (nullable)
 //   quote_validity_days: integer (nullable, default: 15)
+//   scheduling_interval_minutes: integer (nullable, default: 30)
 // Table: user_roles
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (not null)
@@ -4190,6 +4275,17 @@ export const Constants = {
 //   brand_id: uuid (not null)
 //   name: text (not null)
 //   created_at: timestamp with time zone (not null, default: now())
+// Table: vehicles
+//   id: uuid (not null, default: gen_random_uuid())
+//   chassis: text (nullable)
+//   plate: text (not null)
+//   brand_id: uuid (nullable)
+//   model_id: uuid (nullable)
+//   version: text (nullable)
+//   manufacturing_year: integer (nullable)
+//   model_year: integer (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+//   updated_at: timestamp with time zone (nullable, default: now())
 // Table: whatsapp_config
 //   id: uuid (not null, default: gen_random_uuid())
 //   empresa_id: uuid (nullable)
@@ -4227,6 +4323,7 @@ export const Constants = {
 //   FOREIGN KEY appointments_orcamento_id_fkey: FOREIGN KEY (orcamento_id) REFERENCES orcamentos(id) ON DELETE SET NULL
 //   PRIMARY KEY appointments_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY appointments_professional_id_fkey: FOREIGN KEY (professional_id) REFERENCES profiles(id) ON DELETE SET NULL
+//   FOREIGN KEY appointments_vehicle_id_fkey: FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE SET NULL
 // Table: athlete_attribute_values
 //   FOREIGN KEY athlete_attribute_values_athlete_id_fkey: FOREIGN KEY (athlete_id) REFERENCES athletes(id) ON DELETE CASCADE
 //   FOREIGN KEY athlete_attribute_values_attribute_id_fkey: FOREIGN KEY (attribute_id) REFERENCES athlete_attributes(id) ON DELETE CASCADE
@@ -4441,6 +4538,11 @@ export const Constants = {
 //   FOREIGN KEY vehicle_models_brand_id_fkey: FOREIGN KEY (brand_id) REFERENCES vehicle_brands(id) ON DELETE CASCADE
 //   UNIQUE vehicle_models_brand_id_name_key: UNIQUE (brand_id, name)
 //   PRIMARY KEY vehicle_models_pkey: PRIMARY KEY (id)
+// Table: vehicles
+//   FOREIGN KEY vehicles_brand_id_fkey: FOREIGN KEY (brand_id) REFERENCES vehicle_brands(id) ON DELETE SET NULL
+//   UNIQUE vehicles_chassis_key: UNIQUE (chassis)
+//   FOREIGN KEY vehicles_model_id_fkey: FOREIGN KEY (model_id) REFERENCES vehicle_models(id) ON DELETE SET NULL
+//   PRIMARY KEY vehicles_pkey: PRIMARY KEY (id)
 // Table: whatsapp_config
 //   PRIMARY KEY whatsapp_config_pkey: PRIMARY KEY (id)
 // Table: whatsapp_logs
@@ -4900,6 +5002,13 @@ export const Constants = {
 //     USING: true
 // Table: vehicle_models
 //   Policy "models_select_all" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+// Table: vehicles
+//   Policy "vehicles_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "vehicles_insert_public" (INSERT, PERMISSIVE) roles={public}
+//     WITH CHECK: true
+//   Policy "vehicles_select_public" (SELECT, PERMISSIVE) roles={public}
 //     USING: true
 // Table: whatsapp_config
 //   Policy "whatsapp_config_all" (ALL, PERMISSIVE) roles={authenticated}
@@ -5416,7 +5525,7 @@ export const Constants = {
 //   BEGIN
 //     IF NEW.status IS DISTINCT FROM OLD.status THEN
 //       IF NEW.status = 'fechado' THEN
-//         UPDATE public.appointments SET status = 'Fechado' WHERE orcamento_id = NEW.id;
+//         UPDATE public.appointments SET status = 'Fechada' WHERE orcamento_id = NEW.id;
 //       ELSIF NEW.status = 'aprovado' THEN
 //         UPDATE public.appointments SET status = 'Aprovado' WHERE orcamento_id = NEW.id;
 //       ELSIF NEW.status = 'rejeitado' THEN
@@ -5425,6 +5534,12 @@ export const Constants = {
 //         UPDATE public.appointments SET status = 'Pré-Fechada' WHERE orcamento_id = NEW.id;
 //       ELSIF NEW.status = 'rascunho' THEN
 //         UPDATE public.appointments SET status = 'OS Rascunho' WHERE orcamento_id = NEW.id;
+//       ELSIF NEW.status = 'aguardando_aprovacao' THEN
+//         UPDATE public.appointments SET status = 'Aguardando Aprovação' WHERE orcamento_id = NEW.id;
+//       ELSIF NEW.status = 'solicitado_ajustes' THEN
+//         UPDATE public.appointments SET status = 'Solicitado Ajustes' WHERE orcamento_id = NEW.id;
+//       ELSIF NEW.status = 'em_ajustes' THEN
+//         UPDATE public.appointments SET status = 'Em Ajustes' WHERE orcamento_id = NEW.id;
 //       END IF;
 //     END IF;
 //     RETURN NEW;
@@ -5701,3 +5816,5 @@ export const Constants = {
 //   CREATE UNIQUE INDEX vehicle_brands_name_key ON public.vehicle_brands USING btree (name)
 // Table: vehicle_models
 //   CREATE UNIQUE INDEX vehicle_models_brand_id_name_key ON public.vehicle_models USING btree (brand_id, name)
+// Table: vehicles
+//   CREATE UNIQUE INDEX vehicles_chassis_key ON public.vehicles USING btree (chassis)

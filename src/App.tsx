@@ -63,11 +63,9 @@ import AdminAnalytics from './pages/admin/settings/AdminAnalytics'
 import AdminPublishLogs from './pages/admin/settings/AdminPublishLogs'
 import AdminWhatsApp from './pages/admin/whatsapp/AdminWhatsApp'
 import AdminEmail from './pages/admin/email/AdminEmail'
-import AdminAppointmentsManager from './pages/admin/appointments/AdminAppointmentsManager'
 import AdminQuotes from './pages/admin/quotes/AdminQuotes'
 import AdminServices from './pages/admin/services/AdminServices'
 import AdminAppointments from './pages/admin/appointments/AdminAppointments'
-import AdminAppointmentsDashboard from './pages/admin/appointments/AdminAppointmentsDashboard'
 import AdminPedidosList from './pages/admin/commercial/AdminPedidosList'
 import AdminPedidoForm from './pages/admin/commercial/AdminPedidoForm'
 import AdminPedidoView from './pages/admin/commercial/AdminPedidoView'
@@ -192,11 +190,6 @@ const App = () => (
                   <Route path="/admin/whatsapp" element={<AdminWhatsApp />} />
                   <Route path="/admin/email" element={<AdminEmail />} />
                   <Route path="/admin/appointments" element={<AdminAppointments />} />
-                  <Route path="/admin/appointments/manage" element={<AdminAppointmentsManager />} />
-                  <Route
-                    path="/admin/appointments-dashboard"
-                    element={<AdminAppointmentsDashboard />}
-                  />
                   <Route path="/admin/dashboard" element={<AdminDashboard />} />
                   <Route path="/admin/pages" element={<AdminPageList />} />
                   <Route path="/admin/pages/new" element={<AdminPageForm />} />
