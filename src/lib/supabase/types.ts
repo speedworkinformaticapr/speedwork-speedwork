@@ -45,14 +45,20 @@ export type Database = {
       appointments: {
         Row: {
           client_name: string
+          cliente_id: string | null
           created_at: string
+          dados_coleta: Json | null
           date: string
+          duracao_minutos: number | null
           end_time: string
           executed_minutes: number | null
           id: string
           last_started_at: string | null
           link_pagamento: string | null
           notes: string | null
+          orcamento_id: string | null
+          problema_descricao: string | null
+          professional_id: string | null
           service_name: string
           start_time: string
           status: string
@@ -61,14 +67,20 @@ export type Database = {
         }
         Insert: {
           client_name: string
+          cliente_id?: string | null
           created_at?: string
+          dados_coleta?: Json | null
           date: string
+          duracao_minutos?: number | null
           end_time: string
           executed_minutes?: number | null
           id?: string
           last_started_at?: string | null
           link_pagamento?: string | null
           notes?: string | null
+          orcamento_id?: string | null
+          problema_descricao?: string | null
+          professional_id?: string | null
           service_name: string
           start_time: string
           status?: string
@@ -77,21 +89,49 @@ export type Database = {
         }
         Update: {
           client_name?: string
+          cliente_id?: string | null
           created_at?: string
+          dados_coleta?: Json | null
           date?: string
+          duracao_minutos?: number | null
           end_time?: string
           executed_minutes?: number | null
           id?: string
           last_started_at?: string | null
           link_pagamento?: string | null
           notes?: string | null
+          orcamento_id?: string | null
+          problema_descricao?: string | null
+          professional_id?: string | null
           service_name?: string
           start_time?: string
           status?: string
           updated_at?: string
           whatsapp_enviado?: boolean | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'appointments_cliente_id_fkey'
+            columns: ['cliente_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'appointments_orcamento_id_fkey'
+            columns: ['orcamento_id']
+            isOneToOne: false
+            referencedRelation: 'orcamentos'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'appointments_professional_id_fkey'
+            columns: ['professional_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
       }
       athlete_attribute_values: {
         Row: {
@@ -584,6 +624,53 @@ export type Database = {
         }
         Relationships: []
       }
+      campos_agendamento: {
+        Row: {
+          id: string
+          label: string
+          nome_campo: string
+          obrigatorio: boolean | null
+          opcoes: Json | null
+          ordem: number | null
+          placeholder: string | null
+          servico_id: string | null
+          tenant_id: string | null
+          tipo_campo: string
+        }
+        Insert: {
+          id?: string
+          label: string
+          nome_campo: string
+          obrigatorio?: boolean | null
+          opcoes?: Json | null
+          ordem?: number | null
+          placeholder?: string | null
+          servico_id?: string | null
+          tenant_id?: string | null
+          tipo_campo: string
+        }
+        Update: {
+          id?: string
+          label?: string
+          nome_campo?: string
+          obrigatorio?: boolean | null
+          opcoes?: Json | null
+          ordem?: number | null
+          placeholder?: string | null
+          servico_id?: string | null
+          tenant_id?: string | null
+          tipo_campo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'campos_agendamento_servico_id_fkey'
+            columns: ['servico_id']
+            isOneToOne: false
+            referencedRelation: 'services'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       cart_items: {
         Row: {
           created_at: string | null
@@ -940,6 +1027,44 @@ export type Database = {
             columns: ['club_id']
             isOneToOne: false
             referencedRelation: 'clubs'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      disponibilidade_servicos: {
+        Row: {
+          ativo: boolean | null
+          dia_semana: number
+          hora_fim: string
+          hora_inicio: string
+          id: string
+          intervalo_minutos: number | null
+          servico_id: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          dia_semana: number
+          hora_fim: string
+          hora_inicio: string
+          id?: string
+          intervalo_minutos?: number | null
+          servico_id?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          dia_semana?: number
+          hora_fim?: string
+          hora_inicio?: string
+          id?: string
+          intervalo_minutos?: number | null
+          servico_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'disponibilidade_servicos_servico_id_fkey'
+            columns: ['servico_id']
+            isOneToOne: false
+            referencedRelation: 'services'
             referencedColumns: ['id']
           },
         ]
@@ -3314,6 +3439,12 @@ export const Constants = {
 //   updated_at: timestamp with time zone (not null, default: now())
 //   link_pagamento: text (nullable)
 //   whatsapp_enviado: boolean (nullable, default: false)
+//   dados_coleta: jsonb (nullable, default: '{}'::jsonb)
+//   duracao_minutos: integer (nullable, default: 0)
+//   cliente_id: uuid (nullable)
+//   orcamento_id: uuid (nullable)
+//   problema_descricao: text (nullable)
+//   professional_id: uuid (nullable)
 // Table: athlete_attribute_values
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (nullable)
@@ -3433,6 +3564,17 @@ export const Constants = {
 //   content_es: text (nullable)
 //   conclusion_en: text (nullable)
 //   conclusion_es: text (nullable)
+// Table: campos_agendamento
+//   id: uuid (not null, default: gen_random_uuid())
+//   tenant_id: uuid (nullable, default: '00000000-0000-0000-0000-000000000001'::uuid)
+//   servico_id: uuid (nullable)
+//   nome_campo: text (not null)
+//   tipo_campo: text (not null)
+//   label: text (not null)
+//   obrigatorio: boolean (nullable, default: false)
+//   ordem: integer (nullable, default: 0)
+//   opcoes: jsonb (nullable, default: '[]'::jsonb)
+//   placeholder: text (nullable)
 // Table: cart_items
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (nullable)
@@ -3524,6 +3666,14 @@ export const Constants = {
 //   name_es: text (nullable)
 //   description_en: text (nullable)
 //   description_es: text (nullable)
+// Table: disponibilidade_servicos
+//   id: uuid (not null, default: gen_random_uuid())
+//   servico_id: uuid (nullable)
+//   dia_semana: integer (not null)
+//   hora_inicio: time without time zone (not null)
+//   hora_fim: time without time zone (not null)
+//   intervalo_minutos: integer (nullable, default: 30)
+//   ativo: boolean (nullable, default: true)
 // Table: email_logs
 //   id: uuid (not null, default: gen_random_uuid())
 //   recipient_email: text (nullable)
@@ -4073,7 +4223,10 @@ export const Constants = {
 // Table: affiliation_plans
 //   PRIMARY KEY affiliation_plans_pkey: PRIMARY KEY (id)
 // Table: appointments
+//   FOREIGN KEY appointments_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES profiles(id) ON DELETE SET NULL
+//   FOREIGN KEY appointments_orcamento_id_fkey: FOREIGN KEY (orcamento_id) REFERENCES orcamentos(id) ON DELETE SET NULL
 //   PRIMARY KEY appointments_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY appointments_professional_id_fkey: FOREIGN KEY (professional_id) REFERENCES profiles(id) ON DELETE SET NULL
 // Table: athlete_attribute_values
 //   FOREIGN KEY athlete_attribute_values_athlete_id_fkey: FOREIGN KEY (athlete_id) REFERENCES athletes(id) ON DELETE CASCADE
 //   FOREIGN KEY athlete_attribute_values_attribute_id_fkey: FOREIGN KEY (attribute_id) REFERENCES athlete_attributes(id) ON DELETE CASCADE
@@ -4114,6 +4267,9 @@ export const Constants = {
 // Table: blog_posts
 //   FOREIGN KEY blog_posts_author_id_fkey: FOREIGN KEY (author_id) REFERENCES auth.users(id) ON DELETE SET NULL
 //   PRIMARY KEY blog_posts_pkey: PRIMARY KEY (id)
+// Table: campos_agendamento
+//   PRIMARY KEY campos_agendamento_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY campos_agendamento_servico_id_fkey: FOREIGN KEY (servico_id) REFERENCES services(id) ON DELETE CASCADE
 // Table: cart_items
 //   PRIMARY KEY cart_items_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY cart_items_product_id_fkey: FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
@@ -4139,6 +4295,9 @@ export const Constants = {
 // Table: courses
 //   FOREIGN KEY courses_club_id_fkey: FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE CASCADE
 //   PRIMARY KEY courses_pkey: PRIMARY KEY (id)
+// Table: disponibilidade_servicos
+//   PRIMARY KEY disponibilidade_servicos_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY disponibilidade_servicos_servico_id_fkey: FOREIGN KEY (servico_id) REFERENCES services(id) ON DELETE CASCADE
 // Table: email_logs
 //   PRIMARY KEY email_logs_pkey: PRIMARY KEY (id)
 // Table: event_photos
@@ -4299,8 +4458,13 @@ export const Constants = {
 //   Policy "appointments_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+//   Policy "appointments_insert_public" (INSERT, PERMISSIVE) roles={public}
+//     WITH CHECK: true
 //   Policy "appointments_select_public" (SELECT, PERMISSIVE) roles={public}
 //     USING: true
+//   Policy "appointments_update_public" (UPDATE, PERMISSIVE) roles={public}
+//     USING: true
+//     WITH CHECK: true
 // Table: athlete_attribute_values
 //   Policy "athlete_attribute_values_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -4367,6 +4531,12 @@ export const Constants = {
 //   Policy "Enable update for authenticated users" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+// Table: campos_agendamento
+//   Policy "campos_agendamento_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+//   Policy "campos_agendamento_select" (SELECT, PERMISSIVE) roles={public}
+//     USING: true
 // Table: cart_items
 //   Policy "Users can manage their own cart items" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (auth.uid() = user_id)
@@ -4425,6 +4595,12 @@ export const Constants = {
 //   Policy "Enable update for authenticated users" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+// Table: disponibilidade_servicos
+//   Policy "disponibilidade_servicos_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+//   Policy "disponibilidade_servicos_select" (SELECT, PERMISSIVE) roles={public}
+//     USING: true
 // Table: email_logs
 //   Policy "email_logs_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -5231,6 +5407,30 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION sync_orcamento_appointment_status()
+//   CREATE OR REPLACE FUNCTION public.sync_orcamento_appointment_status()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   BEGIN
+//     IF NEW.status IS DISTINCT FROM OLD.status THEN
+//       IF NEW.status = 'fechado' THEN
+//         UPDATE public.appointments SET status = 'Fechado' WHERE orcamento_id = NEW.id;
+//       ELSIF NEW.status = 'aprovado' THEN
+//         UPDATE public.appointments SET status = 'Aprovado' WHERE orcamento_id = NEW.id;
+//       ELSIF NEW.status = 'rejeitado' THEN
+//         UPDATE public.appointments SET status = 'Não Aprovado' WHERE orcamento_id = NEW.id;
+//       ELSIF NEW.status = 'pré-fechada' THEN
+//         UPDATE public.appointments SET status = 'Pré-Fechada' WHERE orcamento_id = NEW.id;
+//       ELSIF NEW.status = 'rascunho' THEN
+//         UPDATE public.appointments SET status = 'OS Rascunho' WHERE orcamento_id = NEW.id;
+//       END IF;
+//     END IF;
+//     RETURN NEW;
+//   END;
+//   $function$
+//
 // FUNCTION sync_profile_to_usuarios()
 //   CREATE OR REPLACE FUNCTION public.sync_profile_to_usuarios()
 //    RETURNS trigger
@@ -5448,6 +5648,7 @@ export const Constants = {
 //   trg_calc_orcamento_itens_total: CREATE TRIGGER trg_calc_orcamento_itens_total BEFORE INSERT OR UPDATE ON public.orcamento_itens FOR EACH ROW EXECUTE FUNCTION calc_orcamento_itens_total()
 // Table: orcamentos
 //   audit_orcamentos: CREATE TRIGGER audit_orcamentos AFTER INSERT OR DELETE OR UPDATE ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION audit_trigger_func()
+//   on_orcamento_status_change: CREATE TRIGGER on_orcamento_status_change AFTER UPDATE OF status ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION sync_orcamento_appointment_status()
 //   trg_audit_orcamento_status: CREATE TRIGGER trg_audit_orcamento_status AFTER UPDATE OF status ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION audit_orcamento_status_func()
 //   trg_calc_orcamento_total: CREATE TRIGGER trg_calc_orcamento_total BEFORE INSERT OR UPDATE ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION calc_orcamento_total()
 //   trg_generate_numero_orcamento: CREATE TRIGGER trg_generate_numero_orcamento BEFORE INSERT ON public.orcamentos FOR EACH ROW EXECUTE FUNCTION generate_numero_orcamento()

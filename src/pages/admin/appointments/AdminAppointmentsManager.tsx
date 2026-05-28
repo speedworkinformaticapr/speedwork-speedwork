@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { supabase } from '@/lib/supabase/client'
+import { Card, CardContent, CardFooter } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -8,191 +11,239 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { supabase } from '@/lib/supabase/client'
-import { format } from 'date-fns'
+import { LayoutGrid, List, Play, Calendar as CalendarIcon, Car } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { CalendarDays, RefreshCw } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { format } from 'date-fns'
+import { VehicleModal } from '@/components/modals/VehicleModal'
+
+const STATUSES = [
+  'Pendente Confirmação',
+  'Confirmado pelo Cliente',
+  'Recebido no Horário',
+  'Recebido c/ Atraso',
+  'OS Rascunho',
+  'Aguardando Aprovação',
+  'Aprovado',
+  'Solicitado Ajustes',
+  'Não Aprovado',
+  'Em Ajustes',
+  'Pré-Fechada',
+  'Fechada',
+]
 
 export default function AdminAppointmentsManager() {
   const [appointments, setAppointments] = useState<any[]>([])
+  const [view, setView] = useState<'kanban' | 'grid'>('kanban')
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
+  const navigate = useNavigate()
 
-  const loadData = async () => {
+  const fetchAppointments = async () => {
     setLoading(true)
     const { data } = await supabase
       .from('appointments')
       .select('*')
       .order('date', { ascending: false })
+      .order('start_time', { ascending: true })
     if (data) setAppointments(data)
     setLoading(false)
   }
 
   useEffect(() => {
-    loadData()
+    fetchAppointments()
+    const channel = supabase
+      .channel('public:appointments')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'appointments' },
+        fetchAppointments,
+      )
+      .subscribe()
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
-  const [isUpdating, setIsUpdating] = useState<string | null>(null)
-
-  const updateStatus = async (app: any, novoStatus: string) => {
-    setIsUpdating(app.id)
-    try {
-      const isConcluido = novoStatus === 'Concluído'
-      const linkPagamento = isConcluido
-        ? `https://pagamento.exemplo.com/req_${app.id.slice(0, 5)}`
-        : null
-
-      const { error } = await supabase
-        .from('appointments')
-        .update({
-          status: novoStatus,
-          ...(linkPagamento && { link_pagamento: linkPagamento }),
-        })
-        .eq('id', app.id)
-
-      if (error) throw error
-
-      // Notificar cliente via WhatsApp
-      const { data: prof } = await supabase
-        .from('profiles')
-        .select('id, autoriza_whatsapp, telefone_whatsapp')
-        .eq('name', app.client_name)
-        .limit(1)
-        .maybeSingle()
-
-      if (prof?.autoriza_whatsapp && prof?.telefone_whatsapp) {
-        await supabase.functions.invoke('enviar_whatsapp', {
-          body: {
-            cliente_id: prof.id,
-            telefone_destino: prof.telefone_whatsapp,
-            tipo_mensagem: isConcluido ? 'agendamento_conclusao' : 'agendamento_status',
-            variaveis: {
-              cliente_nome: app.client_name,
-              novo_status: novoStatus,
-              data_atualizacao: new Date().toLocaleDateString(),
-              valor_servico: 'R$ 0,00', // Mock
-              link_pagamento: linkPagamento || '',
-              data_conclusao: new Date().toLocaleDateString(),
-            },
-          },
-        })
-        await supabase.from('appointments').update({ whatsapp_enviado: true }).eq('id', app.id)
-        toast({ title: 'Sucesso', description: 'Status atualizado e WhatsApp enviado!' })
-      } else {
-        toast({
-          title: 'Sucesso',
-          description: 'Status atualizado. Cliente sem WhatsApp configurado/autorizado.',
-        })
-      }
-
-      loadData()
-    } catch (err: any) {
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' })
-    } finally {
-      setIsUpdating(null)
-    }
+  const updateStatus = async (id: string, status: string) => {
+    const { error } = await supabase.from('appointments').update({ status }).eq('id', id)
+    if (error)
+      toast({ title: 'Erro ao atualizar', description: error.message, variant: 'destructive' })
+    else fetchAppointments()
   }
 
-  return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <CalendarDays className="w-8 h-8 text-primary" />
-        <div>
-          <h1 className="text-3xl font-bold">Gerenciar Agendamentos</h1>
-          <p className="text-muted-foreground">
-            Listagem completa e controle de status de serviços.
+  const handleStartOS = async (apt: any) => {
+    await updateStatus(apt.id, 'OS Rascunho')
+    const params = new URLSearchParams({
+      appointment_id: apt.id,
+      client_name: apt.client_name,
+      vehicle_plate: apt.vehicle_plate || '',
+      vehicle_brand: apt.vehicle_brand || '',
+      vehicle_model: apt.vehicle_model || '',
+      vehicle_year: apt.vehicle_year || '',
+    })
+    navigate(`/admin/quotes/new?${params.toString()}`)
+  }
+
+  const renderCard = (apt: any) => (
+    <Card key={apt.id} className="mb-3 hover:border-primary/50 transition-colors shadow-sm text-sm">
+      <CardContent className="p-4 space-y-3">
+        <div className="flex justify-between items-start">
+          <span className="font-bold text-base truncate pr-2">{apt.client_name}</span>
+          <Badge variant="outline">{apt.start_time.substring(0, 5)}</Badge>
+        </div>
+        <div className="flex items-center text-muted-foreground">
+          <Car className="w-4 h-4 mr-2" />
+          <span className="uppercase">{apt.vehicle_plate || 'Sem Placa'}</span>
+        </div>
+        <div className="flex items-center text-muted-foreground">
+          <CalendarIcon className="w-4 h-4 mr-2" />
+          <span>{format(new Date(apt.date), 'dd/MM/yyyy')}</span>
+        </div>
+        {apt.problema_descricao && (
+          <p className="text-xs text-muted-foreground line-clamp-2 bg-muted/50 p-2 rounded">
+            {apt.problema_descricao}
           </p>
+        )}
+      </CardContent>
+      <CardFooter className="p-2 bg-muted/20 border-t flex justify-between items-center gap-2">
+        <select
+          className="text-xs bg-transparent border rounded p-1 flex-1 max-w-[140px] truncate"
+          value={apt.status}
+          onChange={(e) => updateStatus(apt.id, e.target.value)}
+        >
+          {STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+
+        {[
+          'Pendente Confirmação',
+          'Confirmado pelo Cliente',
+          'Recebido no Horário',
+          'Recebido c/ Atraso',
+        ].includes(apt.status) && (
+          <Button size="sm" className="h-7 px-2" onClick={() => handleStartOS(apt)}>
+            <Play className="w-3 h-3 mr-1" /> Iniciar
+          </Button>
+        )}
+      </CardFooter>
+    </Card>
+  )
+
+  return (
+    <div className="p-6 h-[calc(100vh-4rem)] flex flex-col">
+      <div className="flex justify-between items-center mb-6 shrink-0">
+        <div>
+          <h1 className="text-3xl font-bold">Painel de Agendamentos / OS</h1>
+          <p className="text-muted-foreground">Acompanhe e movimente o fluxo da oficina.</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <VehicleModal />
+          <div className="flex bg-muted p-1 rounded-lg">
+            <Button
+              variant={view === 'kanban' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setView('kanban')}
+            >
+              <LayoutGrid className="w-4 h-4 mr-2" /> Kanban
+            </Button>
+            <Button
+              variant={view === 'grid' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setView('grid')}
+            >
+              <List className="w-4 h-4 mr-2" /> Lista
+            </Button>
+          </div>
         </div>
       </div>
 
-      <Card className="bg-card/40 backdrop-blur-md border-border/50 shadow-sm overflow-hidden">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Serviço</TableHead>
-                <TableHead>Horário</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Msg Enviada</TableHead>
-                <TableHead>Link PGTO</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
+      {loading ? (
+        <div className="flex items-center justify-center flex-1">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : view === 'kanban' ? (
+        <div className="flex flex-1 gap-4 overflow-x-auto pb-4 items-start">
+          {STATUSES.map((status) => {
+            const columnApts = appointments.filter((a) => a.status === status)
+            return (
+              <div
+                key={status}
+                className="w-80 shrink-0 bg-muted/30 rounded-xl border flex flex-col max-h-full"
+              >
+                <div className="p-4 border-b bg-muted/50 rounded-t-xl flex justify-between items-center shrink-0">
+                  <h3 className="font-semibold text-sm">{status}</h3>
+                  <Badge variant="secondary">{columnApts.length}</Badge>
+                </div>
+                <div className="p-3 overflow-y-auto flex-1 custom-scrollbar">
+                  {columnApts.map(renderCard)}
+                  {columnApts.length === 0 && (
+                    <p className="text-xs text-center text-muted-foreground py-4">Vazio</p>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <Card className="flex-1 overflow-hidden flex flex-col">
+          <div className="overflow-auto flex-1">
+            <Table>
+              <TableHeader className="sticky top-0 bg-background z-10">
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
-                    Carregando...
-                  </TableCell>
+                  <TableHead>Data/Hora</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Veículo</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
-              ) : (
-                appointments.map((app) => (
-                  <TableRow key={app.id}>
-                    <TableCell>{format(new Date(app.date), 'dd/MM/yyyy')}</TableCell>
-                    <TableCell className="font-medium">{app.client_name}</TableCell>
-                    <TableCell>{app.service_name}</TableCell>
+              </TableHeader>
+              <TableBody>
+                {appointments.map((apt) => (
+                  <TableRow key={apt.id}>
                     <TableCell>
-                      {app.start_time.substring(0, 5)} - {app.end_time.substring(0, 5)}
+                      <div className="font-medium">{format(new Date(apt.date), 'dd/MM/yyyy')}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {apt.start_time.substring(0, 5)}
+                      </div>
                     </TableCell>
+                    <TableCell className="font-medium">{apt.client_name}</TableCell>
+                    <TableCell className="uppercase">{apt.vehicle_plate || 'N/A'}</TableCell>
                     <TableCell>
-                      <Select
-                        disabled={isUpdating === app.id}
-                        value={app.status}
-                        onValueChange={(v) => updateStatus(app, v)}
+                      <select
+                        className="text-sm bg-transparent border rounded p-1"
+                        value={apt.status}
+                        onChange={(e) => updateStatus(apt.id, e.target.value)}
                       >
-                        <SelectTrigger className="h-8 w-[140px] text-xs">
-                          {isUpdating === app.id ? 'Atualizando...' : <SelectValue />}
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Pendente">Pendente</SelectItem>
-                          <SelectItem value="Confirmado">Confirmado</SelectItem>
-                          <SelectItem value="Em Andamento">Em Andamento</SelectItem>
-                          <SelectItem value="Concluído">Concluído</SelectItem>
-                          <SelectItem value="Cancelado">Cancelado</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        {STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
                     </TableCell>
-                    <TableCell>
-                      {app.whatsapp_enviado ? (
-                        <span className="text-green-600 font-bold text-xs flex items-center gap-1">
-                          ✓ Sim
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground text-xs flex items-center gap-1">
-                          ✗ Não
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {app.link_pagamento ? (
-                        <a
-                          href={app.link_pagamento}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs text-blue-600 hover:underline"
-                        >
-                          Ver Link
-                        </a>
-                      ) : (
-                        '-'
+                    <TableCell className="text-right">
+                      {[
+                        'Pendente Confirmação',
+                        'Confirmado pelo Cliente',
+                        'Recebido no Horário',
+                        'Recebido c/ Atraso',
+                      ].includes(apt.status) && (
+                        <Button size="sm" onClick={() => handleStartOS(apt)}>
+                          <Play className="w-4 h-4 mr-2" /> Iniciar OS
+                        </Button>
                       )}
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+      )}
     </div>
   )
 }
