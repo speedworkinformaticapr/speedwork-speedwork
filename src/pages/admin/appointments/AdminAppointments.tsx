@@ -3,15 +3,14 @@ import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
+import { useToast } from '@/hooks/use-toast'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
 } from '@/components/ui/dialog'
 import {
   Table,
@@ -21,387 +20,388 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { useToast } from '@/hooks/use-toast'
-import { useSystemData } from '@/hooks/use-system-data'
-import { CalendarIcon, LayoutGrid, List, Plus, Clock, Wrench, FileText } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Appointment } from '@/services/appointments'
+import { Plus, Search, UserPlus } from 'lucide-react'
 
 export default function AdminAppointments() {
-  const [appointments, setAppointments] = useState<any[]>([])
-  const [viewMode, setViewMode] = useState<'card' | 'grid'>('card')
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
-  const { data: systemData } = useSystemData()
 
-  const [clientName, setClientName] = useState('')
-  const [serviceName, setServiceName] = useState('')
-  const [date, setDate] = useState<Date | undefined>(new Date())
-  const [time, setTime] = useState('')
-  const [problemDesc, setProblemDesc] = useState('')
-  const [plate, setPlate] = useState('')
+  const [open, setOpen] = useState(false)
 
-  const [availableSlots, setAvailableSlots] = useState<string[]>([])
+  // New Appointment State
+  const [cpfCnpj, setCpfCnpj] = useState('')
+  const [clientProfile, setClientProfile] = useState<any>(null)
+  const [searchLoading, setSearchLoading] = useState(false)
 
-  const fetchAppointments = async () => {
+  const [appointmentData, setAppointmentData] = useState({
+    date: '',
+    start_time: '',
+    end_time: '',
+    service_name: '',
+    notes: '',
+  })
+
+  // New Client State
+  const [showNewClientForm, setShowNewClientForm] = useState(false)
+  const [newClientData, setNewClientData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+  })
+
+  useEffect(() => {
+    loadAppointments()
+  }, [])
+
+  const loadAppointments = async () => {
+    setLoading(true)
     const { data } = await supabase
-      .from('appointments')
+      .from('appointments' as any)
       .select('*')
       .order('date', { ascending: false })
       .order('start_time', { ascending: false })
-      .limit(100)
-    if (data) setAppointments(data)
+      .limit(50)
+
+    if (data) setAppointments(data as Appointment[])
+    setLoading(false)
   }
 
-  useEffect(() => {
-    fetchAppointments()
-  }, [])
-
-  useEffect(() => {
-    if (date) {
-      loadSlots(format(date, 'yyyy-MM-dd'))
+  const handleSearchClient = async () => {
+    if (!cpfCnpj) {
+      toast({ title: 'Atenção', description: 'Digite o CPF/CNPJ', variant: 'destructive' })
+      return
     }
-  }, [date, appointments, systemData?.scheduling_interval_minutes])
 
-  const loadSlots = async (selectedDate: string) => {
-    const interval = systemData?.scheduling_interval_minutes || 30
-    const slots = []
-    let start = 8 * 60 // 8:00
-    const end = 18 * 60 // 18:00
+    setSearchLoading(true)
+    setShowNewClientForm(false)
+    setClientProfile(null)
 
-    const { data: existing } = await supabase
-      .from('appointments')
-      .select('start_time')
-      .eq('date', selectedDate)
+    // Remove non-numeric characters for search flexibility
+    const cleanDoc = cpfCnpj.replace(/\D/g, '')
 
-    const booked = existing?.map((a) => a.start_time.substring(0, 5)) || []
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, name, email, phone, cpf_cnpj')
+      .or(`cpf_cnpj.eq.${cpfCnpj},cpf_cnpj.eq.${cleanDoc}`)
+      .maybeSingle()
 
-    while (start < end) {
-      const h = Math.floor(start / 60)
-        .toString()
-        .padStart(2, '0')
-      const m = (start % 60).toString().padStart(2, '0')
-      const timeStr = `${h}:${m}`
-      if (!booked.includes(timeStr)) slots.push(timeStr)
-      start += interval
+    setSearchLoading(false)
+
+    if (data) {
+      setClientProfile(data)
+      toast({ title: 'Cliente Encontrado', description: `Nome: ${data.name}` })
+    } else {
+      setShowNewClientForm(true)
+      toast({
+        title: 'Cliente não encontrado',
+        description: 'Por favor, cadastre o novo cliente preenchendo os dados abaixo.',
+        variant: 'default',
+      })
     }
-    setAvailableSlots(slots)
   }
 
-  const handleCreate = async () => {
-    if (!clientName || !serviceName || !date || !time) {
+  const handleRegisterClient = async () => {
+    if (!newClientData.name) {
+      toast({ title: 'Atenção', description: 'O nome é obrigatório.', variant: 'destructive' })
+      return
+    }
+
+    setSearchLoading(true)
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert({
+        name: newClientData.name,
+        email: newClientData.email,
+        phone: newClientData.phone,
+        cpf_cnpj: cpfCnpj,
+        is_client: true,
+      })
+      .select('id, name, email, phone')
+      .single()
+
+    setSearchLoading(false)
+
+    if (error) {
+      toast({ title: 'Erro ao cadastrar', description: error.message, variant: 'destructive' })
+    } else {
+      setClientProfile(data)
+      setShowNewClientForm(false)
+      toast({ title: 'Sucesso', description: 'Cliente cadastrado com sucesso!' })
+    }
+  }
+
+  const handleCreateAppointment = async () => {
+    if (
+      !clientProfile ||
+      !appointmentData.date ||
+      !appointmentData.start_time ||
+      !appointmentData.service_name
+    ) {
       toast({
         title: 'Atenção',
-        description: 'Preencha os campos obrigatórios',
+        description: 'Preencha todos os campos obrigatórios do agendamento.',
         variant: 'destructive',
       })
       return
     }
-    setLoading(true)
-    const { error } = await supabase.from('appointments').insert({
-      client_name: clientName,
-      service_name: serviceName,
-      date: format(date, 'yyyy-MM-dd'),
-      start_time: time,
-      end_time: time,
-      problema_descricao: problemDesc,
-      vehicle_plate: plate,
-      status: 'Pendente Confirmação',
+
+    const { error } = await supabase.from('appointments' as any).insert({
+      cliente_id: clientProfile.id,
+      client_name: clientProfile.name,
+      date: appointmentData.date,
+      start_time: appointmentData.start_time,
+      end_time: appointmentData.end_time || appointmentData.start_time,
+      service_name: appointmentData.service_name,
+      notes: appointmentData.notes,
+      status: 'Pendente',
     })
-    setLoading(false)
 
     if (error) {
-      toast({ title: 'Erro', description: error.message, variant: 'destructive' })
+      toast({
+        title: 'Erro ao criar agendamento',
+        description: error.message,
+        variant: 'destructive',
+      })
     } else {
-      toast({ title: 'Sucesso', description: 'Agendamento criado com sucesso!' })
-      setIsDialogOpen(false)
-      setClientName('')
-      setServiceName('')
-      setTime('')
-      setProblemDesc('')
-      setPlate('')
-      fetchAppointments()
+      toast({ title: 'Agendamento Confirmado', description: 'O agendamento foi salvo no sistema.' })
+      setOpen(false)
+      loadAppointments()
+
+      setCpfCnpj('')
+      setClientProfile(null)
+      setShowNewClientForm(false)
+      setAppointmentData({ date: '', start_time: '', end_time: '', service_name: '', notes: '' })
+      setNewClientData({ name: '', email: '', phone: '' })
     }
   }
 
-  const formatDateSafe = (dateStr: string) => {
-    if (!dateStr) return ''
-    const [y, m, d] = dateStr.split('-')
-    return format(new Date(Number(y), Number(m) - 1, Number(d)), 'dd/MM/yyyy')
-  }
-
   return (
-    <div className="container py-8 max-w-7xl mx-auto animate-fade-in-up">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Gestão de Agendamentos</h1>
-          <p className="text-muted-foreground mt-1">
-            Acompanhe e gerencie todos os serviços e compromissos marcados.
-          </p>
-        </div>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="flex items-center bg-muted rounded-lg p-1 shrink-0">
-            <Button
-              variant={viewMode === 'card' ? 'secondary' : 'ghost'}
-              size="icon"
-              className="w-8 h-8 rounded-md"
-              onClick={() => setViewMode('card')}
-            >
-              <LayoutGrid className="w-4 h-4" />
+    <div className="space-y-6 max-w-6xl mx-auto">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Gestão de Agendamentos</h1>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Agendamento
             </Button>
-            <Button
-              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-              size="icon"
-              className="w-8 h-8 rounded-md"
-              onClick={() => setViewMode('grid')}
-            >
-              <List className="w-4 h-4" />
-            </Button>
-          </div>
-
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto">
-                <Plus className="w-4 h-4 mr-2" /> Novo Agendamento
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[550px]">
-              <DialogHeader>
-                <DialogTitle>Cadastrar Novo Agendamento</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-5 py-4">
-                <div className="space-y-2">
-                  <Label>Nome do Cliente *</Label>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl">Criar Novo Agendamento</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6 py-4">
+              <div className="space-y-3 bg-muted/30 p-4 rounded-lg border">
+                <Label className="text-base font-semibold">Identificação do Cliente</Label>
+                <div className="flex gap-2">
                   <Input
-                    value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    placeholder="Ex: Maria da Silva"
+                    placeholder="Digite o CPF ou CNPJ"
+                    value={cpfCnpj}
+                    onChange={(e) => setCpfCnpj(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearchClient()}
                   />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Serviço *</Label>
-                    <Input
-                      value={serviceName}
-                      onChange={(e) => setServiceName(e.target.value)}
-                      placeholder="Ex: Revisão Geral"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Placa do Veículo</Label>
-                    <Input
-                      value={plate}
-                      onChange={(e) => setPlate(e.target.value)}
-                      placeholder="ABC-1234"
-                      className="uppercase"
-                    />
-                  </div>
+                  <Button onClick={handleSearchClient} disabled={searchLoading} variant="secondary">
+                    <Search className="w-4 h-4 mr-2" />
+                    Buscar
+                  </Button>
                 </div>
 
+                {clientProfile && (
+                  <div className="bg-green-50 p-3 rounded-md border border-green-200 mt-2">
+                    <p className="text-xs text-green-700 font-semibold uppercase tracking-wider mb-1">
+                      Cliente Selecionado
+                    </p>
+                    <p className="text-lg font-bold text-green-900">{clientProfile.name}</p>
+                    <p className="text-sm text-green-800">
+                      {clientProfile.email || 'Sem e-mail'} |{' '}
+                      {clientProfile.phone || 'Sem telefone'}
+                    </p>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="px-0 h-auto text-green-700 mt-2"
+                      onClick={() => {
+                        setClientProfile(null)
+                        setCpfCnpj('')
+                      }}
+                    >
+                      Alterar cliente
+                    </Button>
+                  </div>
+                )}
+
+                {showNewClientForm && !clientProfile && (
+                  <div className="mt-4 p-4 border border-orange-200 bg-orange-50/50 rounded-lg space-y-4">
+                    <div className="flex items-center gap-2 text-orange-800 mb-2">
+                      <UserPlus className="w-5 h-5" />
+                      <h4 className="font-semibold">Cadastrar Novo Cliente</h4>
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <Label>Nome Completo *</Label>
+                        <Input
+                          value={newClientData.name}
+                          onChange={(e) =>
+                            setNewClientData({ ...newClientData, name: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label>Email</Label>
+                          <Input
+                            type="email"
+                            value={newClientData.email}
+                            onChange={(e) =>
+                              setNewClientData({ ...newClientData, email: e.target.value })
+                            }
+                          />
+                        </div>
+                        <div>
+                          <Label>Telefone / WhatsApp</Label>
+                          <Input
+                            value={newClientData.phone}
+                            onChange={(e) =>
+                              setNewClientData({ ...newClientData, phone: e.target.value })
+                            }
+                          />
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={handleRegisterClient}
+                        disabled={searchLoading}
+                        className="w-full mt-2"
+                      >
+                        Salvar e Continuar
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <Label className="text-base font-semibold">Detalhes do Serviço</Label>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Data *</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            'w-full justify-start text-left font-normal',
-                            !date && 'text-muted-foreground',
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {date ? format(date, 'dd/MM/yyyy') : <span>Selecione a data</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={date}
-                          onSelect={(d) => {
-                            setDate(d)
-                            setTime('')
-                          }}
-                          locale={ptBR}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <Input
+                      type="date"
+                      value={appointmentData.date}
+                      onChange={(e) =>
+                        setAppointmentData({ ...appointmentData, date: e.target.value })
+                      }
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label>Horário *</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="w-full justify-start text-left font-normal"
-                        >
-                          <Clock className="mr-2 h-4 w-4" />
-                          {time || <span className="text-muted-foreground">Escolher horário</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[280px] p-4">
-                        <div className="grid grid-cols-3 gap-2">
-                          {availableSlots.length > 0 ? (
-                            availableSlots.map((slot) => (
-                              <Button
-                                key={slot}
-                                type="button"
-                                variant={time === slot ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() => setTime(slot)}
-                              >
-                                {slot}
-                              </Button>
-                            ))
-                          ) : (
-                            <div className="col-span-3 text-center text-sm text-muted-foreground py-2">
-                              Sem horários nesta data
-                            </div>
-                          )}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                    <Label>Hora Início *</Label>
+                    <Input
+                      type="time"
+                      value={appointmentData.start_time}
+                      onChange={(e) =>
+                        setAppointmentData({ ...appointmentData, start_time: e.target.value })
+                      }
+                    />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Descreva o(s) Problema(s)</Label>
-                  <Textarea
-                    rows={4}
-                    value={problemDesc}
-                    onChange={(e) => setProblemDesc(e.target.value)}
-                    placeholder="Forneça detalhes que ajudem no diagnóstico..."
-                    className="resize-none"
+                  <Label>Serviço *</Label>
+                  <Input
+                    placeholder="Ex: Manutenção, Avaliação, etc."
+                    value={appointmentData.service_name}
+                    onChange={(e) =>
+                      setAppointmentData({ ...appointmentData, service_name: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Observações</Label>
+                  <Input
+                    placeholder="Informações adicionais..."
+                    value={appointmentData.notes}
+                    onChange={(e) =>
+                      setAppointmentData({ ...appointmentData, notes: e.target.value })
+                    }
                   />
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+
+              <div className="pt-4 border-t flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setOpen(false)}>
                   Cancelar
                 </Button>
-                <Button onClick={handleCreate} disabled={loading}>
-                  Salvar Agendamento
+                <Button
+                  onClick={handleCreateAppointment}
+                  disabled={!clientProfile || searchLoading}
+                >
+                  Confirmar Agendamento
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {viewMode === 'card' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {appointments.length === 0 ? (
-            <div className="col-span-full py-16 text-center text-muted-foreground border-2 border-dashed rounded-lg bg-muted/10">
-              Nenhum agendamento encontrado no sistema.
-            </div>
-          ) : (
-            appointments.map((app) => (
-              <Card
-                key={app.id}
-                className="shadow-sm hover:shadow-md transition-all flex flex-col group"
-              >
-                <CardHeader className="pb-4 border-b bg-muted/30">
-                  <div className="flex justify-between items-start mb-2">
-                    <CardTitle className="text-base font-semibold leading-tight line-clamp-2 pr-2">
-                      {app.client_name}
-                    </CardTitle>
-                    <span className="text-[11px] font-medium px-2 py-0.5 bg-primary/10 text-primary rounded-full shrink-0">
-                      {app.status}
-                    </span>
-                  </div>
-                  <CardDescription className="flex items-center text-foreground font-medium text-sm">
-                    <Wrench className="w-3.5 h-3.5 mr-2 text-muted-foreground shrink-0" />
-                    <span className="truncate">{app.service_name}</span>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-4 space-y-3 flex-grow">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <CalendarIcon className="w-4 h-4 mr-2.5 shrink-0" />
-                    {formatDateSafe(app.date)}
-                  </div>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Clock className="w-4 h-4 mr-2.5 shrink-0" />
-                    {app.start_time.substring(0, 5)}
-                  </div>
-                  {app.vehicle_plate && (
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <span className="font-mono bg-background border px-1.5 py-0.5 rounded text-xs mr-2 shrink-0">
-                        {app.vehicle_plate}
-                      </span>
-                      Placa do Veículo
-                    </div>
-                  )}
-                  {app.problema_descricao && (
-                    <div className="pt-3 border-t mt-4">
-                      <div className="flex items-center text-xs text-muted-foreground mb-1.5 font-semibold uppercase tracking-wider">
-                        <FileText className="w-3 h-3 mr-1" />
-                        Descrição do Problema
-                      </div>
-                      <p className="text-sm line-clamp-3 leading-relaxed text-foreground/80">
-                        {app.problema_descricao}
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-      ) : (
-        <Card className="shadow-sm">
-          <div className="overflow-x-auto rounded-lg">
-            <Table>
-              <TableHeader className="bg-muted/50">
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Data</TableHead>
+                <TableHead>Hora</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Serviço</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
                 <TableRow>
-                  <TableHead className="w-[120px]">Data</TableHead>
-                  <TableHead className="w-[80px]">Hora</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Serviço</TableHead>
-                  <TableHead>Placa</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableCell colSpan={5} className="text-center py-8">
+                    Carregando agendamentos...
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {appointments.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                      Nenhum agendamento encontrado.
+              ) : appointments.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    Nenhum agendamento encontrado no sistema.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                appointments.map((apt) => (
+                  <TableRow key={apt.id}>
+                    <TableCell className="font-medium">
+                      {new Date(apt.date + 'T12:00:00Z').toLocaleDateString('pt-BR', {
+                        timeZone: 'UTC',
+                      })}
+                    </TableCell>
+                    <TableCell>{apt.start_time.substring(0, 5)}</TableCell>
+                    <TableCell>{apt.client_name}</TableCell>
+                    <TableCell>{apt.service_name}</TableCell>
+                    <TableCell>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                          apt.status === 'Concluído'
+                            ? 'bg-green-100 text-green-800'
+                            : apt.status === 'Cancelado'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-blue-100 text-blue-800'
+                        }`}
+                      >
+                        {apt.status}
+                      </span>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  appointments.map((app) => (
-                    <TableRow key={app.id} className="hover:bg-muted/30">
-                      <TableCell className="font-medium whitespace-nowrap">
-                        {formatDateSafe(app.date)}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {app.start_time.substring(0, 5)}
-                      </TableCell>
-                      <TableCell className="font-medium">{app.client_name}</TableCell>
-                      <TableCell>{app.service_name}</TableCell>
-                      <TableCell>
-                        <span className="font-mono text-xs border rounded px-1.5 py-0.5 bg-muted/20">
-                          {app.vehicle_plate || '-'}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-xs px-2.5 py-1 bg-primary/10 text-primary rounded-full font-medium whitespace-nowrap">
-                          {app.status}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </Card>
-      )}
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   )
 }
