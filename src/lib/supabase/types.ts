@@ -4913,6 +4913,9 @@ export const Constants = {
 //     USING: true
 //     WITH CHECK: true
 // Table: profiles
+//   Policy "profiles_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 //   Policy "profiles_anon_select" (SELECT, PERMISSIVE) roles={anon}
 //     USING: true
 //   Policy "profiles_delete" (DELETE, PERMISSIVE) roles={public}
@@ -4969,6 +4972,9 @@ export const Constants = {
 //     USING: true
 //     WITH CHECK: true
 // Table: system_data
+//   Policy "system_data_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 //   Policy "system_data_anon_select" (SELECT, PERMISSIVE) roles={anon}
 //     USING: true
 //   Policy "system_data_insert" (INSERT, PERMISSIVE) roles={authenticated}
@@ -5006,6 +5012,7 @@ export const Constants = {
 // Table: vehicles
 //   Policy "vehicles_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
+//     WITH CHECK: true
 //   Policy "vehicles_insert_public" (INSERT, PERMISSIVE) roles={public}
 //     WITH CHECK: true
 //   Policy "vehicles_select_public" (SELECT, PERMISSIVE) roles={public}
