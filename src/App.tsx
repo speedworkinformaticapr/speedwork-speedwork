@@ -93,6 +93,7 @@ import { CookieConsent } from './components/CookieConsent'
 import { RoleGuard } from './components/RoleGuard'
 import { Analytics } from './components/Analytics'
 import { SidebarInjector } from './components/admin/SidebarInjector'
+import { SidebarProvider } from '@/components/ui/sidebar'
 
 function ScrollToHash() {
   const location = useLocation()
@@ -165,7 +166,9 @@ const App = () => (
                 <Route
                   element={
                     <RoleGuard allowedRoles={['admin', 'master']}>
-                      <AdminLayout />
+                      <SidebarProvider>
+                        <AdminLayout />
+                      </SidebarProvider>
                     </RoleGuard>
                   }
                 >
