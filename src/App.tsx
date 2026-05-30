@@ -150,7 +150,6 @@ const App = () => (
               <Sonner />
               <AccessibilityWidget />
               <Analytics />
-              <SidebarInjector />
               <Routes>
                 {/* Auth Routes - Evaluated first to ensure static paths take precedence */}
                 <Route element={<AuthLayout />}>
@@ -167,6 +166,7 @@ const App = () => (
                   element={
                     <RoleGuard allowedRoles={['admin', 'master']}>
                       <SidebarProvider>
+                        <SidebarInjector />
                         <AdminLayout />
                       </SidebarProvider>
                     </RoleGuard>
