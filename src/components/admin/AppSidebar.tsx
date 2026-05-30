@@ -1,19 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation, Link, useNavigate } from 'react-router-dom'
 import {
   Sidebar,
   SidebarContent,
-  SidebarHeader,
   SidebarFooter,
+  SidebarHeader,
   SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
-  useSidebar,
-  SidebarGroupLabel,
+  SidebarRail,
 } from '@/components/ui/sidebar'
 import { useSystemData } from '@/hooks/use-system-data'
 import { useAuth } from '@/hooks/use-auth'
@@ -25,98 +23,144 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
-  ChevronUp,
   LayoutDashboard,
+  ShoppingCart,
+  FileText,
+  PieChart,
+  DollarSign,
   Settings,
-  LogOut,
-  ChevronRight,
+  Users,
+  Calendar,
+  MessageSquare,
+  Mail,
+  Image as ImageIcon,
+  BookOpen,
   GripVertical,
+  ChevronsUpDown,
+  Briefcase,
+  ShieldCheck,
+  User,
+  Building,
+  MenuSquare,
+  Map,
+  Trophy,
+  Star,
+  Ruler,
 } from 'lucide-react'
-import * as LucideIcons from 'lucide-react'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 
-// Helper to safely render icons by name
-const IconRenderer = ({
-  iconName,
-  fallback: FallbackIcon = LucideIcons.Circle,
-}: {
-  iconName?: string
-  fallback?: any
-}) => {
-  if (!iconName) return <FallbackIcon className="h-4 w-4" />
-  const Icon = (LucideIcons as any)[iconName] || FallbackIcon
-  return <Icon className="h-4 w-4" />
+const IconMap: Record<string, any> = {
+  LayoutDashboard,
+  ShoppingCart,
+  FileText,
+  PieChart,
+  DollarSign,
+  Settings,
+  Users,
+  Calendar,
+  MessageSquare,
+  Mail,
+  ImageIcon,
+  BookOpen,
+  MenuSquare,
+  Map,
+  Trophy,
+  Star,
+  Ruler,
 }
 
-const DASHBOARDS = [
-  { title: 'Principal', url: '/admin/dashboard' },
-  { title: 'Comercial', url: '/admin/commercial/dashboard' },
-  { title: 'Financeiro', url: '/admin/financial/dashboard' },
+const defaultMenu = [
+  {
+    id: 'group-commercial',
+    title: 'Comercial',
+    items: [
+      {
+        id: 'item-com-dash',
+        title: 'Dashboard',
+        url: '/admin/commercial/dashboard',
+        icon: 'LayoutDashboard',
+      },
+      {
+        id: 'item-com-ped',
+        title: 'Pedidos',
+        url: '/admin/commercial/pedidos',
+        icon: 'ShoppingCart',
+      },
+      {
+        id: 'item-com-con',
+        title: 'Contratos',
+        url: '/admin/commercial/contratos',
+        icon: 'FileText',
+      },
+    ],
+  },
+  {
+    id: 'group-financial',
+    title: 'Financeiro',
+    items: [
+      {
+        id: 'item-fin-dash',
+        title: 'Dashboard',
+        url: '/admin/financial/dashboard',
+        icon: 'PieChart',
+      },
+      {
+        id: 'item-fin-pay',
+        title: 'Pagamentos',
+        url: '/admin/financial/payments',
+        icon: 'DollarSign',
+      },
+      {
+        id: 'item-fin-set',
+        title: 'Configurações',
+        url: '/admin/financial/settings',
+        icon: 'Settings',
+      },
+    ],
+  },
+  {
+    id: 'group-business',
+    title: 'Negócio',
+    items: [
+      { id: 'item-bus-users', title: 'Usuários', url: '/admin/users', icon: 'Users' },
+      { id: 'item-bus-courses', title: 'Campos', url: '/admin/courses', icon: 'Map' },
+      { id: 'item-bus-tournaments', title: 'Torneios', url: '/admin/tournaments', icon: 'Trophy' },
+      { id: 'item-bus-ranking', title: 'Ranking', url: '/admin/ranking', icon: 'Star' },
+    ],
+  },
+  {
+    id: 'group-system',
+    title: 'Sistema',
+    items: [
+      { id: 'item-sys-pages', title: 'Páginas', url: '/admin/pages', icon: 'BookOpen' },
+      { id: 'item-sys-blog', title: 'Blog', url: '/admin/blog', icon: 'FileText' },
+    ],
+  },
 ]
 
 export function AppSidebar() {
-  const { data: systemData, updateData } = useSystemData()
-  const { user, signOut } = useAuth()
+  const { data, updateData } = useSystemData()
+  const { user } = useAuth()
   const location = useLocation()
-  const { state } = useSidebar()
+  const navigate = useNavigate()
 
-  const [dashboards] = useState(DASHBOARDS)
-  const [menuData, setMenuData] = useState<any[]>([])
-
-  // DND State for subitems
-  const [draggedItem, setDraggedItem] = useState<{
-    groupIdx: number
-    itemIdx: number
-    subIdx: number
-  } | null>(null)
+  const [menuData, setMenuData] = useState(defaultMenu)
+  const [draggedItem, setDraggedItem] = useState<any>(null)
+  const [draggedGroup, setDraggedGroup] = useState<string | null>(null)
 
   useEffect(() => {
-    if (systemData?.admin_menu_config && Array.isArray(systemData.admin_menu_config)) {
-      setMenuData(systemData.admin_menu_config)
-    } else {
-      // Fallback
-      setMenuData([
-        {
-          title: 'Geral',
-          items: [
-            { title: 'Dashboard', url: '/admin/dashboard', icon: 'LayoutDashboard' },
-            { title: 'Usuários', url: '/admin/users', icon: 'Users' },
-            { title: 'Páginas', url: '/admin/pages', icon: 'FileText' },
-            { title: 'Blog', url: '/admin/blog', icon: 'Edit3' },
-          ],
-        },
-        {
-          title: 'Negócios',
-          items: [
-            { title: 'Atributos', url: '/admin/athlete-attributes', icon: 'List' },
-            { title: 'Avaliações', url: '/admin/athlete-evaluations', icon: 'ClipboardList' },
-            { title: 'Categorias', url: '/admin/athlete-categories', icon: 'Tags' },
-            { title: 'Campos', url: '/admin/courses', icon: 'Map' },
-            { title: 'Torneios', url: '/admin/tournaments', icon: 'Trophy' },
-            { title: 'Ranking', url: '/admin/ranking', icon: 'Medal' },
-            { title: 'Regras', url: '/admin/rules', icon: 'BookOpen' },
-          ],
-        },
-        {
-          title: 'Configurações',
-          items: [
-            { title: 'Dados do Sistema', url: '/admin/settings/system-data', icon: 'Settings' },
-            { title: 'Manutenção', url: '/admin/settings/maintenance', icon: 'Wrench' },
-          ],
-        },
-      ])
+    if (
+      data?.admin_menu_config &&
+      Array.isArray(data.admin_menu_config) &&
+      data.admin_menu_config.length > 0
+    ) {
+      setMenuData(data.admin_menu_config as any)
     }
-  }, [systemData?.admin_menu_config])
+  }, [data?.admin_menu_config])
 
-  const handleDragStart = (
-    e: React.DragEvent,
-    groupIdx: number,
-    itemIdx: number,
-    subIdx: number,
-  ) => {
-    setDraggedItem({ groupIdx, itemIdx, subIdx })
+  const handleDragStart = (e: React.DragEvent, item: any, groupId: string) => {
+    setDraggedItem(item)
+    setDraggedGroup(groupId)
     e.dataTransfer.effectAllowed = 'move'
   }
 
@@ -125,190 +169,159 @@ export function AppSidebar() {
     e.dataTransfer.dropEffect = 'move'
   }
 
-  const handleDrop = async (
-    e: React.DragEvent,
-    targetGroupIdx: number,
-    targetItemIdx: number,
-    targetSubIdx: number,
-  ) => {
+  const handleDrop = async (e: React.DragEvent, targetItem: any, targetGroupId: string) => {
     e.preventDefault()
-    if (!draggedItem) return
+    if (!draggedItem || !draggedGroup) return
 
-    if (
-      draggedItem.groupIdx === targetGroupIdx &&
-      draggedItem.itemIdx === targetItemIdx &&
-      draggedItem.subIdx !== targetSubIdx
-    ) {
-      const newMenuData = [...(menuData || [])]
-      const group = newMenuData[targetGroupIdx]
-      const item = group?.items?.[targetItemIdx]
+    if (draggedItem.id === targetItem?.id) return
 
-      if (item && Array.isArray(item.subitems)) {
-        const newSubitems = [...item.subitems]
-        const [removed] = newSubitems.splice(draggedItem.subIdx, 1)
-        newSubitems.splice(targetSubIdx, 0, removed)
+    const newMenuData = JSON.parse(JSON.stringify(menuData))
 
-        item.subitems = newSubitems
-        setMenuData(newMenuData)
+    const sourceGroupIndex = newMenuData.findIndex((g: any) => g.id === draggedGroup)
+    if (sourceGroupIndex === -1) return
+    const sourceItemIndex = newMenuData[sourceGroupIndex].items.findIndex(
+      (i: any) => i.id === draggedItem.id,
+    )
+    if (sourceItemIndex === -1) return
 
-        // Persist change if it came from system config
-        if (systemData?.admin_menu_config) {
-          await updateData({ admin_menu_config: newMenuData })
-        }
-      }
+    newMenuData[sourceGroupIndex].items.splice(sourceItemIndex, 1)
+
+    const targetGroupIndex = newMenuData.findIndex((g: any) => g.id === targetGroupId)
+    if (targetGroupIndex === -1) return
+
+    if (targetItem) {
+      const targetItemIndex = newMenuData[targetGroupIndex].items.findIndex(
+        (i: any) => i.id === targetItem.id,
+      )
+      newMenuData[targetGroupIndex].items.splice(targetItemIndex, 0, draggedItem)
+    } else {
+      newMenuData[targetGroupIndex].items.push(draggedItem)
     }
+
+    setMenuData(newMenuData)
     setDraggedItem(null)
+    setDraggedGroup(null)
+
+    await updateData({ admin_menu_config: newMenuData })
   }
 
   return (
-    <Sidebar variant="inset">
-      <SidebarHeader>
-        <div className="flex items-center gap-2 px-4 py-2">
-          {systemData?.logo_url ? (
-            <img src={systemData.logo_url} alt="Logo" className="h-8 w-auto object-contain" />
+    <Sidebar>
+      <SidebarHeader className="h-16 flex flex-row items-center justify-start px-4 border-b border-sidebar-border overflow-hidden shrink-0">
+        <div className="flex items-center gap-3 w-full">
+          {data?.logo_url ? (
+            <img src={data.logo_url} alt="Logo" className="h-8 max-w-[140px] object-contain" />
           ) : (
-            <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center text-primary font-bold">
-              SW
+            <div className="size-8 rounded bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">
+              S
             </div>
           )}
-          {state === 'expanded' && (
-            <span className="font-semibold text-lg truncate">
-              {systemData?.platform_name || 'Admin Dashboard'}
-            </span>
-          )}
+          <span className="font-semibold truncate text-lg hidden md:block">
+            {data?.platform_name || 'Speedwork'}
+          </span>
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
-        {(menuData || []).map((group, groupIdx) => (
-          <SidebarGroup key={groupIdx}>
-            <SidebarGroupLabel>{group?.title || 'Menu'}</SidebarGroupLabel>
-            <SidebarMenu>
-              {(group?.items || []).map((item: any, itemIdx: number) => {
-                const isActive = location.pathname === item?.url
-                const hasSubItems = Array.isArray(item?.subitems) && item.subitems.length > 0
-                const isSubItemActive =
-                  hasSubItems && item.subitems.some((s: any) => s?.url === location.pathname)
-
-                return (
-                  <SidebarMenuItem key={itemIdx}>
-                    {hasSubItems ? (
-                      <Collapsible defaultOpen={isSubItemActive} className="group/collapsible">
-                        <CollapsibleTrigger asChild>
-                          <SidebarMenuButton tooltip={item?.title}>
-                            <IconRenderer iconName={item?.icon} />
-                            <span>{item?.title}</span>
-                            <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                          </SidebarMenuButton>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <SidebarMenuSub>
-                            {(item.subitems || []).map((subitem: any, subIdx: number) => (
-                              <SidebarMenuSubItem
-                                key={subIdx}
-                                draggable
-                                onDragStart={(e) => handleDragStart(e, groupIdx, itemIdx, subIdx)}
-                                onDragOver={handleDragOver}
-                                onDrop={(e) => handleDrop(e, groupIdx, itemIdx, subIdx)}
-                                className="cursor-grab active:cursor-grabbing relative flex items-center group/subitem"
-                              >
-                                <GripVertical className="h-3 w-3 mr-1 opacity-0 group-hover/subitem:opacity-50 transition-opacity absolute -left-4" />
-                                <SidebarMenuSubButton
-                                  asChild
-                                  isActive={location.pathname === subitem?.url}
-                                >
-                                  <Link to={subitem?.url || '#'}>
-                                    <span>{subitem?.title}</span>
-                                  </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            ))}
-                          </SidebarMenuSub>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    ) : (
-                      <SidebarMenuButton asChild isActive={isActive} tooltip={item?.title}>
-                        <Link to={item?.url || '#'}>
-                          <IconRenderer iconName={item?.icon} />
-                          <span>{item?.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    )}
-                  </SidebarMenuItem>
-                )
-              })}
-            </SidebarMenu>
-          </SidebarGroup>
-        ))}
+      <SidebarContent className="py-4">
+        {Array.isArray(menuData) &&
+          menuData.map((group) => (
+            <SidebarGroup
+              key={group.id}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, null, group.id)}
+              className="px-2 mb-4"
+            >
+              <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80 mb-2 px-2">
+                {group.title}
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {Array.isArray(group.items) &&
+                    group.items.map((item: any) => {
+                      const Icon = IconMap[item.icon] || LayoutDashboard
+                      const isActive = location.pathname.startsWith(item.url)
+                      return (
+                        <SidebarMenuItem key={item.id}>
+                          <div
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, item, group.id)}
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDrop(e, item, group.id)}
+                            className="flex items-center w-full group/drag relative"
+                          >
+                            <div className="absolute -left-2 opacity-0 group-hover/drag:opacity-100 cursor-grab active:cursor-grabbing p-1">
+                              <GripVertical className="size-3.5 text-muted-foreground" />
+                            </div>
+                            <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
+                              <Link to={item.url} className="flex-1">
+                                <Icon className="size-4" />
+                                <span>{item.title}</span>
+                              </Link>
+                            </SidebarMenuButton>
+                          </div>
+                        </SidebarMenuItem>
+                      )
+                    })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
       </SidebarContent>
 
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton className="w-full justify-between">
-                  <div className="flex items-center gap-2">
-                    <LayoutDashboard className="h-4 w-4" />
-                    <span>Dashboards</span>
-                  </div>
-                  <ChevronUp className="h-4 w-4" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="top" className="w-[--radix-popper-anchor-width]">
-                <DropdownMenuLabel>Selecione o Dashboard</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {(dashboards || []).map((dashboard: any, idx: number) => (
-                  <DropdownMenuItem key={idx} asChild>
-                    <Link to={dashboard?.url || '#'}>{dashboard?.title}</Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                >
-                  <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage
-                      src={user?.user_metadata?.avatar_url}
-                      alt={user?.user_metadata?.name || 'User'}
-                    />
-                    <AvatarFallback className="rounded-lg">
-                      {user?.user_metadata?.name?.substring(0, 2).toUpperCase() || 'AD'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">
-                      {user?.user_metadata?.name || user?.email}
-                    </span>
-                    <span className="truncate text-xs">{user?.email}</span>
-                  </div>
-                  <ChevronUp className="ml-auto size-4" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="top" className="w-[--radix-popper-anchor-width]">
-                <DropdownMenuItem asChild>
-                  <Link to="/profile">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Perfil</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sair</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarMenuItem>
-        </SidebarMenu>
+      <SidebarFooter className="border-t border-sidebar-border p-3 shrink-0">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton
+              size="lg"
+              className="w-full data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground flex items-center"
+            >
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                <User className="size-4" />
+              </div>
+              <div className="grid flex-1 text-left text-sm leading-tight ml-2">
+                <span className="truncate font-semibold">
+                  {user?.email?.split('@')[0] || 'Usuário'}
+                </span>
+                <span className="truncate text-xs text-muted-foreground">Dashboards</span>
+              </div>
+              <ChevronsUpDown className="ml-auto size-4 shrink-0 text-muted-foreground" />
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56 rounded-lg" align="end" side="top" sideOffset={8}>
+            <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider">
+              Alternar Visão
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => navigate('/admin/dashboard')}
+              className="cursor-pointer"
+            >
+              <ShieldCheck className="mr-2 size-4" />
+              <span>Administrador</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => navigate('/admin/dashboard')}
+              className="cursor-pointer"
+            >
+              <Briefcase className="mr-2 size-4" />
+              <span>Master</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
+              <User className="mr-2 size-4" />
+              <span>Usuário</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => navigate('/club/dashboard')}
+              className="cursor-pointer"
+            >
+              <Building className="mr-2 size-4" />
+              <span>Clube</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </SidebarFooter>
+
+      <SidebarRail />
     </Sidebar>
   )
 }
