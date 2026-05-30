@@ -1,370 +1,415 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import * as Icons from 'lucide-react'
-import { useSystemData } from '@/hooks/use-system-data'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuButton,
   SidebarMenuSub,
-  SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarMenuSubButton,
+  useSidebar,
 } from '@/components/ui/sidebar'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { useSystemData } from '@/hooks/use-system-data'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { ChevronRight, GripVertical, Check, X, PanelLeft, Edit } from 'lucide-react'
+import * as Icons from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-type MenuItem = {
-  id: string
-  title: string
-  icon: string
-  submenus: {
-    id: string
-    title: string
-    path: string
-  }[]
-}
-
-const defaultMenu: MenuItem[] = [
+const defaultMenuConfig = [
+  { id: 'dashboard', label: 'Dashboard', url: '/admin/dashboard', icon: 'LayoutDashboard' },
   {
     id: 'gestao',
-    title: 'Gestão',
-    icon: 'Briefcase',
+    label: 'Gestão',
+    icon: 'Users',
     submenus: [
-      { id: 'users', title: 'Usuários', path: '/admin/users' },
-      {
-        id: 'athlete-attributes',
-        title: 'Atributos de Atletas',
-        path: '/admin/athlete-attributes',
-      },
-      { id: 'athlete-evaluations', title: 'Avaliações', path: '/admin/athlete-evaluations' },
-      { id: 'athlete-scouting', title: 'Scouting', path: '/admin/athlete-scouting' },
-      { id: 'athlete-categories', title: 'Categorias', path: '/admin/athlete-categories' },
-      { id: 'courses', title: 'Cursos', path: '/admin/courses' },
-      { id: 'tournaments', title: 'Torneios', path: '/admin/tournaments' },
-      { id: 'ranking', title: 'Rankings', path: '/admin/ranking' },
-      { id: 'rules', title: 'Regras', path: '/admin/rules' },
+      { id: 'users', label: 'Usuários', url: '/admin/users' },
+      { id: 'athlete-attributes', label: 'Atributos de Atletas', url: '/admin/athlete-attributes' },
+      { id: 'athlete-evaluations', label: 'Avaliações', url: '/admin/athlete-evaluations' },
+      { id: 'athlete-scouting', label: 'Scouting', url: '/admin/athlete-scouting' },
+      { id: 'athlete-categories', label: 'Categorias', url: '/admin/athlete-categories' },
+      { id: 'courses', label: 'Cursos', url: '/admin/courses' },
+      { id: 'tournaments', label: 'Torneios', url: '/admin/tournaments' },
+      { id: 'ranking', label: 'Rankings', url: '/admin/ranking' },
+      { id: 'rules', label: 'Regras', url: '/admin/rules' },
     ],
   },
   {
     id: 'comercial',
-    title: 'Comercial',
-    icon: 'Store',
+    label: 'Comercial',
+    icon: 'Briefcase',
     submenus: [
       {
-        id: 'dashboard-comercial',
-        title: 'Dashboard Comercial',
-        path: '/admin/commercial/dashboard',
+        id: 'comercial-dashboard',
+        label: 'Dashboard Comercial',
+        url: '/admin/commercial/dashboard',
       },
-      { id: 'quotes', title: 'Orçamentos', path: '/admin/quotes' },
-      { id: 'pedidos', title: 'Pedidos', path: '/admin/commercial/pedidos' },
-      { id: 'contratos', title: 'Contratos', path: '/admin/commercial/contratos' },
-      { id: 'services', title: 'Serviços', path: '/admin/services' },
-      { id: 'appointments', title: 'Agendamentos', path: '/admin/appointments' },
+      { id: 'quotes', label: 'Orçamentos', url: '/admin/quotes' },
+      { id: 'pedidos', label: 'Pedidos', url: '/admin/commercial/pedidos' },
+      { id: 'contratos', label: 'Contratos', url: '/admin/commercial/contratos' },
+      { id: 'services', label: 'Serviços', url: '/admin/services' },
+      { id: 'appointments', label: 'Agendamentos', url: '/admin/appointments' },
     ],
   },
   {
     id: 'financeiro',
-    title: 'Financeiro',
-    icon: 'LineChart',
+    label: 'Financeiro',
+    icon: 'DollarSign',
     submenus: [
       {
-        id: 'dashboard-financeiro',
-        title: 'Dashboard Financeiro',
-        path: '/admin/financial/dashboard',
+        id: 'financial-dashboard',
+        label: 'Dashboard Financeiro',
+        url: '/admin/financial/dashboard',
       },
       {
         id: 'chart-of-accounts',
-        title: 'Plano de Contas',
-        path: '/admin/financial/chart-of-accounts',
+        label: 'Plano de Contas',
+        url: '/admin/financial/chart-of-accounts',
       },
-      { id: 'categories-financeiro', title: 'Categorias', path: '/admin/financial/categories' },
-      { id: 'payments', title: 'Pagamentos', path: '/admin/financial/payments' },
-      { id: 'partners', title: 'Parceiros', path: '/admin/financial/partners' },
-      { id: 'billing-logs', title: 'Logs de Faturamento', path: '/admin/financial/billing-logs' },
-      {
-        id: 'stripe-config',
-        title: 'Configurações Stripe',
-        path: '/admin/financial/stripe-config',
-      },
+      { id: 'categories', label: 'Categorias', url: '/admin/financial/categories' },
+      { id: 'payments', label: 'Pagamentos', url: '/admin/financial/payments' },
+      { id: 'partners', label: 'Parceiros', url: '/admin/financial/partners' },
+      { id: 'billing-logs', label: 'Logs de Faturamento', url: '/admin/financial/billing-logs' },
+      { id: 'stripe-config', label: 'Configurações Stripe', url: '/admin/financial/stripe-config' },
     ],
   },
   {
     id: 'ecommerce',
-    title: 'E-commerce',
+    label: 'E-commerce',
     icon: 'ShoppingCart',
     submenus: [
-      { id: 'groups', title: 'Grupos', path: '/admin/ecommerce/groups' },
-      { id: 'products', title: 'Produtos', path: '/admin/ecommerce/products' },
-      { id: 'store-editor', title: 'Editor da Loja', path: '/admin/ecommerce/store-editor' },
+      { id: 'ecommerce-groups', label: 'Grupos', url: '/admin/ecommerce/groups' },
+      { id: 'ecommerce-products', label: 'Produtos', url: '/admin/ecommerce/products' },
       {
-        id: 'abandoned-carts',
-        title: 'Carrinhos Abandonados',
-        path: '/admin/ecommerce/abandoned-carts',
+        id: 'ecommerce-store-editor',
+        label: 'Editor da Loja',
+        url: '/admin/ecommerce/store-editor',
       },
-      { id: 'logistics', title: 'Logística', path: '/admin/ecommerce/logistics' },
-      { id: 'orders-ecommerce', title: 'Pedidos', path: '/admin/ecommerce/orders' },
+      {
+        id: 'ecommerce-abandoned-carts',
+        label: 'Carrinhos Abandonados',
+        url: '/admin/ecommerce/abandoned-carts',
+      },
+      { id: 'ecommerce-logistics', label: 'Logística', url: '/admin/ecommerce/logistics' },
+      { id: 'ecommerce-orders', label: 'Pedidos', url: '/admin/ecommerce/orders' },
     ],
   },
   {
     id: 'configuracoes',
-    title: 'Configurações',
+    label: 'Configurações',
     icon: 'Settings',
     submenus: [
-      { id: 'system-data', title: 'Dados do Sistema', path: '/admin/settings/system-data' },
-      { id: 'maintenance', title: 'Manutenção', path: '/admin/settings/maintenance' },
-      { id: 'plan-services', title: 'Planos/Serviços', path: '/admin/settings/plan-services' },
-      { id: 'sla-types', title: 'Tipos de SLA', path: '/admin/settings/sla-types' },
-      { id: 'media', title: 'Mídia', path: '/admin/settings/media' },
-      { id: 'analytics', title: 'Analytics', path: '/admin/settings/analytics' },
+      { id: 'system-data', label: 'Dados do Sistema', url: '/admin/settings/system-data' },
+      { id: 'maintenance', label: 'Manutenção', url: '/admin/settings/maintenance' },
+      { id: 'plan-services', label: 'Planos/Serviços', url: '/admin/settings/plan-services' },
+      { id: 'sla-types', label: 'Tipos de SLA', url: '/admin/settings/sla-types' },
+      { id: 'media', label: 'Mídia', url: '/admin/settings/media' },
+      { id: 'analytics', label: 'Analytics', url: '/admin/settings/analytics' },
     ],
   },
 ]
 
 export function AdminSidebar() {
+  const { data, updateData } = useSystemData()
+  const { toggleSidebar, state } = useSidebar()
   const location = useLocation()
-  const { data: systemData, updateData } = useSystemData()
+
+  const [menuConfig, setMenuConfig] = useState(defaultMenuConfig)
   const [isEditing, setIsEditing] = useState(false)
-  const [menuData, setMenuData] = useState<MenuItem[]>(defaultMenu)
-  const [openGroup, setOpenGroup] = useState<string | null>(null)
-
-  const [draggedGroup, setDraggedGroup] = useState<string | null>(null)
-  const [draggedItem, setDraggedItem] = useState<{ groupId: string; itemId: string } | null>(null)
-
-  useEffect(() => {
-    if (systemData?.admin_menu_config) {
-      setMenuData(systemData.admin_menu_config)
-    }
-  }, [systemData?.admin_menu_config])
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [draggedItem, setDraggedItem] = useState<{
+    parentIndex: number | null
+    index: number
+  } | null>(null)
 
   useEffect(() => {
-    if (!isEditing && !openGroup) {
-      const activeGroup = menuData.find((g) => g.submenus.some((s) => s.path === location.pathname))
-      if (activeGroup) setOpenGroup(activeGroup.id)
+    if (
+      data?.admin_menu_config &&
+      Array.isArray(data.admin_menu_config) &&
+      data.admin_menu_config.length > 0
+    ) {
+      setMenuConfig(data.admin_menu_config as any)
+    } else {
+      setMenuConfig(defaultMenuConfig)
     }
-  }, [location.pathname, menuData, isEditing, openGroup])
+  }, [data?.admin_menu_config])
+
+  useEffect(() => {
+    if (isEditing) return
+    const parent = menuConfig.find(
+      (p) => p.url === location.pathname || p.submenus?.some((s) => s.url === location.pathname),
+    )
+    if (parent && parent.submenus) {
+      setOpenMenuId(parent.id)
+    } else if (parent && !parent.submenus) {
+      setOpenMenuId(null)
+    }
+  }, [location.pathname, menuConfig, isEditing])
+
+  const handleDragStart = (e: React.DragEvent, parentIndex: number | null, index: number) => {
+    e.dataTransfer.setData('application/json', JSON.stringify({ parentIndex, index }))
+    setDraggedItem({ parentIndex, index })
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+  }
+
+  const handleDrop = (
+    e: React.DragEvent,
+    targetParentIndex: number | null,
+    targetIndex: number,
+  ) => {
+    e.preventDefault()
+    try {
+      const { parentIndex, index } = JSON.parse(e.dataTransfer.getData('application/json'))
+      if (parentIndex !== targetParentIndex) return
+
+      const newConfig = [...menuConfig]
+      if (parentIndex === null) {
+        const [removed] = newConfig.splice(index, 1)
+        newConfig.splice(targetIndex, 0, removed)
+      } else {
+        const parent = { ...newConfig[parentIndex] }
+        if (!parent.submenus) return
+        const submenus = [...parent.submenus]
+        const [removed] = submenus.splice(index, 1)
+        submenus.splice(targetIndex, 0, removed)
+        parent.submenus = submenus
+        newConfig[parentIndex] = parent
+      }
+      setMenuConfig(newConfig)
+    } catch {
+      /* intentionally ignored */
+    }
+    setDraggedItem(null)
+  }
+
+  const updateLabel = (parentIndex: number | null, index: number, newLabel: string) => {
+    const newConfig = [...menuConfig]
+    if (parentIndex === null) {
+      newConfig[index].label = newLabel
+    } else {
+      const parent = { ...newConfig[parentIndex] }
+      if (parent.submenus) {
+        parent.submenus[index].label = newLabel
+      }
+      newConfig[parentIndex] = parent
+    }
+    setMenuConfig(newConfig)
+  }
 
   const handleSave = async () => {
-    await updateData({ admin_menu_config: menuData })
+    await updateData({ admin_menu_config: menuConfig })
     setIsEditing(false)
   }
 
   const handleCancel = () => {
-    if (systemData?.admin_menu_config) {
-      setMenuData(systemData.admin_menu_config)
+    if (
+      data?.admin_menu_config &&
+      Array.isArray(data.admin_menu_config) &&
+      data.admin_menu_config.length > 0
+    ) {
+      setMenuConfig(data.admin_menu_config as any)
     } else {
-      setMenuData(defaultMenu)
+      setMenuConfig(defaultMenuConfig)
     }
     setIsEditing(false)
   }
 
-  const renderIcon = (name: string) => {
-    const Icon = (Icons as any)[name]
-    return Icon ? (
-      <Icon className="w-4 h-4 shrink-0" />
-    ) : (
-      <Icons.Circle className="w-4 h-4 shrink-0" />
-    )
-  }
-
-  const onGroupDragStart = (e: React.DragEvent, groupId: string) => {
-    if (!isEditing) return
-    setDraggedGroup(groupId)
-    e.dataTransfer.effectAllowed = 'move'
-  }
-
-  const onGroupDragOver = (e: React.DragEvent) => {
-    if (!isEditing || !draggedGroup) return
-    e.preventDefault()
-  }
-
-  const onGroupDrop = (e: React.DragEvent, targetGroupId: string) => {
-    if (!isEditing || !draggedGroup || draggedGroup === targetGroupId) return
-    e.preventDefault()
-
-    const newMenu = [...menuData]
-    const draggedIdx = newMenu.findIndex((g) => g.id === draggedGroup)
-    const targetIdx = newMenu.findIndex((g) => g.id === targetGroupId)
-
-    const [removed] = newMenu.splice(draggedIdx, 1)
-    newMenu.splice(targetIdx, 0, removed)
-
-    setMenuData(newMenu)
-    setDraggedGroup(null)
-  }
-
-  const onItemDragStart = (e: React.DragEvent, groupId: string, itemId: string) => {
-    if (!isEditing) return
-    e.stopPropagation()
-    setDraggedItem({ groupId, itemId })
-    e.dataTransfer.effectAllowed = 'move'
-  }
-
-  const onItemDragOver = (e: React.DragEvent) => {
-    if (!isEditing || !draggedItem) return
-    e.preventDefault()
-  }
-
-  const onItemDrop = (e: React.DragEvent, targetGroupId: string, targetItemId: string) => {
-    if (!isEditing || !draggedItem) return
-    e.preventDefault()
-    e.stopPropagation()
-
-    if (draggedItem.groupId !== targetGroupId || draggedItem.itemId === targetItemId) return
-
-    const newMenu = [...menuData]
-    const groupIdx = newMenu.findIndex((g) => g.id === targetGroupId)
-    if (groupIdx === -1) return
-
-    const submenus = [...newMenu[groupIdx].submenus]
-    const draggedIdx = submenus.findIndex((i) => i.id === draggedItem.itemId)
-    const targetIdx = submenus.findIndex((i) => i.id === targetItemId)
-
-    const [removed] = submenus.splice(draggedIdx, 1)
-    submenus.splice(targetIdx, 0, removed)
-
-    newMenu[groupIdx].submenus = submenus
-    setMenuData(newMenu)
-    setDraggedItem(null)
-  }
-
-  const updateGroupTitle = (groupId: string, newTitle: string) => {
-    setMenuData((prev) => prev.map((g) => (g.id === groupId ? { ...g, title: newTitle } : g)))
-  }
-
-  const updateItemTitle = (groupId: string, itemId: string, newTitle: string) => {
-    setMenuData((prev) =>
-      prev.map((g) => {
-        if (g.id === groupId) {
-          return {
-            ...g,
-            submenus: g.submenus.map((i) => (i.id === itemId ? { ...i, title: newTitle } : i)),
-          }
-        }
-        return g
-      }),
-    )
+  const renderIcon = (iconName: string) => {
+    const IconCmp = (Icons as any)[iconName] || Icons.Circle
+    return <IconCmp className="size-4 shrink-0" />
   }
 
   return (
-    <Sidebar className="border-r shadow-sm">
-      <SidebarHeader className="h-16 flex items-center justify-center px-4 border-b">
-        <span className="font-bold text-lg text-primary tracking-tight">Painel Admin</span>
+    <Sidebar variant="sidebar" collapsible="icon">
+      <SidebarHeader className="border-b py-3">
+        <div className="flex items-center justify-between px-2">
+          <div
+            className="flex items-center gap-2 font-semibold cursor-pointer w-full overflow-hidden hover:opacity-80 transition-opacity"
+            onClick={toggleSidebar}
+            title="Expandir/Recolher Sidebar"
+          >
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <PanelLeft className="size-5" />
+            </div>
+            {state === 'expanded' && (
+              <span className="truncate">{data?.platform_name || 'Admin'}</span>
+            )}
+          </div>
+        </div>
       </SidebarHeader>
-      <SidebarContent className="p-2 gap-1 overflow-y-auto hidden-scrollbar">
-        <SidebarMenu>
-          {menuData.map((group) => (
-            <Collapsible
-              key={group.id}
-              open={isEditing ? true : openGroup === group.id}
-              onOpenChange={(isOpen) => {
-                if (!isEditing) setOpenGroup(isOpen ? group.id : null)
-              }}
-              className="group/collapsible"
-              asChild
-            >
+
+      <SidebarContent>
+        <SidebarMenu className="mt-4 px-2">
+          {menuConfig.map((item, index) => {
+            const isActive =
+              item.url === location.pathname ||
+              item.submenus?.some((s) => s.url === location.pathname)
+            const isOpen = openMenuId === item.id || isEditing
+
+            return (
               <SidebarMenuItem
+                key={item.id}
                 draggable={isEditing}
-                onDragStart={(e) => onGroupDragStart(e, group.id)}
-                onDragOver={onGroupDragOver}
-                onDrop={(e) => onGroupDrop(e, group.id)}
+                onDragStart={(e) => handleDragStart(e, null, index)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, null, index)}
                 className={cn(
                   isEditing &&
-                    'border border-transparent hover:border-border rounded-md transition-colors',
+                    'mb-1 rounded border border-dashed border-transparent hover:border-border transition-colors',
                 )}
               >
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton
-                    tooltip={group.title}
-                    className={cn(
-                      'h-10 cursor-pointer',
-                      openGroup === group.id &&
-                        !isEditing &&
-                        'bg-sidebar-accent text-sidebar-accent-foreground font-medium',
-                    )}
+                {item.submenus ? (
+                  <Collapsible
+                    open={isOpen}
+                    onOpenChange={(open) => {
+                      if (!isEditing) setOpenMenuId(open ? item.id : null)
+                    }}
                   >
-                    {isEditing && (
-                      <Icons.GripVertical className="w-4 h-4 cursor-grab text-muted-foreground shrink-0" />
-                    )}
-                    {!isEditing && renderIcon(group.icon)}
-                    {isEditing ? (
-                      <Input
-                        value={group.title}
-                        onChange={(e) => updateGroupTitle(group.id, e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="h-7 px-2 text-sm ml-1 flex-1"
-                      />
-                    ) : (
-                      <span className="flex-1 truncate select-none">{group.title}</span>
-                    )}
-                    {!isEditing && (
-                      <Icons.ChevronDown className="ml-auto w-4 h-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                    )}
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
-
-                <CollapsibleContent className="pl-4 pr-0 py-1">
-                  <SidebarMenuSub className="m-0 border-l border-border/50">
-                    {group.submenus.map((item) => (
-                      <SidebarMenuSubItem
-                        key={item.id}
-                        draggable={isEditing}
-                        onDragStart={(e) => onItemDragStart(e, group.id, item.id)}
-                        onDragOver={onItemDragOver}
-                        onDrop={(e) => onItemDrop(e, group.id, item.id)}
-                        className={cn(
-                          isEditing && 'pl-2 hover:bg-muted/50 rounded-md transition-colors',
-                        )}
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton
+                        tooltip={item.label}
+                        isActive={isActive && !isOpen}
+                        className={cn(isEditing && 'cursor-move')}
+                        asChild={isEditing}
                       >
                         {isEditing ? (
-                          <div className="flex items-center w-full gap-2 py-1 pr-2">
-                            <Icons.GripVertical className="w-4 h-4 cursor-grab text-muted-foreground shrink-0" />
+                          <div className="flex items-center w-full">
+                            <GripVertical className="mr-1 size-4 shrink-0 opacity-50" />
+                            {item.icon && renderIcon(item.icon)}
                             <Input
-                              value={item.title}
-                              onChange={(e) => updateItemTitle(group.id, item.id, e.target.value)}
-                              className="h-6 px-2 text-xs flex-1"
+                              value={item.label}
+                              onChange={(e) => updateLabel(null, index, e.target.value)}
+                              className="h-6 px-1 text-sm bg-background ml-2 flex-1 min-w-0"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                              }}
                             />
                           </div>
                         ) : (
-                          <SidebarMenuSubButton
-                            asChild
-                            isActive={location.pathname === item.path}
-                            className={cn(
-                              'text-sm h-8 cursor-pointer transition-colors',
-                              location.pathname === item.path && 'font-medium text-primary',
-                            )}
-                          >
-                            <Link to={item.path}>{item.title}</Link>
-                          </SidebarMenuSubButton>
+                          <>
+                            {item.icon && renderIcon(item.icon)}
+                            <span>{item.label}</span>
+                            <ChevronRight
+                              className={cn(
+                                'ml-auto size-4 transition-transform duration-200',
+                                isOpen && 'rotate-90',
+                              )}
+                            />
+                          </>
                         )}
-                      </SidebarMenuSubItem>
-                    ))}
-                  </SidebarMenuSub>
-                </CollapsibleContent>
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub className={cn(isEditing && 'mr-0 pr-0')}>
+                        {item.submenus.map((sub, subIndex) => (
+                          <SidebarMenuSubItem
+                            key={sub.id}
+                            draggable={isEditing}
+                            onDragStart={(e) => handleDragStart(e, index, subIndex)}
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDrop(e, index, subIndex)}
+                            className={cn(isEditing && 'my-1')}
+                          >
+                            <SidebarMenuSubButton
+                              isActive={location.pathname === sub.url}
+                              className={cn(
+                                isEditing &&
+                                  'cursor-move border border-dashed border-transparent hover:border-border',
+                              )}
+                              asChild={true}
+                            >
+                              {isEditing ? (
+                                <div className="flex items-center w-full">
+                                  <GripVertical className="mr-1 size-3 shrink-0 opacity-50" />
+                                  <Input
+                                    value={sub.label}
+                                    onChange={(e) => updateLabel(index, subIndex, e.target.value)}
+                                    className="h-6 px-1 text-xs bg-background flex-1 min-w-0"
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      e.stopPropagation()
+                                    }}
+                                  />
+                                </div>
+                              ) : (
+                                <Link to={sub.url!}>
+                                  <span>{sub.label}</span>
+                                </Link>
+                              )}
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </Collapsible>
+                ) : (
+                  <SidebarMenuButton
+                    tooltip={item.label}
+                    isActive={isActive}
+                    className={cn(isEditing && 'cursor-move')}
+                    asChild={isEditing || !item.submenus}
+                  >
+                    {isEditing ? (
+                      <div className="flex items-center w-full">
+                        <GripVertical className="mr-1 size-4 shrink-0 opacity-50" />
+                        {item.icon && renderIcon(item.icon)}
+                        <Input
+                          value={item.label}
+                          onChange={(e) => updateLabel(null, index, e.target.value)}
+                          className="h-6 px-1 text-sm bg-background ml-2 flex-1 min-w-0"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <Link to={item.url!}>
+                        {item.icon && renderIcon(item.icon)}
+                        <span>{item.label}</span>
+                      </Link>
+                    )}
+                  </SidebarMenuButton>
+                )}
               </SidebarMenuItem>
-            </Collapsible>
-          ))}
+            )
+          })}
         </SidebarMenu>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t bg-sidebar">
+      <SidebarFooter className="border-t p-4">
         {isEditing ? (
           <div className="flex flex-col gap-2">
-            <Button size="sm" variant="default" className="w-full" onClick={handleSave}>
-              <Icons.Save className="w-4 h-4 mr-2" /> Salvar
+            <Button onClick={handleSave} size="sm" className="w-full justify-start">
+              <Check className="mr-2 size-4" /> Salvar
             </Button>
-            <Button size="sm" variant="outline" className="w-full" onClick={handleCancel}>
-              <Icons.X className="w-4 h-4 mr-2" /> Cancelar
+            <Button
+              onClick={handleCancel}
+              variant="outline"
+              size="sm"
+              className="w-full justify-start"
+            >
+              <X className="mr-2 size-4" /> Cancelar
             </Button>
           </div>
         ) : (
-          <Button size="sm" variant="outline" className="w-full" onClick={() => setIsEditing(true)}>
-            <Icons.Edit3 className="w-4 h-4 mr-2" /> Editar Menu
+          <Button
+            onClick={() => setIsEditing(true)}
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start text-muted-foreground hover:text-foreground"
+          >
+            <Edit className="mr-2 size-4" />
+            Editar Menu
           </Button>
         )}
       </SidebarFooter>

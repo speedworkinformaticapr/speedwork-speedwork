@@ -2952,6 +2952,7 @@ export type Database = {
           address_state: string | null
           address_street: string | null
           address_zip: string | null
+          admin_menu_config: Json | null
           ai_context: string | null
           bg_image_url: string | null
           bg_opacity: number | null
@@ -2999,6 +3000,7 @@ export type Database = {
           address_state?: string | null
           address_street?: string | null
           address_zip?: string | null
+          admin_menu_config?: Json | null
           ai_context?: string | null
           bg_image_url?: string | null
           bg_opacity?: number | null
@@ -3046,6 +3048,7 @@ export type Database = {
           address_state?: string | null
           address_street?: string | null
           address_zip?: string | null
+          admin_menu_config?: Json | null
           ai_context?: string | null
           bg_image_url?: string | null
           bg_opacity?: number | null
@@ -4252,6 +4255,7 @@ export const Constants = {
 //   short_description: text (nullable)
 //   quote_validity_days: integer (nullable, default: 15)
 //   scheduling_interval_minutes: integer (nullable, default: 30)
+//   admin_menu_config: jsonb (nullable)
 // Table: user_roles
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (not null)
