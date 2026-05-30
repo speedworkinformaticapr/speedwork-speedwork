@@ -92,7 +92,6 @@ import { FloatingWidgets } from './components/FloatingWidgets'
 import { CookieConsent } from './components/CookieConsent'
 import { RoleGuard } from './components/RoleGuard'
 import { Analytics } from './components/Analytics'
-import { SidebarInjector } from './components/admin/SidebarInjector'
 import { SidebarProvider } from '@/components/ui/sidebar'
 
 function ScrollToHash() {
@@ -166,12 +165,12 @@ const App = () => (
                   element={
                     <RoleGuard allowedRoles={['admin', 'master']}>
                       <SidebarProvider>
-                        <SidebarInjector />
                         <AdminLayout />
                       </SidebarProvider>
                     </RoleGuard>
                   }
                 >
+                  {' '}
                   <Route path="/admin/quotes" element={<AdminQuotes />} />
                   <Route path="/admin/quotes/new" element={<QuoteForm />} />
                   <Route path="/admin/quotes/:id/edit" element={<QuoteForm />} />
@@ -210,7 +209,6 @@ const App = () => (
                   <Route path="/admin/settings/media" element={<AdminMedia />} />
                   <Route path="/admin/settings/analytics" element={<AdminAnalytics />} />
                   <Route path="/admin/settings/publish-logs" element={<AdminPublishLogs />} />
-
                   <Route path="/admin/users" element={<AdminUsers />} />
                   <Route path="/admin/athlete-attributes" element={<AdminAthleteAttributes />} />
                   <Route path="/admin/athlete-evaluations" element={<AdminAthleteEvaluations />} />

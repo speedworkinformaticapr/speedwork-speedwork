@@ -1,327 +1,298 @@
-import React, { useState, useEffect } from 'react'
-import { useLocation, Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import {
+  LayoutDashboard,
+  FileText,
+  Image,
+  Settings,
+  Users,
+  CreditCard,
+  ShoppingCart,
+  LogOut,
+  ChevronUp,
+  User2,
+  Phone,
+  Mail,
+  Calendar,
+  Briefcase,
+  ChevronRight,
+  Trophy,
+  Globe,
+} from 'lucide-react'
+
+import { useAuth } from '@/hooks/use-auth'
+import { useSystemData } from '@/hooks/use-system-data'
+import { supabase } from '@/lib/supabase/client'
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarHeader,
   SidebarGroup,
-  SidebarGroupLabel,
-  SidebarGroupContent,
+  SidebarHeader,
   SidebarMenu,
-  SidebarMenuItem,
   SidebarMenuButton,
-  SidebarRail,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from '@/components/ui/sidebar'
-import { useSystemData } from '@/hooks/use-system-data'
-import { useAuth } from '@/hooks/use-auth'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  LayoutDashboard,
-  ShoppingCart,
-  FileText,
-  PieChart,
-  DollarSign,
-  Settings,
-  Users,
-  Calendar,
-  MessageSquare,
-  Mail,
-  Image as ImageIcon,
-  BookOpen,
-  GripVertical,
-  ChevronsUpDown,
-  Briefcase,
-  ShieldCheck,
-  User,
-  Building,
-  MenuSquare,
-  Map,
-  Trophy,
-  Star,
-  Ruler,
-} from 'lucide-react'
 
-const IconMap: Record<string, any> = {
-  LayoutDashboard,
-  ShoppingCart,
-  FileText,
-  PieChart,
-  DollarSign,
-  Settings,
-  Users,
-  Calendar,
-  MessageSquare,
-  Mail,
-  ImageIcon,
-  BookOpen,
-  MenuSquare,
-  Map,
-  Trophy,
-  Star,
-  Ruler,
-}
-
-const defaultMenu = [
+const adminMenus = [
   {
-    id: 'group-commercial',
+    title: 'Geral',
+    items: [
+      { title: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
+      { title: 'Usuários', icon: Users, path: '/admin/users' },
+      { title: 'Agendamentos', icon: Calendar, path: '/admin/appointments' },
+      { title: 'Serviços', icon: Settings, path: '/admin/services' },
+      { title: 'Orçamentos', icon: FileText, path: '/admin/quotes' },
+    ],
+  },
+  {
     title: 'Comercial',
+    icon: Briefcase,
     items: [
-      {
-        id: 'item-com-dash',
-        title: 'Dashboard',
-        url: '/admin/commercial/dashboard',
-        icon: 'LayoutDashboard',
-      },
-      {
-        id: 'item-com-ped',
-        title: 'Pedidos',
-        url: '/admin/commercial/pedidos',
-        icon: 'ShoppingCart',
-      },
-      {
-        id: 'item-com-con',
-        title: 'Contratos',
-        url: '/admin/commercial/contratos',
-        icon: 'FileText',
-      },
+      { title: 'Dashboard', path: '/admin/commercial/dashboard' },
+      { title: 'Pedidos', path: '/admin/commercial/pedidos' },
+      { title: 'Contratos', path: '/admin/commercial/contratos' },
     ],
   },
   {
-    id: 'group-financial',
+    title: 'Negócio & Esporte',
+    icon: Trophy,
+    items: [
+      { title: 'Atributos', path: '/admin/athlete-attributes' },
+      { title: 'Avaliações', path: '/admin/athlete-evaluations' },
+      { title: 'Scouting', path: '/admin/athlete-scouting' },
+      { title: 'Categorias', path: '/admin/athlete-categories' },
+      { title: 'Cursos/Campos', path: '/admin/courses' },
+      { title: 'Torneios', path: '/admin/tournaments' },
+      { title: 'Ranking', path: '/admin/ranking' },
+      { title: 'Regras', path: '/admin/rules' },
+    ],
+  },
+  {
+    title: 'Conteúdo',
+    icon: FileText,
+    items: [
+      { title: 'Páginas', path: '/admin/pages' },
+      { title: 'Blog', path: '/admin/blog' },
+      { title: 'Galeria', path: '/admin/gallery' },
+    ],
+  },
+  {
+    title: 'Comunicação',
+    icon: Phone,
+    items: [
+      { title: 'WhatsApp', path: '/admin/whatsapp' },
+      { title: 'E-mail', path: '/admin/email' },
+    ],
+  },
+  {
+    title: 'E-commerce',
+    icon: ShoppingCart,
+    items: [
+      { title: 'Pedidos', path: '/admin/ecommerce/orders' },
+      { title: 'Produtos', path: '/admin/ecommerce/products' },
+      { title: 'Grupos', path: '/admin/ecommerce/groups' },
+      { title: 'Carrinhos Abandonados', path: '/admin/ecommerce/abandoned-carts' },
+      { title: 'Logística', path: '/admin/ecommerce/logistics' },
+      { title: 'Checkout', path: '/admin/ecommerce/checkout-config' },
+      { title: 'Aparência', path: '/admin/ecommerce/store-editor' },
+    ],
+  },
+  {
     title: 'Financeiro',
+    icon: CreditCard,
     items: [
-      {
-        id: 'item-fin-dash',
-        title: 'Dashboard',
-        url: '/admin/financial/dashboard',
-        icon: 'PieChart',
-      },
-      {
-        id: 'item-fin-pay',
-        title: 'Pagamentos',
-        url: '/admin/financial/payments',
-        icon: 'DollarSign',
-      },
-      {
-        id: 'item-fin-set',
-        title: 'Configurações',
-        url: '/admin/financial/settings',
-        icon: 'Settings',
-      },
+      { title: 'Dashboard', path: '/admin/financial/dashboard' },
+      { title: 'Lançamentos', path: '/admin/financial/payments' },
+      { title: 'Inscrições', path: '/admin/financial/registration-payments' },
+      { title: 'Categorias', path: '/admin/financial/categories' },
+      { title: 'Plano de Contas', path: '/admin/financial/chart-of-accounts' },
+      { title: 'Parceiros', path: '/admin/financial/partners' },
+      { title: 'Stripe Config', path: '/admin/financial/stripe-config' },
+      { title: 'Logs de Cobrança', path: '/admin/financial/billing-logs' },
+      { title: 'Configurações', path: '/admin/financial/settings' },
     ],
   },
   {
-    id: 'group-business',
-    title: 'Negócio',
+    title: 'Configurações',
+    icon: Settings,
     items: [
-      { id: 'item-bus-users', title: 'Usuários', url: '/admin/users', icon: 'Users' },
-      { id: 'item-bus-courses', title: 'Campos', url: '/admin/courses', icon: 'Map' },
-      { id: 'item-bus-tournaments', title: 'Torneios', url: '/admin/tournaments', icon: 'Trophy' },
-      { id: 'item-bus-ranking', title: 'Ranking', url: '/admin/ranking', icon: 'Star' },
-    ],
-  },
-  {
-    id: 'group-system',
-    title: 'Sistema',
-    items: [
-      { id: 'item-sys-pages', title: 'Páginas', url: '/admin/pages', icon: 'BookOpen' },
-      { id: 'item-sys-blog', title: 'Blog', url: '/admin/blog', icon: 'FileText' },
+      { title: 'Dados do Sistema', path: '/admin/settings/system-data' },
+      { title: 'Planos e Serviços', path: '/admin/settings/plan-services' },
+      { title: 'Tipos de SLA', path: '/admin/settings/sla-types' },
+      { title: 'Mídias', path: '/admin/settings/media' },
+      { title: 'Manutenção', path: '/admin/settings/maintenance' },
+      { title: 'Analytics', path: '/admin/settings/analytics' },
+      { title: 'Logs de Publicação', path: '/admin/settings/publish-logs' },
     ],
   },
 ]
 
 export function AppSidebar() {
-  const { data, updateData } = useSystemData()
-  const { user } = useAuth()
   const location = useLocation()
-  const navigate = useNavigate()
-
-  const [menuData, setMenuData] = useState(defaultMenu)
-  const [draggedItem, setDraggedItem] = useState<any>(null)
-  const [draggedGroup, setDraggedGroup] = useState<string | null>(null)
+  const { user, signOut } = useAuth()
+  const { data: systemData } = useSystemData()
+  const [profile, setProfile] = useState<{ name: string; email: string } | null>(null)
 
   useEffect(() => {
-    if (
-      data?.admin_menu_config &&
-      Array.isArray(data.admin_menu_config) &&
-      data.admin_menu_config.length > 0
-    ) {
-      setMenuData(data.admin_menu_config as any)
+    if (user) {
+      supabase
+        .from('profiles')
+        .select('name, email')
+        .eq('id', user.id)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            setProfile({ name: data.name || '', email: data.email || user.email || '' })
+          } else {
+            setProfile({ name: 'Administrador', email: user.email || '' })
+          }
+        })
     }
-  }, [data?.admin_menu_config])
-
-  const handleDragStart = (e: React.DragEvent, item: any, groupId: string) => {
-    setDraggedItem(item)
-    setDraggedGroup(groupId)
-    e.dataTransfer.effectAllowed = 'move'
-  }
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-  }
-
-  const handleDrop = async (e: React.DragEvent, targetItem: any, targetGroupId: string) => {
-    e.preventDefault()
-    if (!draggedItem || !draggedGroup) return
-
-    if (draggedItem.id === targetItem?.id) return
-
-    const newMenuData = JSON.parse(JSON.stringify(menuData))
-
-    const sourceGroupIndex = newMenuData.findIndex((g: any) => g.id === draggedGroup)
-    if (sourceGroupIndex === -1) return
-    const sourceItemIndex = newMenuData[sourceGroupIndex].items.findIndex(
-      (i: any) => i.id === draggedItem.id,
-    )
-    if (sourceItemIndex === -1) return
-
-    newMenuData[sourceGroupIndex].items.splice(sourceItemIndex, 1)
-
-    const targetGroupIndex = newMenuData.findIndex((g: any) => g.id === targetGroupId)
-    if (targetGroupIndex === -1) return
-
-    if (targetItem) {
-      const targetItemIndex = newMenuData[targetGroupIndex].items.findIndex(
-        (i: any) => i.id === targetItem.id,
-      )
-      newMenuData[targetGroupIndex].items.splice(targetItemIndex, 0, draggedItem)
-    } else {
-      newMenuData[targetGroupIndex].items.push(draggedItem)
-    }
-
-    setMenuData(newMenuData)
-    setDraggedItem(null)
-    setDraggedGroup(null)
-
-    await updateData({ admin_menu_config: newMenuData })
-  }
+  }, [user])
 
   return (
-    <Sidebar>
-      <SidebarHeader className="h-16 flex flex-row items-center justify-start px-4 border-b border-sidebar-border overflow-hidden shrink-0">
-        <div className="flex items-center gap-3 w-full">
-          {data?.logo_url ? (
-            <img src={data.logo_url} alt="Logo" className="h-8 max-w-[140px] object-contain" />
+    <Sidebar className="border-r">
+      <SidebarHeader className="border-b p-4 shrink-0">
+        <Link to="/admin/dashboard" className="flex items-center gap-3 w-full">
+          {systemData?.logo_url ? (
+            <img src={systemData.logo_url} alt="Logo" className="h-8 w-auto object-contain" />
           ) : (
-            <div className="size-8 rounded bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">
-              S
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold">
+              A
             </div>
           )}
-          <span className="font-semibold truncate text-lg hidden md:block">
-            {data?.platform_name || 'Speedwork'}
-          </span>
-        </div>
+          <div className="flex flex-col flex-1 overflow-hidden">
+            <span className="truncate font-semibold text-sm">
+              {systemData?.platform_name || 'Admin Panel'}
+            </span>
+            <span className="truncate text-xs text-muted-foreground">Área Administrativa</span>
+          </div>
+        </Link>
       </SidebarHeader>
 
-      <SidebarContent className="py-4">
-        {Array.isArray(menuData) &&
-          menuData.map((group) => (
-            <SidebarGroup
-              key={group.id}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, null, group.id)}
-              className="px-2 mb-4"
-            >
-              <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80 mb-2 px-2">
-                {group.title}
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {Array.isArray(group.items) &&
-                    group.items.map((item: any) => {
-                      const Icon = IconMap[item.icon] || LayoutDashboard
-                      const isActive = location.pathname.startsWith(item.url)
-                      return (
-                        <SidebarMenuItem key={item.id}>
-                          <div
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, item, group.id)}
-                            onDragOver={handleDragOver}
-                            onDrop={(e) => handleDrop(e, item, group.id)}
-                            className="flex items-center w-full group/drag relative"
-                          >
-                            <div className="absolute -left-2 opacity-0 group-hover/drag:opacity-100 cursor-grab active:cursor-grabbing p-1">
-                              <GripVertical className="size-3.5 text-muted-foreground" />
-                            </div>
-                            <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
-                              <Link to={item.url} className="flex-1">
-                                <Icon className="size-4" />
-                                <span>{item.title}</span>
+      <SidebarContent className="px-2">
+        <SidebarGroup>
+          <SidebarMenu className="gap-1">
+            {adminMenus.map((group) => {
+              if (!group.icon) {
+                return group.items.map((item) => (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton asChild isActive={location.pathname === item.path}>
+                      <Link to={item.path} className="flex items-center gap-2">
+                        {item.icon && <item.icon className="size-4 shrink-0" />}
+                        <span className="truncate">{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))
+              }
+
+              const isActiveGroup = group.items.some((i) => location.pathname.startsWith(i.path))
+
+              return (
+                <Collapsible
+                  key={group.title}
+                  asChild
+                  defaultOpen={isActiveGroup}
+                  className="group/collapsible"
+                >
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton tooltip={group.title}>
+                        <group.icon className="size-4 shrink-0" />
+                        <span className="truncate">{group.title}</span>
+                        <ChevronRight className="ml-auto size-4 shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub className="ml-5 border-l px-0 py-1">
+                        {group.items.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.path}>
+                            <SidebarMenuSubButton
+                              asChild
+                              isActive={location.pathname === subItem.path}
+                            >
+                              <Link to={subItem.path} className="pl-4">
+                                <span className="truncate">{subItem.title}</span>
                               </Link>
-                            </SidebarMenuButton>
-                          </div>
-                        </SidebarMenuItem>
-                      )
-                    })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          ))}
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+              )
+            })}
+          </SidebarMenu>
+        </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-3 shrink-0">
+      <SidebarFooter className="border-t p-4 shrink-0">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="w-full data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground flex items-center"
+              className="w-full justify-between border bg-background shadow-sm hover:bg-accent data-[state=open]:bg-sidebar-accent"
             >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-                <User className="size-4" />
+              <div className="flex items-center gap-3 overflow-hidden">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <User2 className="size-4" />
+                </div>
+                <div className="flex flex-col items-start overflow-hidden text-left">
+                  <span className="truncate text-sm font-medium w-full">
+                    {profile?.name || user?.email?.split('@')[0] || 'Carregando...'}
+                  </span>
+                  <span className="truncate text-xs text-muted-foreground w-full">
+                    {profile?.email || ''}
+                  </span>
+                </div>
               </div>
-              <div className="grid flex-1 text-left text-sm leading-tight ml-2">
-                <span className="truncate font-semibold">
-                  {user?.email?.split('@')[0] || 'Usuário'}
-                </span>
-                <span className="truncate text-xs text-muted-foreground">Dashboards</span>
-              </div>
-              <ChevronsUpDown className="ml-auto size-4 shrink-0 text-muted-foreground" />
+              <ChevronUp className="size-4 shrink-0 text-muted-foreground" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56 rounded-lg" align="end" side="top" sideOffset={8}>
-            <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider">
-              Alternar Visão
-            </DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="w-[240px] mb-2">
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link to="/admin/dashboard" className="w-full flex items-center">
+                <LayoutDashboard className="mr-2 size-4" />
+                Dashboard Admin
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link to="/" className="w-full flex items-center">
+                <Globe className="mr-2 size-4" />
+                Acessar Site Público
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => navigate('/admin/dashboard')}
-              className="cursor-pointer"
-            >
-              <ShieldCheck className="mr-2 size-4" />
-              <span>Administrador</span>
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link to="/admin/settings/system-data" className="w-full flex items-center">
+                <Settings className="mr-2 size-4" />
+                Configurações
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => navigate('/admin/dashboard')}
-              className="cursor-pointer"
+              onClick={() => signOut()}
+              className="cursor-pointer text-destructive focus:bg-destructive focus:text-destructive-foreground"
             >
-              <Briefcase className="mr-2 size-4" />
-              <span>Master</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
-              <User className="mr-2 size-4" />
-              <span>Usuário</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => navigate('/club/dashboard')}
-              className="cursor-pointer"
-            >
-              <Building className="mr-2 size-4" />
-              <span>Clube</span>
+              <LogOut className="mr-2 size-4" />
+              Sair do Sistema
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarFooter>
-
-      <SidebarRail />
     </Sidebar>
   )
 }

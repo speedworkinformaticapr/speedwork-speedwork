@@ -1,20 +1,19 @@
 import { Outlet } from 'react-router-dom'
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
-import { AdminSidebar } from './AdminSidebar'
+import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
+import { AppSidebar } from './AppSidebar'
 
 export default function AdminLayout() {
   return (
-    <SidebarProvider>
-      <AdminSidebar />
-      <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
+    <>
+      <AppSidebar />
+      <SidebarInset className="flex flex-col flex-1 h-svh overflow-hidden">
+        <header className="flex h-14 shrink-0 items-center gap-4 border-b bg-background px-4 lg:h-[60px]">
           <SidebarTrigger />
-          <div className="flex-1" />
         </header>
-        <div className="flex flex-1 flex-col p-4 md:p-6 overflow-auto bg-muted/20">
+        <div className="flex-1 overflow-y-auto bg-muted/30 p-4 md:p-6">
           <Outlet />
         </div>
       </SidebarInset>
-    </SidebarProvider>
+    </>
   )
 }
