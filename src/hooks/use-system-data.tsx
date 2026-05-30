@@ -47,6 +47,7 @@ export interface SystemData {
   quote_footer_text?: string
   business_hours?: Record<string, any>
   scheduling_interval_minutes?: number
+  admin_menu_config?: any
 }
 
 interface SystemDataContextType {

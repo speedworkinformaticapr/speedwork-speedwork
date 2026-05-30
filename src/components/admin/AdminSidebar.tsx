@@ -1,60 +1,15 @@
-import { useState, useEffect, useMemo } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import {
-  LayoutDashboard,
-  FileText,
-  Settings,
-  ChevronRight,
-  ShieldCheck,
-  LogOut,
-  Briefcase,
-  ShoppingCart,
-  Users,
-  Wallet,
-  ExternalLink,
-  UserCircle,
-  LineChart,
-  DollarSign,
-  CalendarDays,
-  Tags,
-  Database,
-  Mail,
-  Wrench,
-  Receipt,
-  MessageSquare,
-  LayoutTemplate,
-  Layout,
-  Image,
-  Video,
-  AppWindow,
-  FileEdit,
-  CreditCard,
-  ShoppingBag,
-  Settings2,
-  Store,
-  Package,
-  Component,
-  Truck,
-  Box,
-  ListPlus,
-  Star,
-  FileSignature,
-  GraduationCap,
-  CalendarClock,
-  Bookmark,
-  FileSpreadsheet,
-  Calendar,
-  ClipboardList,
-  Trophy,
-  Scale,
-  Target,
-  Flag,
-} from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import * as Icons from 'lucide-react'
+import { useSystemData } from '@/hooks/use-system-data'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   Sidebar,
   SidebarContent,
-  SidebarGroup,
-  SidebarGroupLabel,
+  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -62,330 +17,356 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  SidebarFooter,
 } from '@/components/ui/sidebar'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Button } from '@/components/ui/button'
-import { useAuth } from '@/hooks/use-auth'
-import { supabase } from '@/lib/supabase/client'
 
-const navItems = [
+type MenuItem = {
+  id: string
+  title: string
+  icon: string
+  submenus: {
+    id: string
+    title: string
+    path: string
+  }[]
+}
+
+const defaultMenu: MenuItem[] = [
   {
-    title: 'Dashboards',
-    icon: LayoutDashboard,
-    items: [
-      { title: 'Dashboard Administrativo', url: '/admin/dashboard', icon: LayoutDashboard },
-      { title: 'Analytics & Performance', url: '/admin/settings/analytics', icon: LineChart },
-      { title: 'Dashboard Comercial', url: '/admin/commercial/dashboard', icon: DollarSign },
+    id: 'gestao',
+    title: 'Gestão',
+    icon: 'Briefcase',
+    submenus: [
+      { id: 'users', title: 'Usuários', path: '/admin/users' },
       {
-        title: 'Dashboard de Agendamentos',
-        url: '/admin/appointments-dashboard',
-        icon: CalendarDays,
+        id: 'athlete-attributes',
+        title: 'Atributos de Atletas',
+        path: '/admin/athlete-attributes',
       },
-      { title: 'Dashboard Financeiro', url: '/admin/financial/dashboard', icon: LineChart },
+      { id: 'athlete-evaluations', title: 'Avaliações', path: '/admin/athlete-evaluations' },
+      { id: 'athlete-scouting', title: 'Scouting', path: '/admin/athlete-scouting' },
+      { id: 'athlete-categories', title: 'Categorias', path: '/admin/athlete-categories' },
+      { id: 'courses', title: 'Cursos', path: '/admin/courses' },
+      { id: 'tournaments', title: 'Torneios', path: '/admin/tournaments' },
+      { id: 'ranking', title: 'Rankings', path: '/admin/ranking' },
+      { id: 'rules', title: 'Regras', path: '/admin/rules' },
     ],
   },
   {
-    title: 'Configurações',
-    icon: Settings,
-    items: [
+    id: 'comercial',
+    title: 'Comercial',
+    icon: 'Store',
+    submenus: [
       {
-        title: 'Arquitetura de Checkout',
-        url: '/admin/ecommerce/checkout-config',
-        icon: Settings2,
+        id: 'dashboard-comercial',
+        title: 'Dashboard Comercial',
+        path: '/admin/commercial/dashboard',
       },
-      { title: 'Categorias de Cobrança', url: '/admin/financial/categories', icon: Tags },
-      { title: 'Dados do Sistema', url: '/admin/settings/system-data', icon: Database },
-      { title: 'Editor da Loja', url: '/admin/ecommerce/store-editor', icon: Store },
-      { title: 'Gestão de E-mail', url: '/admin/email', icon: Mail },
-      { title: 'Gestão WhatsApp', url: '/admin/whatsapp', icon: MessageSquare },
-      { title: 'Página de Manutenção', url: '/admin/settings/maintenance', icon: Wrench },
-      { title: 'Plano de Contas', url: '/admin/financial/chart-of-accounts', icon: FileText },
-      { title: 'Regras de Cobrança', url: '/admin/financial/settings', icon: Receipt },
-      { title: 'Serviços para Planos', url: '/admin/settings/plan-services', icon: LayoutTemplate },
-      { title: 'Tipos de SLA', url: '/admin/settings/sla-types', icon: Tags },
-      { title: 'Gestão de Usuários', url: '/admin/users', icon: Users },
+      { id: 'quotes', title: 'Orçamentos', path: '/admin/quotes' },
+      { id: 'pedidos', title: 'Pedidos', path: '/admin/commercial/pedidos' },
+      { id: 'contratos', title: 'Contratos', path: '/admin/commercial/contratos' },
+      { id: 'services', title: 'Serviços', path: '/admin/services' },
+      { id: 'appointments', title: 'Agendamentos', path: '/admin/appointments' },
     ],
   },
   {
-    title: 'Customizar CMS',
-    icon: LayoutTemplate,
-    items: [
-      { title: 'Galeria de Fotos', url: '/admin/gallery', icon: Image },
-      { title: 'Gestão de Mídias', url: '/admin/settings/media', icon: Video },
-      { title: 'Páginas & Rotas', url: '/admin/pages', icon: AppWindow },
-      { title: 'Posts do Blog', url: '/admin/blog', icon: FileEdit },
-    ],
-  },
-  {
+    id: 'financeiro',
     title: 'Financeiro',
-    icon: Wallet,
-    items: [{ title: 'Fluxo de Caixa', url: '/admin/financial/payments', icon: CreditCard }],
-  },
-  {
-    title: 'Gestão de E-commerce',
-    icon: ShoppingCart,
-    items: [
+    icon: 'LineChart',
+    submenus: [
       {
-        title: 'Recuperação de Vendas',
-        url: '/admin/ecommerce/abandoned-carts',
-        icon: ShoppingBag,
+        id: 'dashboard-financeiro',
+        title: 'Dashboard Financeiro',
+        path: '/admin/financial/dashboard',
       },
-      { title: 'Gestão de Pedidos', url: '/admin/ecommerce/orders', icon: Package },
-      { title: 'Grupos de Produtos', url: '/admin/ecommerce/groups', icon: Component },
-      { title: 'Logística e Fretes', url: '/admin/ecommerce/logistics', icon: Truck },
-      { title: 'Produtos', url: '/admin/ecommerce/products', icon: Box },
+      {
+        id: 'chart-of-accounts',
+        title: 'Plano de Contas',
+        path: '/admin/financial/chart-of-accounts',
+      },
+      { id: 'categories-financeiro', title: 'Categorias', path: '/admin/financial/categories' },
+      { id: 'payments', title: 'Pagamentos', path: '/admin/financial/payments' },
+      { id: 'partners', title: 'Parceiros', path: '/admin/financial/partners' },
+      { id: 'billing-logs', title: 'Logs de Faturamento', path: '/admin/financial/billing-logs' },
+      {
+        id: 'stripe-config',
+        title: 'Configurações Stripe',
+        path: '/admin/financial/stripe-config',
+      },
     ],
   },
   {
-    title: 'Gestão de Negócio',
-    icon: Briefcase,
-    items: [
-      { title: 'Atributos da Bio', url: '/admin/athlete-attributes', icon: ListPlus },
-      { title: 'Avaliações de Atletas', url: '/admin/athlete-evaluations', icon: Star },
-      { title: 'Contratos', url: '/admin/commercial/contratos', icon: FileSignature },
-      { title: 'Cursos', url: '/admin/courses', icon: GraduationCap },
-      { title: 'Gerenciar Agendamentos', url: '/admin/appointments/manage', icon: CalendarClock },
-      { title: 'Gestão de Categorias', url: '/admin/athlete-categories', icon: Bookmark },
-      { title: 'Orçamentos', url: '/admin/quotes', icon: FileSpreadsheet },
-      { title: 'Painel de Agendamentos', url: '/admin/appointments', icon: Calendar },
-      { title: 'Pedidos', url: '/admin/commercial/pedidos', icon: ClipboardList },
-      { title: 'Ranking', url: '/admin/ranking', icon: Trophy },
-      { title: 'Regras', url: '/admin/rules', icon: Scale },
-      { title: 'Scouting de Atletas', url: '/admin/athlete-scouting', icon: Target },
-      { title: 'Catálogo de Serviços', url: '/admin/services', icon: Wrench },
-      { title: 'Torneios', url: '/admin/tournaments', icon: Flag },
+    id: 'ecommerce',
+    title: 'E-commerce',
+    icon: 'ShoppingCart',
+    submenus: [
+      { id: 'groups', title: 'Grupos', path: '/admin/ecommerce/groups' },
+      { id: 'products', title: 'Produtos', path: '/admin/ecommerce/products' },
+      { id: 'store-editor', title: 'Editor da Loja', path: '/admin/ecommerce/store-editor' },
+      {
+        id: 'abandoned-carts',
+        title: 'Carrinhos Abandonados',
+        path: '/admin/ecommerce/abandoned-carts',
+      },
+      { id: 'logistics', title: 'Logística', path: '/admin/ecommerce/logistics' },
+      { id: 'orders-ecommerce', title: 'Pedidos', path: '/admin/ecommerce/orders' },
+    ],
+  },
+  {
+    id: 'configuracoes',
+    title: 'Configurações',
+    icon: 'Settings',
+    submenus: [
+      { id: 'system-data', title: 'Dados do Sistema', path: '/admin/settings/system-data' },
+      { id: 'maintenance', title: 'Manutenção', path: '/admin/settings/maintenance' },
+      { id: 'plan-services', title: 'Planos/Serviços', path: '/admin/settings/plan-services' },
+      { id: 'sla-types', title: 'Tipos de SLA', path: '/admin/settings/sla-types' },
+      { id: 'media', title: 'Mídia', path: '/admin/settings/media' },
+      { id: 'analytics', title: 'Analytics', path: '/admin/settings/analytics' },
     ],
   },
 ]
 
 export function AdminSidebar() {
   const location = useLocation()
-  const navigate = useNavigate()
-  const { user, signOut } = useAuth()
-  const [userRoles, setUserRoles] = useState<string[]>([])
+  const { data: systemData, updateData } = useSystemData()
+  const [isEditing, setIsEditing] = useState(false)
+  const [menuData, setMenuData] = useState<MenuItem[]>(defaultMenu)
+  const [openGroup, setOpenGroup] = useState<string | null>(null)
+
+  const [draggedGroup, setDraggedGroup] = useState<string | null>(null)
+  const [draggedItem, setDraggedItem] = useState<{ groupId: string; itemId: string } | null>(null)
 
   useEffect(() => {
-    if (user) {
-      supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .then(({ data }) => {
-          if (data && data.length > 0) {
-            setUserRoles(data.map((r: any) => r.role))
-          } else {
-            supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', user.id)
-              .single()
-              .then(({ data: profileData }) => {
-                if (profileData?.role) {
-                  setUserRoles([profileData.role])
-                }
-              })
-          }
-        })
+    if (systemData?.admin_menu_config) {
+      setMenuData(systemData.admin_menu_config)
     }
-  }, [user])
+  }, [systemData?.admin_menu_config])
 
-  const handleSwitchRole = (role: string) => {
-    localStorage.setItem('activeRole', role)
-    if (role === 'admin') window.location.href = '/admin/dashboard'
-    else if (role === 'club') window.location.href = '/club/dashboard'
-    else if (role === 'staff') window.location.href = '/staff/dashboard'
-    else if (role === 'client') window.location.href = '/client/dashboard'
-    else window.location.href = '/'
+  useEffect(() => {
+    if (!isEditing && !openGroup) {
+      const activeGroup = menuData.find((g) => g.submenus.some((s) => s.path === location.pathname))
+      if (activeGroup) setOpenGroup(activeGroup.id)
+    }
+  }, [location.pathname, menuData, isEditing, openGroup])
+
+  const handleSave = async () => {
+    await updateData({ admin_menu_config: menuData })
+    setIsEditing(false)
   }
 
-  const allNavItems = useMemo(() => {
-    const baseItems = [...navItems]
-
-    const dashboardItem = baseItems.find((item) => item.title === 'Dashboards')
-    const otherItems = baseItems.filter((item) => item.title !== 'Dashboards')
-
-    const processedOtherItems = otherItems.map((item) => {
-      if (item.items) {
-        return {
-          ...item,
-          items: [...item.items].sort((a, b) => a.title.localeCompare(b.title)),
-        }
-      }
-      return item
-    })
-
-    processedOtherItems.sort((a, b) => a.title.localeCompare(b.title))
-
-    return dashboardItem ? [dashboardItem, ...processedOtherItems] : processedOtherItems
-  }, [userRoles])
-
-  const [openSection, setOpenSection] = useState<string | null>(() => {
-    return (
-      allNavItems.find((item) => item.items?.some((sub) => location.pathname.startsWith(sub.url)))
-        ?.title || null
-    )
-  })
-
-  useEffect(() => {
-    const currentSection = allNavItems.find((item) =>
-      item.items?.some((sub) => location.pathname.startsWith(sub.url)),
-    )?.title
-
-    if (currentSection) {
-      setOpenSection((prev) => (prev !== currentSection ? currentSection : prev))
+  const handleCancel = () => {
+    if (systemData?.admin_menu_config) {
+      setMenuData(systemData.admin_menu_config)
+    } else {
+      setMenuData(defaultMenu)
     }
-  }, [location.pathname, allNavItems])
+    setIsEditing(false)
+  }
 
-  const handleLogout = async () => {
-    await signOut()
-    navigate('/')
+  const renderIcon = (name: string) => {
+    const Icon = (Icons as any)[name]
+    return Icon ? (
+      <Icon className="w-4 h-4 shrink-0" />
+    ) : (
+      <Icons.Circle className="w-4 h-4 shrink-0" />
+    )
+  }
+
+  const onGroupDragStart = (e: React.DragEvent, groupId: string) => {
+    if (!isEditing) return
+    setDraggedGroup(groupId)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const onGroupDragOver = (e: React.DragEvent) => {
+    if (!isEditing || !draggedGroup) return
+    e.preventDefault()
+  }
+
+  const onGroupDrop = (e: React.DragEvent, targetGroupId: string) => {
+    if (!isEditing || !draggedGroup || draggedGroup === targetGroupId) return
+    e.preventDefault()
+
+    const newMenu = [...menuData]
+    const draggedIdx = newMenu.findIndex((g) => g.id === draggedGroup)
+    const targetIdx = newMenu.findIndex((g) => g.id === targetGroupId)
+
+    const [removed] = newMenu.splice(draggedIdx, 1)
+    newMenu.splice(targetIdx, 0, removed)
+
+    setMenuData(newMenu)
+    setDraggedGroup(null)
+  }
+
+  const onItemDragStart = (e: React.DragEvent, groupId: string, itemId: string) => {
+    if (!isEditing) return
+    e.stopPropagation()
+    setDraggedItem({ groupId, itemId })
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const onItemDragOver = (e: React.DragEvent) => {
+    if (!isEditing || !draggedItem) return
+    e.preventDefault()
+  }
+
+  const onItemDrop = (e: React.DragEvent, targetGroupId: string, targetItemId: string) => {
+    if (!isEditing || !draggedItem) return
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (draggedItem.groupId !== targetGroupId || draggedItem.itemId === targetItemId) return
+
+    const newMenu = [...menuData]
+    const groupIdx = newMenu.findIndex((g) => g.id === targetGroupId)
+    if (groupIdx === -1) return
+
+    const submenus = [...newMenu[groupIdx].submenus]
+    const draggedIdx = submenus.findIndex((i) => i.id === draggedItem.itemId)
+    const targetIdx = submenus.findIndex((i) => i.id === targetItemId)
+
+    const [removed] = submenus.splice(draggedIdx, 1)
+    submenus.splice(targetIdx, 0, removed)
+
+    newMenu[groupIdx].submenus = submenus
+    setMenuData(newMenu)
+    setDraggedItem(null)
+  }
+
+  const updateGroupTitle = (groupId: string, newTitle: string) => {
+    setMenuData((prev) => prev.map((g) => (g.id === groupId ? { ...g, title: newTitle } : g)))
+  }
+
+  const updateItemTitle = (groupId: string, itemId: string, newTitle: string) => {
+    setMenuData((prev) =>
+      prev.map((g) => {
+        if (g.id === groupId) {
+          return {
+            ...g,
+            submenus: g.submenus.map((i) => (i.id === itemId ? { ...i, title: newTitle } : i)),
+          }
+        }
+        return g
+      }),
+    )
   }
 
   return (
-    <Sidebar collapsible="icon" variant="sidebar">
-      <SidebarHeader className="h-16 flex items-center justify-center border-b">
-        <div className="flex items-center gap-3 px-2 overflow-hidden w-full">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm">
-            <ShieldCheck className="h-5 w-5" aria-hidden="true" />
-          </div>
-          <span className="truncate font-bold text-lg group-data-[collapsible=icon]:hidden text-primary">
-            Admin Speedwork
-          </span>
-        </div>
+    <Sidebar className="border-r shadow-sm">
+      <SidebarHeader className="h-16 flex items-center justify-center px-4 border-b">
+        <span className="font-bold text-lg text-primary tracking-tight">Painel Admin</span>
       </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel aria-label="Seções do Sistema">Menu Administrativo</SidebarGroupLabel>
-          <SidebarMenu>
-            {allNavItems.map((item) =>
-              item.items ? (
-                <Collapsible
-                  key={item.title}
-                  asChild
-                  open={openSection === item.title}
-                  onOpenChange={(isOpen) => setOpenSection(isOpen ? item.title : null)}
-                  className="group/collapsible"
-                >
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton
-                        tooltip={item.title}
-                        aria-label={`Abrir menu ${item.title}`}
-                      >
-                        {item.icon && <item.icon aria-hidden="true" />}
-                        <span>{item.title}</span>
-                        <ChevronRight
-                          className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
-                          aria-hidden="true"
-                        />
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {item.items.map((subItem) => (
-                          <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={location.pathname === subItem.url}
-                            >
-                              <Link to={subItem.url} aria-label={`Ir para ${subItem.title}`}>
-                                {subItem.icon && (
-                                  <subItem.icon
-                                    className="h-4 w-4 mr-2 shrink-0"
-                                    aria-hidden="true"
-                                  />
-                                )}
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
-              ) : (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location.pathname === item.url}
-                    tooltip={item.title}
-                  >
-                    <Link to={item.url} aria-label={`Ir para ${item.title}`}>
-                      {item.icon && <item.icon aria-hidden="true" />}
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ),
-            )}
-          </SidebarMenu>
-        </SidebarGroup>
-      </SidebarContent>
-      <SidebarFooter className="border-t p-2">
+      <SidebarContent className="p-2 gap-1 overflow-y-auto hidden-scrollbar">
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Visualizar Site">
-              <a href="/" target="_blank" rel="noopener noreferrer">
-                <ExternalLink aria-hidden="true" />
-                <span>Visualizar Site</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem className="flex items-center gap-1">
-            <SidebarMenuButton
-              onClick={handleLogout}
-              className="text-destructive hover:text-destructive flex-1"
-              tooltip="Sair do sistema"
+          {menuData.map((group) => (
+            <Collapsible
+              key={group.id}
+              open={isEditing ? true : openGroup === group.id}
+              onOpenChange={(isOpen) => {
+                if (!isEditing) setOpenGroup(isOpen ? group.id : null)
+              }}
+              className="group/collapsible"
+              asChild
             >
-              <LogOut aria-hidden="true" />
-              <span>Logout</span>
-            </SidebarMenuButton>
-
-            {userRoles.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-primary shrink-0"
-                    title="Trocar Perfil"
+              <SidebarMenuItem
+                draggable={isEditing}
+                onDragStart={(e) => onGroupDragStart(e, group.id)}
+                onDragOver={onGroupDragOver}
+                onDrop={(e) => onGroupDrop(e, group.id)}
+                className={cn(
+                  isEditing &&
+                    'border border-transparent hover:border-border rounded-md transition-colors',
+                )}
+              >
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton
+                    tooltip={group.title}
+                    className={cn(
+                      'h-10 cursor-pointer',
+                      openGroup === group.id &&
+                        !isEditing &&
+                        'bg-sidebar-accent text-sidebar-accent-foreground font-medium',
+                    )}
                   >
-                    <UserCircle aria-hidden="true" className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent side="right" align="end" className="w-48">
-                  <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
-                    Trocar Perfil
-                  </div>
-                  {userRoles.map((role) => (
-                    <DropdownMenuItem
-                      key={role}
-                      onClick={() => handleSwitchRole(role)}
-                      className="cursor-pointer"
-                    >
-                      {role === 'admin'
-                        ? 'Administrador'
-                        : role === 'club'
-                          ? 'Clube'
-                          : role === 'client'
-                            ? 'Cliente'
-                            : role === 'staff'
-                              ? 'Equipe'
-                              : role}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </SidebarMenuItem>
+                    {isEditing && (
+                      <Icons.GripVertical className="w-4 h-4 cursor-grab text-muted-foreground shrink-0" />
+                    )}
+                    {!isEditing && renderIcon(group.icon)}
+                    {isEditing ? (
+                      <Input
+                        value={group.title}
+                        onChange={(e) => updateGroupTitle(group.id, e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-7 px-2 text-sm ml-1 flex-1"
+                      />
+                    ) : (
+                      <span className="flex-1 truncate select-none">{group.title}</span>
+                    )}
+                    {!isEditing && (
+                      <Icons.ChevronDown className="ml-auto w-4 h-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                    )}
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+
+                <CollapsibleContent className="pl-4 pr-0 py-1">
+                  <SidebarMenuSub className="m-0 border-l border-border/50">
+                    {group.submenus.map((item) => (
+                      <SidebarMenuSubItem
+                        key={item.id}
+                        draggable={isEditing}
+                        onDragStart={(e) => onItemDragStart(e, group.id, item.id)}
+                        onDragOver={onItemDragOver}
+                        onDrop={(e) => onItemDrop(e, group.id, item.id)}
+                        className={cn(
+                          isEditing && 'pl-2 hover:bg-muted/50 rounded-md transition-colors',
+                        )}
+                      >
+                        {isEditing ? (
+                          <div className="flex items-center w-full gap-2 py-1 pr-2">
+                            <Icons.GripVertical className="w-4 h-4 cursor-grab text-muted-foreground shrink-0" />
+                            <Input
+                              value={item.title}
+                              onChange={(e) => updateItemTitle(group.id, item.id, e.target.value)}
+                              className="h-6 px-2 text-xs flex-1"
+                            />
+                          </div>
+                        ) : (
+                          <SidebarMenuSubButton
+                            asChild
+                            isActive={location.pathname === item.path}
+                            className={cn(
+                              'text-sm h-8 cursor-pointer transition-colors',
+                              location.pathname === item.path && 'font-medium text-primary',
+                            )}
+                          >
+                            <Link to={item.path}>{item.title}</Link>
+                          </SidebarMenuSubButton>
+                        )}
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </SidebarMenuItem>
+            </Collapsible>
+          ))}
         </SidebarMenu>
+      </SidebarContent>
+
+      <SidebarFooter className="p-4 border-t bg-sidebar">
+        {isEditing ? (
+          <div className="flex flex-col gap-2">
+            <Button size="sm" variant="default" className="w-full" onClick={handleSave}>
+              <Icons.Save className="w-4 h-4 mr-2" /> Salvar
+            </Button>
+            <Button size="sm" variant="outline" className="w-full" onClick={handleCancel}>
+              <Icons.X className="w-4 h-4 mr-2" /> Cancelar
+            </Button>
+          </div>
+        ) : (
+          <Button size="sm" variant="outline" className="w-full" onClick={() => setIsEditing(true)}>
+            <Icons.Edit3 className="w-4 h-4 mr-2" /> Editar Menu
+          </Button>
+        )}
       </SidebarFooter>
     </Sidebar>
   )
