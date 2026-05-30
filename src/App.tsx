@@ -92,6 +92,7 @@ import { FloatingWidgets } from './components/FloatingWidgets'
 import { CookieConsent } from './components/CookieConsent'
 import { RoleGuard } from './components/RoleGuard'
 import { Analytics } from './components/Analytics'
+import { SidebarInjector } from './components/admin/SidebarInjector'
 
 function ScrollToHash() {
   const location = useLocation()
@@ -148,6 +149,7 @@ const App = () => (
               <Sonner />
               <AccessibilityWidget />
               <Analytics />
+              <SidebarInjector />
               <Routes>
                 {/* Auth Routes - Evaluated first to ensure static paths take precedence */}
                 <Route element={<AuthLayout />}>

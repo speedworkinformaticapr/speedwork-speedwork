@@ -25,7 +25,7 @@ export function useUserRole() {
       try {
         const { data } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, is_club, club_id')
           .eq('id', user.id)
           .maybeSingle()
 
@@ -33,8 +33,8 @@ export function useUserRole() {
           if (data) {
             const role = data.role || 'user'
             setIsAdmin(role === 'admin' || role === 'master')
-            setIsClubAdmin(role === 'club')
-            setClubId(null) // Not available in profiles yet
+            setIsClubAdmin(!!data.is_club || role === 'club')
+            setClubId(data.club_id || null)
           } else {
             setIsAdmin(false)
             setIsClubAdmin(false)
