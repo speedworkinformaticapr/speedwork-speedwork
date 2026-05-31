@@ -58,6 +58,7 @@ import AdminAthleteScouting from './pages/admin/business/AdminAthleteScouting'
 import AdminPlanServices from './pages/admin/settings/AdminPlanServices'
 import AdminSlaTypes from './pages/admin/settings/AdminSlaTypes'
 import AdminSystemData from './pages/admin/settings/AdminSystemData'
+import AdminMenuConfig from './pages/admin/settings/AdminMenuConfig'
 import AdminMedia from './pages/admin/settings/AdminMedia'
 import AdminAnalytics from './pages/admin/settings/AdminAnalytics'
 import AdminPublishLogs from './pages/admin/settings/AdminPublishLogs'
@@ -204,6 +205,7 @@ const App = () => (
                   <Route path="/admin/gallery" element={<AdminGallery />} />
                   <Route path="/admin/settings/maintenance" element={<AdminMaintenance />} />
                   <Route path="/admin/settings/system-data" element={<AdminSystemData />} />
+                  <Route path="/admin/settings/menu" element={<AdminMenuConfig />} />
                   <Route path="/admin/settings/plan-services" element={<AdminPlanServices />} />
                   <Route path="/admin/settings/sla-types" element={<AdminSlaTypes />} />
                   <Route path="/admin/settings/media" element={<AdminMedia />} />

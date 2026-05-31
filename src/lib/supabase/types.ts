@@ -4985,9 +4985,8 @@ export const Constants = {
 //     WITH CHECK: true
 //   Policy "system_data_select" (SELECT, PERMISSIVE) roles={public}
 //     USING: true
-//   Policy "system_data_update" (UPDATE, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
+//   Policy "system_data_update_admin" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: ((EXISTS ( SELECT 1    FROM user_roles   WHERE ((user_roles.user_id = auth.uid()) AND (user_roles.role = ANY (ARRAY['admin'::text, 'master'::text]))))) OR (EXISTS ( SELECT 1    FROM profiles   WHERE ((profiles.id = auth.uid()) AND (profiles.role = ANY (ARRAY['admin'::text, 'master'::text]))))) OR (auth.uid() IS NOT NULL))
 // Table: user_roles
 //   Policy "user_roles_delete" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: true
