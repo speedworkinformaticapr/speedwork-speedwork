@@ -14,7 +14,12 @@ export const DEFAULT_MENU_CONFIG = [
     label: 'Comercial',
     icon: 'Briefcase',
     items: [
-      { id: 'com-agendamentos', label: 'Agendamentos', path: '/admin/commercial/appointments' },
+      {
+        id: 'com-agendamentos',
+        label: 'Agendamentos',
+        path: '/admin/commercial/appointments',
+        icon: 'Calendar',
+      },
       { id: 'com-pedidos', label: 'Pedidos', path: '/admin/commercial/orders' },
       { id: 'com-orcamentos', label: 'Orçamentos', path: '/admin/commercial/quotes' },
       { id: 'com-contratos', label: 'Contratos', path: '/admin/commercial/contracts' },
