@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -9,105 +10,161 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { DateRangePicker } from '@/components/ui/date-range-picker'
-import { DateRange } from 'react-day-picker'
-import { Loader2 } from 'lucide-react'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-
-export const MOCK_CATALOG_SERVICES = [
-  { id: 'srv-1', name: 'Consultoria Financeira', base_price: 1500 },
-  { id: 'srv-2', name: 'Auditoria Contábil', base_price: 3000 },
-  { id: 'srv-3', name: 'Planejamento Tributário', base_price: 2000 },
-]
-
-export const MOCK_CATALOG_PRODUCTS = [
-  { id: 'prod-1', name: 'Sistema ERP', price: 5000 },
-  { id: 'prod-2', name: 'Licença Anual', price: 1200 },
-  { id: 'prod-3', name: 'Treinamento Equipe', price: 800 },
-]
+import { useDataTable } from '@/hooks/use-data-table'
+import { DataTableToolbar } from '@/components/ui/data-table/data-table-toolbar'
+import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header'
+import { Button } from '@/components/ui/button'
+import { Edit, Trash2 } from 'lucide-react'
 
 export default function AdminQuotes() {
-  const [quotes, setQuotes] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [dateRange, setDateRange] = useState<DateRange | undefined>()
+  const [data, setData] = useState<any[]>([])
+  const {
+    search,
+    setSearch,
+    debouncedSearch,
+    status,
+    setStatus,
+    dateRange,
+    setDateRange,
+    sortConfig,
+    handleSort,
+  } = useDataTable()
 
-  const loadData = async () => {
-    setLoading(true)
-    let query = supabase
-      .from('orcamentos')
-      .select(`*, profiles:cliente_id(name)`)
-      .order('data_emissao', { ascending: false })
+  const fetchData = async () => {
+    let q = supabase.from('orcamentos').select('*, profiles(name)')
 
+    if (debouncedSearch) {
+      q = q.or(`numero_orcamento.ilike.%${debouncedSearch}%,observacoes.ilike.%${debouncedSearch}%`)
+    }
+    if (status && status !== 'all') {
+      q = q.eq('status', status)
+    }
     if (dateRange?.from) {
-      query = query.gte('data_emissao', format(dateRange.from, 'yyyy-MM-dd'))
+      q = q.gte('data_emissao', dateRange.from.toISOString())
     }
     if (dateRange?.to) {
-      query = query.lte('data_emissao', format(dateRange.to, 'yyyy-MM-dd'))
+      q = q.lte('data_emissao', dateRange.to.toISOString())
+    }
+    if (sortConfig) {
+      q = q.order(sortConfig.column, { ascending: sortConfig.direction === 'asc' })
+    } else {
+      q = q.order('created_at', { ascending: false })
     }
 
-    const { data } = await query
-    setQuotes(data || [])
-    setLoading(false)
+    const { data: result } = await q
+    if (result) setData(result)
   }
 
   useEffect(() => {
-    loadData()
-  }, [dateRange])
+    fetchData()
+  }, [debouncedSearch, status, dateRange, sortConfig])
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Tem certeza que deseja excluir?')) {
+      await supabase.from('orcamentos').delete().eq('id', id)
+      fetchData()
+    }
+  }
+
+  const statusOptions = [
+    { label: 'Rascunho', value: 'rascunho' },
+    { label: 'Pendente', value: 'pendente' },
+    { label: 'Aprovado', value: 'aprovado' },
+    { label: 'Rejeitado', value: 'rejeitado' },
+  ]
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Orçamentos</h1>
-        <DateRangePicker date={dateRange} setDate={setDateRange} />
-      </div>
-
+    <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Histórico de Orçamentos</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Orçamentos</CardTitle>
+          <Button asChild>
+            <Link to="new">Novo Orçamento</Link>
+          </Button>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="flex justify-center p-8">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-          ) : quotes.length === 0 ? (
-            <div className="text-center p-8 text-muted-foreground">
-              Nenhum orçamento encontrado para o período.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
+          <DataTableToolbar
+            search={search}
+            setSearch={setSearch}
+            status={status}
+            setStatus={setStatus}
+            statusOptions={statusOptions}
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            searchPlaceholder="Buscar por número..."
+          />
+          <div className="rounded-md border overflow-hidden relative">
+            <div className="overflow-auto max-h-[600px]">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
                   <TableRow>
-                    <TableHead>Número</TableHead>
-                    <TableHead>Data Emissão</TableHead>
+                    <TableHead>
+                      <DataTableColumnHeader
+                        title="Número"
+                        column="numero_orcamento"
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                    </TableHead>
                     <TableHead>Cliente</TableHead>
-                    <TableHead>Total</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>
+                      <DataTableColumnHeader
+                        title="Data"
+                        column="data_emissao"
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <DataTableColumnHeader
+                        title="Total"
+                        column="total"
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <DataTableColumnHeader
+                        title="Status"
+                        column="status"
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                    </TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {quotes.map((q) => (
-                    <TableRow key={q.id}>
-                      <TableCell className="font-medium">{q.numero_orcamento}</TableCell>
+                  {data.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">{item.numero_orcamento}</TableCell>
+                      <TableCell>{item.profiles?.name || 'N/A'}</TableCell>
                       <TableCell>
-                        {format(new Date(q.data_emissao), 'dd/MM/yyyy', { locale: ptBR })}
+                        {new Date(item.data_emissao).toLocaleDateString('pt-BR')}
                       </TableCell>
-                      <TableCell>{q.profiles?.name || '-'}</TableCell>
                       <TableCell>
                         {new Intl.NumberFormat('pt-BR', {
                           style: 'currency',
                           currency: 'BRL',
-                        }).format(q.total || 0)}
+                        }).format(item.total || 0)}
                       </TableCell>
-                      <TableCell>{q.status}</TableCell>
+                      <TableCell>{item.status}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" asChild>
+                          <Link to={`${item.id}/edit`}>
+                            <Edit className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
     </div>

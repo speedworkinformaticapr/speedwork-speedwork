@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -9,109 +9,126 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { DateRangePicker } from '@/components/ui/date-range-picker'
-import { DateRange } from 'react-day-picker'
-import { Loader2 } from 'lucide-react'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+import { useDataTable } from '@/hooks/use-data-table'
+import { DataTableToolbar } from '@/components/ui/data-table/data-table-toolbar'
+import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header'
 
 export default function AdminBillingLogs() {
-  const [logs, setLogs] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [dateRange, setDateRange] = useState<DateRange | undefined>()
+  const [data, setData] = useState<any[]>([])
+  const {
+    search,
+    setSearch,
+    debouncedSearch,
+    status,
+    setStatus,
+    dateRange,
+    setDateRange,
+    sortConfig,
+    handleSort,
+  } = useDataTable()
 
-  const loadData = async () => {
-    setLoading(true)
-    let query = supabase
-      .from('billing_logs')
-      .select('*')
-      .order('execution_date', { ascending: false })
+  const fetchData = async () => {
+    let q = supabase.from('billing_logs').select('*')
 
+    if (debouncedSearch) {
+      q = q.ilike('error_message', `%${debouncedSearch}%`)
+    }
+    if (status && status !== 'all') {
+      q = q.eq('status', status)
+    }
     if (dateRange?.from) {
-      query = query.gte('execution_date', dateRange.from.toISOString())
+      q = q.gte('execution_date', dateRange.from.toISOString())
     }
     if (dateRange?.to) {
-      const toDate = new Date(dateRange.to)
-      toDate.setHours(23, 59, 59, 999)
-      query = query.lte('execution_date', toDate.toISOString())
+      q = q.lte('execution_date', dateRange.to.toISOString())
+    }
+    if (sortConfig) {
+      q = q.order(sortConfig.column, { ascending: sortConfig.direction === 'asc' })
+    } else {
+      q = q.order('created_at', { ascending: false })
     }
 
-    const { data } = await query
-    setLogs(data || [])
-    setLoading(false)
+    const { data: result } = await q
+    if (result) setData(result)
   }
 
   useEffect(() => {
-    loadData()
-  }, [dateRange])
+    fetchData()
+  }, [debouncedSearch, status, dateRange, sortConfig])
+
+  const statusOptions = [
+    { label: 'Sucesso', value: 'success' },
+    { label: 'Erro', value: 'error' },
+  ]
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Logs de Faturamento</h1>
-        <DateRangePicker date={dateRange} setDate={setDateRange} />
-      </div>
-
+    <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Histórico de Execuções</CardTitle>
+          <CardTitle>Logs de Faturamento</CardTitle>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="flex justify-center p-8">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-          ) : logs.length === 0 ? (
-            <div className="text-center p-8 text-muted-foreground">
-              Nenhum log encontrado para o período.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
+          <DataTableToolbar
+            search={search}
+            setSearch={setSearch}
+            status={status}
+            setStatus={setStatus}
+            statusOptions={statusOptions}
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            searchPlaceholder="Buscar por mensagem de erro..."
+          />
+          <div className="rounded-md border overflow-hidden relative">
+            <div className="overflow-auto max-h-[600px]">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
                   <TableRow>
-                    <TableHead>Data de Execução</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Faturas Geradas</TableHead>
-                    <TableHead>Duplicidades Evitadas</TableHead>
-                    <TableHead>Mensagem</TableHead>
+                    <TableHead>
+                      <DataTableColumnHeader
+                        title="Data de Execução"
+                        column="execution_date"
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <DataTableColumnHeader
+                        title="Gerados"
+                        column="total_generated"
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <DataTableColumnHeader
+                        title="Status"
+                        column="status"
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                    </TableHead>
+                    <TableHead>Mensagem de Erro</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {logs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell>
-                        {log.execution_date
-                          ? format(new Date(log.execution_date), 'dd/MM/yyyy HH:mm', {
-                              locale: ptBR,
-                            })
-                          : '-'}
+                  {data.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">
+                        {item.execution_date
+                          ? new Date(item.execution_date).toLocaleString('pt-BR')
+                          : 'N/A'}
                       </TableCell>
-                      <TableCell>
-                        <span
-                          className={
-                            log.status === 'success'
-                              ? 'text-green-600 font-medium'
-                              : 'text-red-600 font-medium'
-                          }
-                        >
-                          {log.status === 'success' ? 'Sucesso' : 'Erro'}
-                        </span>
-                      </TableCell>
-                      <TableCell>{log.total_generated || 0}</TableCell>
-                      <TableCell>{log.total_duplicates_avoided || 0}</TableCell>
-                      <TableCell
-                        className="text-muted-foreground max-w-[250px] truncate"
-                        title={log.error_message || '-'}
-                      >
-                        {log.error_message || '-'}
+                      <TableCell>{item.total_generated}</TableCell>
+                      <TableCell>{item.status}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {item.error_message || 'Nenhum erro'}
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
     </div>

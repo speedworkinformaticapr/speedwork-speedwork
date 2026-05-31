@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -9,93 +9,155 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { DateRangePicker } from '@/components/ui/date-range-picker'
-import { DateRange } from 'react-day-picker'
-import { Loader2 } from 'lucide-react'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+import { useDataTable } from '@/hooks/use-data-table'
+import { DataTableToolbar } from '@/components/ui/data-table/data-table-toolbar'
+import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header'
+import { Button } from '@/components/ui/button'
+import { Trash2 } from 'lucide-react'
 
 export default function AdminFinancialPayments() {
-  const [charges, setCharges] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [dateRange, setDateRange] = useState<DateRange | undefined>()
+  const [data, setData] = useState<any[]>([])
+  const {
+    search,
+    setSearch,
+    debouncedSearch,
+    status,
+    setStatus,
+    dateRange,
+    setDateRange,
+    sortConfig,
+    handleSort,
+  } = useDataTable()
 
-  const loadData = async () => {
-    setLoading(true)
-    let query = supabase
-      .from('financial_charges')
-      .select('*')
-      .order('due_date', { ascending: false })
+  const fetchData = async () => {
+    let q = supabase.from('financial_charges').select('*')
 
+    if (debouncedSearch) {
+      q = q.or(`client_name.ilike.%${debouncedSearch}%,description.ilike.%${debouncedSearch}%`)
+    }
+    if (status && status !== 'all') {
+      q = q.eq('status', status)
+    }
     if (dateRange?.from) {
-      query = query.gte('due_date', format(dateRange.from, 'yyyy-MM-dd'))
+      q = q.gte('due_date', dateRange.from.toISOString())
     }
     if (dateRange?.to) {
-      query = query.lte('due_date', format(dateRange.to, 'yyyy-MM-dd'))
+      q = q.lte('due_date', dateRange.to.toISOString())
+    }
+    if (sortConfig) {
+      q = q.order(sortConfig.column, { ascending: sortConfig.direction === 'asc' })
+    } else {
+      q = q.order('created_at', { ascending: false })
     }
 
-    const { data } = await query
-    setCharges(data || [])
-    setLoading(false)
+    const { data: result } = await q
+    if (result) setData(result)
   }
 
   useEffect(() => {
-    loadData()
-  }, [dateRange])
+    fetchData()
+  }, [debouncedSearch, status, dateRange, sortConfig])
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Tem certeza que deseja excluir?')) {
+      await supabase.from('financial_charges').delete().eq('id', id)
+      fetchData()
+    }
+  }
+
+  const statusOptions = [
+    { label: 'Pendente', value: 'pendente' },
+    { label: 'Pago', value: 'pago' },
+    { label: 'Atrasado', value: 'atrasado' },
+    { label: 'Cancelado', value: 'cancelado' },
+  ]
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Cobranças e Pagamentos</h1>
-        <DateRangePicker date={dateRange} setDate={setDateRange} />
-      </div>
-
+    <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Histórico de Cobranças</CardTitle>
+          <CardTitle>Pagamentos / Cobranças</CardTitle>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="flex justify-center p-8">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-          ) : charges.length === 0 ? (
-            <div className="text-center p-8 text-muted-foreground">
-              Nenhuma cobrança encontrada para o período.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
+          <DataTableToolbar
+            search={search}
+            setSearch={setSearch}
+            status={status}
+            setStatus={setStatus}
+            statusOptions={statusOptions}
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            searchPlaceholder="Buscar por cliente ou descrição..."
+          />
+          <div className="rounded-md border overflow-hidden relative">
+            <div className="overflow-auto max-h-[600px]">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
                   <TableRow>
-                    <TableHead>Vencimento</TableHead>
-                    <TableHead>Cliente</TableHead>
+                    <TableHead>
+                      <DataTableColumnHeader
+                        title="Vencimento"
+                        column="due_date"
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <DataTableColumnHeader
+                        title="Cliente"
+                        column="client_name"
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                    </TableHead>
                     <TableHead>Descrição</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>
+                      <DataTableColumnHeader
+                        title="Valor"
+                        column="amount"
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <DataTableColumnHeader
+                        title="Status"
+                        column="status"
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                    </TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {charges.map((charge) => (
-                    <TableRow key={charge.id}>
+                  {data.map((item) => (
+                    <TableRow key={item.id}>
                       <TableCell>
-                        {format(new Date(charge.due_date), 'dd/MM/yyyy', { locale: ptBR })}
+                        {item.due_date
+                          ? new Date(item.due_date).toLocaleDateString('pt-BR')
+                          : 'N/A'}
                       </TableCell>
-                      <TableCell className="font-medium">{charge.client_name}</TableCell>
-                      <TableCell>{charge.description || '-'}</TableCell>
+                      <TableCell className="font-medium">{item.client_name}</TableCell>
+                      <TableCell>{item.description}</TableCell>
                       <TableCell>
                         {new Intl.NumberFormat('pt-BR', {
                           style: 'currency',
                           currency: 'BRL',
-                        }).format(charge.amount || 0)}
+                        }).format(item.amount || 0)}
                       </TableCell>
-                      <TableCell>{charge.status}</TableCell>
+                      <TableCell>{item.status}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
     </div>

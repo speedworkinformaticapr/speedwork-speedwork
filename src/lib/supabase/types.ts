@@ -4578,6 +4578,8 @@ export const Constants = {
 //   Policy "appointments_update_public" (UPDATE, PERMISSIVE) roles={public}
 //     USING: true
 //     WITH CHECK: true
+//   Policy "authenticated_select_appointments" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
 // Table: athlete_attribute_values
 //   Policy "athlete_attribute_values_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -4616,6 +4618,8 @@ export const Constants = {
 //   Policy "billing_config_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 // Table: billing_logs
+//   Policy "authenticated_select_billing_logs" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
 //   Policy "billing_logs_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 // Table: billing_registration_config
@@ -4750,7 +4754,11 @@ export const Constants = {
 //   Policy "Enable update for authenticated users" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+//   Policy "authenticated_select_events" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
 // Table: financial_charges
+//   Policy "authenticated_select_financial_charges" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
 //   Policy "financial_charges_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
@@ -4840,6 +4848,8 @@ export const Constants = {
 //   Policy "orcamento_itens_update" (UPDATE, PERMISSIVE) roles={public}
 //     USING: (user_id = auth.uid())
 // Table: orcamentos
+//   Policy "authenticated_select_orcamentos" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
 //   Policy "orcamentos_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
@@ -4938,6 +4948,8 @@ export const Constants = {
 //   Policy "profiles_update" (UPDATE, PERMISSIVE) roles={public}
 //     USING: true
 // Table: rankings
+//   Policy "authenticated_select_rankings" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
 //   Policy "rankings_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //   Policy "rankings_select" (SELECT, PERMISSIVE) roles={public}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -9,91 +9,148 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { DateRangePicker } from '@/components/ui/date-range-picker'
-import { DateRange } from 'react-day-picker'
-import { Loader2 } from 'lucide-react'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+import { useDataTable } from '@/hooks/use-data-table'
+import { DataTableToolbar } from '@/components/ui/data-table/data-table-toolbar'
+import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header'
+import { Button } from '@/components/ui/button'
+import { Trash2 } from 'lucide-react'
 
 export default function AdminAppointments() {
-  const [appointments, setAppointments] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [dateRange, setDateRange] = useState<DateRange | undefined>()
+  const [data, setData] = useState<any[]>([])
+  const {
+    search,
+    setSearch,
+    debouncedSearch,
+    status,
+    setStatus,
+    dateRange,
+    setDateRange,
+    sortConfig,
+    handleSort,
+  } = useDataTable()
 
-  const loadData = async () => {
-    setLoading(true)
-    let query = supabase
-      .from('appointments')
-      .select('*')
-      .order('date', { ascending: false })
-      .order('start_time', { ascending: false })
+  const fetchData = async () => {
+    let q = supabase.from('appointments').select('*')
 
+    if (debouncedSearch) {
+      q = q.or(`client_name.ilike.%${debouncedSearch}%,service_name.ilike.%${debouncedSearch}%`)
+    }
+    if (status && status !== 'all') {
+      q = q.eq('status', status)
+    }
     if (dateRange?.from) {
-      query = query.gte('date', format(dateRange.from, 'yyyy-MM-dd'))
+      q = q.gte('date', dateRange.from.toISOString())
     }
     if (dateRange?.to) {
-      query = query.lte('date', format(dateRange.to, 'yyyy-MM-dd'))
+      q = q.lte('date', dateRange.to.toISOString())
+    }
+    if (sortConfig) {
+      q = q.order(sortConfig.column, { ascending: sortConfig.direction === 'asc' })
+    } else {
+      q = q.order('created_at', { ascending: false })
     }
 
-    const { data } = await query
-    setAppointments(data || [])
-    setLoading(false)
+    const { data: result } = await q
+    if (result) setData(result)
   }
 
   useEffect(() => {
-    loadData()
-  }, [dateRange])
+    fetchData()
+  }, [debouncedSearch, status, dateRange, sortConfig])
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Tem certeza que deseja excluir?')) {
+      await supabase.from('appointments').delete().eq('id', id)
+      fetchData()
+    }
+  }
+
+  const statusOptions = [
+    { label: 'Pendente', value: 'Pendente' },
+    { label: 'Aprovado', value: 'Aprovado' },
+    { label: 'Fechada', value: 'Fechada' },
+    { label: 'Cancelado', value: 'Cancelado' },
+  ]
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Agendamentos</h1>
-        <DateRangePicker date={dateRange} setDate={setDateRange} />
-      </div>
-
+    <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Histórico de Agendamentos</CardTitle>
+          <CardTitle>Agendamentos</CardTitle>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="flex justify-center p-8">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-          ) : appointments.length === 0 ? (
-            <div className="text-center p-8 text-muted-foreground">
-              Nenhum agendamento encontrado para o período.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
+          <DataTableToolbar
+            search={search}
+            setSearch={setSearch}
+            status={status}
+            setStatus={setStatus}
+            statusOptions={statusOptions}
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            searchPlaceholder="Buscar por cliente ou serviço..."
+          />
+          <div className="rounded-md border overflow-hidden relative">
+            <div className="overflow-auto max-h-[600px]">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
                   <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Horário</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Serviço</TableHead>
-                    <TableHead>Veículo</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>
+                      <DataTableColumnHeader
+                        title="Data"
+                        column="date"
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <DataTableColumnHeader
+                        title="Serviço"
+                        column="service_name"
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <DataTableColumnHeader
+                        title="Cliente"
+                        column="client_name"
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                    </TableHead>
+                    <TableHead>Hora Inicial</TableHead>
+                    <TableHead>
+                      <DataTableColumnHeader
+                        title="Status"
+                        column="status"
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                      />
+                    </TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {appointments.map((apt) => (
-                    <TableRow key={apt.id}>
+                  {data.map((item) => (
+                    <TableRow key={item.id}>
                       <TableCell>
-                        {format(new Date(apt.date), 'dd/MM/yyyy', { locale: ptBR })}
+                        {item.date ? new Date(item.date).toLocaleDateString('pt-BR') : 'N/A'}
                       </TableCell>
-                      <TableCell>{apt.start_time}</TableCell>
-                      <TableCell className="font-medium">{apt.client_name}</TableCell>
-                      <TableCell>{apt.service_name}</TableCell>
-                      <TableCell>{apt.vehicle_plate || '-'}</TableCell>
-                      <TableCell>{apt.status}</TableCell>
+                      <TableCell className="font-medium">{item.service_name}</TableCell>
+                      <TableCell>{item.client_name}</TableCell>
+                      <TableCell>{item.start_time}</TableCell>
+                      <TableCell>{item.status}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
     </div>
