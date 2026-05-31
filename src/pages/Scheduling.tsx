@@ -15,7 +15,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { format, addDays, startOfDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { ChevronRight, ChevronLeft, Check, CheckCircle2 } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Check, CheckCircle2, Loader2 } from 'lucide-react'
 
 export default function Scheduling() {
   const [step, setStep] = useState(1)
@@ -161,19 +161,19 @@ export default function Scheduling() {
   }
 
   return (
-    <div className="container max-w-2xl mx-auto py-12 px-4">
-      <div className="mb-8 flex items-center justify-between">
+    <div className="container max-w-2xl mx-auto h-screen sm:h-[calc(100vh-4rem)] py-4 sm:py-8 px-4 flex flex-col">
+      <div className="mb-6 flex items-center justify-between shrink-0">
         {[1, 2, 3, 4, 5, 6, 7].map((s) => (
           <div
             key={s}
-            className={`h-2 flex-1 mx-1 rounded-full ${step >= s ? 'bg-primary' : 'bg-secondary'}`}
+            className={`h-2 flex-1 mx-1 rounded-full transition-colors duration-300 ${step >= s ? 'bg-primary' : 'bg-secondary'}`}
           />
         ))}
       </div>
 
-      <Card className="shadow-lg border-primary/10">
-        <CardHeader className="bg-primary/5 pb-6">
-          <CardTitle className="text-2xl">
+      <Card className="shadow-lg border-primary/10 flex-1 flex flex-col overflow-hidden">
+        <CardHeader className="bg-primary/5 pb-4 shrink-0">
+          <CardTitle className="text-xl sm:text-2xl tracking-tight">
             {step === 1 && '1. Identificação'}
             {step === 2 && '2. Seus Dados de Contato'}
             {step === 3 && '3. Placa do Veículo'}
@@ -187,186 +187,248 @@ export default function Scheduling() {
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="pt-6">
-          {step === 1 && (
-            <div className="space-y-4">
-              <Label>CPF / CNPJ (Opcional)</Label>
-              <Input
-                placeholder="Apenas números"
-                value={data.cpf}
-                onChange={(e) => handleChange('cpf', e.target.value)}
-              />
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className="space-y-4">
-              <div>
-                <Label>Nome Completo</Label>
-                <Input value={data.name} onChange={(e) => handleChange('name', e.target.value)} />
-              </div>
-              <div>
-                <Label>E-mail</Label>
-                <Input
-                  type="email"
-                  value={data.email}
-                  onChange={(e) => handleChange('email', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label>Telefone / WhatsApp</Label>
-                <Input value={data.phone} onChange={(e) => handleChange('phone', e.target.value)} />
-              </div>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="space-y-4">
-              <Label>Placa do Veículo</Label>
-              <Input
-                placeholder="AAA-0000"
-                className="uppercase text-xl tracking-widest"
-                value={data.plate}
-                onChange={(e) => handleChange('plate', e.target.value)}
-              />
-            </div>
-          )}
-
-          {step === 4 && (
-            <div className="space-y-4">
-              <div>
-                <Label>Marca</Label>
-                <Input value={data.brand} onChange={(e) => handleChange('brand', e.target.value)} />
-              </div>
-              <div>
-                <Label>Modelo</Label>
-                <Input value={data.model} onChange={(e) => handleChange('model', e.target.value)} />
-              </div>
-              <div>
-                <Label>Ano</Label>
-                <Input value={data.year} onChange={(e) => handleChange('year', e.target.value)} />
-              </div>
-              <div>
-                <Label>Chassi (Opcional)</Label>
-                <Input
-                  value={data.chassis}
-                  onChange={(e) => handleChange('chassis', e.target.value)}
-                />
-              </div>
-            </div>
-          )}
-
-          {step === 5 && (
-            <div className="space-y-4">
-              <Label>Descreva o problema ou serviço desejado</Label>
-              <Textarea
-                rows={5}
-                placeholder="Ex: Troca de óleo, barulho no motor..."
-                value={data.description}
-                onChange={(e) => handleChange('description', e.target.value)}
-              />
-            </div>
-          )}
-
-          {step === 6 && (
-            <div className="space-y-6">
-              <div>
-                <Label>Selecione a Data</Label>
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-2">
-                  {[0, 1, 2, 3, 4, 5, 6].map((d) => {
-                    const dt = addDays(startOfDay(new Date()), d)
-                    const dtStr = format(dt, 'yyyy-MM-dd')
-                    return (
-                      <Button
-                        key={d}
-                        variant={data.date === dtStr ? 'default' : 'outline'}
-                        className="h-16 flex-col"
-                        onClick={() => {
-                          handleChange('date', dtStr)
-                          loadSlots(dtStr)
-                        }}
-                      >
-                        <span className="text-xs uppercase">
-                          {format(dt, 'EEE', { locale: ptBR })}
-                        </span>
-                        <span className="font-bold">{format(dt, 'dd/MM')}</span>
-                      </Button>
-                    )
-                  })}
+        <CardContent className="pt-6 flex-1 overflow-y-auto">
+          <div className="animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
+            {step === 1 && (
+              <div className="space-y-4 max-w-md mx-auto">
+                <div className="space-y-2">
+                  <Label>CPF / CNPJ (Opcional)</Label>
+                  <Input
+                    placeholder="Apenas números"
+                    value={data.cpf}
+                    onChange={(e) => handleChange('cpf', e.target.value)}
+                    className="h-12"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Isso nos ajuda a encontrar seu cadastro rapidamente.
+                  </p>
                 </div>
               </div>
+            )}
 
-              {data.date && (
+            {step === 2 && (
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <Label>Nome Completo *</Label>
+                  <Input
+                    className="h-12"
+                    value={data.name}
+                    onChange={(e) => handleChange('name', e.target.value)}
+                    placeholder="Como gostaria de ser chamado"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>E-mail *</Label>
+                  <Input
+                    className="h-12"
+                    type="email"
+                    value={data.email}
+                    onChange={(e) => handleChange('email', e.target.value)}
+                    placeholder="exemplo@email.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Telefone / WhatsApp *</Label>
+                  <Input
+                    className="h-12"
+                    value={data.phone}
+                    onChange={(e) => handleChange('phone', e.target.value)}
+                    placeholder="(00) 00000-0000"
+                  />
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="space-y-4 max-w-md mx-auto">
+                <div className="space-y-2 text-center">
+                  <Label className="text-lg">Informe a placa do seu veículo</Label>
+                  <Input
+                    placeholder="AAA-0000"
+                    className="uppercase text-3xl tracking-widest text-center h-16 mt-2"
+                    value={data.plate}
+                    onChange={(e) => handleChange('plate', e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
+            {step === 4 && (
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="space-y-2">
+                    <Label>Marca do Veículo</Label>
+                    <Input
+                      className="h-12"
+                      placeholder="Ex: Honda, Toyota..."
+                      value={data.brand}
+                      onChange={(e) => handleChange('brand', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Modelo</Label>
+                    <Input
+                      className="h-12"
+                      placeholder="Ex: Civic, Corolla..."
+                      value={data.model}
+                      onChange={(e) => handleChange('model', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Ano de Fabricação</Label>
+                    <Input
+                      className="h-12"
+                      placeholder="Ex: 2021"
+                      value={data.year}
+                      onChange={(e) => handleChange('year', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Chassi (Opcional)</Label>
+                    <Input
+                      className="h-12"
+                      value={data.chassis}
+                      onChange={(e) => handleChange('chassis', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {step === 5 && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-base">
+                    Descreva brevemente o problema ou o serviço que você precisa:
+                  </Label>
+                  <Textarea
+                    className="resize-none mt-2"
+                    rows={6}
+                    placeholder="Ex: Troca de óleo, barulho metálico no motor ao ligar de manhã, revisão preventiva dos 40.000km..."
+                    value={data.description}
+                    onChange={(e) => handleChange('description', e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
+            {step === 6 && (
+              <div className="space-y-6">
                 <div>
-                  <Label>Selecione o Horário</Label>
-                  {loading ? (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Buscando disponibilidade...
-                    </p>
-                  ) : (
-                    <div className="grid grid-cols-4 gap-2 mt-2">
-                      {availableSlots.map((time) => (
+                  <Label className="text-base font-semibold">Selecione o Dia</Label>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-3">
+                    {[0, 1, 2, 3, 4, 5, 6].map((d) => {
+                      const dt = addDays(startOfDay(new Date()), d)
+                      const dtStr = format(dt, 'yyyy-MM-dd')
+                      return (
                         <Button
-                          key={time}
-                          variant={data.time === time ? 'default' : 'secondary'}
-                          onClick={() => handleChange('time', time)}
+                          key={d}
+                          variant={data.date === dtStr ? 'default' : 'outline'}
+                          className={`h-16 flex-col ${data.date === dtStr ? 'shadow-md border-primary' : 'hover:border-primary/50'}`}
+                          onClick={() => {
+                            handleChange('date', dtStr)
+                            loadSlots(dtStr)
+                          }}
                         >
-                          {time}
+                          <span className="text-xs uppercase opacity-80">
+                            {format(dt, 'EEE', { locale: ptBR })}
+                          </span>
+                          <span className="font-bold text-sm">{format(dt, 'dd/MM')}</span>
                         </Button>
-                      ))}
-                      {availableSlots.length === 0 && (
-                        <p className="text-sm text-muted-foreground col-span-4">
-                          Nenhum horário disponível nesta data.
-                        </p>
-                      )}
-                    </div>
-                  )}
+                      )
+                    })}
+                  </div>
                 </div>
-              )}
-            </div>
-          )}
 
-          {step === 7 && (
-            <div className="flex flex-col items-center justify-center py-8 text-center space-y-4 animate-in fade-in zoom-in">
-              <CheckCircle2 className="w-20 h-20 text-green-500" />
-              <h2 className="text-2xl font-bold">Pedido Recebido!</h2>
-              <p className="text-muted-foreground">
-                Seu pré-agendamento foi realizado. Enviamos um link de confirmação para o seu
-                e-mail/WhatsApp. Lembre-se de confirmar sua presença!
-              </p>
-            </div>
-          )}
+                {data.date && (
+                  <div className="pt-4 border-t border-border/50 animate-in fade-in slide-in-from-top-2">
+                    <Label className="text-base font-semibold">Selecione o Horário</Label>
+                    {loading ? (
+                      <div className="flex items-center gap-2 mt-4 text-sm text-muted-foreground">
+                        <Loader2 className="w-4 h-4 animate-spin" /> Buscando horários...
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-3">
+                        {availableSlots.map((time) => (
+                          <Button
+                            key={time}
+                            variant={data.time === time ? 'default' : 'secondary'}
+                            className={`h-12 ${data.time === time ? 'shadow-md' : 'hover:bg-secondary/80'}`}
+                            onClick={() => handleChange('time', time)}
+                          >
+                            {time}
+                          </Button>
+                        ))}
+                        {availableSlots.length === 0 && (
+                          <div className="col-span-3 sm:col-span-4 bg-muted/50 p-4 rounded-md text-center border border-dashed border-border">
+                            <p className="text-sm text-muted-foreground">
+                              Nenhum horário disponível para a data selecionada. Por favor, escolha
+                              outro dia.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {step === 7 && (
+              <div className="flex flex-col items-center justify-center py-12 text-center space-y-5">
+                <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-2">
+                  <CheckCircle2 className="w-12 h-12 text-green-600" />
+                </div>
+                <h2 className="text-3xl font-bold tracking-tight text-foreground">
+                  Pedido Recebido!
+                </h2>
+                <p className="text-muted-foreground max-w-md mx-auto text-lg leading-relaxed">
+                  Seu pré-agendamento foi registrado com sucesso. Enviamos um link de confirmação
+                  para o seu e-mail/WhatsApp. <strong>Lembre-se de confirmar sua presença!</strong>
+                </p>
+                <div className="pt-8">
+                  <Button variant="outline" onClick={() => (window.location.href = '/')}>
+                    Voltar para o início
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </CardContent>
 
         {step < 7 && (
-          <CardFooter className="flex justify-between bg-muted/20 pt-6">
+          <CardFooter className="flex justify-between bg-muted/10 pt-4 pb-4 shrink-0 border-t border-border/50">
             <Button
-              variant="ghost"
+              variant="outline"
               onClick={() => setStep((s) => Math.max(1, s - 1))}
               disabled={step === 1 || loading}
+              className="gap-2 w-[110px]"
             >
-              <ChevronLeft className="w-4 h-4 mr-2" /> Voltar
+              <ChevronLeft className="w-4 h-4" /> Voltar
             </Button>
 
             {step === 1 ? (
-              <Button onClick={searchClient} disabled={loading}>
-                Continuar <ChevronRight className="w-4 h-4 ml-2" />
+              <Button onClick={searchClient} disabled={loading} className="gap-2 w-[140px]">
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Continuar'}
+                {!loading && <ChevronRight className="w-4 h-4" />}
               </Button>
             ) : step === 3 ? (
-              <Button onClick={searchVehicle} disabled={loading}>
-                Continuar <ChevronRight className="w-4 h-4 ml-2" />
+              <Button onClick={searchVehicle} disabled={loading} className="gap-2 w-[140px]">
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Continuar'}
+                {!loading && <ChevronRight className="w-4 h-4" />}
               </Button>
             ) : step === 6 ? (
               <Button
                 onClick={submit}
                 disabled={!data.date || !data.time || loading}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-green-600 hover:bg-green-700 text-white gap-2 px-6"
               >
-                Confirmar Agendamento <Check className="w-4 h-4 ml-2" />
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmar'}
+                {!loading && <Check className="w-4 h-4" />}
               </Button>
             ) : (
-              <Button onClick={() => setStep((s) => s + 1)}>
-                Continuar <ChevronRight className="w-4 h-4 ml-2" />
+              <Button onClick={() => setStep((s) => s + 1)} className="gap-2 w-[140px]">
+                Continuar <ChevronRight className="w-4 h-4" />
               </Button>
             )}
           </CardFooter>

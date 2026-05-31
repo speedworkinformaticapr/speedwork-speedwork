@@ -1,352 +1,213 @@
 import { useState, useEffect } from 'react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from '@/components/ui/card'
+import { useSystemData } from '@/hooks/use-system-data'
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { useToast } from '@/hooks/use-toast'
-import { useSystemData, SystemData } from '@/hooks/use-system-data'
-import { supabase } from '@/lib/supabase/client'
-import { Loader2, UploadCloud, Save } from 'lucide-react'
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Loader2, Save, Settings, Clock, Briefcase } from 'lucide-react'
 
 export default function AdminSystemData() {
-  const { data: systemData, updateData, loading: sysLoading } = useSystemData()
-  const { toast } = useToast()
-
-  const [formData, setFormData] = useState<Partial<SystemData>>({})
+  const { data, loading, updateData } = useSystemData()
+  const [formData, setFormData] = useState<any>({})
   const [saving, setSaving] = useState(false)
-  const [uploading, setUploading] = useState<string | null>(null)
 
   useEffect(() => {
-    if (systemData) {
-      setFormData(systemData)
-    }
-  }, [systemData])
+    if (data) setFormData(data)
+  }, [data])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }))
-  }
-
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: keyof SystemData) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    try {
-      setUploading(field)
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`
-      const filePath = `system/${fileName}`
-
-      const { error: uploadError } = await supabase.storage.from('media').upload(filePath, file)
-
-      if (uploadError) {
-        throw uploadError
-      }
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from('media').getPublicUrl(filePath)
-
-      setFormData((prev) => ({ ...prev, [field]: publicUrl }))
-      toast({ title: 'Upload realizado com sucesso' })
-    } catch (err: any) {
-      toast({ title: 'Erro no upload', description: err.message, variant: 'destructive' })
-    } finally {
-      setUploading(null)
-    }
+  const handleChange = (field: string, value: any) => {
+    setFormData((prev: any) => ({ ...prev, [field]: value }))
   }
 
   const handleSave = async () => {
     setSaving(true)
-    const success = await updateData(formData)
-    if (success) {
-      // The toast is already fired inside updateData but we ensure smooth UX
-    }
+    await updateData(formData)
     setSaving(false)
   }
 
-  if (sysLoading) {
+  if (loading) {
     return (
-      <div className="flex justify-center p-8">
-        <Loader2 className="animate-spin h-8 w-8 text-primary" />
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-10 animate-fade-in-up">
+    <div className="p-6 max-w-5xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dados do Sistema</h1>
-        <p className="text-muted-foreground">
-          Gerencie as configurações globais e a identidade visual da plataforma.
+        <h1 className="text-3xl font-bold tracking-tight">Configurações do Sistema</h1>
+        <p className="text-muted-foreground mt-1">
+          Gerencie as informações principais e parâmetros globais da plataforma.
         </p>
       </div>
 
-      <Tabs defaultValue="visual" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="visual">Identidade Visual</TabsTrigger>
-          <TabsTrigger value="general">Configurações Gerais</TabsTrigger>
+      <Tabs defaultValue="general" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="general" className="gap-2">
+            <Settings className="w-4 h-4" /> Geral
+          </TabsTrigger>
+          <TabsTrigger value="contact" className="gap-2">
+            <Briefcase className="w-4 h-4" /> Contato e Endereço
+          </TabsTrigger>
+          <TabsTrigger value="scheduling" className="gap-2">
+            <Clock className="w-4 h-4" /> Agendamento
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="visual" className="space-y-4">
+        <TabsContent value="general" className="mt-6 space-y-6 animate-in fade-in-50">
           <Card>
             <CardHeader>
-              <CardTitle>Logotipo e Ícone</CardTitle>
-              <CardDescription>
-                Configure as imagens da marca que serão exibidas na barra lateral e como favicon no
-                navegador.
-              </CardDescription>
+              <CardTitle>Identificação da Plataforma</CardTitle>
+              <CardDescription>Informações básicas sobre a sua empresa.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-8 md:grid-cols-2">
-                <div className="space-y-4">
-                  <Label className="text-base font-semibold">Logotipo do Sistema</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Exibido quando o menu lateral está expandido.
-                  </p>
-                  <div className="flex flex-col gap-3">
-                    <div className="p-4 border rounded-md bg-muted/30 flex items-center justify-center h-40 overflow-hidden">
-                      {formData.logo_url ? (
-                        <img
-                          src={formData.logo_url}
-                          alt="Logo"
-                          className="max-h-full object-contain"
-                        />
-                      ) : (
-                        <span className="text-muted-foreground text-sm">
-                          Nenhum logotipo configurado
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="url"
-                        name="logo_url"
-                        value={formData.logo_url || ''}
-                        onChange={handleChange}
-                        placeholder="URL da imagem"
-                        className="flex-1"
-                      />
-                      <div className="relative">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="icon"
-                          disabled={uploading === 'logo_url'}
-                        >
-                          {uploading === 'logo_url' ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <UploadCloud className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          className="absolute inset-0 opacity-0 cursor-pointer w-full"
-                          onChange={(e) => handleUpload(e, 'logo_url')}
-                          title="Fazer Upload"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <Label className="text-base font-semibold">Ícone / Favicon</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Exibido quando o menu está recolhido e no navegador.
-                  </p>
-                  <div className="flex flex-col gap-3">
-                    <div className="p-4 border rounded-md bg-muted/30 flex items-center justify-center h-40 overflow-hidden">
-                      {formData.browser_icon_url ? (
-                        <img
-                          src={formData.browser_icon_url}
-                          alt="Icon"
-                          className="w-16 h-16 object-contain"
-                        />
-                      ) : (
-                        <span className="text-muted-foreground text-sm">
-                          Nenhum ícone configurado
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="url"
-                        name="browser_icon_url"
-                        value={formData.browser_icon_url || ''}
-                        onChange={handleChange}
-                        placeholder="URL do ícone"
-                        className="flex-1"
-                      />
-                      <div className="relative">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="icon"
-                          disabled={uploading === 'browser_icon_url'}
-                        >
-                          {uploading === 'browser_icon_url' ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <UploadCloud className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          className="absolute inset-0 opacity-0 cursor-pointer w-full"
-                          onChange={(e) => handleUpload(e, 'browser_icon_url')}
-                          title="Fazer Upload"
-                        />
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Proporção sugerida 1:1 (quadrado).
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="border-t px-6 py-4">
-              <Button onClick={handleSave} disabled={saving} className="ml-auto">
-                {saving ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="mr-2 h-4 w-4" />
-                )}
-                Salvar Identidade Visual
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="general" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações da Organização</CardTitle>
-              <CardDescription>Detalhes básicos de contato e registro da empresa.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>Nome da Plataforma</Label>
+                  <Label>Nome da Plataforma / Fantasia</Label>
                   <Input
-                    name="platform_name"
                     value={formData.platform_name || ''}
-                    onChange={handleChange}
+                    onChange={(e) => handleChange('platform_name', e.target.value)}
+                    placeholder="Ex: Minha Oficina"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Razão Social</Label>
                   <Input
-                    name="razao_social"
                     value={formData.razao_social || ''}
-                    onChange={handleChange}
+                    onChange={(e) => handleChange('razao_social', e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>CNPJ</Label>
-                  <Input name="cnpj" value={formData.cnpj || ''} onChange={handleChange} />
+                  <Input
+                    value={formData.cnpj || ''}
+                    onChange={(e) => handleChange('cnpj', e.target.value)}
+                    placeholder="00.000.000/0000-00"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Slogan</Label>
-                  <Input name="slogan" value={formData.slogan || ''} onChange={handleChange} />
-                </div>
-                <div className="space-y-2">
-                  <Label>E-mail de Contato</Label>
                   <Input
-                    name="email"
+                    value={formData.slogan || ''}
+                    onChange={(e) => handleChange('slogan', e.target.value)}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="contact" className="mt-6 space-y-6 animate-in fade-in-50">
+          <Card>
+            <CardHeader>
+              <CardTitle>Informações de Contato</CardTitle>
+              <CardDescription>
+                Estes dados serão exibidos no rodapé do site e comunicações.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label>E-mail Principal</Label>
+                  <Input
                     type="email"
                     value={formData.email || ''}
-                    onChange={handleChange}
+                    onChange={(e) => handleChange('email', e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Telefone Fixo</Label>
-                  <Input name="phone" value={formData.phone || ''} onChange={handleChange} />
+                  <Input
+                    value={formData.phone || ''}
+                    onChange={(e) => handleChange('phone', e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Celular / WhatsApp</Label>
-                  <Input name="mobile" value={formData.mobile || ''} onChange={handleChange} />
+                  <Input
+                    value={formData.mobile || ''}
+                    onChange={(e) => handleChange('mobile', e.target.value)}
+                  />
                 </div>
               </div>
 
-              <div className="space-y-4 pt-6 border-t mt-2">
-                <h3 className="text-lg font-medium">Endereço</h3>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  <div className="space-y-2 lg:col-span-2">
-                    <Label>Rua / Avenida</Label>
-                    <Input
-                      name="address_street"
-                      value={formData.address_street || ''}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Número</Label>
-                    <Input
-                      name="address_number"
-                      value={formData.address_number || ''}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Complemento</Label>
-                    <Input
-                      name="address_complement"
-                      value={formData.address_complement || ''}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Cidade</Label>
-                    <Input
-                      name="address_city"
-                      value={formData.address_city || ''}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Estado (UF)</Label>
-                    <Input
-                      name="address_state"
-                      value={formData.address_state || ''}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>CEP</Label>
-                    <Input
-                      name="address_zip"
-                      value={formData.address_zip || ''}
-                      onChange={handleChange}
-                    />
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Endereço (Rua e Número)</Label>
+                  <Input
+                    value={formData.address_street || ''}
+                    onChange={(e) => handleChange('address_street', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Cidade / Estado</Label>
+                  <Input
+                    value={formData.address_city || ''}
+                    onChange={(e) => handleChange('address_city', e.target.value)}
+                  />
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="border-t px-6 py-4">
-              <Button onClick={handleSave} disabled={saving} className="ml-auto">
-                {saving ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="mr-2 h-4 w-4" />
-                )}
-                Salvar Configurações Gerais
-              </Button>
-            </CardFooter>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="scheduling" className="mt-6 space-y-6 animate-in fade-in-50">
+          <Card>
+            <CardHeader>
+              <CardTitle>Configurações de Agendamento</CardTitle>
+              <CardDescription>
+                Ajuste as regras de horário para o calendário público de agendamentos.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-3 max-w-sm">
+                <Label className="text-base font-semibold">Intervalo de Agendamento</Label>
+                <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+                  Este é o tempo de espaçamento entre os horários disponíveis no sistema (ex: se
+                  escolher 30 minutos, o cliente verá opções como 08:00, 08:30, 09:00).
+                </p>
+                <Select
+                  value={formData.scheduling_interval_minutes?.toString() || '30'}
+                  onValueChange={(v) => handleChange('scheduling_interval_minutes', parseInt(v))}
+                >
+                  <SelectTrigger className="w-full h-11">
+                    <SelectValue placeholder="Selecione o intervalo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="15">A cada 15 minutos</SelectItem>
+                    <SelectItem value="30">A cada 30 minutos</SelectItem>
+                    <SelectItem value="45">A cada 45 minutos</SelectItem>
+                    <SelectItem value="60">A cada 1 hora</SelectItem>
+                    <SelectItem value="90">A cada 1 hora e 30 min</SelectItem>
+                    <SelectItem value="120">A cada 2 horas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      <div className="flex justify-end pt-4 border-t border-border/50">
+        <Button
+          onClick={handleSave}
+          disabled={saving}
+          size="lg"
+          className="gap-2 w-full sm:w-auto min-w-[200px]"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {saving ? 'Salvando...' : 'Salvar Configurações'}
+        </Button>
+      </div>
     </div>
   )
 }
