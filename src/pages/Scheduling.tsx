@@ -141,12 +141,22 @@ export default function Scheduling() {
       .select()
       .single()
 
+    if (!error && apt) {
+      await supabase.functions.invoke('enviar_whatsapp', {
+        body: {
+          empresa_id: '00000000-0000-0000-0000-000000000001',
+          tipo_mensagem: 'confirmacao_agendamento',
+          telefone_destino: data.phone,
+          mensagem_customizada: `Olá ${data.name}, recebemos seu pedido de agendamento para o dia ${format(new Date(data.date), 'dd/MM/yyyy')} às ${data.time}. Confirme sua presença acessando: ${window.location.origin}/agendar/${apt.id}`,
+        },
+      })
+    }
+
     setLoading(false)
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' })
     } else {
       setStep(7)
-      // Trigger notification logic here if necessary
     }
   }
 
