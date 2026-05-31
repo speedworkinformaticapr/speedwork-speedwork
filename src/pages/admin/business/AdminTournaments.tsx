@@ -1,155 +1,121 @@
 import { useEffect, useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { supabase } from '@/lib/supabase/client'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { useDataTable } from '@/hooks/use-data-table'
-import { DataTableToolbar } from '@/components/ui/data-table/data-table-toolbar'
-import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header'
+import { toast } from 'sonner'
+import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Trash2 } from 'lucide-react'
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function AdminTournaments() {
-  const [data, setData] = useState<any[]>([])
-  const {
-    search,
-    setSearch,
-    debouncedSearch,
-    status,
-    setStatus,
-    dateRange,
-    setDateRange,
-    sortConfig,
-    handleSort,
-  } = useDataTable()
+  const [events, setEvents] = useState<any[]>([])
+  const form = useForm({ defaultValues: { name: '', description: '', date: '' } })
 
-  const fetchData = async () => {
-    let q = supabase.from('events').select('*')
-
-    if (debouncedSearch) {
-      q = q.ilike('name', `%${debouncedSearch}%`)
-    }
-    if (status && status !== 'all') {
-      q = q.eq('status', status)
-    }
-    if (dateRange?.from) {
-      q = q.gte('date', dateRange.from.toISOString())
-    }
-    if (dateRange?.to) {
-      q = q.lte('date', dateRange.to.toISOString())
-    }
-    if (sortConfig) {
-      q = q.order(sortConfig.column, { ascending: sortConfig.direction === 'asc' })
-    } else {
-      q = q.order('created_at', { ascending: false })
-    }
-
-    const { data: result } = await q
-    if (result) setData(result)
+  const load = async () => {
+    const { data } = await supabase
+      .from('events')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (data) setEvents(data)
   }
 
   useEffect(() => {
-    fetchData()
-  }, [debouncedSearch, status, dateRange, sortConfig])
+    load()
+  }, [])
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir?')) {
-      await supabase.from('events').delete().eq('id', id)
-      fetchData()
+  const onSubmit = async (values: any) => {
+    const { error } = await supabase.from('events').insert({
+      name: values.name,
+      description: values.description,
+      date: values.date || null,
+    })
+    if (error) {
+      toast.error('Erro ao salvar')
+    } else {
+      toast.success('Evento adicionado com sucesso!')
+      form.reset()
+      load()
     }
   }
 
-  const statusOptions = [
-    { label: 'Publicado', value: 'published' },
-    { label: 'Rascunho', value: 'draft' },
-    { label: 'Cancelado', value: 'canceled' },
-  ]
-
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6 max-w-5xl mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle>Torneios / Eventos</CardTitle>
+          <CardTitle>Novo Evento / Torneio</CardTitle>
         </CardHeader>
         <CardContent>
-          <DataTableToolbar
-            search={search}
-            setSearch={setSearch}
-            status={status}
-            setStatus={setStatus}
-            statusOptions={statusOptions}
-            dateRange={dateRange}
-            setDateRange={setDateRange}
-            searchPlaceholder="Buscar por nome..."
-          />
-          <div className="rounded-md border overflow-hidden relative">
-            <div className="overflow-auto max-h-[600px]">
-              <Table>
-                <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
-                  <TableRow>
-                    <TableHead>
-                      <DataTableColumnHeader
-                        title="Nome"
-                        column="name"
-                        sortConfig={sortConfig}
-                        onSort={handleSort}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          withAi
+                          aiContext="Nome chamativo para um torneio de footgolf"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descrição do Evento</FormLabel>
+                    <FormControl>
+                      <RichTextEditor
+                        {...field}
+                        withAi
+                        aiContext="Descrição detalhada sobre as regras, prêmios e atrações do torneio de footgolf"
                       />
-                    </TableHead>
-                    <TableHead>
-                      <DataTableColumnHeader
-                        title="Data"
-                        column="date"
-                        sortConfig={sortConfig}
-                        onSort={handleSort}
-                      />
-                    </TableHead>
-                    <TableHead>
-                      <DataTableColumnHeader
-                        title="Local"
-                        column="location"
-                        sortConfig={sortConfig}
-                        onSort={handleSort}
-                      />
-                    </TableHead>
-                    <TableHead>
-                      <DataTableColumnHeader
-                        title="Status"
-                        column="status"
-                        sortConfig={sortConfig}
-                        onSort={handleSort}
-                      />
-                    </TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell>
-                        {item.date ? new Date(item.date).toLocaleDateString('pt-BR') : 'N/A'}
-                      </TableCell>
-                      <TableCell>{item.location}</TableCell>
-                      <TableCell>{item.status}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <Button type="submit">Adicionar Evento</Button>
+            </form>
+          </Form>
         </CardContent>
       </Card>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {events.map((e) => (
+          <Card key={e.id}>
+            <CardContent className="p-5 flex flex-col gap-2">
+              <div className="flex justify-between items-start">
+                <h3 className="text-xl font-bold">{e.name}</h3>
+                {e.date && <span className="text-xs bg-muted px-2 py-1 rounded-md">{e.date}</span>}
+              </div>
+              <div
+                className="prose prose-sm max-w-none dark:prose-invert text-muted-foreground mt-2"
+                dangerouslySetInnerHTML={{ __html: e.description || 'Sem descrição.' }}
+              />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   )
 }

@@ -155,6 +155,39 @@ export type Database = {
           },
         ]
       }
+      asaas_config: {
+        Row: {
+          created_at: string | null
+          id: string
+          payment_environment: string | null
+          production_key: string | null
+          sandbox_key: string | null
+          tenant_id: string | null
+          updated_at: string | null
+          webhook_secret: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          payment_environment?: string | null
+          production_key?: string | null
+          sandbox_key?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+          webhook_secret?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          payment_environment?: string | null
+          production_key?: string | null
+          sandbox_key?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+          webhook_secret?: string | null
+        }
+        Relationships: []
+      }
       athlete_attribute_values: {
         Row: {
           athlete_id: string | null
@@ -3532,6 +3565,15 @@ export const Constants = {
 //   vehicle_brand: text (nullable)
 //   vehicle_model: text (nullable)
 //   vehicle_year: text (nullable)
+// Table: asaas_config
+//   id: uuid (not null, default: gen_random_uuid())
+//   tenant_id: uuid (nullable)
+//   production_key: text (nullable)
+//   sandbox_key: text (nullable)
+//   payment_environment: text (nullable, default: 'sandbox'::text)
+//   webhook_secret: text (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+//   updated_at: timestamp with time zone (nullable, default: now())
 // Table: athlete_attribute_values
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (nullable)
@@ -4328,6 +4370,9 @@ export const Constants = {
 //   PRIMARY KEY appointments_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY appointments_professional_id_fkey: FOREIGN KEY (professional_id) REFERENCES profiles(id) ON DELETE SET NULL
 //   FOREIGN KEY appointments_vehicle_id_fkey: FOREIGN KEY (vehicle_id) REFERENCES vehicles(id) ON DELETE SET NULL
+// Table: asaas_config
+//   PRIMARY KEY asaas_config_pkey: PRIMARY KEY (id)
+//   UNIQUE asaas_config_tenant_id_key: UNIQUE (tenant_id)
 // Table: athlete_attribute_values
 //   FOREIGN KEY athlete_attribute_values_athlete_id_fkey: FOREIGN KEY (athlete_id) REFERENCES athletes(id) ON DELETE CASCADE
 //   FOREIGN KEY athlete_attribute_values_attribute_id_fkey: FOREIGN KEY (attribute_id) REFERENCES athlete_attributes(id) ON DELETE CASCADE
@@ -4580,6 +4625,10 @@ export const Constants = {
 //     WITH CHECK: true
 //   Policy "authenticated_select_appointments" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
+// Table: asaas_config
+//   Policy "asaas_config_all" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: athlete_attribute_values
 //   Policy "athlete_attribute_values_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -5814,6 +5863,8 @@ export const Constants = {
 //   on_usuarios_sync_profiles: CREATE TRIGGER on_usuarios_sync_profiles AFTER INSERT OR UPDATE ON public.usuarios FOR EACH ROW EXECUTE FUNCTION sync_usuarios_to_profiles()
 
 // --- INDEXES ---
+// Table: asaas_config
+//   CREATE UNIQUE INDEX asaas_config_tenant_id_key ON public.asaas_config USING btree (tenant_id)
 // Table: athletes
 //   CREATE UNIQUE INDEX athletes_cpf_key ON public.athletes USING btree (cpf)
 // Table: billing_configuration

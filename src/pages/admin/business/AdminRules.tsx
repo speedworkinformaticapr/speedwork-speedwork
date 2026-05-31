@@ -1,269 +1,152 @@
 import { useEffect, useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+import { useForm } from 'react-hook-form'
 import { supabase } from '@/lib/supabase/client'
-import { useToast } from '@/hooks/use-toast'
-import { Edit2, Plus, Search, Trash2 } from 'lucide-react'
-import { AIGenerateButton } from '@/components/AIGenerateButton'
+import { toast } from 'sonner'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function AdminRules() {
-  const [items, setItems] = useState<any[]>([])
-  const [search, setSearch] = useState('')
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [formData, setFormData] = useState<any>({})
-  const [itemToDelete, setItemToDelete] = useState<string | null>(null)
-  const [isSaving, setIsSaving] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const { toast } = useToast()
+  const [rules, setRules] = useState<any[]>([])
+  const form = useForm({
+    defaultValues: { title: '', description: '', content: '', version: '1.0' },
+  })
 
-  const loadData = async () => {
+  const load = async () => {
     const { data } = await supabase
       .from('rules')
-      .select('*')
-      .order('created_at', { ascending: true })
-    setItems(data || [])
+      .select('*, rule_versions(content, version)')
+      .order('created_at', { ascending: false })
+    if (data) setRules(data)
   }
 
   useEffect(() => {
-    loadData()
+    load()
   }, [])
 
-  const handleOpen = (item?: any) => {
-    setFormData(item || { title: '', description: '', status: 'active', version: '1.0' })
-    setIsModalOpen(true)
-  }
-
-  const handleSave = async () => {
-    if (!formData.title)
-      return toast({
-        title: 'Atenção',
-        description: 'O título da regra é obrigatório.',
-        variant: 'destructive',
-      })
-
-    setIsSaving(true)
-    try {
-      if (formData.id) {
-        const { error } = await supabase
-          .from('rules')
-          .update({ ...formData, updated_at: new Date().toISOString() })
-          .eq('id', formData.id)
-        if (error) throw error
-        toast({ title: 'Sucesso', description: 'Regra atualizada com sucesso!' })
-      } else {
-        const { error } = await supabase.from('rules').insert([formData])
-        if (error) throw error
-        toast({ title: 'Sucesso', description: 'Regra criada com sucesso!' })
-      }
-
-      setIsModalOpen(false)
-      loadData()
-    } catch (err: any) {
-      toast({ title: 'Erro ao salvar', description: err.message, variant: 'destructive' })
-    } finally {
-      setIsSaving(false)
+  const onSubmit = async (values: any) => {
+    const { data, error } = await supabase
+      .from('rules')
+      .insert({ title: values.title, description: values.description, version: values.version })
+      .select()
+      .single()
+    if (error) {
+      toast.error('Erro ao salvar')
+    } else if (data) {
+      await supabase
+        .from('rule_versions')
+        .insert({ rule_id: data.id, version: values.version, content: values.content })
+      toast.success('Regra salva com sucesso!')
+      form.reset()
+      load()
     }
   }
-
-  const handleDelete = (id: string) => {
-    setItemToDelete(id)
-  }
-
-  const confirmDelete = async () => {
-    if (!itemToDelete) return
-    setIsDeleting(true)
-    try {
-      const { error } = await supabase.from('rules').delete().eq('id', itemToDelete)
-      if (error) throw error
-      toast({ title: 'Sucesso', description: 'Regra excluída com sucesso!' })
-      loadData()
-    } catch (err: any) {
-      toast({ title: 'Erro ao excluir', description: err.message, variant: 'destructive' })
-    } finally {
-      setIsDeleting(false)
-      setItemToDelete(null)
-    }
-  }
-
-  const toggleStatus = async (item: any) => {
-    try {
-      const newStatus = item.status === 'active' ? 'inactive' : 'active'
-      const { error } = await supabase.from('rules').update({ status: newStatus }).eq('id', item.id)
-      if (error) throw error
-      toast({ title: 'Sucesso', description: 'Status atualizado com sucesso!' })
-      loadData()
-    } catch (err: any) {
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' })
-    }
-  }
-
-  const filtered = items.filter((c) => c.title?.toLowerCase().includes(search.toLowerCase()))
 
   return (
-    <div className="p-6 space-y-6 max-w-[1200px] mx-auto w-full">
-      <div className="flex flex-col sm:flex-row justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-primary">Regras</h1>
-          <p className="text-muted-foreground">Documente os regulamentos oficiais da plataforma.</p>
-        </div>
-        <Button onClick={() => handleOpen()}>
-          <Plus className="w-4 h-4 mr-2" /> Nova Regra
-        </Button>
-      </div>
-
+    <div className="p-6 space-y-6 max-w-5xl mx-auto">
       <Card>
-        <div className="p-4 border-b flex items-center gap-2">
-          <Search className="w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar regra..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="max-w-sm"
-          />
-        </div>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Título da Regra</TableHead>
-                <TableHead>Descrição (resumo)</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell className="font-medium">{c.title}</TableCell>
-                  <TableCell className="max-w-[300px] truncate text-muted-foreground">
-                    {c.description ? c.description.substring(0, 80) + '...' : '-'}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={c.status === 'active'}
-                        onCheckedChange={() => toggleStatus(c)}
+        <CardHeader>
+          <CardTitle>Nova Regra / Regulamento</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Título</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          withAi
+                          aiContext="Título de uma regra oficial de footgolf"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="version"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Versão</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descrição Curta</FormLabel>
+                    <FormControl>
+                      <RichTextEditor {...field} withAi aiContext="Resumo rápido desta regra" />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="content"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Conteúdo Completo da Regra</FormLabel>
+                    <FormControl>
+                      <RichTextEditor
+                        {...field}
+                        withAi
+                        aiContext="Texto longo e formal contendo os artigos e penalidades desta regra de footgolf"
                       />
-                      <span className="text-sm">{c.status === 'active' ? 'Ativo' : 'Inativo'}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => handleOpen(c)}>
-                      <Edit2 className="w-4 h-4 text-muted-foreground" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(c.id)}>
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filtered.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                    Nenhuma regra encontrada.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <Button type="submit">Adicionar Regra</Button>
+            </form>
+          </Form>
         </CardContent>
       </Card>
 
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>{formData.id ? 'Editar Regra' : 'Nova Regra'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Título da Regra *</Label>
-                <AIGenerateButton
-                  fieldContext="Título formal e descritivo para uma regra ou regulamento"
-                  currentText={formData.title}
-                  onGenerate={(text) => setFormData({ ...formData, title: text })}
-                  maxLength={100}
-                />
-              </div>
-              <Input
-                value={formData.title || ''}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+      <div className="grid gap-6">
+        {rules.map((r) => (
+          <Card key={r.id}>
+            <CardContent className="p-6">
+              <h3 className="text-xl font-bold">
+                {r.title}{' '}
+                <span className="text-sm bg-primary/10 text-primary px-2 py-1 rounded">
+                  v{r.version}
+                </span>
+              </h3>
+              <div
+                className="prose prose-sm max-w-none dark:prose-invert mt-4 mb-6 text-muted-foreground"
+                dangerouslySetInnerHTML={{ __html: r.description || '' }}
               />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Descrição Completa</Label>
-                <AIGenerateButton
-                  fieldContext="Texto detalhado e formal para um regulamento ou regra"
-                  currentText={formData.description}
-                  onGenerate={(text) => setFormData({ ...formData, description: text })}
-                />
-              </div>
-              <RichTextEditor
-                value={formData.description || ''}
-                onChange={(v) => setFormData({ ...formData, description: v })}
-                placeholder="Escreva a regra aqui..."
-                minHeight="250px"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? 'Salvando...' : 'Salvar'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Tem certeza que deseja excluir?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação não pode ser desfeita. A regra será permanentemente removida.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isDeleting ? 'Excluindo...' : 'Excluir'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              <h4 className="text-sm font-semibold uppercase tracking-wider mb-2">
+                Histórico de Versões e Conteúdo
+              </h4>
+              {r.rule_versions?.map((rv: any, idx: number) => (
+                <div
+                  key={idx}
+                  className="mt-3 p-4 bg-muted/30 rounded-md prose prose-sm max-w-none dark:prose-invert"
+                >
+                  <div className="font-bold mb-2">Versão {rv.version}</div>
+                  <div dangerouslySetInnerHTML={{ __html: rv.content || '' }} />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   )
 }
