@@ -1,297 +1,244 @@
-import { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import {
-  LayoutDashboard,
-  FileText,
-  Image,
-  Settings,
-  Users,
-  CreditCard,
-  ShoppingCart,
-  LogOut,
-  ChevronUp,
-  User2,
-  Phone,
-  Mail,
-  Calendar,
-  Briefcase,
-  ChevronRight,
-  Trophy,
-  Globe,
-} from 'lucide-react'
-
-import { useAuth } from '@/hooks/use-auth'
-import { useSystemData } from '@/hooks/use-system-data'
-import { supabase } from '@/lib/supabase/client'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarGroup,
+  SidebarGroupContent,
   SidebarMenuSub,
-  SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarMenuSubButton,
 } from '@/components/ui/sidebar'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { useSystemData } from '@/hooks/use-system-data'
+import { useAuth } from '@/hooks/use-auth'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-
-const adminMenus = [
-  {
-    title: 'Geral',
-    items: [
-      { title: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
-      { title: 'Usuários', icon: Users, path: '/admin/users' },
-      { title: 'Agendamentos', icon: Calendar, path: '/admin/appointments' },
-      { title: 'Serviços', icon: Settings, path: '/admin/services' },
-      { title: 'Orçamentos', icon: FileText, path: '/admin/quotes' },
-    ],
-  },
-  {
-    title: 'Comercial',
-    icon: Briefcase,
-    items: [
-      { title: 'Dashboard', path: '/admin/commercial/dashboard' },
-      { title: 'Pedidos', path: '/admin/commercial/pedidos' },
-      { title: 'Contratos', path: '/admin/commercial/contratos' },
-    ],
-  },
-  {
-    title: 'Negócio & Esporte',
-    icon: Trophy,
-    items: [
-      { title: 'Atributos', path: '/admin/athlete-attributes' },
-      { title: 'Avaliações', path: '/admin/athlete-evaluations' },
-      { title: 'Scouting', path: '/admin/athlete-scouting' },
-      { title: 'Categorias', path: '/admin/athlete-categories' },
-      { title: 'Cursos/Campos', path: '/admin/courses' },
-      { title: 'Torneios', path: '/admin/tournaments' },
-      { title: 'Ranking', path: '/admin/ranking' },
-      { title: 'Regras', path: '/admin/rules' },
-    ],
-  },
-  {
-    title: 'Conteúdo',
-    icon: FileText,
-    items: [
-      { title: 'Páginas', path: '/admin/pages' },
-      { title: 'Blog', path: '/admin/blog' },
-      { title: 'Galeria', path: '/admin/gallery' },
-    ],
-  },
-  {
-    title: 'Comunicação',
-    icon: Phone,
-    items: [
-      { title: 'WhatsApp', path: '/admin/whatsapp' },
-      { title: 'E-mail', path: '/admin/email' },
-    ],
-  },
-  {
-    title: 'E-commerce',
-    icon: ShoppingCart,
-    items: [
-      { title: 'Pedidos', path: '/admin/ecommerce/orders' },
-      { title: 'Produtos', path: '/admin/ecommerce/products' },
-      { title: 'Grupos', path: '/admin/ecommerce/groups' },
-      { title: 'Carrinhos Abandonados', path: '/admin/ecommerce/abandoned-carts' },
-      { title: 'Logística', path: '/admin/ecommerce/logistics' },
-      { title: 'Checkout', path: '/admin/ecommerce/checkout-config' },
-      { title: 'Aparência', path: '/admin/ecommerce/store-editor' },
-    ],
-  },
-  {
-    title: 'Financeiro',
-    icon: CreditCard,
-    items: [
-      { title: 'Dashboard', path: '/admin/financial/dashboard' },
-      { title: 'Lançamentos', path: '/admin/financial/payments' },
-      { title: 'Inscrições', path: '/admin/financial/registration-payments' },
-      { title: 'Categorias', path: '/admin/financial/categories' },
-      { title: 'Plano de Contas', path: '/admin/financial/chart-of-accounts' },
-      { title: 'Parceiros', path: '/admin/financial/partners' },
-      { title: 'Stripe Config', path: '/admin/financial/stripe-config' },
-      { title: 'Logs de Cobrança', path: '/admin/financial/billing-logs' },
-      { title: 'Configurações', path: '/admin/financial/settings' },
-    ],
-  },
-  {
-    title: 'Configurações',
-    icon: Settings,
-    items: [
-      { title: 'Dados do Sistema', path: '/admin/settings/system-data' },
-      { title: 'Planos e Serviços', path: '/admin/settings/plan-services' },
-      { title: 'Tipos de SLA', path: '/admin/settings/sla-types' },
-      { title: 'Mídias', path: '/admin/settings/media' },
-      { title: 'Manutenção', path: '/admin/settings/maintenance' },
-      { title: 'Analytics', path: '/admin/settings/analytics' },
-      { title: 'Logs de Publicação', path: '/admin/settings/publish-logs' },
-    ],
-  },
-]
+  LayoutDashboard,
+  Briefcase,
+  DollarSign,
+  ClipboardList,
+  Trophy,
+  Store,
+  FileText,
+  MessageSquare,
+  Settings,
+  ChevronRight,
+  LogOut,
+} from 'lucide-react'
 
 export function AppSidebar() {
+  const { systemData } = useSystemData()
+  const { signOut } = useAuth()
   const location = useLocation()
-  const { user, signOut } = useAuth()
-  const { data: systemData } = useSystemData()
-  const [profile, setProfile] = useState<{ name: string; email: string } | null>(null)
+  const navigate = useNavigate()
 
-  useEffect(() => {
-    if (user) {
-      supabase
-        .from('profiles')
-        .select('name, email')
-        .eq('id', user.id)
-        .single()
-        .then(({ data }) => {
-          if (data) {
-            setProfile({ name: data.name || '', email: data.email || user.email || '' })
-          } else {
-            setProfile({ name: 'Administrador', email: user.email || '' })
-          }
-        })
-    }
-  }, [user])
+  const handleSignOut = async () => {
+    await signOut()
+    navigate('/login')
+  }
+
+  const navItems = [
+    {
+      title: 'Dashboard',
+      url: '/admin/dashboard',
+      icon: LayoutDashboard,
+    },
+    {
+      title: 'Comercial',
+      icon: Briefcase,
+      items: [
+        { title: 'Dashboard', url: '/admin/commercial/dashboard' },
+        { title: 'Pedidos', url: '/admin/commercial/pedidos' },
+        { title: 'Contratos', url: '/admin/commercial/contratos' },
+      ],
+    },
+    {
+      title: 'Financeiro',
+      icon: DollarSign,
+      items: [
+        { title: 'Dashboard', url: '/admin/financial/dashboard' },
+        { title: 'Pagamentos', url: '/admin/financial/payments' },
+        { title: 'Cobranças', url: '/admin/financial/billing-logs' },
+        { title: 'Inscrições', url: '/admin/financial/registration-payments' },
+        { title: 'Stripe Config', url: '/admin/financial/stripe-config' },
+        { title: 'Stripe Pagamentos', url: '/admin/financial/stripe-payments' },
+        { title: 'Parceiros', url: '/admin/financial/partners' },
+        { title: 'Plano de Contas', url: '/admin/financial/chart-of-accounts' },
+        { title: 'Categorias', url: '/admin/financial/categories' },
+        { title: 'Configurações', url: '/admin/financial/settings' },
+      ],
+    },
+    {
+      title: 'Operacional',
+      icon: ClipboardList,
+      items: [
+        { title: 'Orçamentos', url: '/admin/quotes' },
+        { title: 'Serviços', url: '/admin/services' },
+        { title: 'Agendamentos', url: '/admin/appointments' },
+      ],
+    },
+    {
+      title: 'Esportes',
+      icon: Trophy,
+      items: [
+        { title: 'Ranking', url: '/admin/ranking' },
+        { title: 'Torneios', url: '/admin/tournaments' },
+        { title: 'Categorias', url: '/admin/athlete-categories' },
+        { title: 'Campos', url: '/admin/courses' },
+        { title: 'Atributos', url: '/admin/athlete-attributes' },
+        { title: 'Avaliações', url: '/admin/athlete-evaluations' },
+        { title: 'Scouting', url: '/admin/athlete-scouting' },
+        { title: 'Regras', url: '/admin/rules' },
+      ],
+    },
+    {
+      title: 'E-commerce',
+      icon: Store,
+      items: [
+        { title: 'Pedidos', url: '/admin/ecommerce/orders' },
+        { title: 'Produtos', url: '/admin/ecommerce/products' },
+        { title: 'Grupos', url: '/admin/ecommerce/groups' },
+        { title: 'Carrinhos Abandonados', url: '/admin/ecommerce/abandoned-carts' },
+        { title: 'Config. Checkout', url: '/admin/ecommerce/checkout-config' },
+        { title: 'Logística', url: '/admin/ecommerce/logistics' },
+        { title: 'Editor da Loja', url: '/admin/ecommerce/store-editor' },
+      ],
+    },
+    {
+      title: 'Conteúdo',
+      icon: FileText,
+      items: [
+        { title: 'Páginas', url: '/admin/pages' },
+        { title: 'Blog', url: '/admin/blog' },
+        { title: 'Galeria', url: '/admin/gallery' },
+      ],
+    },
+    {
+      title: 'Comunicação',
+      icon: MessageSquare,
+      items: [
+        { title: 'WhatsApp', url: '/admin/whatsapp' },
+        { title: 'E-mail', url: '/admin/email' },
+      ],
+    },
+    {
+      title: 'Configurações',
+      icon: Settings,
+      items: [
+        { title: 'Dados do Sistema', url: '/admin/settings/system-data' },
+        { title: 'Usuários', url: '/admin/users' },
+        { title: 'Planos de Serviço', url: '/admin/settings/plan-services' },
+        { title: 'Tipos de SLA', url: '/admin/settings/sla-types' },
+        { title: 'Mídia', url: '/admin/settings/media' },
+        { title: 'Analytics', url: '/admin/settings/analytics' },
+        { title: 'Logs de Publicação', url: '/admin/settings/publish-logs' },
+        { title: 'Manutenção', url: '/admin/settings/maintenance' },
+      ],
+    },
+  ]
 
   return (
-    <Sidebar className="border-r">
-      <SidebarHeader className="border-b p-4 shrink-0">
-        <Link to="/admin/dashboard" className="flex items-center gap-3 w-full">
-          {systemData?.logo_url ? (
-            <img src={systemData.logo_url} alt="Logo" className="h-8 w-auto object-contain" />
-          ) : (
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold">
-              A
-            </div>
-          )}
-          <div className="flex flex-col flex-1 overflow-hidden">
-            <span className="truncate font-semibold text-sm">
-              {systemData?.platform_name || 'Admin Panel'}
-            </span>
-            <span className="truncate text-xs text-muted-foreground">Área Administrativa</span>
-          </div>
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="flex flex-col items-center justify-center pt-6 pb-4 px-2">
+        <Link
+          to="/admin/dashboard"
+          className="flex items-center justify-center w-full min-h-10 overflow-hidden"
+        >
+          <img
+            src={
+              systemData?.logo_url || 'https://img.usecurling.com/i?q=logo&shape=outline&color=blue'
+            }
+            alt="Logo"
+            className="h-10 w-auto object-contain transition-all duration-300 hidden group-data-[state=expanded]:block"
+          />
+          <img
+            src={
+              systemData?.browser_icon_url ||
+              'https://img.usecurling.com/i?q=icon&shape=outline&color=blue'
+            }
+            alt="Icon"
+            className="size-8 object-contain transition-all duration-300 group-data-[state=expanded]:hidden"
+          />
         </Link>
       </SidebarHeader>
 
-      <SidebarContent className="px-2">
+      <SidebarContent>
         <SidebarGroup>
-          <SidebarMenu className="gap-1">
-            {adminMenus.map((group) => {
-              if (!group.icon) {
-                return group.items.map((item) => (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton asChild isActive={location.pathname === item.path}>
-                      <Link to={item.path} className="flex items-center gap-2">
-                        {item.icon && <item.icon className="size-4 shrink-0" />}
-                        <span className="truncate">{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))
-              }
-
-              const isActiveGroup = group.items.some((i) => location.pathname.startsWith(i.path))
-
-              return (
-                <Collapsible
-                  key={group.title}
-                  asChild
-                  defaultOpen={isActiveGroup}
-                  className="group/collapsible"
-                >
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton tooltip={group.title}>
-                        <group.icon className="size-4 shrink-0" />
-                        <span className="truncate">{group.title}</span>
-                        <ChevronRight className="ml-auto size-4 shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navItems.map((item) => {
+                if (!item.items) {
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={location.pathname === item.url}
+                        tooltip={item.title}
+                      >
+                        <Link to={item.url}>
+                          {item.icon && <item.icon />}
+                          <span>{item.title}</span>
+                        </Link>
                       </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub className="ml-5 border-l px-0 py-1">
-                        {group.items.map((subItem) => (
-                          <SidebarMenuSubItem key={subItem.path}>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={location.pathname === subItem.path}
-                            >
-                              <Link to={subItem.path} className="pl-4">
-                                <span className="truncate">{subItem.title}</span>
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
-              )
-            })}
-          </SidebarMenu>
+                    </SidebarMenuItem>
+                  )
+                }
+
+                const isActive = item.items.some((sub) => location.pathname.startsWith(sub.url))
+
+                return (
+                  <Collapsible
+                    key={item.title}
+                    asChild
+                    defaultOpen={isActive}
+                    className="group/collapsible"
+                  >
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton tooltip={item.title} isActive={isActive}>
+                          {item.icon && <item.icon />}
+                          <span>{item.title}</span>
+                          <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {item.items.map((subItem) => (
+                            <SidebarMenuSubItem key={subItem.title}>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={location.pathname === subItem.url}
+                              >
+                                <Link to={subItem.url}>
+                                  <span>{subItem.title}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t p-4 shrink-0">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="lg"
-              className="w-full justify-between border bg-background shadow-sm hover:bg-accent data-[state=open]:bg-sidebar-accent"
-            >
-              <div className="flex items-center gap-3 overflow-hidden">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <User2 className="size-4" />
-                </div>
-                <div className="flex flex-col items-start overflow-hidden text-left">
-                  <span className="truncate text-sm font-medium w-full">
-                    {profile?.name || user?.email?.split('@')[0] || 'Carregando...'}
-                  </span>
-                  <span className="truncate text-xs text-muted-foreground w-full">
-                    {profile?.email || ''}
-                  </span>
-                </div>
-              </div>
-              <ChevronUp className="size-4 shrink-0 text-muted-foreground" />
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={handleSignOut} tooltip="Sair">
+              <LogOut className="size-4" />
+              <span>Sair</span>
             </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[240px] mb-2">
-            <DropdownMenuItem asChild className="cursor-pointer">
-              <Link to="/admin/dashboard" className="w-full flex items-center">
-                <LayoutDashboard className="mr-2 size-4" />
-                Dashboard Admin
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild className="cursor-pointer">
-              <Link to="/" className="w-full flex items-center">
-                <Globe className="mr-2 size-4" />
-                Acessar Site Público
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild className="cursor-pointer">
-              <Link to="/admin/settings/system-data" className="w-full flex items-center">
-                <Settings className="mr-2 size-4" />
-                Configurações
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => signOut()}
-              className="cursor-pointer text-destructive focus:bg-destructive focus:text-destructive-foreground"
-            >
-              <LogOut className="mr-2 size-4" />
-              Sair do Sistema
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
   )
