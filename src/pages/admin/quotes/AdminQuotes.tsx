@@ -15,6 +15,18 @@ import { Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
+export const MOCK_CATALOG_SERVICES = [
+  { id: 'srv-1', name: 'Consultoria Financeira', base_price: 1500 },
+  { id: 'srv-2', name: 'Auditoria Contábil', base_price: 3000 },
+  { id: 'srv-3', name: 'Planejamento Tributário', base_price: 2000 },
+]
+
+export const MOCK_CATALOG_PRODUCTS = [
+  { id: 'prod-1', name: 'Sistema ERP', price: 5000 },
+  { id: 'prod-2', name: 'Licença Anual', price: 1200 },
+  { id: 'prod-3', name: 'Treinamento Equipe', price: 800 },
+]
+
 export default function AdminQuotes() {
   const [quotes, setQuotes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
