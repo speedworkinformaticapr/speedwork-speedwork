@@ -3,6 +3,19 @@ import type { Database } from '@/lib/supabase/types'
 
 export type Appointment = Database['public']['Tables']['appointments']['Row']
 
+export const getAppointments = async () => {
+  const { data, error } = await supabase
+    .from('appointments')
+    .select(`
+      *,
+      profiles:cliente_id ( cpf_cnpj )
+    `)
+    .order('date', { ascending: false })
+    .order('start_time', { ascending: false })
+  if (error) throw error
+  return data
+}
+
 export const updateAppointment = async (id: string, updates: Partial<Appointment>) => {
   const { data, error } = await supabase
     .from('appointments')

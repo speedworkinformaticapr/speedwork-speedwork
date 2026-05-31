@@ -162,13 +162,27 @@ export default function Scheduling() {
 
   return (
     <div className="container max-w-2xl mx-auto h-screen sm:h-[calc(100vh-4rem)] py-4 sm:py-8 px-4 flex flex-col">
-      <div className="mb-6 flex items-center justify-between shrink-0">
-        {[1, 2, 3, 4, 5, 6, 7].map((s) => (
-          <div
-            key={s}
-            className={`h-2 flex-1 mx-1 rounded-full transition-colors duration-300 ${step >= s ? 'bg-primary' : 'bg-secondary'}`}
-          />
-        ))}
+      <div className="mb-8 relative shrink-0 pt-4">
+        <div className="absolute top-8 left-8 right-8 h-1 bg-secondary rounded-full" />
+        <div
+          className="absolute top-8 left-8 h-1 bg-primary rounded-full transition-all duration-500"
+          style={{ width: `calc(${((step - 1) / 6) * 100}%)` }}
+        />
+        <div className="flex items-center justify-between relative z-10 px-4 sm:px-8">
+          {[1, 2, 3, 4, 5, 6, 7].map((s) => (
+            <div key={s} className="flex flex-col items-center gap-1">
+              <div
+                className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-500 ${
+                  step >= s
+                    ? 'bg-primary text-primary-foreground shadow-lg scale-110'
+                    : 'bg-background border-2 border-secondary text-muted-foreground'
+                }`}
+              >
+                {step > s ? <Check className="w-5 h-5" /> : s}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <Card className="shadow-lg border-primary/10 flex-1 flex flex-col overflow-hidden">

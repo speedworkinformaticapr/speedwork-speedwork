@@ -1,182 +1,451 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase/client'
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardFooter,
-  CardDescription,
-} from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { format } from 'date-fns'
+import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Calendar, Clock, Car, Edit, Eye } from 'lucide-react'
-import type { Appointment } from '@/services/appointments'
+import { supabase } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { LayoutGrid, List, Pencil, Trash2, XCircle, Play, ArrowUpDown, Plus } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import { getAppointments, updateAppointment, deleteAppointment } from '@/services/appointments'
 
 export default function AdminAppointments() {
-  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [appointments, setAppointments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [view, setView] = useState<'card' | 'grid'>('grid')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' })
 
-  const fetchAppointments = async () => {
+  const navigate = useNavigate()
+  const { toast } = useToast()
+
+  const loadData = async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('appointments')
-      .select('*')
-      .order('date', { ascending: false })
-      .order('start_time', { ascending: false })
-
-    if (!error && data) {
-      setAppointments(data)
+    try {
+      const data = await getAppointments()
+      setAppointments(data || [])
+    } catch (err: any) {
+      toast({ title: 'Erro', description: err.message, variant: 'destructive' })
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   useEffect(() => {
-    fetchAppointments()
+    loadData()
   }, [])
+
+  const filteredAppointments = useMemo(() => {
+    return appointments.filter((app) => {
+      let match = true
+      if (statusFilter !== 'all' && app.status !== statusFilter) match = false
+      if (dateFrom && app.date < dateFrom) match = false
+      if (dateTo && app.date > dateTo) match = false
+      return match
+    })
+  }, [appointments, dateFrom, dateTo, statusFilter])
+
+  const sortedAppointments = useMemo(() => {
+    const sorted = [...filteredAppointments]
+    sorted.sort((a, b) => {
+      let valA = a[sortConfig.key]
+      let valB = b[sortConfig.key]
+      if (sortConfig.key === 'client') {
+        valA = a.client_name
+        valB = b.client_name
+      }
+      if (sortConfig.key === 'vehicle') {
+        valA = a.vehicle_plate
+        valB = b.vehicle_plate
+      }
+      if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1
+      if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1
+      return 0
+    })
+    return sorted
+  }, [filteredAppointments, sortConfig])
+
+  const handleSort = (key: string) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+    }))
+  }
+
+  const handleCancel = async (id: string) => {
+    try {
+      await updateAppointment(id, { status: 'Cancelado' })
+      toast({ title: 'Sucesso', description: 'Agendamento cancelado.' })
+      loadData()
+    } catch (err: any) {
+      toast({ title: 'Erro', description: 'Erro ao cancelar.', variant: 'destructive' })
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Deseja realmente excluir este agendamento?')) return
+    try {
+      await deleteAppointment(id)
+      toast({ title: 'Sucesso', description: 'Agendamento excluído.' })
+      loadData()
+    } catch (err: any) {
+      toast({ title: 'Erro', description: 'Erro ao excluir.', variant: 'destructive' })
+    }
+  }
+
+  const handleStart = (app: any) => {
+    const params = new URLSearchParams()
+    params.set('appointment_id', app.id)
+    if (app.cliente_id) params.set('cliente_id', app.cliente_id)
+    if (app.vehicle_id) params.set('vehicle_id', app.vehicle_id)
+    if (app.vehicle_plate) params.set('plate', app.vehicle_plate)
+    if (app.problema_descricao) params.set('obs', app.problema_descricao)
+    navigate(`/admin/commercial/quotes/new?${params.toString()}`)
+  }
+
+  const handleEdit = (id: string) => {
+    toast({ title: 'Aviso', description: 'A edição rápida está em desenvolvimento.' })
+  }
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
+      case 'pendente':
+        return 'bg-yellow-500 hover:bg-yellow-600'
+      case 'confirmado':
+        return 'bg-blue-500 hover:bg-blue-600'
       case 'concluído':
-      case 'fechada':
-      case 'aprovado':
-        return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'
-      case 'em andamento':
-        return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800'
-      case 'pausado':
-      case 'pendente confirmação':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800'
+        return 'bg-green-500 hover:bg-green-600'
       case 'cancelado':
-      case 'não aprovado':
-        return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800'
+        return 'bg-red-500 hover:bg-red-600'
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'
+        return 'bg-gray-500 hover:bg-gray-600'
     }
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Agendamentos</h1>
-          <p className="text-muted-foreground mt-1">
-            Gerencie os agendamentos e horários dos clientes.
-          </p>
+    <div className="p-6 space-y-6 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-3xl font-bold tracking-tight">Agendamentos</h1>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={view === 'grid' ? 'default' : 'outline'}
+            size="icon"
+            onClick={() => setView('grid')}
+          >
+            <List className="w-4 h-4" />
+          </Button>
+          <Button
+            variant={view === 'card' ? 'default' : 'outline'}
+            size="icon"
+            onClick={() => setView('card')}
+          >
+            <LayoutGrid className="w-4 h-4" />
+          </Button>
+          <Button onClick={() => window.open('/scheduling', '_blank')} className="gap-2 ml-2">
+            <Plus className="w-4 h-4" /> Novo Agendamento
+          </Button>
         </div>
-        <Button onClick={() => window.open('/scheduling', '_blank')} className="gap-2">
-          <Calendar className="w-4 h-4" />
-          Novo Agendamento
-        </Button>
       </div>
 
+      <Card className="border-primary/10 shadow-sm">
+        <CardContent className="p-4 flex flex-col sm:flex-row gap-4 items-end sm:items-center bg-muted/20">
+          <div className="space-y-1 flex-1 w-full">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Data Inicial
+            </label>
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="h-10"
+            />
+          </div>
+          <div className="space-y-1 flex-1 w-full">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Data Final
+            </label>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="h-10"
+            />
+          </div>
+          <div className="space-y-1 flex-1 w-full">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Status
+            </label>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="Pendente">Pendente</SelectItem>
+                <SelectItem value="Confirmado">Confirmado</SelectItem>
+                <SelectItem value="Concluído">Concluído</SelectItem>
+                <SelectItem value="Cancelado">Cancelado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i} className="flex flex-col">
-              <CardHeader className="pb-2">
-                <Skeleton className="h-6 w-3/4 mb-2" />
-                <Skeleton className="h-4 w-1/2" />
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-              </CardContent>
-              <CardFooter>
-                <Skeleton className="h-10 w-full" />
-              </CardFooter>
-            </Card>
-          ))}
+        <div className="text-center py-20 flex flex-col items-center justify-center">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-muted-foreground">Carregando agendamentos...</p>
         </div>
-      ) : appointments.length === 0 ? (
-        <Card className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-          <Calendar className="w-12 h-12 mb-4 text-gray-300" />
-          <CardTitle className="text-lg">Nenhum agendamento encontrado</CardTitle>
-          <p>Os novos agendamentos aparecerão aqui.</p>
-        </Card>
+      ) : view === 'grid' ? (
+        <div className="border rounded-xl bg-card overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead
+                    className="cursor-pointer hover:bg-muted/80 transition-colors"
+                    onClick={() => handleSort('client')}
+                  >
+                    <div className="flex items-center gap-1 font-semibold text-foreground">
+                      Cliente <ArrowUpDown className="w-3 h-3 text-muted-foreground" />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer hover:bg-muted/80 transition-colors"
+                    onClick={() => handleSort('date')}
+                  >
+                    <div className="flex items-center gap-1 font-semibold text-foreground">
+                      Data/Hora <ArrowUpDown className="w-3 h-3 text-muted-foreground" />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="cursor-pointer hover:bg-muted/80 transition-colors"
+                    onClick={() => handleSort('vehicle')}
+                  >
+                    <div className="flex items-center gap-1 font-semibold text-foreground">
+                      Veículo <ArrowUpDown className="w-3 h-3 text-muted-foreground" />
+                    </div>
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">Problema</TableHead>
+                  <TableHead
+                    className="cursor-pointer hover:bg-muted/80 transition-colors"
+                    onClick={() => handleSort('status')}
+                  >
+                    <div className="flex items-center gap-1 font-semibold text-foreground">
+                      Status <ArrowUpDown className="w-3 h-3 text-muted-foreground" />
+                    </div>
+                  </TableHead>
+                  <TableHead className="text-right font-semibold text-foreground">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedAppointments.map((app) => (
+                  <TableRow key={app.id} className="group hover:bg-muted/20 transition-colors">
+                    <TableCell>
+                      <div className="font-semibold text-primary">{app.client_name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {app.profiles?.cpf_cnpj || 'Sem CPF'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-semibold text-foreground">
+                        {app.date ? format(parseISO(app.date), 'dd/MM/yyyy') : ''}
+                      </div>
+                      <div className="text-sm text-muted-foreground">{app.start_time}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-semibold text-foreground">
+                        {app.vehicle_model || 'Não informado'}
+                      </div>
+                      <div className="text-xs text-muted-foreground uppercase">
+                        {app.vehicle_plate}
+                      </div>
+                    </TableCell>
+                    <TableCell className="max-w-[200px] truncate" title={app.problema_descricao}>
+                      {app.problema_descricao || (
+                        <span className="text-muted-foreground italic">Sem descrição</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={`${getStatusColor(app.status)} text-white border-none shadow-sm`}
+                      >
+                        {app.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-50"
+                          title="Editar"
+                          onClick={() => handleEdit(app.id)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-orange-500 hover:text-orange-600 hover:bg-orange-50"
+                          title="Cancelar"
+                          onClick={() => handleCancel(app.id)}
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+                          title="Excluir"
+                          onClick={() => handleDelete(app.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="gap-1 ml-2 shadow-sm"
+                          onClick={() => handleStart(app)}
+                        >
+                          <Play className="w-3 h-3" /> Iniciar
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {sortedAppointments.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                      Nenhum agendamento encontrado para os filtros selecionados.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {appointments.map((app) => (
-            <Card key={app.id} className="flex flex-col hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3 border-b border-border/50">
-                <div className="flex justify-between items-start gap-2">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg line-clamp-1" title={app.client_name}>
+          {sortedAppointments.map((app) => (
+            <Card
+              key={app.id}
+              className="flex flex-col shadow-md hover:shadow-lg transition-shadow duration-300 border-primary/10 overflow-hidden group"
+            >
+              <CardHeader className="pb-3 bg-muted/10 border-b border-border/50">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="truncate">
+                    <CardTitle className="text-lg text-primary truncate" title={app.client_name}>
                       {app.client_name}
                     </CardTitle>
-                    <CardDescription
-                      className="font-medium text-primary line-clamp-1"
-                      title={app.service_name}
-                    >
-                      {app.service_name}
-                    </CardDescription>
+                    <p className="text-xs text-muted-foreground mt-1 font-mono">
+                      {app.profiles?.cpf_cnpj || 'Sem CPF'}
+                    </p>
                   </div>
                   <Badge
-                    variant="outline"
-                    className={`${getStatusColor(app.status)} whitespace-nowrap`}
+                    className={`${getStatusColor(app.status)} text-white border-none shadow-sm whitespace-nowrap shrink-0`}
                   >
                     {app.status}
                   </Badge>
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 space-y-4 pt-4">
-                <div className="grid grid-cols-2 gap-y-3">
-                  <div className="col-span-2 sm:col-span-1 flex items-start gap-2 text-sm">
-                    <Calendar className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
-                    <span className="font-medium">
-                      {format(new Date(app.date), 'dd/MM/yyyy', { locale: ptBR })}
+              <CardContent className="pt-4 flex-1 space-y-4">
+                <div className="flex justify-between items-center p-3 bg-background rounded-lg border border-border/50 shadow-sm">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                      Data e Hora
+                    </span>
+                    <span className="font-semibold text-foreground block">
+                      {app.date ? format(parseISO(app.date), 'dd/MM/yyyy') : ''} às {app.start_time}
                     </span>
                   </div>
-                  <div className="col-span-2 sm:col-span-1 flex items-start gap-2 text-sm">
-                    <Clock className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
-                    <span className="font-medium">
-                      {app.start_time.slice(0, 5)}{' '}
-                      {app.end_time && app.end_time !== app.start_time
-                        ? `às ${app.end_time.slice(0, 5)}`
-                        : ''}
+                  <div className="space-y-1 text-right">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                      Veículo
+                    </span>
+                    <span className="font-semibold text-foreground block uppercase">
+                      {app.vehicle_plate || 'N/A'}
+                    </span>
+                    <span className="text-xs text-muted-foreground block truncate max-w-[100px]">
+                      {app.vehicle_model}
                     </span>
                   </div>
-
-                  {(app.vehicle_brand || app.vehicle_model || app.vehicle_plate) && (
-                    <div className="col-span-2 flex items-start gap-2 text-sm bg-muted/30 p-3 rounded-md border border-border/50">
-                      <Car className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
-                      <div>
-                        <span className="font-medium block">
-                          {app.vehicle_plate?.toUpperCase() || 'Sem Placa'}
-                        </span>
-                        <span className="text-xs text-muted-foreground line-clamp-1">
-                          {app.vehicle_brand} {app.vehicle_model}{' '}
-                          {app.vehicle_year && `(${app.vehicle_year})`}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {app.notes && (
-                    <div className="col-span-2 text-xs text-muted-foreground bg-yellow-50 dark:bg-yellow-900/10 p-3 rounded-md border border-yellow-100 dark:border-yellow-900/30">
-                      <span className="font-semibold text-yellow-800 dark:text-yellow-600 block mb-1">
-                        Notas:
+                </div>
+                <div className="space-y-1.5">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Problema Relatado
+                  </span>
+                  <p className="text-sm text-foreground/80 line-clamp-3 leading-relaxed bg-muted/30 p-3 rounded-md border border-border/50 min-h-[4.5rem]">
+                    {app.problema_descricao || (
+                      <span className="italic opacity-50">
+                        Nenhuma descrição fornecida pelo cliente.
                       </span>
-                      <span className="line-clamp-2">{app.notes}</span>
-                    </div>
-                  )}
+                    )}
+                  </p>
                 </div>
               </CardContent>
-              <CardFooter className="bg-muted/10 p-4 border-t border-border/50 flex gap-2 shrink-0">
-                <Button className="flex-1" variant="outline" size="sm">
-                  <Eye className="w-4 h-4 mr-2" />
-                  Detalhes
-                </Button>
-                <Button className="flex-1" variant="secondary" size="sm">
-                  <Edit className="w-4 h-4 mr-2" />
-                  Editar
+              <CardFooter className="pt-4 pb-4 bg-muted/10 border-t border-border/50 flex justify-between items-center gap-2">
+                <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="h-9 w-9 text-blue-600 hover:bg-blue-50 hover:border-blue-200"
+                    title="Editar"
+                    onClick={() => handleEdit(app.id)}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="h-9 w-9 text-orange-500 hover:bg-orange-50 hover:border-orange-200"
+                    title="Cancelar"
+                    onClick={() => handleCancel(app.id)}
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="h-9 w-9 text-red-500 hover:bg-red-50 hover:border-red-200"
+                    title="Excluir"
+                    onClick={() => handleDelete(app.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+                <Button
+                  className="gap-2 flex-1 shadow-sm font-semibold"
+                  onClick={() => handleStart(app)}
+                >
+                  <Play className="w-4 h-4 fill-current" /> Iniciar Cotação
                 </Button>
               </CardFooter>
             </Card>
           ))}
+          {sortedAppointments.length === 0 && (
+            <div className="col-span-full text-center py-16 text-muted-foreground bg-card border rounded-xl shadow-sm">
+              Nenhum agendamento encontrado.
+            </div>
+          )}
         </div>
       )}
     </div>
