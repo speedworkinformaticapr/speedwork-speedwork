@@ -4564,6 +4564,13 @@ export const Constants = {
 //   Policy "appointments_all" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+//   Policy "appointments_anon_insert" (INSERT, PERMISSIVE) roles={anon}
+//     WITH CHECK: true
+//   Policy "appointments_anon_select" (SELECT, PERMISSIVE) roles={anon}
+//     USING: true
+//   Policy "appointments_anon_update" (UPDATE, PERMISSIVE) roles={anon}
+//     USING: true
+//     WITH CHECK: true
 //   Policy "appointments_insert_public" (INSERT, PERMISSIVE) roles={public}
 //     WITH CHECK: true
 //   Policy "appointments_select_public" (SELECT, PERMISSIVE) roles={public}

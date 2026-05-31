@@ -66,7 +66,7 @@ import AdminWhatsApp from './pages/admin/whatsapp/AdminWhatsApp'
 import AdminEmail from './pages/admin/email/AdminEmail'
 import AdminQuotes from './pages/admin/quotes/AdminQuotes'
 import AdminServices from './pages/admin/services/AdminServices'
-import AdminAppointments from './pages/admin/appointments/AdminAppointments'
+import AdminAppointments from './pages/admin/commercial/appointments/AdminAppointments'
 import AdminPedidosList from './pages/admin/commercial/AdminPedidosList'
 import AdminPedidoForm from './pages/admin/commercial/AdminPedidoForm'
 import AdminPedidoView from './pages/admin/commercial/AdminPedidoView'
@@ -194,7 +194,7 @@ const App = () => (
                   <Route path="/admin/services" element={<AdminServices />} />
                   <Route path="/admin/whatsapp" element={<AdminWhatsApp />} />
                   <Route path="/admin/email" element={<AdminEmail />} />
-                  <Route path="/admin/appointments" element={<AdminAppointments />} />
+                  <Route path="/admin/commercial/appointments" element={<AdminAppointments />} />
                   <Route path="/admin/dashboard" element={<AdminDashboard />} />
                   <Route path="/admin/settings/pages" element={<AdminPageList />} />
                   <Route path="/admin/settings/pages/new" element={<AdminPageForm />} />
