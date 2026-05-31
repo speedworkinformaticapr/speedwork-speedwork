@@ -19,6 +19,8 @@ import { sendEventRegistrationEmail } from '@/services/email'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/hooks/use-translation'
 import { useSeo } from '@/hooks/use-seo'
+import { DateRangePicker } from '@/components/ui/date-range-picker'
+import { DateRange } from 'react-day-picker'
 
 export default function Tournaments() {
   const { user } = useAuth()
@@ -32,7 +34,7 @@ export default function Tournaments() {
 
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [locationFilter, setLocationFilter] = useState<string>('all')
-  const [dateFilter, setDateFilter] = useState<string>('')
+  const [dateRange, setDateRange] = useState<DateRange | undefined>()
 
   const loadEvents = async () => {
     try {
@@ -65,16 +67,29 @@ export default function Tournaments() {
 
     document.querySelectorAll('.scroll-animate').forEach((el) => observer.observe(el))
     return () => observer.disconnect()
-  }, [events, categoryFilter, locationFilter, dateFilter])
+  }, [events, categoryFilter, locationFilter, dateRange])
 
   const filteredEvents = useMemo(() => {
     return events.filter((e) => {
       const matchCat = categoryFilter === 'all' || e.category === categoryFilter
       const matchLoc = locationFilter === 'all' || e.location === locationFilter
-      const matchDate = !dateFilter || (e.date && e.date.startsWith(dateFilter))
+
+      let matchDate = true
+      if (dateRange?.from && e.date) {
+        const evDate = new Date(e.date)
+        matchDate = evDate >= dateRange.from
+        if (dateRange.to) {
+          const toDate = new Date(dateRange.to)
+          toDate.setHours(23, 59, 59, 999)
+          matchDate = matchDate && evDate <= toDate
+        }
+      } else if (dateRange?.from) {
+        matchDate = false
+      }
+
       return matchCat && matchLoc && matchDate
     })
-  }, [events, categoryFilter, locationFilter, dateFilter])
+  }, [events, categoryFilter, locationFilter, dateRange])
 
   const categories = useMemo(
     () => Array.from(new Set(events.map((e) => e.category).filter(Boolean))),
@@ -194,13 +209,7 @@ export default function Tournaments() {
               </SelectContent>
             </Select>
 
-            <Input
-              type="month"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="bg-gray-50 border-gray-200 focus:ring-[#1B7D3A]"
-              placeholder={t('tournaments.date')}
-            />
+            <DateRangePicker date={dateRange} setDate={setDateRange} className="w-full" />
           </div>
         </Card>
 

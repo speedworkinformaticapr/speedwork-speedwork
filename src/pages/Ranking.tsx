@@ -38,6 +38,8 @@ import {
 } from 'lucide-react'
 import { RankingChart } from '@/components/RankingChart'
 import { PageHero } from '@/components/PageHero'
+import { DateRangePicker } from '@/components/ui/date-range-picker'
+import { DateRange } from 'react-day-picker'
 import AthleteAttributes from '@/pages/athlete/components/AthleteAttributes'
 import { useTranslation } from '@/hooks/use-translation'
 import { useSeo } from '@/hooks/use-seo'
@@ -57,7 +59,7 @@ export default function Ranking() {
   const [category, setCategory] = useState('all')
   const [clubId, setClubId] = useState('all')
   const [region, setRegion] = useState('all')
-  const [period, setPeriod] = useState('12m')
+  const [dateRange, setDateRange] = useState<DateRange | undefined>()
 
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -112,7 +114,7 @@ export default function Ranking() {
 
   useEffect(() => {
     setPage(1)
-  }, [debouncedSearch, category, clubId, region, period, itemsPerPage, sortConfig])
+  }, [debouncedSearch, category, clubId, region, dateRange, itemsPerPage, sortConfig])
 
   const loadData = async () => {
     setLoading(true)
@@ -131,6 +133,15 @@ export default function Ranking() {
     if (clubId !== 'all') query = query.eq('athletes.clubs.id', clubId)
     if (region !== 'all') query = query.eq('athletes.clubs.state', region)
     if (debouncedSearch) query = query.ilike('athletes.name', `%${debouncedSearch}%`)
+
+    if (dateRange?.from) {
+      query = query.gte('updated_at', dateRange.from.toISOString())
+    }
+    if (dateRange?.to) {
+      const toDate = new Date(dateRange.to)
+      toDate.setHours(23, 59, 59, 999)
+      query = query.lte('updated_at', toDate.toISOString())
+    }
 
     const from = (page - 1) * itemsPerPage
     const to = from + itemsPerPage - 1
@@ -252,7 +263,7 @@ export default function Ranking() {
 
   useEffect(() => {
     loadData()
-  }, [page, debouncedSearch, category, clubId, region, period, sortConfig])
+  }, [page, debouncedSearch, category, clubId, region, dateRange, sortConfig])
 
   const getMedal = (pos: number) => {
     if (pos === 1)
@@ -415,16 +426,7 @@ export default function Ranking() {
               </SelectContent>
             </Select>
 
-            <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="bg-card">
-                <SelectValue placeholder={t('ranking.period') || 'Período'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="12m">{t('ranking.last12m') || 'Últimos 12 meses'}</SelectItem>
-                <SelectItem value="6m">{t('ranking.last6m') || 'Últimos 6 meses'}</SelectItem>
-                <SelectItem value="ytd">{t('ranking.ytd') || 'No ano'}</SelectItem>
-              </SelectContent>
-            </Select>
+            <DateRangePicker date={dateRange} setDate={setDateRange} className="w-full" />
           </div>
         </div>
 
