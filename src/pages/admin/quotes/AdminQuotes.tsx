@@ -16,6 +16,18 @@ import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-col
 import { Button } from '@/components/ui/button'
 import { Edit, Trash2 } from 'lucide-react'
 
+export const MOCK_CATALOG_SERVICES = [
+  { id: 's1', title: 'Consultoria Estratégica', sale_value: 1500 },
+  { id: 's2', title: 'Desenvolvimento Web', sale_value: 4000 },
+  { id: 's3', title: 'Suporte Técnico Premium', sale_value: 800 },
+]
+
+export const MOCK_CATALOG_PRODUCTS = [
+  { id: 'p1', name: 'Licença de Software Anual', price: 899 },
+  { id: 'p2', name: 'Servidor Dedicado', price: 2500 },
+  { id: 'p3', name: 'Kit Equipamentos Home Office', price: 3200 },
+]
+
 export default function AdminQuotes() {
   const [data, setData] = useState<any[]>([])
   const {
