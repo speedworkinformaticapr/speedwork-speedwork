@@ -1,16 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { useDataTable } from '@/hooks/use-data-table'
-import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
+import { useAuth } from '@/hooks/use-auth'
+import { useNavigate, Link } from 'react-router-dom'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import {
   Table,
   TableBody,
@@ -19,387 +12,268 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import {
-  Edit,
-  Trash2,
-  Eye,
-  ArrowUp,
-  ArrowDown,
-  ArrowUpDown,
-  Calendar as CalendarIcon,
-  ArrowDownCircle,
-  ArrowUpCircle,
-  AlertCircle,
-} from 'lucide-react'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Calendar } from '@/components/ui/calendar'
-import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Edit, Trash2, Plus, ArrowUpRight, ArrowDownRight, AlertCircle } from 'lucide-react'
+import { cn, formatCurrencyInput } from '@/lib/utils'
 
 export default function AdminFinancialPayments() {
-  const {
-    search,
-    setSearch,
-    debouncedSearch,
-    status,
-    setStatus,
-    dateRange,
-    setDateRange,
-    sortConfig,
-    handleSort,
-  } = useDataTable()
+  const { user, loading: authLoading } = useAuth()
+  const navigate = useNavigate()
 
-  const [typeFilter, setTypeFilter] = useState<string>('all')
-  const [data, setData] = useState<any[]>([])
+  const [charges, setCharges] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [summary, setSummary] = useState({
-    receitasPrevistas: 0,
-    receitasRealizadas: 0,
-    despesasPrevistas: 0,
-    despesasRealizadas: 0,
-    atrasadosPrevistos: 0,
+  const [indicators, setIndicators] = useState({
+    receitas: { previsto: 0, realizado: 0 },
+    despesas: { previsto: 0, realizado: 0 },
+    atrasados: { total: 0 },
   })
 
-  const fetchData = async () => {
-    setLoading(true)
-    let query = supabase.from('financial_charges').select('*')
-
-    if (debouncedSearch) {
-      query = query.ilike('description', `%${debouncedSearch}%`)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/login')
+      return
     }
-
-    if (status !== 'all') {
-      query = query.eq('status', status)
-    }
-
-    if (typeFilter !== 'all') {
-      query = query.eq('type', typeFilter)
-    }
-
-    if (dateRange?.from) {
-      query = query.gte('due_date', format(dateRange.from, 'yyyy-MM-dd'))
-    }
-    if (dateRange?.to) {
-      query = query.lte('due_date', format(dateRange.to, 'yyyy-MM-dd'))
-    }
-
-    if (sortConfig) {
-      query = query.order(sortConfig.column, { ascending: sortConfig.direction === 'asc' })
-    } else {
-      query = query.order('due_date', { ascending: false })
-    }
-
-    const { data: result, error } = await query
-
-    if (!error && result) {
-      setData(result)
-
-      let recPrev = 0,
-        recReal = 0,
-        desPrev = 0,
-        desReal = 0,
-        atrPrev = 0
-      result.forEach((item) => {
-        const amt = Number(item.amount) || 0
-        const real = Number(item.realized_amount) || 0
-
-        if (item.type === 'receita' || item.type === 'receivable') {
-          recPrev += amt
-          recReal += real
-        } else {
-          desPrev += amt
-          desReal += real
-        }
-
-        const isOverdue =
-          item.status === 'atrasado' ||
-          (item.status === 'pendente' && new Date(item.due_date) < new Date())
-        if (isOverdue) {
-          atrPrev += amt
-        }
-      })
-
-      setSummary({
-        receitasPrevistas: recPrev,
-        receitasRealizadas: recReal,
-        despesasPrevistas: desPrev,
-        despesasRealizadas: desReal,
-        atrasadosPrevistos: atrPrev,
-      })
-    }
-    setLoading(false)
-  }
+  }, [user, authLoading, navigate])
 
   useEffect(() => {
+    if (authLoading || !user) return
+
+    const fetchData = async () => {
+      setLoading(true)
+      const { data: chargesData, error } = await supabase
+        .from('financial_charges')
+        .select('*')
+        .order('due_date', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching charges', error)
+      }
+
+      if (chargesData) {
+        setCharges(chargesData)
+
+        let recPrev = 0
+        let recReal = 0
+        let desPrev = 0
+        let desReal = 0
+        let atrasTotal = 0
+
+        const today = new Date().toISOString().split('T')[0]
+
+        chargesData.forEach((c) => {
+          const amount = Number(c.amount) || 0
+          const realized = Number(c.realized_amount) || 0
+          const type = c.type?.toLowerCase()
+
+          if (type === 'receivable' || type === 'entrada') {
+            recPrev += amount
+            recReal += realized
+          } else if (type === 'payable' || type === 'saida') {
+            desPrev += amount
+            desReal += realized
+          }
+
+          if (c.status === 'atrasado' || (c.status === 'pendente' && c.due_date < today)) {
+            atrasTotal += amount - realized
+          }
+        })
+
+        setIndicators({
+          receitas: { previsto: recPrev, realizado: recReal },
+          despesas: { previsto: desPrev, realizado: desReal },
+          atrasados: { total: atrasTotal },
+        })
+      }
+
+      setLoading(false)
+    }
+
     fetchData()
-  }, [debouncedSearch, status, typeFilter, dateRange, sortConfig])
+  }, [user, authLoading])
 
-  const renderSortableHead = (label: string, column: string) => {
-    const isSorted = sortConfig?.column === column
-    return (
-      <TableHead
-        className="cursor-pointer select-none sticky top-0 bg-background z-10 before:absolute before:inset-x-0 before:bottom-0 before:border-b"
-        onClick={() => handleSort(column)}
-      >
-        <div className="flex items-center gap-1">
-          {label}
-          {isSorted ? (
-            sortConfig.direction === 'asc' ? (
-              <ArrowUp className="w-3 h-3" />
-            ) : (
-              <ArrowDown className="w-3 h-3" />
-            )
-          ) : (
-            <ArrowUpDown className="w-3 h-3 opacity-30" />
-          )}
-        </div>
-      </TableHead>
-    )
+  const getStatusBadge = (status: string, dueDate: string) => {
+    const s = status?.toLowerCase() || ''
+    const today = new Date().toISOString().split('T')[0]
+    if (s === 'pago' || s === 'recebido') return <Badge className="bg-green-500">Pago</Badge>
+    if (s === 'atrasado' || (s === 'pendente' && dueDate < today))
+      return <Badge variant="destructive">Atrasado</Badge>
+    if (s === 'pendente' || s === 'aberto') return <Badge variant="secondary">Pendente</Badge>
+    return <Badge variant="outline">{status}</Badge>
   }
 
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return ''
-    const [year, month, day] = dateStr.split('T')[0].split('-')
-    return `${day}/${month}/${year}`
-  }
+  if (authLoading) return null
 
   return (
-    <div className="p-6 max-w-full overflow-hidden flex flex-col h-full gap-6">
-      <h1 className="text-2xl font-bold">Fluxo de Caixa</h1>
-
-      {/* Indicadores Reduzidos em 50% da altura padrão */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="h-20 flex flex-col justify-center px-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground flex items-center">
-                <ArrowUpCircle className="w-4 h-4 mr-1 text-green-500" />
-                Receitas
-              </p>
-              <p className="text-xl font-bold">
-                R$ {summary.receitasPrevistas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-            <div className="text-right space-y-1">
-              <p className="text-xs text-muted-foreground">Realizado</p>
-              <p className="text-sm font-semibold text-green-600">
-                R${' '}
-                {summary.receitasRealizadas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="h-20 flex flex-col justify-center px-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground flex items-center">
-                <ArrowDownCircle className="w-4 h-4 mr-1 text-red-500" />
-                Despesas
-              </p>
-              <p className="text-xl font-bold">
-                R$ {summary.despesasPrevistas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-            <div className="text-right space-y-1">
-              <p className="text-xs text-muted-foreground">Realizado</p>
-              <p className="text-sm font-semibold text-red-600">
-                R${' '}
-                {summary.despesasRealizadas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="h-20 flex flex-col justify-center px-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground flex items-center">
-                <AlertCircle className="w-4 h-4 mr-1 text-orange-500" />
-                Atrasados
-              </p>
-              <p className="text-xl font-bold text-orange-600">
-                R${' '}
-                {summary.atrasadosPrevistos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-          </div>
-        </Card>
+    <div className="p-6 space-y-8 animate-fade-in">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Fluxo de Caixa</h1>
+          <p className="text-muted-foreground mt-1">Gerencie as receitas e despesas.</p>
+        </div>
+        <Button asChild>
+          <Link to="/admin/financial/payments/new">
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Lançamento
+          </Link>
+        </Button>
       </div>
 
-      {/* Barra de Filtros (Ordem Estrita) */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="w-full sm:w-[280px]">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={'outline'}
-                className={cn(
-                  'w-full justify-start text-left font-normal',
-                  !dateRange && 'text-muted-foreground',
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateRange?.from ? (
-                  dateRange.to ? (
-                    <>
-                      {format(dateRange.from, 'dd/MM/yyyy', { locale: ptBR })} -{' '}
-                      {format(dateRange.to, 'dd/MM/yyyy', { locale: ptBR })}
-                    </>
-                  ) : (
-                    format(dateRange.from, 'dd/MM/yyyy', { locale: ptBR })
-                  )
-                ) : (
-                  <span>Período</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                initialFocus
-                mode="range"
-                defaultMonth={dateRange?.from}
-                selected={dateRange}
-                onSelect={setDateRange}
-                numberOfMonths={2}
-              />
-            </PopoverContent>
-          </Popover>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Receitas */}
+        <div className="border border-border rounded-lg p-5 relative pt-6 bg-card shadow-sm transition-all hover:shadow-md">
+          <span className="absolute -top-3 left-4 bg-card px-2 text-sm font-semibold text-muted-foreground flex items-center gap-1">
+            <ArrowUpRight className="h-4 w-4 text-green-500" />
+            Receitas
+          </span>
+          <div className="flex flex-row items-center justify-between gap-4 mt-1">
+            <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+              Previsto:{' '}
+              <span className="text-foreground font-bold ml-1">
+                R$ {formatCurrencyInput(indicators.receitas.previsto)}
+              </span>
+            </span>
+            <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+              Realizado:{' '}
+              <span className="text-green-600 dark:text-green-400 font-bold ml-1">
+                R$ {formatCurrencyInput(indicators.receitas.realizado)}
+              </span>
+            </span>
+          </div>
         </div>
 
-        <div className="w-full sm:w-[200px]">
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Tipo de Lançamento" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os Tipos</SelectItem>
-              <SelectItem value="receivable">Receitas</SelectItem>
-              <SelectItem value="payable">Despesas</SelectItem>
-            </SelectContent>
-          </Select>
+        {/* Despesas */}
+        <div className="border border-border rounded-lg p-5 relative pt-6 bg-card shadow-sm transition-all hover:shadow-md">
+          <span className="absolute -top-3 left-4 bg-card px-2 text-sm font-semibold text-muted-foreground flex items-center gap-1">
+            <ArrowDownRight className="h-4 w-4 text-red-500" />
+            Despesas
+          </span>
+          <div className="flex flex-row items-center justify-between gap-4 mt-1">
+            <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+              Previsto:{' '}
+              <span className="text-foreground font-bold ml-1">
+                R$ {formatCurrencyInput(indicators.despesas.previsto)}
+              </span>
+            </span>
+            <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+              Realizado:{' '}
+              <span className="text-red-600 dark:text-red-400 font-bold ml-1">
+                R$ {formatCurrencyInput(indicators.despesas.realizado)}
+              </span>
+            </span>
+          </div>
         </div>
 
-        <div className="w-full sm:w-[200px]">
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger>
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os Status</SelectItem>
-              <SelectItem value="pendente">Pendente</SelectItem>
-              <SelectItem value="pago">Pago</SelectItem>
-              <SelectItem value="atrasado">Atrasado</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="w-full flex-1">
-          <Input
-            placeholder="Descrição..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        {/* Atrasados */}
+        <div className="border border-border rounded-lg p-5 relative pt-6 bg-card shadow-sm transition-all hover:shadow-md">
+          <span className="absolute -top-3 left-4 bg-card px-2 text-sm font-semibold text-muted-foreground flex items-center gap-1">
+            <AlertCircle className="h-4 w-4 text-destructive" />
+            Atrasados
+          </span>
+          <div className="flex flex-row items-center justify-start gap-4 mt-1">
+            <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+              Total:{' '}
+              <span className="text-destructive font-bold ml-1">
+                R$ {formatCurrencyInput(indicators.atrasados.total)}
+              </span>
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Tabela de Dados - 50vh height */}
-      <div className="h-[50vh] overflow-auto border rounded-md relative bg-background">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {renderSortableHead('Descrição', 'description')}
-              {renderSortableHead('Cliente', 'client_name')}
-              {renderSortableHead('Vencimento', 'due_date')}
-              {renderSortableHead('Valor', 'amount')}
-              {renderSortableHead('Tipo', 'type')}
-              {renderSortableHead('Status', 'status')}
-              <TableHead className="sticky top-0 bg-background z-10 before:absolute before:inset-x-0 before:bottom-0 before:border-b w-[120px]">
-                Ações
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
+      <div className="bg-card border border-border rounded-md shadow-sm">
+        {/* Fixed height equivalent to 5 rows (5 * 52px = 260px) + 1 header (48px) = ~310px */}
+        <div className="overflow-auto relative h-[310px]">
+          <Table>
+            <TableHeader className="sticky top-0 bg-background/95 backdrop-blur z-10 shadow-sm border-b">
               <TableRow>
-                <TableCell colSpan={7} className="text-center h-24">
-                  Carregando dados...
-                </TableCell>
+                <TableHead className="w-[80px]">Tipo</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Descrição</TableHead>
+                <TableHead>Vencimento</TableHead>
+                <TableHead className="text-right">R$ Previsto</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right pr-4">Ações</TableHead>
               </TableRow>
-            ) : data.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center h-24">
-                  Nenhum registro encontrado.
-                </TableCell>
-              </TableRow>
-            ) : (
-              data.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.description}</TableCell>
-                  <TableCell>{item.client_name}</TableCell>
-                  <TableCell>{formatDate(item.due_date)}</TableCell>
-                  <TableCell>
-                    R$ {Number(item.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={cn(
-                        'px-2 py-1 rounded-full text-xs font-medium',
-                        item.type === 'receivable' || item.type === 'receita'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800',
-                      )}
-                    >
-                      {item.type === 'receivable' || item.type === 'receita'
-                        ? 'Receita'
-                        : 'Despesa'}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={cn(
-                        'px-2 py-1 rounded-full text-xs font-medium',
-                        item.status === 'pago'
-                          ? 'bg-green-100 text-green-800'
-                          : item.status === 'atrasado'
-                            ? 'bg-orange-100 text-orange-800'
-                            : 'bg-blue-100 text-blue-800',
-                      )}
-                    >
-                      {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-primary"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-primary"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
+                    Carregando lançamentos...
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : charges.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
+                    Nenhum lançamento encontrado.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                charges.map((charge) => {
+                  const isReceivable =
+                    charge.type?.toLowerCase() === 'receivable' ||
+                    charge.type?.toLowerCase() === 'entrada'
+                  return (
+                    <TableRow key={charge.id} className="h-[52px]">
+                      <TableCell>
+                        <Badge
+                          variant={isReceivable ? 'default' : 'secondary'}
+                          className={cn(
+                            'w-8 h-8 rounded-full flex items-center justify-center p-0',
+                            isReceivable
+                              ? 'bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-900 dark:text-green-300'
+                              : 'bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-900 dark:text-red-300',
+                          )}
+                        >
+                          {isReceivable ? 'R' : 'D'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell
+                        className="font-medium truncate max-w-[200px]"
+                        title={charge.client_name}
+                      >
+                        {charge.client_name || '-'}
+                      </TableCell>
+                      <TableCell className="truncate max-w-[200px]" title={charge.description}>
+                        {charge.description || '-'}
+                      </TableCell>
+                      <TableCell>
+                        {charge.due_date
+                          ? format(new Date(charge.due_date + 'T12:00:00Z'), 'dd/MM/yyyy', {
+                              locale: ptBR,
+                            })
+                          : '-'}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrencyInput(charge.amount)}
+                      </TableCell>
+                      <TableCell>{getStatusBadge(charge.status, charge.due_date)}</TableCell>
+                      <TableCell className="text-right pr-4">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   )
