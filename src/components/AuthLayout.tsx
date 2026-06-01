@@ -1,11 +1,23 @@
-import { Outlet } from 'react-router-dom'
+import { Navigate, Outlet } from 'react-router-dom'
+import { useAuth } from '@/hooks/use-auth'
+import { Loader2 } from 'lucide-react'
 
-export default function AuthLayout() {
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[#1B7D3A] to-[#0052CC]">
-      <div className="w-full max-w-[400px] animate-fade-in-up">
-        <Outlet />
+const AuthLayout = () => {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
-    </div>
-  )
+    )
+  }
+
+  if (user) {
+    return <Navigate to="/" replace />
+  }
+
+  return <Outlet />
 }
+
+export default AuthLayout
