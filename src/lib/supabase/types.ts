@@ -4566,6 +4566,7 @@ export const Constants = {
 //   PRIMARY KEY sla_types_pkey: PRIMARY KEY (id)
 // Table: stripe_config
 //   PRIMARY KEY stripe_config_pkey: PRIMARY KEY (id)
+//   UNIQUE stripe_config_tenant_id_key: UNIQUE (tenant_id)
 // Table: stripe_payments
 //   FOREIGN KEY stripe_payments_atleta_id_fkey: FOREIGN KEY (atleta_id) REFERENCES athletes(id) ON DELETE CASCADE
 //   FOREIGN KEY stripe_payments_charge_id_fkey: FOREIGN KEY (charge_id) REFERENCES financial_charges(id) ON DELETE CASCADE
@@ -5888,6 +5889,8 @@ export const Constants = {
 //   CREATE UNIQUE INDEX pedidos_numero_pedido_key ON public.pedidos USING btree (numero_pedido)
 // Table: rankings
 //   CREATE UNIQUE INDEX rankings_athlete_id_key ON public.rankings USING btree (athlete_id)
+// Table: stripe_config
+//   CREATE UNIQUE INDEX stripe_config_tenant_id_key ON public.stripe_config USING btree (tenant_id)
 // Table: user_roles
 //   CREATE UNIQUE INDEX user_roles_user_id_role_key ON public.user_roles USING btree (user_id, role)
 // Table: usuarios

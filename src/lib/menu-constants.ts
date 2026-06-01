@@ -47,7 +47,7 @@ export const DEFAULT_MENU_CONFIG = [
     items: [
       { id: 'fin-plano-contas', label: 'Plano de Contas', path: '/admin/financial/accounts' },
       { id: 'fin-categorias', label: 'Categorias', path: '/admin/financial/categories' },
-      { id: 'fin-pagamentos', label: 'Pagamentos', path: '/admin/financial/payments' },
+      { id: 'fin-pagamentos', label: 'Fluxo de Caixa', path: '/admin/financial/payments' },
       { id: 'fin-parceiros', label: 'Parceiros', path: '/admin/financial/partners' },
       { id: 'fin-stripe', label: 'Configurações Stripe', path: '/admin/financial/settings' },
     ],

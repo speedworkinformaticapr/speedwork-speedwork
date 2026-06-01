@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Table,
   TableBody,
@@ -10,175 +11,242 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useDataTable } from '@/hooks/use-data-table'
-import { DataTableToolbar } from '@/components/ui/data-table/data-table-toolbar'
-import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header'
-import { Button } from '@/components/ui/button'
-import { Edit, Trash2 } from 'lucide-react'
-
-export const MOCK_CATALOG_SERVICES = [
-  { id: 's1', title: 'Consultoria Estratégica', sale_value: 1500 },
-  { id: 's2', title: 'Desenvolvimento Web', sale_value: 4000 },
-  { id: 's3', title: 'Suporte Técnico Premium', sale_value: 800 },
-]
-
-export const MOCK_CATALOG_PRODUCTS = [
-  { id: 'p1', name: 'Licença de Software Anual', price: 899 },
-  { id: 'p2', name: 'Servidor Dedicado', price: 2500 },
-  { id: 'p3', name: 'Kit Equipamentos Home Office', price: 3200 },
-]
+import { ShareDocumentDialog } from '@/components/ShareDocumentDialog'
+import { AsaasBillingDialog } from '@/components/AsaasBillingDialog'
+import { Link } from 'react-router-dom'
+import { Edit, Share2, Trash2, CreditCard, PlusCircle, Search } from 'lucide-react'
+import { toast } from '@/hooks/use-toast'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 export default function AdminQuotes() {
-  const [data, setData] = useState<any[]>([])
-  const {
-    search,
-    setSearch,
-    debouncedSearch,
-    status,
-    setStatus,
-    dateRange,
-    setDateRange,
-    sortConfig,
-    handleSort,
-  } = useDataTable()
+  const [quotes, setQuotes] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
 
-  const fetchData = async () => {
-    let q = supabase.from('orcamentos').select('*, profiles(name)')
+  const [shareOpen, setShareOpen] = useState(false)
+  const [shareDocId, setShareDocId] = useState('')
+  const [autoPrint, setAutoPrint] = useState(false)
 
-    if (debouncedSearch) {
-      q = q.or(`numero_orcamento.ilike.%${debouncedSearch}%,observacoes.ilike.%${debouncedSearch}%`)
-    }
-    if (status && status !== 'all') {
-      q = q.eq('status', status)
-    }
-    if (dateRange?.from) {
-      q = q.gte('data_emissao', dateRange.from.toISOString())
-    }
-    if (dateRange?.to) {
-      q = q.lte('data_emissao', dateRange.to.toISOString())
-    }
-    if (sortConfig) {
-      q = q.order(sortConfig.column, { ascending: sortConfig.direction === 'asc' })
-    } else {
-      q = q.order('created_at', { ascending: false })
-    }
-
-    const { data: result } = await q
-    if (result) setData(result)
-  }
+  const [billingOpen, setBillingOpen] = useState(false)
+  const [billingQuoteId, setBillingQuoteId] = useState('')
 
   useEffect(() => {
-    fetchData()
-  }, [debouncedSearch, status, dateRange, sortConfig])
+    loadQuotes()
+  }, [search])
+
+  const loadQuotes = async () => {
+    setLoading(true)
+    let q = supabase
+      .from('orcamentos')
+      .select('*, clientes(nome)')
+      .order('created_at', { ascending: false })
+    if (search) {
+      q = q.ilike('numero_orcamento', `%${search}%`)
+    }
+    const { data } = await q
+    if (data) setQuotes(data)
+    setLoading(false)
+  }
 
   const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir?')) {
-      await supabase.from('orcamentos').delete().eq('id', id)
-      fetchData()
+    if (!confirm('Deseja excluir este orçamento?')) return
+    const { error } = await supabase.from('orcamentos').delete().eq('id', id)
+    if (error) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' })
+    } else {
+      toast({ title: 'Sucesso', description: 'Orçamento excluído.' })
+      loadQuotes()
     }
   }
 
-  const statusOptions = [
-    { label: 'Rascunho', value: 'rascunho' },
-    { label: 'Pendente', value: 'pendente' },
-    { label: 'Aprovado', value: 'aprovado' },
-    { label: 'Rejeitado', value: 'rejeitado' },
-  ]
+  const handleOpenBilling = async (quote: any) => {
+    const { data: charges } = await supabase
+      .from('financial_charges')
+      .select('id, asaas_id')
+      .eq('orcamento_id', quote.id)
+    const hasAsaas = charges?.some((c) => c.asaas_id) || quote.asaas_id
+    if (hasAsaas) {
+      toast({
+        title: 'Aviso',
+        description: 'Já existe cobrança gerada no Asaas para este orçamento.',
+        variant: 'destructive',
+      })
+      return
+    }
+    setBillingQuoteId(quote.id)
+    setBillingOpen(true)
+  }
+
+  const openShare = (id: string, print = false) => {
+    setShareDocId(id)
+    setAutoPrint(print)
+    setShareOpen(true)
+  }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Orçamentos</CardTitle>
-          <Button asChild>
-            <Link to="new">Novo Orçamento</Link>
+    <div className="p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-3xl font-bold text-slate-800">Orçamentos</h1>
+        <Link to="/admin/commercial/quotes/new">
+          <Button className="bg-primary hover:bg-primary/90">
+            <PlusCircle className="w-4 h-4 mr-2" /> Novo Orçamento
           </Button>
+        </Link>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Search className="w-5 h-5 text-slate-400" />
+            <Input
+              placeholder="Buscar por número..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="max-w-xs"
+            />
+          </div>
         </CardHeader>
         <CardContent>
-          <DataTableToolbar
-            search={search}
-            setSearch={setSearch}
-            status={status}
-            setStatus={setStatus}
-            statusOptions={statusOptions}
-            dateRange={dateRange}
-            setDateRange={setDateRange}
-            searchPlaceholder="Buscar por número..."
-          />
-          <div className="rounded-md border overflow-hidden relative">
-            <div className="overflow-auto max-h-[600px]">
-              <Table>
-                <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
+          <div className="rounded-md border overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Número</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Emissão</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
                   <TableRow>
-                    <TableHead>
-                      <DataTableColumnHeader
-                        title="Número"
-                        column="numero_orcamento"
-                        sortConfig={sortConfig}
-                        onSort={handleSort}
-                      />
-                    </TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>
-                      <DataTableColumnHeader
-                        title="Data"
-                        column="data_emissao"
-                        sortConfig={sortConfig}
-                        onSort={handleSort}
-                      />
-                    </TableHead>
-                    <TableHead>
-                      <DataTableColumnHeader
-                        title="Total"
-                        column="total"
-                        sortConfig={sortConfig}
-                        onSort={handleSort}
-                      />
-                    </TableHead>
-                    <TableHead>
-                      <DataTableColumnHeader
-                        title="Status"
-                        column="status"
-                        sortConfig={sortConfig}
-                        onSort={handleSort}
-                      />
-                    </TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                    <TableCell colSpan={6} className="text-center">
+                      Carregando...
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.numero_orcamento}</TableCell>
-                      <TableCell>{item.profiles?.name || 'N/A'}</TableCell>
+                ) : quotes.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center">
+                      Nenhum orçamento encontrado.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  quotes.map((q) => (
+                    <TableRow key={q.id}>
+                      <TableCell className="font-medium">{q.numero_orcamento}</TableCell>
+                      <TableCell>{q.clientes?.nome}</TableCell>
+                      <TableCell>{new Date(q.data_emissao).toLocaleDateString('pt-BR')}</TableCell>
                       <TableCell>
-                        {new Date(item.data_emissao).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                      <TableCell>
-                        {new Intl.NumberFormat('pt-BR', {
+                        {Number(q.total || 0).toLocaleString('pt-BR', {
                           style: 'currency',
                           currency: 'BRL',
-                        }).format(item.total || 0)}
+                        })}
                       </TableCell>
-                      <TableCell>{item.status}</TableCell>
+                      <TableCell>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${q.status === 'aprovado' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800'}`}
+                        >
+                          {q.status.toUpperCase()}
+                        </span>
+                      </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" asChild>
-                          <Link to={`${item.id}/edit`}>
-                            <Edit className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <div className="flex justify-end gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleOpenBilling(q)}
+                              >
+                                <CreditCard className="w-4 h-4 text-blue-600" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Gerar Cobrança no Asaas</TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Link to={`/admin/commercial/quotes/${q.id}/edit`}>
+                                <Button variant="ghost" size="icon">
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                              </Link>
+                            </TooltipTrigger>
+                            <TooltipContent>Editar Orçamento</TooltipContent>
+                          </Tooltip>
+
+                          <DropdownMenu>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <Share2 className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                              </TooltipTrigger>
+                              <TooltipContent>Compartilhar/Imprimir</TooltipContent>
+                            </Tooltip>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openShare(q.id)}>
+                                Solicita Mensagem
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openShare(q.id)}>
+                                Enviar por E-mail
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openShare(q.id)}>
+                                Enviar por Whatsapp
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openShare(q.id, true)}>
+                                Salva em PDF
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(q.id)}
+                              >
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Excluir</TooltipContent>
+                          </Tooltip>
+                        </div>
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
+
+      <ShareDocumentDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        documentId={shareDocId}
+        type="quote"
+        autoPrint={autoPrint}
+      />
+
+      <AsaasBillingDialog
+        open={billingOpen}
+        onOpenChange={setBillingOpen}
+        orcamentoId={billingQuoteId}
+        onSuccess={loadQuotes}
+      />
     </div>
   )
 }
