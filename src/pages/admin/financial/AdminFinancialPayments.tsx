@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useTranslation } from '@/hooks/use-translation'
+import { cn } from '@/lib/utils'
 import {
   Table,
   TableBody,
@@ -11,741 +10,500 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { ShareDocumentDialog } from '@/components/ShareDocumentDialog'
-import {
-  Edit,
-  Trash2,
-  Share2,
-  FileText,
-  CheckCircle,
-  PlusCircle,
-  DollarSign,
-  TrendingDown,
-  TrendingUp,
   Search,
+  FileText,
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  ArrowRight,
+  Plus,
 } from 'lucide-react'
-import { toast } from '@/hooks/use-toast'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Link } from 'react-router-dom'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-
-function MasterRecordForm({ open, onOpenChange, record, onSuccess }: any) {
-  const [clientName, setClientName] = useState(record?.client_name || '')
-  const [description, setDescription] = useState(record?.description || '')
-  const [amount, setAmount] = useState(record?.total_amount || 0)
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    if (open) {
-      setClientName(record?.client_name || '')
-      setDescription(record?.description || '')
-      setAmount(record?.total_amount || 0)
-    }
-  }, [open, record])
-
-  const handleSave = async () => {
-    setLoading(true)
-    try {
-      if (record?.id) {
-        await supabase
-          .from('financial_master_records')
-          .update({ client_name: clientName, description, total_amount: amount })
-          .eq('id', record.id)
-      } else {
-        const { data, error } = await supabase
-          .from('financial_master_records')
-          .insert({
-            client_name: clientName,
-            description,
-            total_amount: amount,
-            status: 'pendente',
-          })
-          .select()
-          .single()
-        if (error) throw error
-
-        await supabase.from('financial_charges').insert({
-          master_record_id: data.id,
-          client_name: clientName,
-          amount: amount,
-          due_date: new Date().toISOString().split('T')[0],
-          description: 'Parcela Única',
-        })
-      }
-      toast({ title: 'Sucesso', description: 'Registro salvo.' })
-      onSuccess()
-      onOpenChange(false)
-    } catch (e: any) {
-      toast({ title: 'Erro', description: e.message, variant: 'destructive' })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{record ? 'Editar Lançamento' : 'Novo Lançamento Financeiro'}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label>Descrição</Label>
-            <Input value={description} onChange={(e) => setDescription(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Cliente / Fornecedor</Label>
-            <Input value={clientName} onChange={(e) => setClientName(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Valor Total</Label>
-            <Input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={loading}>
-            Salvar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function ChargeRecordForm({ open, onOpenChange, charge, onSuccess }: any) {
-  const [amount, setAmount] = useState(charge?.amount || 0)
-  const [dueDate, setDueDate] = useState(charge?.due_date || '')
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    if (open) {
-      setAmount(charge?.amount || 0)
-      setDueDate(charge?.due_date || '')
-    }
-  }, [open, charge])
-
-  const handleSave = async () => {
-    setLoading(true)
-    try {
-      await supabase
-        .from('financial_charges')
-        .update({ amount, due_date: dueDate })
-        .eq('id', charge.id)
-      toast({ title: 'Sucesso', description: 'Parcela atualizada.' })
-      onSuccess()
-      onOpenChange(false)
-    } catch (e: any) {
-      toast({ title: 'Erro', description: e.message, variant: 'destructive' })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Editar Parcela</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label>Valor</Label>
-            <Input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Vencimento</Label>
-            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={loading}>
-            Salvar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
 
 export default function AdminFinancialPayments() {
-  const [masters, setMasters] = useState<any[]>([])
-  const [selectedMaster, setSelectedMaster] = useState<any>(null)
-  const [charges, setCharges] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const { t } = useTranslation()
 
+  const [masterRecords, setMasterRecords] = useState<any[]>([])
+  const [masterTotal, setMasterTotal] = useState(0)
+  const [masterPage, setMasterPage] = useState(0)
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [loadingMaster, setLoadingMaster] = useState(false)
 
-  const [masterFormOpen, setMasterFormOpen] = useState(false)
-  const [editingMaster, setEditingMaster] = useState<any>(null)
+  const [selectedMasterId, setSelectedMasterId] = useState<string | null>(null)
 
-  const [chargeFormOpen, setChargeFormOpen] = useState(false)
-  const [editingCharge, setEditingCharge] = useState<any>(null)
+  const [detailRecords, setDetailRecords] = useState<any[]>([])
+  const [detailTotal, setDetailTotal] = useState(0)
+  const [detailPage, setDetailPage] = useState(0)
+  const [loadingDetail, setLoadingDetail] = useState(false)
 
-  const [shareOpen, setShareOpen] = useState(false)
-  const [shareDocId, setShareDocId] = useState('')
-  const [autoPrint, setAutoPrint] = useState(false)
+  const [indicators, setIndicators] = useState({
+    receitas: 0,
+    despesas: 0,
+    pendente: 0,
+    atrasado: 0,
+  })
+
+  const ITEMS_PER_PAGE = 10
 
   useEffect(() => {
-    loadMasters()
-  }, [search, statusFilter])
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search)
+      setMasterPage(0)
+    }, 500)
+    return () => clearTimeout(handler)
+  }, [search])
 
-  const loadMasters = async () => {
-    setLoading(true)
-    let q = supabase
-      .from('financial_master_records')
-      .select('*')
-      .order('created_at', { ascending: false })
-    if (statusFilter !== 'all') q = q.eq('status', statusFilter)
-    if (search) q = q.ilike('client_name', `%${search}%`)
+  useEffect(() => {
+    fetchMasterRecords()
+  }, [debouncedSearch, masterPage])
 
-    const { data } = await q
-    if (data) {
-      setMasters(data)
-      if (selectedMaster) {
-        const exists = data.find((d) => d.id === selectedMaster.id)
-        if (!exists) {
-          setSelectedMaster(null)
-          setCharges([])
-        } else {
-          setSelectedMaster(exists)
-        }
+  useEffect(() => {
+    if (selectedMasterId) {
+      setDetailPage(0)
+      fetchDetailRecords(selectedMasterId, 0)
+    } else {
+      setDetailRecords([])
+      setDetailTotal(0)
+    }
+  }, [selectedMasterId])
+
+  useEffect(() => {
+    if (selectedMasterId) {
+      fetchDetailRecords(selectedMasterId, detailPage)
+    }
+  }, [detailPage])
+
+  useEffect(() => {
+    fetchIndicators()
+  }, [])
+
+  const fetchMasterRecords = async () => {
+    setLoadingMaster(true)
+    try {
+      let query = supabase.from('financial_master_records').select('*', { count: 'exact' })
+
+      if (debouncedSearch) {
+        query = query.or(
+          `description.ilike.%${debouncedSearch}%,client_name.ilike.%${debouncedSearch}%`,
+        )
       }
-    }
-    setLoading(false)
-  }
 
-  const loadCharges = async (masterId: string) => {
-    const { data } = await supabase
-      .from('financial_charges')
-      .select('*')
-      .eq('master_record_id', masterId)
-      .order('due_date', { ascending: true })
-    if (data) setCharges(data)
-  }
+      query = query
+        .order('created_at', { ascending: false })
+        .range(masterPage * ITEMS_PER_PAGE, (masterPage + 1) * ITEMS_PER_PAGE - 1)
 
-  const handleSelectMaster = (m: any) => {
-    setSelectedMaster(m)
-    loadCharges(m.id)
-  }
+      const { data, count, error } = await query
+      if (error) throw error
 
-  const handleBaixaMaster = async (masterId: string) => {
-    if (!confirm('Deseja dar baixa em TODAS as parcelas pendentes deste registro?')) return
-    const now = new Date().toISOString().split('T')[0]
-    const { error } = await supabase
-      .from('financial_charges')
-      .update({ status: 'pago', payment_date: now })
-      .eq('master_record_id', masterId)
-      .in('status', ['pendente', 'atrasado'])
-    if (error) toast({ title: 'Erro', description: error.message, variant: 'destructive' })
-    else {
-      toast({ title: 'Sucesso', description: 'Registro baixado.' })
-      loadMasters()
-      if (selectedMaster?.id === masterId) loadCharges(masterId)
+      setMasterRecords(data || [])
+      setMasterTotal(count || 0)
+    } catch (error) {
+      console.error('Error fetching master records:', error)
+    } finally {
+      setLoadingMaster(false)
     }
   }
 
-  const handleBaixaCharge = async (chargeId: string) => {
-    const now = new Date().toISOString().split('T')[0]
-    const { error } = await supabase
-      .from('financial_charges')
-      .update({ status: 'pago', payment_date: now })
-      .eq('id', chargeId)
-    if (error) toast({ title: 'Erro', description: error.message, variant: 'destructive' })
-    else {
-      toast({ title: 'Sucesso', description: 'Parcela baixada.' })
-      if (selectedMaster) {
-        loadCharges(selectedMaster.id)
-        loadMasters()
-      }
+  const fetchDetailRecords = async (masterId: string, page: number) => {
+    setLoadingDetail(true)
+    try {
+      const { data, count, error } = await supabase
+        .from('financial_charges')
+        .select('*', { count: 'exact' })
+        .eq('master_record_id', masterId)
+        .order('due_date', { ascending: true })
+        .range(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE - 1)
+
+      if (error) throw error
+
+      setDetailRecords(data || [])
+      setDetailTotal(count || 0)
+    } catch (error) {
+      console.error('Error fetching detail records:', error)
+    } finally {
+      setLoadingDetail(false)
     }
   }
 
-  const handleDeleteMaster = async (id: string) => {
-    if (!confirm('Deseja excluir este registro e TODAS as suas parcelas?')) return
-    await supabase.from('financial_master_records').delete().eq('id', id)
-    loadMasters()
-    if (selectedMaster?.id === id) {
-      setSelectedMaster(null)
-      setCharges([])
-    }
-  }
+  const fetchIndicators = async () => {
+    try {
+      const today = new Date()
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString()
 
-  const handleDeleteCharge = async (id: string) => {
-    if (!confirm('Deseja excluir esta parcela?')) return
-    await supabase.from('financial_charges').delete().eq('id', id)
-    if (selectedMaster) {
-      loadCharges(selectedMaster.id)
-      loadMasters()
-    }
-  }
+      const { data, error } = await supabase
+        .from('financial_master_records')
+        .select('total_amount, paid_amount, status, type')
+        .gte('created_at', startOfMonth)
 
-  const expected = masters
-    .filter((m) => m.status === 'pendente')
-    .reduce((acc, m) => acc + (m.total_amount || 0), 0)
-  const received = masters.reduce((acc, m) => acc + (m.paid_amount || 0), 0)
-  const overdue = masters
-    .filter((m) => m.status === 'atrasado')
-    .reduce((acc, m) => acc + ((m.total_amount || 0) - (m.paid_amount || 0)), 0)
+      if (error) throw error
 
-  const openShare = (referenceId: string, print = false) => {
-    if (!referenceId) {
-      toast({
-        title: 'Aviso',
-        description: 'Este lançamento não está vinculado a um orçamento para compartilhamento.',
+      const ind = { receitas: 0, despesas: 0, pendente: 0, atrasado: 0 }
+
+      data?.forEach((record) => {
+        const val = Number(record.total_amount || 0)
+        if (record.type === 'receivable') ind.receitas += val
+        if (record.type === 'payable') ind.despesas += val
+        if (record.status === 'pendente') ind.pendente += val
+        if (record.status === 'atrasado') ind.atrasado += val
       })
-      return
+
+      setIndicators(ind)
+    } catch (error) {
+      console.error('Error fetching indicators:', error)
     }
-    setShareDocId(referenceId)
-    setAutoPrint(print)
-    setShareOpen(true)
+  }
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0)
+  }
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '-'
+    const date = new Date(dateStr)
+    return new Intl.DateTimeFormat('pt-BR').format(
+      new Date(date.getTime() + date.getTimezoneOffset() * 60000),
+    )
+  }
+
+  const getStatusBadge = (status: string) => {
+    const s = status?.toLowerCase() || ''
+    if (s === 'pago' || s === 'recebido')
+      return (
+        <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/30">
+          {t('status.paid', 'Pago')}
+        </Badge>
+      )
+    if (s === 'pendente' || s === 'aberto')
+      return (
+        <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/30 hover:bg-amber-500/30">
+          {t('status.pending', 'Pendente')}
+        </Badge>
+      )
+    if (s === 'atrasado')
+      return (
+        <Badge className="bg-rose-500/20 text-rose-500 border-rose-500/30 hover:bg-rose-500/30">
+          {t('status.overdue', 'Atrasado')}
+        </Badge>
+      )
+    if (s === 'parcial')
+      return (
+        <Badge className="bg-blue-500/20 text-blue-500 border-blue-500/30 hover:bg-blue-500/30">
+          {t('status.partial', 'Parcial')}
+        </Badge>
+      )
+    return (
+      <Badge className="bg-slate-500/20 text-slate-400 border-slate-500/30 hover:bg-slate-500/30">
+        {status}
+      </Badge>
+    )
   }
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in">
+    <div className="p-6 space-y-6 max-w-full overflow-hidden text-foreground">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold text-slate-800">Fluxo de Caixa</h1>
-        <Button
-          className="bg-primary hover:bg-primary/90"
-          onClick={() => {
-            setEditingMaster(null)
-            setMasterFormOpen(true)
-          }}
-        >
-          <PlusCircle className="w-4 h-4 mr-2" /> Novo Lançamento
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-blue-50/50 border-blue-100">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-medium text-blue-800">Total Esperado</CardTitle>
-            <TrendingUp className="w-4 h-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-900">
-              {expected.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-            </div>
-            <p className="text-xs text-blue-600/80 mt-1">Dos registros filtrados</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-green-50/50 border-green-100">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-medium text-green-800">Total Recebido</CardTitle>
-            <DollarSign className="w-4 h-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-900">
-              {received.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-            </div>
-            <p className="text-xs text-green-600/80 mt-1">Dos registros filtrados</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-red-50/50 border-red-100">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-medium text-red-800">Total Atrasado</CardTitle>
-            <TrendingDown className="w-4 h-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-900">
-              {overdue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-            </div>
-            <p className="text-xs text-red-600/80 mt-1">Dos registros filtrados</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="flex items-center gap-4 bg-white p-4 rounded-lg border shadow-sm">
-        <div className="flex-1 max-w-sm relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input
-            placeholder="Buscar por cliente/fornecedor..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {t('financial.cashFlow', 'Fluxo de Caixa')}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {t('financial.cashFlowDesc', 'Gerencie registros mestres e suas parcelas.')}
+          </p>
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os Status</SelectItem>
-            <SelectItem value="pendente">Pendente</SelectItem>
-            <SelectItem value="pago">Pago</SelectItem>
-            <SelectItem value="atrasado">Atrasado</SelectItem>
-            <SelectItem value="parcial">Parcial</SelectItem>
-          </SelectContent>
-        </Select>
+        <Link to="/admin/financial/payments/new">
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Plus className="w-4 h-4 mr-2" />
+            {t('financial.newRecord', 'Novo Registro')}
+          </Button>
+        </Link>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Lançamentos Mestres</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border overflow-x-auto max-h-[400px] overflow-y-auto">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-card/40 backdrop-blur-md border-border/50 p-4 flex flex-col justify-center gap-1 shadow-sm">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <TrendingUp className="w-4 h-4 text-emerald-500" />
+            <span className="text-xs uppercase tracking-wider font-semibold">
+              {t('financial.revenue', 'Receitas')}
+            </span>
+          </div>
+          <span className="text-lg font-bold text-emerald-500">
+            {formatCurrency(indicators.receitas)}
+          </span>
+        </Card>
+
+        <Card className="bg-card/40 backdrop-blur-md border-border/50 p-4 flex flex-col justify-center gap-1 shadow-sm">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <TrendingDown className="w-4 h-4 text-rose-500" />
+            <span className="text-xs uppercase tracking-wider font-semibold">
+              {t('financial.expenses', 'Despesas')}
+            </span>
+          </div>
+          <span className="text-lg font-bold text-rose-500">
+            {formatCurrency(indicators.despesas)}
+          </span>
+        </Card>
+
+        <Card className="bg-card/40 backdrop-blur-md border-border/50 p-4 flex flex-col justify-center gap-1 shadow-sm">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <Clock className="w-4 h-4 text-amber-500" />
+            <span className="text-xs uppercase tracking-wider font-semibold">
+              {t('financial.pending', 'Pendente')}
+            </span>
+          </div>
+          <span className="text-lg font-bold text-amber-500">
+            {formatCurrency(indicators.pendente)}
+          </span>
+        </Card>
+
+        <Card className="bg-card/40 backdrop-blur-md border-border/50 p-4 flex flex-col justify-center gap-1 shadow-sm">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <AlertCircle className="w-4 h-4 text-rose-500" />
+            <span className="text-xs uppercase tracking-wider font-semibold">
+              {t('financial.overdue', 'Atrasado')}
+            </span>
+          </div>
+          <span className="text-lg font-bold text-rose-500">
+            {formatCurrency(indicators.atrasado)}
+          </span>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 h-[calc(100vh-280px)] min-h-[500px]">
+        {/* Master Grid */}
+        <Card className="xl:col-span-7 flex flex-col bg-card/40 backdrop-blur-md border-border/50 shadow-sm overflow-hidden">
+          <CardHeader className="p-4 border-b border-border/50 bg-muted/20">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                {t('financial.masterRecords', 'Registros Mestres')}
+              </CardTitle>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t('common.search', 'Buscar...')}
+                  className="pl-8 h-9 bg-background/50 border-border/50"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+            </div>
+          </CardHeader>
+          <div className="flex-1 overflow-auto relative">
             <Table>
-              <TableHeader className="sticky top-0 bg-white z-10">
-                <TableRow>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Cliente/Fornecedor</TableHead>
-                  <TableHead>Valor Total</TableHead>
-                  <TableHead>Criado Em</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+              <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur shadow-sm border-b border-border/50">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="font-semibold text-xs tracking-wider uppercase text-muted-foreground">
+                    {t('common.description', 'Descrição')}
+                  </TableHead>
+                  <TableHead className="font-semibold text-xs tracking-wider uppercase text-muted-foreground">
+                    {t('common.client', 'Cliente')}
+                  </TableHead>
+                  <TableHead className="font-semibold text-xs tracking-wider uppercase text-muted-foreground text-right">
+                    {t('common.amount', 'Valor')}
+                  </TableHead>
+                  <TableHead className="font-semibold text-xs tracking-wider uppercase text-muted-foreground text-center">
+                    {t('common.status', 'Status')}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {loading ? (
+                {loadingMaster ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center">
-                      Carregando...
+                    <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
+                      {t('common.loading', 'Carregando...')}
                     </TableCell>
                   </TableRow>
-                ) : masters.length === 0 ? (
+                ) : masterRecords.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center">
-                      Nenhum registro encontrado.
+                    <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
+                      {t('common.noData', 'Nenhum registro encontrado')}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  masters.map((m) => (
+                  masterRecords.map((row) => (
                     <TableRow
-                      key={m.id}
-                      className={`cursor-pointer hover:bg-slate-50 transition-colors ${selectedMaster?.id === m.id ? 'bg-blue-50/50' : ''}`}
-                      onClick={() => handleSelectMaster(m)}
+                      key={row.id}
+                      onClick={() => setSelectedMasterId(row.id)}
+                      className={cn(
+                        'cursor-pointer transition-colors border-border/30',
+                        selectedMasterId === row.id
+                          ? 'bg-primary/10 hover:bg-primary/15'
+                          : 'hover:bg-muted/40',
+                      )}
                     >
-                      <TableCell className="font-medium">{m.description}</TableCell>
-                      <TableCell>{m.client_name}</TableCell>
-                      <TableCell>
-                        {Number(m.total_amount || 0).toLocaleString('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL',
-                        })}
-                      </TableCell>
-                      <TableCell>{new Date(m.created_at).toLocaleDateString('pt-BR')}</TableCell>
-                      <TableCell>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            m.status === 'pago'
-                              ? 'bg-green-100 text-green-800'
-                              : m.status === 'atrasado'
-                                ? 'bg-red-100 text-red-800'
-                                : m.status === 'parcial'
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : 'bg-slate-100 text-slate-800'
-                          }`}
-                        >
-                          {m.status.toUpperCase()}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex justify-end gap-1">
-                          {m.reference_type === 'orcamento' && m.reference_id && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Link to={`/admin/commercial/quotes/${m.reference_id}`}>
-                                  <Button variant="ghost" size="icon">
-                                    <FileText className="w-4 h-4 text-slate-600" />
-                                  </Button>
-                                </Link>
-                              </TooltipTrigger>
-                              <TooltipContent>Ver Orçamento</TooltipContent>
-                            </Tooltip>
-                          )}
-
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleBaixaMaster(m.id)}
-                              >
-                                <CheckCircle className="w-4 h-4 text-green-600" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Baixa Automática</TooltipContent>
-                          </Tooltip>
-
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setEditingMaster(m)
-                                  setMasterFormOpen(true)
-                                }}
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Editar Lançamento</TooltipContent>
-                          </Tooltip>
-
-                          <DropdownMenu>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <Share2 className="w-4 h-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                              </TooltipTrigger>
-                              <TooltipContent>Compartilhar/Imprimir</TooltipContent>
-                            </Tooltip>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openShare(m.reference_id)}>
-                                Solicita Mensagem
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => openShare(m.reference_id)}>
-                                Enviar por E-mail
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => openShare(m.reference_id)}>
-                                Enviar por Whatsapp
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => openShare(m.reference_id, true)}>
-                                Salva em PDF
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteMaster(m.id)}
-                              >
-                                <Trash2 className="w-4 h-4 text-red-500" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Excluir</TooltipContent>
-                          </Tooltip>
+                      <TableCell className="font-medium">
+                        <div className="truncate max-w-[200px]" title={row.description}>
+                          {row.description}
                         </div>
                       </TableCell>
+                      <TableCell>
+                        <div className="truncate max-w-[150px]" title={row.client_name}>
+                          {row.client_name}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(row.total_amount)}
+                      </TableCell>
+                      <TableCell className="text-center">{getStatusBadge(row.status)}</TableCell>
                     </TableRow>
                   ))
                 )}
               </TableBody>
             </Table>
           </div>
-        </CardContent>
-      </Card>
+          <div className="flex items-center justify-between p-3 border-t border-border/50 bg-muted/10">
+            <div className="text-xs text-muted-foreground">
+              {t('common.showing', 'Mostrando')}{' '}
+              {masterRecords.length > 0 ? masterPage * ITEMS_PER_PAGE + 1 : 0} {t('common.to', 'a')}{' '}
+              {Math.min((masterPage + 1) * ITEMS_PER_PAGE, masterTotal)} {t('common.of', 'de')}{' '}
+              {masterTotal}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 bg-background/50"
+                onClick={() => setMasterPage((p) => Math.max(0, p - 1))}
+                disabled={masterPage === 0 || loadingMaster}
+              >
+                {t('common.previous', 'Anterior')}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 bg-background/50"
+                onClick={() =>
+                  setMasterPage((p) => Math.min(Math.ceil(masterTotal / ITEMS_PER_PAGE) - 1, p + 1))
+                }
+                disabled={
+                  masterPage >= Math.ceil(masterTotal / ITEMS_PER_PAGE) - 1 || loadingMaster
+                }
+              >
+                {t('common.next', 'Próxima')}
+              </Button>
+            </div>
+          </div>
+        </Card>
 
-      {selectedMaster && (
-        <Card className="border-blue-100 shadow-md animate-fade-in-up">
-          <CardHeader className="bg-blue-50/50 rounded-t-lg border-b border-blue-100">
-            <CardTitle className="text-lg text-blue-900">
-              Parcelas: {selectedMaster.description}
+        {/* Detail Grid */}
+        <Card className="xl:col-span-5 flex flex-col bg-card/40 backdrop-blur-md border-border/50 shadow-sm overflow-hidden">
+          <CardHeader className="p-4 border-b border-border/50 bg-muted/20">
+            <CardTitle className="text-base flex items-center gap-2">
+              <DollarSign className="w-4 h-4" />
+              {t('financial.installments', 'Parcelas & Cobranças')}
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
+          <div className="flex-1 overflow-auto relative bg-background/30">
+            {!selectedMasterId ? (
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground opacity-70 p-6 text-center">
+                <ArrowRight className="w-12 h-12 mb-4 text-muted-foreground/30" />
+                <p>
+                  {t(
+                    'financial.selectMasterToViewDetails',
+                    'Selecione um registro mestre na tabela ao lado para visualizar suas parcelas.',
+                  )}
+                </p>
+              </div>
+            ) : (
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="pl-6">Parcela</TableHead>
-                    <TableHead>Vencimento</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Valor Pago</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right pr-6">Ações</TableHead>
+                <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur shadow-sm border-b border-border/50">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="font-semibold text-xs tracking-wider uppercase text-muted-foreground">
+                      {t('common.dueDate', 'Vencimento')}
+                    </TableHead>
+                    <TableHead className="font-semibold text-xs tracking-wider uppercase text-muted-foreground text-right">
+                      {t('common.amount', 'Valor')}
+                    </TableHead>
+                    <TableHead className="font-semibold text-xs tracking-wider uppercase text-muted-foreground text-center">
+                      {t('common.status', 'Status')}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {charges.length === 0 ? (
+                  {loadingDetail ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-6 text-slate-500">
-                        Nenhuma parcela encontrada.
+                      <TableCell colSpan={3} className="h-32 text-center text-muted-foreground">
+                        {t('common.loading', 'Carregando...')}
+                      </TableCell>
+                    </TableRow>
+                  ) : detailRecords.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="h-32 text-center text-muted-foreground">
+                        {t('common.noData', 'Nenhum detalhe encontrado')}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    charges.map((c, idx) => (
-                      <TableRow key={c.id}>
-                        <TableCell className="pl-6 font-medium text-slate-700">
-                          {c.parcela_numero || idx + 1}
-                          {c.parcela_total ? `/${c.parcela_total}` : ''}
+                    detailRecords.map((row) => (
+                      <TableRow
+                        key={row.id}
+                        className="hover:bg-muted/30 border-border/30 transition-colors"
+                      >
+                        <TableCell className="font-medium">
+                          {formatDate(row.due_date)}
+                          {row.description && (
+                            <div
+                              className="text-xs text-muted-foreground mt-0.5 truncate max-w-[120px]"
+                              title={row.description}
+                            >
+                              {row.description}
+                            </div>
+                          )}
                         </TableCell>
-                        <TableCell>{new Date(c.due_date).toLocaleDateString('pt-BR')}</TableCell>
-                        <TableCell>
-                          {Number(c.amount || 0).toLocaleString('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL',
-                          })}
+                        <TableCell className="text-right font-medium">
+                          {formatCurrency(row.amount)}
                         </TableCell>
-                        <TableCell>
-                          {Number(c.realized_amount || 0).toLocaleString('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL',
-                          })}
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              c.status === 'pago'
-                                ? 'bg-green-100 text-green-800'
-                                : c.status === 'atrasado'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-slate-100 text-slate-800'
-                            }`}
-                          >
-                            {c.status.toUpperCase()}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right pr-6">
-                          <div className="flex justify-end gap-1">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleBaixaCharge(c.id)}
-                                >
-                                  <CheckCircle className="w-4 h-4 text-green-600" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Baixa Parcela</TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    setEditingCharge(c)
-                                    setChargeFormOpen(true)
-                                  }}
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Editar Parcela</TooltipContent>
-                            </Tooltip>
-
-                            <DropdownMenu>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon">
-                                      <Share2 className="w-4 h-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                </TooltipTrigger>
-                                <TooltipContent>Compartilhar/Imprimir</TooltipContent>
-                              </Tooltip>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => openShare(selectedMaster.reference_id)}
-                                >
-                                  Solicita Mensagem
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => openShare(selectedMaster.reference_id)}
-                                >
-                                  Enviar Cobrança por E-mail
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => openShare(selectedMaster.reference_id)}
-                                >
-                                  Enviar Cobrança por Whatsapp
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => openShare(selectedMaster.reference_id, true)}
-                                >
-                                  Salva em PDF
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDeleteCharge(c.id)}
-                                >
-                                  <Trash2 className="w-4 h-4 text-red-500" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Excluir</TooltipContent>
-                            </Tooltip>
-                          </div>
-                        </TableCell>
+                        <TableCell className="text-center">{getStatusBadge(row.status)}</TableCell>
                       </TableRow>
                     ))
                   )}
                 </TableBody>
               </Table>
+            )}
+          </div>
+          {selectedMasterId && (
+            <div className="flex items-center justify-between p-3 border-t border-border/50 bg-muted/10">
+              <div className="text-xs text-muted-foreground">
+                {detailRecords.length > 0 ? detailPage * ITEMS_PER_PAGE + 1 : 0} -{' '}
+                {Math.min((detailPage + 1) * ITEMS_PER_PAGE, detailTotal)} / {detailTotal}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 bg-background/50"
+                  onClick={() => setDetailPage((p) => Math.max(0, p - 1))}
+                  disabled={detailPage === 0 || loadingDetail}
+                >
+                  {t('common.prev', '<')}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 bg-background/50"
+                  onClick={() =>
+                    setDetailPage((p) =>
+                      Math.min(Math.ceil(detailTotal / ITEMS_PER_PAGE) - 1, p + 1),
+                    )
+                  }
+                  disabled={
+                    detailPage >= Math.ceil(detailTotal / ITEMS_PER_PAGE) - 1 || loadingDetail
+                  }
+                >
+                  {t('common.next', '>')}
+                </Button>
+              </div>
             </div>
-          </CardContent>
+          )}
         </Card>
-      )}
-
-      <ShareDocumentDialog
-        open={shareOpen}
-        onOpenChange={setShareOpen}
-        documentId={shareDocId}
-        type="quote"
-        autoPrint={autoPrint}
-      />
-
-      <MasterRecordForm
-        open={masterFormOpen}
-        onOpenChange={setMasterFormOpen}
-        record={editingMaster}
-        onSuccess={loadMasters}
-      />
-
-      <ChargeRecordForm
-        open={chargeFormOpen}
-        onOpenChange={setChargeFormOpen}
-        charge={editingCharge}
-        onSuccess={() => {
-          if (selectedMaster) {
-            loadCharges(selectedMaster.id)
-            loadMasters()
-          }
-        }}
-      />
+      </div>
     </div>
   )
 }
