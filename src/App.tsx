@@ -40,6 +40,7 @@ import AdminRules from './pages/admin/business/AdminRules'
 import AdminChartOfAccounts from './pages/admin/financial/AdminChartOfAccounts'
 import AdminFinancialCategories from './pages/admin/financial/AdminFinancialCategories'
 import AdminFinancialPayments from './pages/admin/financial/AdminFinancialPayments'
+import AdminFinancialPaymentForm from './pages/admin/financial/AdminFinancialPaymentForm'
 import AdminFinancialPartners from './pages/admin/financial/AdminFinancialPartners'
 import AdminFinancialSettings from './pages/admin/financial/AdminFinancialSettings'
 import AdminBillingLogs from './pages/admin/financial/AdminBillingLogs'
@@ -218,6 +219,7 @@ const App = () => (
                   <Route path="financial/categories" element={<AdminFinancialCategories />} />
                   <Route path="financial/accounts" element={<AdminChartOfAccounts />} />
                   <Route path="financial/payments" element={<AdminFinancialPayments />} />
+                  <Route path="financial/payments/new" element={<AdminFinancialPaymentForm />} />
                   <Route path="financial/partners" element={<AdminFinancialPartners />} />
                   <Route path="financial/settings" element={<AdminStripeConfig />} />
                   <Route path="financial/general-settings" element={<AdminFinancialSettings />} />
