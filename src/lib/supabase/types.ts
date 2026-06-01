@@ -1317,6 +1317,24 @@ export type Database = {
           },
         ]
       }
+      financial_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       financial_charges: {
         Row: {
           amount: number
@@ -3849,6 +3867,10 @@ export const Constants = {
 //   name_es: text (nullable)
 //   description_en: text (nullable)
 //   description_es: text (nullable)
+// Table: financial_categories
+//   id: uuid (not null, default: gen_random_uuid())
+//   name: text (not null)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: financial_charges
 //   id: uuid (not null, default: gen_random_uuid())
 //   client_name: text (not null)
@@ -4456,6 +4478,9 @@ export const Constants = {
 // Table: events
 //   FOREIGN KEY events_club_id_fkey: FOREIGN KEY (club_id) REFERENCES clubs(id) ON DELETE SET NULL
 //   PRIMARY KEY events_pkey: PRIMARY KEY (id)
+// Table: financial_categories
+//   UNIQUE financial_categories_name_key: UNIQUE (name)
+//   PRIMARY KEY financial_categories_pkey: PRIMARY KEY (id)
 // Table: financial_charges
 //   FOREIGN KEY financial_charges_athlete_id_fkey: FOREIGN KEY (athlete_id) REFERENCES athletes(id) ON DELETE SET NULL
 //   FOREIGN KEY financial_charges_conta_id_fkey: FOREIGN KEY (conta_id) REFERENCES plano_contas(id) ON DELETE SET NULL
@@ -4806,6 +4831,16 @@ export const Constants = {
 //     WITH CHECK: true
 //   Policy "authenticated_select_events" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
+// Table: financial_categories
+//   Policy "authenticated_delete" (DELETE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "authenticated_insert" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: true
+//   Policy "authenticated_select" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "authenticated_update" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: financial_charges
 //   Policy "authenticated_select_financial_charges" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -5879,6 +5914,8 @@ export const Constants = {
 //   CREATE UNIQUE INDEX cart_items_user_id_product_id_key ON public.cart_items USING btree (user_id, product_id)
 // Table: contratos
 //   CREATE UNIQUE INDEX contratos_numero_contrato_key ON public.contratos USING btree (numero_contrato)
+// Table: financial_categories
+//   CREATE UNIQUE INDEX financial_categories_name_key ON public.financial_categories USING btree (name)
 // Table: google_reviews
 //   CREATE UNIQUE INDEX google_reviews_author_time_key ON public.google_reviews USING btree (author_name, "time")
 // Table: orcamentos
