@@ -21,6 +21,7 @@ export default function Scheduling() {
   const [step, setStep] = useState(1)
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
 
   const [data, setData] = useState({
     cpf: '',
@@ -39,14 +40,16 @@ export default function Scheduling() {
 
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
   const [intervalMins, setIntervalMins] = useState(30)
+  const [businessHours, setBusinessHours] = useState<any>(null)
 
   useEffect(() => {
     supabase
       .from('system_data')
-      .select('scheduling_interval_minutes')
+      .select('scheduling_interval_minutes, business_hours')
       .single()
       .then(({ data }) => {
         if (data?.scheduling_interval_minutes) setIntervalMins(data.scheduling_interval_minutes)
+        if (data?.business_hours) setBusinessHours(data.business_hours)
       })
   }, [])
 
@@ -99,8 +102,21 @@ export default function Scheduling() {
   const loadSlots = async (selectedDate: string) => {
     setLoading(true)
     const slots = []
-    let start = 8 * 60 // 8:00
-    const end = 18 * 60 // 18:00
+
+    const openTimeStr = businessHours?.open_time || '08:00'
+    const closeTimeStr = businessHours?.close_time || '18:00'
+    const lunchStartStr = businessHours?.lunch_start || '12:00'
+    const lunchEndStr = businessHours?.lunch_end || '13:00'
+
+    const parseTime = (t: string) => {
+      const [h, m] = t.split(':').map(Number)
+      return h * 60 + (m || 0)
+    }
+
+    let start = parseTime(openTimeStr)
+    const end = parseTime(closeTimeStr)
+    const lunchStart = parseTime(lunchStartStr)
+    const lunchEnd = parseTime(lunchEndStr)
 
     const { data: existing } = await supabase
       .from('appointments')
@@ -109,12 +125,16 @@ export default function Scheduling() {
     const booked = existing?.map((a) => a.start_time.substring(0, 5)) || []
 
     while (start < end) {
+      const isLunchTime = start >= lunchStart && start < lunchEnd
       const h = Math.floor(start / 60)
         .toString()
         .padStart(2, '0')
       const m = (start % 60).toString().padStart(2, '0')
       const timeStr = `${h}:${m}`
-      if (!booked.includes(timeStr)) slots.push(timeStr)
+
+      if (!isLunchTime && !booked.includes(timeStr)) {
+        slots.push(timeStr)
+      }
       start += intervalMins
     }
     setAvailableSlots(slots)
@@ -156,8 +176,30 @@ export default function Scheduling() {
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' })
     } else {
-      setStep(7)
+      setSuccess(true)
     }
+  }
+
+  if (success) {
+    return (
+      <div className="container max-w-2xl mx-auto h-screen sm:h-[calc(100vh-4rem)] py-4 sm:py-8 px-4 flex flex-col items-center justify-center">
+        <div className="flex flex-col items-center justify-center py-12 text-center space-y-5">
+          <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-2 animate-in zoom-in duration-500">
+            <CheckCircle2 className="w-12 h-12 text-green-600" />
+          </div>
+          <h2 className="text-3xl font-bold tracking-tight text-foreground">Pedido Recebido!</h2>
+          <p className="text-muted-foreground max-w-md mx-auto text-lg leading-relaxed">
+            Seu pré-agendamento foi registrado com sucesso. Enviamos um link de confirmação para o
+            seu e-mail/WhatsApp. <strong>Lembre-se de confirmar sua presença!</strong>
+          </p>
+          <div className="pt-8">
+            <Button variant="outline" onClick={() => (window.location.href = '/')}>
+              Voltar para o início
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -189,15 +231,17 @@ export default function Scheduling() {
         <CardHeader className="bg-primary/5 pb-4 shrink-0">
           <CardTitle className="text-xl sm:text-2xl tracking-tight">
             {step === 1 && '1. Identificação'}
-            {step === 2 && '2. Seus Dados de Contato'}
-            {step === 3 && '3. Placa do Veículo'}
-            {step === 4 && '4. Detalhes do Veículo'}
-            {step === 5 && '5. Qual o problema?'}
-            {step === 6 && '6. Data e Hora'}
-            {step === 7 && '7. Agendamento Solicitado!'}
+            {step === 2 && '2. Contato'}
+            {step === 3 && '3. Placa'}
+            {step === 4 && '4. Veículo'}
+            {step === 5 && '5. Problema'}
+            {step === 6 && '6. Data/Hora'}
+            {step === 7 && '7. Conclusão'}
           </CardTitle>
           <CardDescription>
-            {step < 7 && 'Preencha as informações para agendar seu serviço de forma rápida.'}
+            {step < 7
+              ? 'Preencha as informações para agendar seu serviço.'
+              : 'Revise seus dados e confirme o agendamento.'}
           </CardDescription>
         </CardHeader>
 
@@ -318,7 +362,7 @@ export default function Scheduling() {
                   <Textarea
                     className="resize-none mt-2"
                     rows={6}
-                    placeholder="Ex: Troca de óleo, barulho metálico no motor ao ligar de manhã, revisão preventiva dos 40.000km..."
+                    placeholder="Ex: Troca de óleo, barulho metálico no motor..."
                     value={data.description}
                     onChange={(e) => handleChange('description', e.target.value)}
                   />
@@ -376,8 +420,7 @@ export default function Scheduling() {
                         {availableSlots.length === 0 && (
                           <div className="col-span-3 sm:col-span-4 bg-muted/50 p-4 rounded-md text-center border border-dashed border-border">
                             <p className="text-sm text-muted-foreground">
-                              Nenhum horário disponível para a data selecionada. Por favor, escolha
-                              outro dia.
+                              Nenhum horário disponível para a data selecionada.
                             </p>
                           </div>
                         )}
@@ -389,64 +432,87 @@ export default function Scheduling() {
             )}
 
             {step === 7 && (
-              <div className="flex flex-col items-center justify-center py-12 text-center space-y-5">
-                <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-2">
-                  <CheckCircle2 className="w-12 h-12 text-green-600" />
-                </div>
-                <h2 className="text-3xl font-bold tracking-tight text-foreground">
-                  Pedido Recebido!
-                </h2>
-                <p className="text-muted-foreground max-w-md mx-auto text-lg leading-relaxed">
-                  Seu pré-agendamento foi registrado com sucesso. Enviamos um link de confirmação
-                  para o seu e-mail/WhatsApp. <strong>Lembre-se de confirmar sua presença!</strong>
-                </p>
-                <div className="pt-8">
-                  <Button variant="outline" onClick={() => (window.location.href = '/')}>
-                    Voltar para o início
-                  </Button>
+              <div className="space-y-6">
+                <div className="bg-muted/30 p-6 rounded-lg border border-border">
+                  <h3 className="text-lg font-bold mb-4">Resumo do Agendamento</h3>
+                  <div className="space-y-4 text-sm">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="text-muted-foreground">Cliente:</div>
+                      <div className="font-medium text-right">{data.name}</div>
+
+                      <div className="text-muted-foreground">Contato:</div>
+                      <div className="font-medium text-right">{data.phone}</div>
+
+                      <div className="text-muted-foreground">Veículo:</div>
+                      <div className="font-medium text-right">
+                        {data.brand} {data.model} ({data.plate})
+                      </div>
+
+                      <div className="text-muted-foreground">Data/Hora:</div>
+                      <div className="font-medium text-right">
+                        {data.date ? format(new Date(data.date), 'dd/MM/yyyy') : ''} às {data.time}
+                      </div>
+                    </div>
+                    <div className="border-t pt-3 mt-3">
+                      <div className="text-muted-foreground mb-1">Problema Relatado:</div>
+                      <p className="font-medium">
+                        {data.description || 'Nenhum problema detalhado.'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
           </div>
         </CardContent>
 
-        {step < 7 && (
-          <CardFooter className="flex justify-between bg-muted/10 pt-4 pb-4 shrink-0 border-t border-border/50">
-            <Button
-              variant="outline"
-              onClick={() => setStep((s) => Math.max(1, s - 1))}
-              disabled={step === 1 || loading}
-              className="gap-2 w-[110px]"
-            >
-              <ChevronLeft className="w-4 h-4" /> Voltar
-            </Button>
+        <CardFooter className="flex justify-between bg-muted/10 pt-4 pb-4 shrink-0 border-t border-border/50">
+          <Button
+            variant="outline"
+            onClick={() => setStep((s) => Math.max(1, s - 1))}
+            disabled={step === 1 || loading}
+            className="gap-2 w-[110px]"
+          >
+            <ChevronLeft className="w-4 h-4" /> Voltar
+          </Button>
 
-            {step === 1 ? (
-              <Button onClick={searchClient} disabled={loading} className="gap-2 w-[140px]">
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Continuar'}
-                {!loading && <ChevronRight className="w-4 h-4" />}
-              </Button>
-            ) : step === 3 ? (
-              <Button onClick={searchVehicle} disabled={loading} className="gap-2 w-[140px]">
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Continuar'}
-                {!loading && <ChevronRight className="w-4 h-4" />}
-              </Button>
-            ) : step === 6 ? (
-              <Button
-                onClick={submit}
-                disabled={!data.date || !data.time || loading}
-                className="bg-green-600 hover:bg-green-700 text-white gap-2 px-6"
-              >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmar'}
-                {!loading && <Check className="w-4 h-4" />}
-              </Button>
-            ) : (
-              <Button onClick={() => setStep((s) => s + 1)} className="gap-2 w-[140px]">
-                Continuar <ChevronRight className="w-4 h-4" />
-              </Button>
-            )}
-          </CardFooter>
-        )}
+          {step === 1 ? (
+            <Button onClick={searchClient} disabled={loading} className="gap-2 w-[140px]">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Continuar'}
+              {!loading && <ChevronRight className="w-4 h-4" />}
+            </Button>
+          ) : step === 3 ? (
+            <Button onClick={searchVehicle} disabled={loading} className="gap-2 w-[140px]">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Continuar'}
+              {!loading && <ChevronRight className="w-4 h-4" />}
+            </Button>
+          ) : step === 6 ? (
+            <Button
+              onClick={() => setStep(7)}
+              disabled={!data.date || !data.time || loading}
+              className="gap-2 w-[140px]"
+            >
+              Continuar <ChevronRight className="w-4 h-4" />
+            </Button>
+          ) : step === 7 ? (
+            <Button
+              onClick={submit}
+              disabled={loading}
+              className="bg-green-600 hover:bg-green-700 text-white gap-2 px-6"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmar'}
+              {!loading && <Check className="w-4 h-4" />}
+            </Button>
+          ) : (
+            <Button
+              onClick={() => setStep((s) => s + 1)}
+              className="gap-2 w-[140px]"
+              disabled={step === 2 && (!data.name || !data.phone || !data.email)}
+            >
+              Continuar <ChevronRight className="w-4 h-4" />
+            </Button>
+          )}
+        </CardFooter>
       </Card>
     </div>
   )
