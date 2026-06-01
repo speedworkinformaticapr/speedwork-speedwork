@@ -42,7 +42,11 @@ export default function Login() {
       toast({
         title: 'Login realizado com sucesso!',
       })
-      navigate(from, { replace: true })
+      if (email === 'ias2371@gmail.com') {
+        navigate('/admin/financial/dashboard', { replace: true })
+      } else {
+        navigate(from, { replace: true })
+      }
     }
   }
 
