@@ -5916,6 +5916,11 @@ export const Constants = {
 //   CREATE UNIQUE INDEX contratos_numero_contrato_key ON public.contratos USING btree (numero_contrato)
 // Table: financial_categories
 //   CREATE UNIQUE INDEX financial_categories_name_key ON public.financial_categories USING btree (name)
+// Table: financial_charges
+//   CREATE INDEX idx_fin_charges_master_status ON public.financial_charges USING btree (master_record_id, status)
+// Table: financial_master_records
+//   CREATE INDEX idx_fin_master_records_status ON public.financial_master_records USING btree (status)
+//   CREATE INDEX idx_fin_master_status ON public.financial_master_records USING btree (status)
 // Table: google_reviews
 //   CREATE UNIQUE INDEX google_reviews_author_time_key ON public.google_reviews USING btree (author_name, "time")
 // Table: orcamentos
