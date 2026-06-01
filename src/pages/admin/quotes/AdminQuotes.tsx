@@ -24,6 +24,18 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
+export const MOCK_CATALOG_SERVICES = [
+  { id: '1', name: 'Consultoria Esportiva', price: 1500, type: 'service' },
+  { id: '2', name: 'Gestão de Redes Sociais', price: 800, type: 'service' },
+  { id: '3', name: 'Assessoria de Imprensa', price: 2000, type: 'service' },
+]
+
+export const MOCK_CATALOG_PRODUCTS = [
+  { id: '4', name: 'Kit Uniforme Completo', price: 250, type: 'product' },
+  { id: '5', name: 'Bola Oficial', price: 120, type: 'product' },
+  { id: '6', name: 'Mochila Esportiva', price: 180, type: 'product' },
+]
+
 export default function AdminQuotes() {
   const [quotes, setQuotes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
