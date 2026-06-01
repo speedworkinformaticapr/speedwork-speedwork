@@ -220,6 +220,10 @@ const App = () => (
                   <Route path="financial/accounts" element={<AdminChartOfAccounts />} />
                   <Route path="financial/payments" element={<AdminFinancialPayments />} />
                   <Route path="financial/payments/new" element={<AdminFinancialPaymentForm />} />
+                  <Route
+                    path="financial/payments/:id/edit"
+                    element={<AdminFinancialPaymentForm />}
+                  />
                   <Route path="financial/partners" element={<AdminFinancialPartners />} />
                   <Route path="financial/settings" element={<AdminStripeConfig />} />
                   <Route path="financial/general-settings" element={<AdminFinancialSettings />} />
