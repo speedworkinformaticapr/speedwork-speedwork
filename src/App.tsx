@@ -30,6 +30,7 @@ import ClubDashboard from './pages/club/dashboard/ClubDashboard'
 import AdminLayout from './components/admin/AdminLayout'
 import AdminMaintenance from './pages/admin/settings/AdminMaintenance'
 import AdminUsers from './pages/admin/business/AdminUsers'
+import AdminProfileForm from './pages/admin/business/AdminProfileForm'
 import AdminAthleteAttributes from './pages/admin/business/AdminAthleteAttributes'
 import AdminAthleteEvaluations from './pages/admin/business/AdminAthleteEvaluations'
 import AdminAthleteCategories from './pages/admin/business/AdminAthleteCategories'
@@ -207,6 +208,9 @@ const App = () => (
                   <Route path="settings/analytics" element={<AdminAnalytics />} />
                   <Route path="settings/publish-logs" element={<AdminPublishLogs />} />
                   <Route path="sports/athletes" element={<AdminUsers />} />
+                  <Route path="business/profiles" element={<AdminUsers />} />
+                  <Route path="business/profiles/new" element={<AdminProfileForm />} />
+                  <Route path="business/profiles/:id/edit" element={<AdminProfileForm />} />
                   <Route path="sports/attributes" element={<AdminAthleteAttributes />} />
                   <Route path="sports/evaluations" element={<AdminAthleteEvaluations />} />
                   <Route path="athlete-scouting" element={<AdminAthleteScouting />} />

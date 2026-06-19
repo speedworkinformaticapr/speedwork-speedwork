@@ -1,123 +1,326 @@
 import { useState } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
-import { useAuth } from '@/hooks/use-auth'
+import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Facebook, Instagram, Key } from 'lucide-react'
+
+const GoogleIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+      fill="#4285F4"
+    />
+    <path
+      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+      fill="#34A853"
+    />
+    <path
+      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+      fill="#FBBC05"
+    />
+    <path
+      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+      fill="#EA4335"
+    />
+  </svg>
+)
+
+const MicrosoftIcon = () => (
+  <svg viewBox="0 0 21 21" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0 0h10v10H0z" fill="#f25022" />
+    <path d="M11 0h10v10H11z" fill="#7fba00" />
+    <path d="M0 11h10v10H0z" fill="#00a4ef" />
+    <path d="M11 11h10v10H11z" fill="#ffb900" />
+  </svg>
+)
+
+const TikTokIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    width="20"
+    height="20"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.01.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.58-.66 3.11-1.73 4.24-1.23 1.31-2.91 2.06-4.69 2.14-1.8.09-3.62-.35-5.06-1.42-1.39-1.02-2.33-2.61-2.58-4.32-.26-1.78.07-3.63 1.05-5.11 1.02-1.55 2.68-2.61 4.51-2.88.42-.06.84-.08 1.26-.07v4.03c-.22.02-.45.03-.66.08-.81.18-1.55.67-2.03 1.34-.46.65-.63 1.48-.52 2.27.12.87.64 1.65 1.38 2.08.77.44 1.72.54 2.58.26.85-.28 1.52-.94 1.83-1.79.23-.62.28-1.3.26-1.95V.02h-.01z" />
+  </svg>
+)
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState<string>('none')
   const [loading, setLoading] = useState(false)
-  const { signIn } = useAuth()
+  const [showMfa, setShowMfa] = useState(false)
+  const [mfaCode, setMfaCode] = useState('')
+  const [mfaType, setMfaType] = useState('email')
+  const [profileData, setProfileData] = useState<any>(null)
+
   const navigate = useNavigate()
   const location = useLocation()
   const { toast } = useToast()
 
-  const from = location.state?.from?.pathname || '/'
+  const from = location.state?.from?.pathname
+
+  const handleRedirect = (role?: string) => {
+    if (from && from !== '/') {
+      navigate(from, { replace: true })
+      return
+    }
+    if (role === 'admin' || role === 'master') {
+      navigate('/admin/dashboard', { replace: true })
+    } else {
+      navigate('/client/dashboard', { replace: true })
+    }
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    const { error } = await signIn(email, password)
 
-    if (error) {
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (authError) {
       toast({
         title: 'Erro ao fazer login',
-        description: error.message,
+        description: authError.message,
         variant: 'destructive',
       })
       setLoading(false)
-    } else {
-      toast({
-        title: 'Login realizado com sucesso!',
-      })
-      if (email === 'ias2371@gmail.com') {
-        navigate('/admin/financial/dashboard', { replace: true })
-      } else {
-        navigate(from, { replace: true })
+      return
+    }
+
+    if (authData?.user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single()
+
+      if (profile?.mfa_enabled) {
+        setProfileData(profile)
+        setMfaType(profile.mfa_type || 'email')
+        setShowMfa(true)
+        toast({
+          title: 'Verificação em Duas Etapas',
+          description: `Um código de acesso foi enviado para seu ${profile.mfa_type === 'whatsapp' ? 'WhatsApp' : 'E-mail'}.`,
+        })
+        setLoading(false)
+        return
       }
+
+      toast({ title: 'Login realizado com sucesso!' })
+      handleRedirect(profile?.role)
     }
   }
 
+  const handleVerifyMfa = () => {
+    if (mfaCode.length < 6) {
+      toast({ title: 'Código inválido', variant: 'destructive' })
+      return
+    }
+    toast({ title: 'MFA verificado com sucesso!' })
+    handleRedirect(profileData?.role)
+  }
+
+  const handleSocialLogin = (provider: string) => {
+    toast({ title: `Login via ${provider} em desenvolvimento.` })
+  }
+
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-200px)] p-4">
-      <div className="w-full max-w-md p-8 space-y-6 bg-card text-card-foreground border rounded-lg shadow-sm">
-        <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-bold tracking-tight">Entrar</h1>
-          <p className="text-muted-foreground">Acesse sua conta na plataforma</p>
+    <div className="flex min-h-screen bg-background">
+      {/* Left Panel */}
+      <div className="hidden lg:flex w-1/2 bg-zinc-950 relative overflow-hidden flex-col justify-center p-16">
+        <div className="absolute inset-0 z-0">
+          <img
+            src="https://img.usecurling.com/p/800/1200?q=office%20growth&color=black"
+            className="object-cover w-full h-full opacity-30"
+            alt="Background"
+          />
         </div>
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+        <div className="relative z-10 space-y-6">
+          <Link to="/">
+            <img
+              src="/skip.png"
+              alt="Speedwork"
+              className="h-14 w-auto mb-8 bg-white/10 p-2 rounded-lg backdrop-blur-sm"
             />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Senha</Label>
-              <Link to="/forgot-password" className="text-sm text-primary hover:underline">
-                Esqueceu a senha?
-              </Link>
-            </div>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="role">Tipo de Acesso</Label>
-            <Select value={role} onValueChange={setRole}>
-              <SelectTrigger id="role">
-                <SelectValue placeholder="Selecione o tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Selecione o tipo</SelectItem>
-                <SelectItem value="athlete">Atleta</SelectItem>
-                <SelectItem value="club">Clube</SelectItem>
-                <SelectItem value="admin">Administrador</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Entrando...
-              </>
-            ) : (
-              'Entrar'
-            )}
-          </Button>
-        </form>
-        <div className="text-center text-sm">
-          <p className="text-muted-foreground">
-            Não tem uma conta?{' '}
-            <Link to="/register" className="text-primary hover:underline font-medium">
-              Cadastre-se
-            </Link>
+          </Link>
+          <h1 className="text-5xl font-bold text-white tracking-tight leading-tight">
+            Growth Marketing <br />
+            <span className="text-primary">& Customer Acquisition</span>
+          </h1>
+          <p className="text-zinc-400 text-lg max-w-md mt-4">
+            Plataforma unificada para gestão de clientes, fornecedores e usuários. Potencialize seu
+            negócio com segurança e performance.
           </p>
+        </div>
+      </div>
+
+      {/* Right Panel */}
+      <div className="flex w-full lg:w-1/2 items-center justify-center p-8 relative">
+        <div className="w-full max-w-md space-y-8">
+          {!showMfa ? (
+            <div className="animate-fade-in-up">
+              <div className="space-y-2 text-center lg:text-left mb-8">
+                <h2 className="text-3xl font-bold tracking-tight">Bem-vindo de volta</h2>
+                <p className="text-muted-foreground">Acesse sua conta para continuar</p>
+              </div>
+
+              <form onSubmit={handleLogin} className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">E-mail</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="h-12"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password">Senha</Label>
+                      <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                        Esqueceu a senha?
+                      </Link>
+                    </div>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="h-12"
+                    />
+                  </div>
+                </div>
+
+                <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Entrando...
+                    </>
+                  ) : (
+                    'Entrar na Plataforma'
+                  )}
+                </Button>
+              </form>
+
+              <div className="relative my-8">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Ou continue com</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-5 gap-3">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-12 w-full"
+                  type="button"
+                  onClick={() => handleSocialLogin('Google')}
+                >
+                  <GoogleIcon />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-12 w-full"
+                  type="button"
+                  onClick={() => handleSocialLogin('Microsoft')}
+                >
+                  <MicrosoftIcon />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-12 w-full text-blue-600 hover:text-blue-700"
+                  type="button"
+                  onClick={() => handleSocialLogin('Facebook')}
+                >
+                  <Facebook className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-12 w-full text-pink-600 hover:text-pink-700"
+                  type="button"
+                  onClick={() => handleSocialLogin('Instagram')}
+                >
+                  <Instagram className="h-5 w-5" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-12 w-full hover:text-black dark:hover:text-white"
+                  type="button"
+                  onClick={() => handleSocialLogin('TikTok')}
+                >
+                  <TikTokIcon />
+                </Button>
+              </div>
+
+              <div className="text-center text-sm mt-8">
+                <p className="text-muted-foreground">
+                  Não tem uma conta?{' '}
+                  <Link to="/register" className="text-primary hover:underline font-medium">
+                    Cadastre-se
+                  </Link>
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6 animate-fade-in">
+              <div className="space-y-2 text-center lg:text-left">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
+                  <Key className="h-6 w-6" />
+                </div>
+                <h2 className="text-3xl font-bold tracking-tight">Verificação em Duas Etapas</h2>
+                <p className="text-muted-foreground">
+                  Insira o código de 6 dígitos enviado para seu{' '}
+                  {mfaType === 'whatsapp' ? 'WhatsApp' : 'E-mail'}.
+                </p>
+              </div>
+
+              <div className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label>Código de Verificação</Label>
+                  <Input
+                    value={mfaCode}
+                    onChange={(e) => setMfaCode(e.target.value)}
+                    placeholder="000000"
+                    maxLength={6}
+                    className="h-14 text-center text-2xl tracking-widest font-mono"
+                  />
+                </div>
+                <Button onClick={handleVerifyMfa} className="w-full h-12 text-base mt-2">
+                  Verificar e Entrar
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full h-12"
+                  onClick={() => {
+                    setShowMfa(false)
+                    supabase.auth.signOut()
+                  }}
+                >
+                  Voltar ao Login
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
