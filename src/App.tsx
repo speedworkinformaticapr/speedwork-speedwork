@@ -208,6 +208,10 @@ const App = () => (
                   <Route path="settings/analytics" element={<AdminAnalytics />} />
                   <Route path="settings/publish-logs" element={<AdminPublishLogs />} />
                   <Route path="sports/athletes" element={<AdminUsers />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="users/new" element={<AdminProfileForm />} />
+                  <Route path="users/:id/edit" element={<AdminProfileForm />} />
+                  {/* Keep legacy routes temporarily to avoid breaking any external bookmarks or unpatched layout links */}
                   <Route path="business/profiles" element={<AdminUsers />} />
                   <Route path="business/profiles/new" element={<AdminProfileForm />} />
                   <Route path="business/profiles/:id/edit" element={<AdminProfileForm />} />

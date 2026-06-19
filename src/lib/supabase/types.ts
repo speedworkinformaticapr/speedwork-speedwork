@@ -2566,6 +2566,10 @@ export type Database = {
           is_client: boolean | null
           is_club: boolean | null
           is_supplier: boolean | null
+          mfa_code: string | null
+          mfa_code_expires_at: string | null
+          mfa_enabled: boolean | null
+          mfa_type: string | null
           name: string | null
           nationality: string | null
           naturalness: string | null
@@ -2597,6 +2601,10 @@ export type Database = {
           is_client?: boolean | null
           is_club?: boolean | null
           is_supplier?: boolean | null
+          mfa_code?: string | null
+          mfa_code_expires_at?: string | null
+          mfa_enabled?: boolean | null
+          mfa_type?: string | null
           name?: string | null
           nationality?: string | null
           naturalness?: string | null
@@ -2628,6 +2636,10 @@ export type Database = {
           is_client?: boolean | null
           is_club?: boolean | null
           is_supplier?: boolean | null
+          mfa_code?: string | null
+          mfa_code_expires_at?: string | null
+          mfa_enabled?: boolean | null
+          mfa_type?: string | null
           name?: string | null
           nationality?: string | null
           naturalness?: string | null
