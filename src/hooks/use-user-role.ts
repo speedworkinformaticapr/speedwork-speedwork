@@ -32,7 +32,7 @@ export function useUserRole() {
 
         if (mounted) {
           if (data) {
-            const currentRole = data.role || 'user'
+            const currentRole = (data.role || 'user').toLowerCase()
             setRole(currentRole)
             setIsAdmin(currentRole === 'admin' || currentRole === 'master')
             setIsClubAdmin(!!data.is_club || currentRole === 'club')

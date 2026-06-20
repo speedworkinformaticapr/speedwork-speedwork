@@ -23,9 +23,10 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  const hasRequiredRole = roles.some((role) => allowedRoles.includes(role))
+  const normalizedAllowedRoles = allowedRoles.map((r) => r.toLowerCase())
+  const hasRequiredRole = roles.some((role) => normalizedAllowedRoles.includes(role.toLowerCase()))
 
-  if (!hasRequiredRole && !roles.includes('master')) {
+  if (!hasRequiredRole && !roles.some((r) => r.toLowerCase() === 'master')) {
     return <Navigate to="/forbidden" replace />
   }
 

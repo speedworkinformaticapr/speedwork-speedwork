@@ -21,6 +21,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [validating, setValidating] = useState(false)
+  const [sessionTime, setSessionTime] = useState<string>('00:00:00')
 
   const [profileData, setProfileData] = useState({
     name: '',
@@ -37,6 +38,33 @@ export default function Profile() {
       navigate('/login')
     }
   }, [user, authLoading, navigate])
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    if (user && user.last_sign_in_at) {
+      const startTime = new Date(user.last_sign_in_at).getTime()
+
+      const updateTimer = () => {
+        const now = new Date().getTime()
+        const diff = Math.max(0, now - startTime)
+
+        const hours = Math.floor(diff / (1000 * 60 * 60))
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+
+        setSessionTime(
+          `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`,
+        )
+      }
+
+      updateTimer()
+      interval = setInterval(updateTimer, 1000)
+    }
+
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [user])
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -320,7 +348,7 @@ export default function Profile() {
           <CardDescription>Ferramenta de diagnóstico de sessão e permissões</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div className="bg-muted/50 p-3 rounded-lg">
               <Label className="text-muted-foreground text-xs uppercase">ID do Usuário</Label>
               <div className="font-mono text-sm mt-1 truncate" title={user.id}>
@@ -339,7 +367,16 @@ export default function Profile() {
                 {authProfile?.role || 'Não definido'}
               </div>
             </div>
-            <div className="bg-muted/50 p-3 rounded-lg sm:col-span-3">
+            <div className="bg-muted/50 p-3 rounded-lg">
+              <Label className="text-muted-foreground text-xs uppercase">Tempo de Sessão</Label>
+              <div
+                className="font-mono text-sm mt-1 text-primary font-bold"
+                title="Tempo desde o último login"
+              >
+                {sessionTime}
+              </div>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-lg sm:col-span-4">
               <Label className="text-muted-foreground text-xs uppercase">Tipo de Conta</Label>
               <div className="font-medium text-sm mt-1 flex gap-2">
                 {profileData.is_client && <Badge variant="outline">Cliente</Badge>}
