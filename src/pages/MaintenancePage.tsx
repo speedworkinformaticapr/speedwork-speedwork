@@ -5,7 +5,10 @@ import { MaintenanceConfig } from '@/services/maintenance'
 import { useSystemData } from '@/hooks/use-system-data'
 
 interface MaintenancePageProps {
-  config: MaintenanceConfig
+  config: MaintenanceConfig & {
+    bg_opacity?: number
+    bg_video_url?: string
+  }
 }
 
 export default function MaintenancePage({ config }: MaintenancePageProps) {
@@ -43,42 +46,41 @@ export default function MaintenancePage({ config }: MaintenancePageProps) {
     return () => clearInterval(interval)
   }, [config.return_date])
 
+  const bgVideo = config.bg_video_url
   const bgImage = config.bg_image_url || systemData?.bg_image_url
-  const isVideo = bgImage?.match(/\.(mp4|webm|ogg)(\?.*)?$/i)
-  const bgOpacity =
-    config.bg_opacity !== undefined
-      ? config.bg_opacity / 100
-      : systemData?.bg_opacity !== undefined
-        ? systemData.bg_opacity / 100
-        : 0.2
+  const bgOpacity = config.bg_opacity !== undefined ? config.bg_opacity / 100 : 1
 
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden animate-fade-in"
       style={{
-        backgroundColor: config.bg_color,
         color: config.text_color,
         fontFamily: config.font_family,
       }}
     >
-      {bgImage && !isVideo && (
-        <div
-          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${bgImage})`, opacity: bgOpacity }}
-        />
-      )}
-
-      {bgImage && isVideo && (
+      {bgVideo ? (
         <video
           className="absolute inset-0 z-0 w-full h-full object-cover"
-          style={{ opacity: bgOpacity }}
-          src={bgImage}
+          src={bgVideo}
           autoPlay
           loop
           muted
           playsInline
         />
-      )}
+      ) : bgImage ? (
+        <div
+          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${bgImage})` }}
+        />
+      ) : null}
+
+      <div
+        className="absolute inset-0 z-10"
+        style={{
+          backgroundColor: config.bg_color,
+          opacity: bgOpacity,
+        }}
+      />
 
       <Link
         to="/login"
@@ -88,7 +90,7 @@ export default function MaintenancePage({ config }: MaintenancePageProps) {
         <LogIn className="w-6 h-6 opacity-40 group-hover:opacity-100 transition-opacity" />
       </Link>
 
-      <div className="z-10 w-full max-w-2xl text-center space-y-8 p-8 bg-background/80 backdrop-blur-md rounded-2xl shadow-2xl border border-border/50">
+      <div className="z-20 w-full max-w-2xl text-center space-y-8 p-8 bg-background/80 backdrop-blur-md rounded-2xl shadow-2xl border border-border/50">
         <div className="flex justify-center mb-6">
           {systemData?.logo_url ? (
             <img
@@ -111,22 +113,36 @@ export default function MaintenancePage({ config }: MaintenancePageProps) {
           {config.message}
         </p>
 
-        {timeLeft && (
-          <div className="flex justify-center gap-4 py-6">
-            {[
-              { label: 'Dias', value: timeLeft.days },
-              { label: 'Horas', value: timeLeft.hours },
-              { label: 'Minutos', value: timeLeft.minutes },
-              { label: 'Segundos', value: timeLeft.seconds },
-            ].map((item, i) => (
-              <div
-                key={i}
-                className="flex flex-col items-center p-3 bg-primary/10 rounded-lg min-w-[80px]"
-              >
-                <span className="text-3xl font-bold text-primary">{item.value}</span>
-                <span className="text-xs uppercase tracking-wider opacity-75">{item.label}</span>
+        {config.return_date && (
+          <div className="py-6">
+            {timeLeft &&
+            (timeLeft.days > 0 ||
+              timeLeft.hours > 0 ||
+              timeLeft.minutes > 0 ||
+              timeLeft.seconds > 0) ? (
+              <div className="flex justify-center gap-4">
+                {[
+                  { label: 'Dias', value: timeLeft.days },
+                  { label: 'Horas', value: timeLeft.hours },
+                  { label: 'Minutos', value: timeLeft.minutes },
+                  { label: 'Segundos', value: timeLeft.seconds },
+                ].map((item, i) => (
+                  <div
+                    key={i}
+                    className="flex flex-col items-center p-3 bg-primary/10 rounded-lg min-w-[80px]"
+                  >
+                    <span className="text-3xl font-bold text-primary">{item.value}</span>
+                    <span className="text-xs uppercase tracking-wider opacity-75">
+                      {item.label}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
+            ) : (
+              <div className="text-2xl font-semibold text-primary animate-pulse">
+                Retornaremos em breve!
+              </div>
+            )}
           </div>
         )}
 
