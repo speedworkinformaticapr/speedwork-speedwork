@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Plus } from 'lucide-react'
+import { format } from 'date-fns'
 import { supabase } from '@/lib/supabase/client'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -10,98 +12,104 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Edit, Trash2 } from 'lucide-react'
-import { useToast } from '@/components/ui/use-toast'
 
-export default function AddendumsList() {
+export default function AdminAddendumsList() {
   const [addendums, setAddendums] = useState<any[]>([])
-  const { toast } = useToast()
-
-  const fetchAddendums = async () => {
-    const { data } = await supabase
-      .from('contract_additives')
-      .select('*, contratos(numero_contrato)')
-      .order('created_at', { ascending: false })
-    if (data) setAddendums(data)
-  }
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchAddendums()
   }, [])
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este aditivo?')) return
-    const { error } = await supabase.from('contract_additives').delete().eq('id', id)
-    if (error) {
-      toast({ title: 'Erro', description: error.message, variant: 'destructive' })
-    } else {
-      toast({ title: 'Sucesso', description: 'Aditivo excluído.' })
-      fetchAddendums()
+  const fetchAddendums = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('contract_addendums')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setAddendums(data || [])
+    } catch (error) {
+      console.error('Error fetching addendums:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Aditivos de Contrato</h1>
+          <p className="text-muted-foreground">Gerencie os aditivos e alterações contratuais.</p>
+        </div>
+        <Button asChild>
+          <Link to="/admin/contracts/addendums/new">
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Aditivo
+          </Link>
+        </Button>
+      </div>
+
       <Card>
-        <CardHeader className="flex flex-row justify-between items-center">
-          <CardTitle>Aditivos de Contrato</CardTitle>
-          <Button asChild>
-            <Link to="new">Novo Aditivo</Link>
-          </Button>
+        <CardHeader>
+          <CardTitle>Aditivos Cadastrados</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nº Contrato</TableHead>
-                <TableHead>Título</TableHead>
-                <TableHead>Início</TableHead>
-                <TableHead>Fim</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {addendums.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">
-                    {item.contratos?.numero_contrato || 'N/A'}
-                  </TableCell>
-                  <TableCell>{item.title}</TableCell>
-                  <TableCell>
-                    {item.start_date ? new Date(item.start_date).toLocaleDateString('pt-BR') : '-'}
-                  </TableCell>
-                  <TableCell>
-                    {item.end_date ? new Date(item.end_date).toLocaleDateString('pt-BR') : '-'}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={item.status === 'Ativo' ? 'default' : 'secondary'}>
-                      {item.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" asChild>
-                      <Link to={`${item.id}/edit`}>
-                        <Edit className="w-4 h-4" />
-                      </Link>
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {addendums.length === 0 && (
+          {loading ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                    Nenhum aditivo cadastrado.
-                  </TableCell>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Alteração de Valor</TableHead>
+                  <TableHead>Prazo Adicional</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {addendums.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                      Nenhum aditivo encontrado.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  addendums.map((addendum) => (
+                    <TableRow key={addendum.id}>
+                      <TableCell>
+                        {format(new Date(addendum.signed_at || addendum.created_at), 'dd/MM/yyyy')}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{addendum.type}</Badge>
+                      </TableCell>
+                      <TableCell className="max-w-md truncate">{addendum.description}</TableCell>
+                      <TableCell>
+                        {addendum.value_change
+                          ? new Intl.NumberFormat('pt-BR', {
+                              style: 'currency',
+                              currency: 'BRL',
+                            }).format(addendum.value_change)
+                          : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {addendum.term_extension_days
+                          ? `${addendum.term_extension_days} dias`
+                          : '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

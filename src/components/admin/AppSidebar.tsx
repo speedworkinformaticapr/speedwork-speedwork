@@ -38,6 +38,7 @@ export function AppSidebar() {
       icon: 'FileText',
       items: [
         { id: 'c-list', label: 'Contratos', path: '/admin/commercial/contracts' },
+        { id: 'c-templates', label: 'Modelos', path: '/admin/contracts/templates' },
         { id: 'c-clauses', label: 'Biblioteca de Cláusulas', path: '/admin/contracts/clauses' },
         { id: 'c-addendums', label: 'Aditivos', path: '/admin/contracts/addendums' },
         { id: 'c-reports', label: 'Relatórios', path: '/admin/contracts/reports' },

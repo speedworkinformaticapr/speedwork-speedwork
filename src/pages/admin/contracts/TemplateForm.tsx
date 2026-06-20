@@ -1,128 +1,171 @@
-import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { useForm } from 'react-hook-form'
 import { supabase } from '@/lib/supabase/client'
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
-import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, ArrowLeft } from 'lucide-react'
 
-export default function TemplateForm() {
+export default function AdminTemplateForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
-
   const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    title: '',
-    content: '',
-    is_active: true,
+  const isEditing = !!id
+
+  const { register, handleSubmit, reset } = useForm({
+    defaultValues: {
+      name: '',
+      description: '',
+      content: '',
+    },
   })
 
   useEffect(() => {
-    if (id) {
-      supabase
+    if (isEditing) {
+      fetchTemplate()
+    }
+  }, [id])
+
+  const fetchTemplate = async () => {
+    try {
+      const { data, error } = await supabase
         .from('contract_templates')
         .select('*')
         .eq('id', id)
         .single()
-        .then(({ data }) => {
-          if (data) {
-            setFormData({
-              title: data.title || '',
-              content: data.content || '',
-              is_active: data.is_active ?? true,
-            })
-          }
-        })
-    }
-  }, [id])
 
-  const handleSave = async () => {
-    if (!formData.title || !formData.content) {
-      return toast({ title: 'Preencha título e conteúdo', variant: 'destructive' })
+      if (error) throw error
+      if (data) {
+        reset(data)
+      }
+    } catch (error) {
+      console.error('Error fetching template:', error)
     }
+  }
 
+  const onSubmit = async (data: any) => {
     setLoading(true)
-    const payload = {
-      title: formData.title,
-      content: formData.content,
-      is_active: formData.is_active,
-    }
+    try {
+      if (isEditing) {
+        const { error } = await supabase
+          .from('contract_templates')
+          .update({
+            name: data.name,
+            description: data.description,
+            content: data.content,
+          })
+          .eq('id', id)
+        if (error) throw error
+      } else {
+        const { error } = await supabase.from('contract_templates').insert([
+          {
+            name: data.name,
+            description: data.description,
+            content: data.content,
+          },
+        ])
+        if (error) throw error
+      }
 
-    let error
-    if (id) {
-      const res = await supabase.from('contract_templates').update(payload).eq('id', id)
-      error = res.error
-    } else {
-      const res = await supabase.from('contract_templates').insert(payload)
-      error = res.error
-    }
-
-    setLoading(false)
-
-    if (error) {
-      toast({ title: 'Erro ao salvar', variant: 'destructive' })
-    } else {
-      toast({ title: 'Modelo salvo com sucesso' })
+      toast({ title: `Template ${isEditing ? 'atualizado' : 'criado'} com sucesso` })
       navigate('/admin/contracts/templates')
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao salvar template',
+        description: error.message,
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
-      <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
-        <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
-      </Button>
+    <div className="p-6 max-w-5xl mx-auto space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {isEditing ? 'Editar Modelo' : 'Novo Modelo de Contrato'}
+        </h1>
+        <p className="text-muted-foreground">
+          Crie ou edite um modelo de contrato com variáveis dinâmicas.
+        </p>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{id ? 'Editar Modelo' : 'Novo Modelo de Contrato'}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label>Título do Modelo</Label>
-            <Input
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="Ex: Contrato de Prestação de Serviços Padrão"
-            />
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle>Editor de Documento</CardTitle>
+            <CardDescription>Corpo principal do contrato.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form id="template-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              <div className="space-y-2">
+                <Label>Nome do Modelo</Label>
+                <Input
+                  {...register('name', { required: true })}
+                  placeholder="Ex: Contrato de Prestação de Serviços..."
+                />
+              </div>
 
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="is_active"
-              checked={formData.is_active}
-              onCheckedChange={(checked) => setFormData({ ...formData, is_active: !!checked })}
-            />
-            <Label htmlFor="is_active">Modelo Ativo (disponível no Wizard)</Label>
-          </div>
+              <div className="space-y-2">
+                <Label>Descrição Breve</Label>
+                <Input {...register('description')} placeholder="Para que serve este modelo?" />
+              </div>
 
-          <div className="space-y-2">
-            <Label>Conteúdo do Contrato</Label>
-            <p className="text-xs text-muted-foreground">
-              Dica: Use colchetes para variáveis dinâmicas que serão preenchidas na geração. Ex:
-              [NOME_CLIENTE], [VALOR]
-            </p>
-            <RichTextEditor
-              value={formData.content}
-              onChange={(v: string) => setFormData({ ...formData, content: v })}
-            />
-          </div>
-        </CardContent>
-        <CardFooter className="flex justify-end gap-2 border-t pt-6 bg-muted/20">
-          <Button variant="outline" onClick={() => navigate(-1)}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={loading}>
-            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Salvar
-          </Button>
-        </CardFooter>
-      </Card>
+              <div className="space-y-2">
+                <Label>Conteúdo do Contrato</Label>
+                <Textarea
+                  {...register('content', { required: true })}
+                  placeholder="Pelo presente instrumento..."
+                  rows={20}
+                  className="font-mono text-sm leading-relaxed"
+                />
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Variáveis Disponíveis</CardTitle>
+              <CardDescription>Use no texto para substituição automática.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2 text-sm font-mono bg-muted p-4 rounded-md">
+                <li>[NOME_CONTRATANTE]</li>
+                <li>[CNPJ_CONTRATANTE]</li>
+                <li>[ENDERECO_CONTRATANTE]</li>
+                <li>[VALOR_MENSAL]</li>
+                <li>[DATA_INICIO]</li>
+                <li>[DATA_FIM]</li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex flex-col gap-3">
+                <Button type="submit" form="template-form" disabled={loading} className="w-full">
+                  {loading ? 'Salvando...' : 'Salvar Modelo'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate('/admin/contracts/templates')}
+                  className="w-full"
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   )
 }

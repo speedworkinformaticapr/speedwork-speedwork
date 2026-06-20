@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Plus, Edit } from 'lucide-react'
+import { format } from 'date-fns'
 import { supabase } from '@/lib/supabase/client'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -10,90 +12,97 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Edit, Trash2 } from 'lucide-react'
-import { useToast } from '@/components/ui/use-toast'
 
-export default function ClausesList() {
+export default function AdminClausesList() {
   const [clauses, setClauses] = useState<any[]>([])
-  const { toast } = useToast()
-
-  const fetchClauses = async () => {
-    const { data } = await supabase
-      .from('contract_clauses')
-      .select('*')
-      .order('created_at', { ascending: false })
-    if (data) setClauses(data)
-  }
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchClauses()
   }, [])
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir esta cláusula?')) return
-    const { error } = await supabase.from('contract_clauses').delete().eq('id', id)
-    if (error) {
-      toast({ title: 'Erro', description: error.message, variant: 'destructive' })
-    } else {
-      toast({ title: 'Sucesso', description: 'Cláusula excluída.' })
-      fetchClauses()
+  const fetchClauses = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('contract_clauses')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setClauses(data || [])
+    } catch (error) {
+      console.error('Error fetching clauses:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Biblioteca de Cláusulas</h1>
+          <p className="text-muted-foreground">
+            Gerencie cláusulas padronizadas para uso em contratos.
+          </p>
+        </div>
+        <Button asChild>
+          <Link to="/admin/contracts/clauses/new">
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Cláusula
+          </Link>
+        </Button>
+      </div>
+
       <Card>
-        <CardHeader className="flex flex-row justify-between items-center">
-          <CardTitle>Biblioteca de Cláusulas</CardTitle>
-          <Button asChild>
-            <Link to="new">Nova Cláusula</Link>
-          </Button>
+        <CardHeader>
+          <CardTitle>Cláusulas Disponíveis</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Título</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Versão</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {clauses.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.title}</TableCell>
-                  <TableCell>{item.category}</TableCell>
-                  <TableCell>v{item.version}</TableCell>
-                  <TableCell>
-                    <Badge variant={item.status === 'Ativa' ? 'default' : 'secondary'}>
-                      {item.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" asChild>
-                      <Link to={`${item.id}/edit`}>
-                        <Edit className="w-4 h-4" />
-                      </Link>
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {clauses.length === 0 && (
+          {loading ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                    Nenhuma cláusula cadastrada.
-                  </TableCell>
+                  <TableHead>Título</TableHead>
+                  <TableHead>Versão</TableHead>
+                  <TableHead>Data de Criação</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {clauses.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                      Nenhuma cláusula encontrada.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  clauses.map((clause) => (
+                    <TableRow key={clause.id}>
+                      <TableCell className="font-medium">{clause.title}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">v{clause.version}</Badge>
+                      </TableCell>
+                      <TableCell>{format(new Date(clause.created_at), 'dd/MM/yyyy')}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" asChild>
+                          <Link to={`/admin/contracts/clauses/${clause.id}/edit`}>
+                            <Edit className="w-4 h-4" />
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
