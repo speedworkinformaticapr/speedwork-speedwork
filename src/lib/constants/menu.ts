@@ -37,6 +37,15 @@ export const DEFAULT_MENU: MenuGroup[] = [
     ],
   },
   {
+    id: 'support',
+    label: 'Suporte & Tickets',
+    icon: 'MessageSquare',
+    items: [
+      { id: 'tickets', label: 'Tickets', path: '/admin/support/tickets' },
+      { id: 'sla', label: 'Configuração de SLA', path: '/admin/support/sla' },
+    ],
+  },
+  {
     id: 'commercial',
     label: 'Comercial',
     icon: 'Briefcase',

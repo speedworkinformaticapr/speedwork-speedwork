@@ -62,6 +62,8 @@ import AdminSlaTypes from './pages/admin/settings/AdminSlaTypes'
 import AdminSystemData from './pages/admin/settings/AdminSystemData'
 import AdminMenuConfig from './pages/admin/settings/AdminMenuConfig'
 import AdminMedia from './pages/admin/settings/AdminMedia'
+import SupportTickets from './pages/admin/support/SupportTickets'
+import SupportSlaConfig from './pages/admin/support/SupportSlaConfig'
 import AdminAnalytics from './pages/admin/settings/AdminAnalytics'
 import AdminPublishLogs from './pages/admin/settings/AdminPublishLogs'
 import AdminWhatsApp from './pages/admin/whatsapp/AdminWhatsApp'
@@ -178,6 +180,8 @@ const App = () => (
                   <Route path="commercial/quotes/new" element={<QuoteForm />} />
                   <Route path="commercial/quotes/:id/edit" element={<QuoteForm />} />
                   <Route path="commercial/quotes/:id" element={<QuoteView />} />
+                  <Route path="support/tickets" element={<SupportTickets />} />
+                  <Route path="support/sla" element={<SupportSlaConfig />} />
                   <Route path="commercial/dashboard" element={<AdminCommercialDashboard />} />
                   <Route path="commercial/orders" element={<AdminPedidosList />} />
                   <Route path="commercial/orders/new" element={<AdminPedidoForm />} />
