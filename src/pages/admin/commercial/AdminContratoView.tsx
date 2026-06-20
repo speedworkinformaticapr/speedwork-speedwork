@@ -54,7 +54,7 @@ export default function AdminContratoView() {
   const load = async () => {
     const { data } = await supabase
       .from('contratos')
-      .select('*, clientes(nome), usuarios(nome)')
+      .select('*, profiles!cliente_id(name), usuarios(nome)')
       .eq('id', id)
       .single()
     setContrato(data)
@@ -138,7 +138,7 @@ export default function AdminContratoView() {
             </Badge>
           </h1>
           <p className="text-muted-foreground mt-1">
-            Cliente/Contratante: {contrato.clientes?.nome || 'N/A'}
+            Cliente/Contratante: {contrato.profiles?.name || 'N/A'}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 print:hidden">
