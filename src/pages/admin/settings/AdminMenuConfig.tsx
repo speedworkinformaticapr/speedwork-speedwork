@@ -60,13 +60,18 @@ export default function AdminMenuConfig() {
   const addGroup = () => {
     setConfig([
       ...config,
-      { id: `grp-${Date.now()}`, label: 'Novo Grupo', icon: 'Folder', items: [] },
+      { id: `grp-${Date.now()}`, label: 'Novo Grupo', description: '', icon: 'Folder', items: [] },
     ])
   }
 
   const addItem = (gIdx: number) => {
     const newConfig = [...config]
-    newConfig[gIdx].items.push({ id: `itm-${Date.now()}`, label: 'Novo Item', path: '/admin/novo' })
+    newConfig[gIdx].items.push({
+      id: `itm-${Date.now()}`,
+      label: 'Novo Item',
+      description: '',
+      path: '/admin/novo',
+    })
     setConfig(newConfig)
   }
 
@@ -132,6 +137,13 @@ export default function AdminMenuConfig() {
                     value={group.label}
                     onChange={(e) => updateGroup(gIdx, 'label', e.target.value)}
                     className="w-48 font-medium"
+                    placeholder="Nome do Grupo"
+                  />
+                  <Input
+                    value={group.description || ''}
+                    onChange={(e) => updateGroup(gIdx, 'description', e.target.value)}
+                    className="w-48"
+                    placeholder="Descrição do Grupo"
                   />
                   <Input
                     value={group.icon}
@@ -185,8 +197,14 @@ export default function AdminMenuConfig() {
                       <Input
                         value={item.label}
                         onChange={(e) => updateItem(gIdx, iIdx, 'label', e.target.value)}
-                        className="w-1/4 h-8"
+                        className="w-40 h-8"
                         placeholder="Nome"
+                      />
+                      <Input
+                        value={item.description || ''}
+                        onChange={(e) => updateItem(gIdx, iIdx, 'description', e.target.value)}
+                        className="w-48 h-8"
+                        placeholder="Descrição"
                       />
                       <Input
                         value={item.path}

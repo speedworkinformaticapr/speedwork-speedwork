@@ -3012,6 +3012,82 @@ export type Database = {
           },
         ]
       }
+      support_tickets: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          module: string | null
+          parent_ticket_id: string | null
+          priority: string | null
+          sla_paused_at: string | null
+          sla_started_at: string | null
+          status: string | null
+          technician_id: string | null
+          ticket_number: number
+          title: string
+          total_paused_time_ms: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          module?: string | null
+          parent_ticket_id?: string | null
+          priority?: string | null
+          sla_paused_at?: string | null
+          sla_started_at?: string | null
+          status?: string | null
+          technician_id?: string | null
+          ticket_number?: number
+          title: string
+          total_paused_time_ms?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          module?: string | null
+          parent_ticket_id?: string | null
+          priority?: string | null
+          sla_paused_at?: string | null
+          sla_started_at?: string | null
+          status?: string | null
+          technician_id?: string | null
+          ticket_number?: number
+          title?: string
+          total_paused_time_ms?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'support_tickets_client_id_fkey'
+            columns: ['client_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'support_tickets_parent_ticket_id_fkey'
+            columns: ['parent_ticket_id']
+            isOneToOne: false
+            referencedRelation: 'support_tickets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'support_tickets_technician_id_fkey'
+            columns: ['technician_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       system_data: {
         Row: {
           active_theme: string | null
@@ -3155,6 +3231,107 @@ export type Database = {
           terms?: Json | null
           two_factor_auth?: boolean | null
           two_factor_method?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      ticket_history: {
+        Row: {
+          action: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          new_status: string | null
+          new_technician_id: string | null
+          note: string | null
+          old_status: string | null
+          old_technician_id: string | null
+          ticket_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          new_status?: string | null
+          new_technician_id?: string | null
+          note?: string | null
+          old_status?: string | null
+          old_technician_id?: string | null
+          ticket_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          new_status?: string | null
+          new_technician_id?: string | null
+          note?: string | null
+          old_status?: string | null
+          old_technician_id?: string | null
+          ticket_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ticket_history_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ticket_history_new_technician_id_fkey'
+            columns: ['new_technician_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ticket_history_old_technician_id_fkey'
+            columns: ['old_technician_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ticket_history_ticket_id_fkey'
+            columns: ['ticket_id']
+            isOneToOne: false
+            referencedRelation: 'support_tickets'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ticket_sla_configs: {
+        Row: {
+          created_at: string | null
+          escalation_time_minutes: number | null
+          id: string
+          priority: string
+          resolution_time_minutes: number | null
+          response_time_minutes: number | null
+          start_time_minutes: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          escalation_time_minutes?: number | null
+          id?: string
+          priority: string
+          resolution_time_minutes?: number | null
+          response_time_minutes?: number | null
+          start_time_minutes?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          escalation_time_minutes?: number | null
+          id?: string
+          priority?: string
+          resolution_time_minutes?: number | null
+          response_time_minutes?: number | null
+          start_time_minutes?: number | null
           updated_at?: string | null
         }
         Relationships: []
