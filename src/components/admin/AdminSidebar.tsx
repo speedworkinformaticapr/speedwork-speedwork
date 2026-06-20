@@ -112,6 +112,20 @@ const defaultMenuConfig = [
       { id: 'analytics', label: 'Analytics', url: '/admin/settings/analytics' },
     ],
   },
+  {
+    id: 'suporte',
+    label: 'Suporte',
+    icon: 'LifeBuoy',
+    submenus: [
+      {
+        id: 'sup-tickets',
+        label: 'Gestão de Chamados',
+        url: '/admin/support/tickets',
+        icon: 'Ticket',
+      },
+      { id: 'sup-sla', label: 'Configurações de SLA', url: '/admin/support/sla', icon: 'Clock' },
+    ],
+  },
 ]
 
 export function AdminSidebar() {

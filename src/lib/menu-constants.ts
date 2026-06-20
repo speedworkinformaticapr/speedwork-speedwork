@@ -82,4 +82,18 @@ export const DEFAULT_MENU_CONFIG = [
       { id: 'cfg-paginas', label: 'Páginas', path: '/admin/settings/pages' },
     ],
   },
+  {
+    id: 'suporte',
+    label: 'Suporte',
+    icon: 'LifeBuoy',
+    items: [
+      {
+        id: 'sup-tickets',
+        label: 'Gestão de Chamados',
+        path: '/admin/support/tickets',
+        icon: 'Ticket',
+      },
+      { id: 'sup-sla', label: 'Configurações de SLA', path: '/admin/support/sla', icon: 'Clock' },
+    ],
+  },
 ]
