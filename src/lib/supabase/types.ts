@@ -3764,6 +3764,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_master_user: { Args: never; Returns: boolean }
       save_quote_transaction: {
         Args: { p_charges: Json; p_items: Json; p_quote: Json }
         Returns: Json

@@ -8,24 +8,23 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ShieldCheck } from 'lucide-react'
 import { useTranslation } from '@/hooks/use-translation'
 
 export default function Profile() {
-  const { user, loading: authLoading, signOut } = useAuth()
+  const { user, profile: authProfile, loading: authLoading, signOut, validateSession } = useAuth()
   const navigate = useNavigate()
   const { toast } = useToast()
   const { t } = useTranslation()
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [validating, setValidating] = useState(false)
 
-  const [profile, setProfile] = useState({
+  const [profileData, setProfileData] = useState({
     name: '',
-    cpf: '',
+    cpf_cnpj: '',
     phone: '',
-    handicap: 0,
-    category: '',
     avatar_url: '',
   })
 
@@ -41,9 +40,9 @@ export default function Profile() {
 
       try {
         const { data, error } = await supabase
-          .from('athletes')
+          .from('profiles')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('id', user.id)
           .single()
 
         if (error) {
@@ -51,12 +50,10 @@ export default function Profile() {
             console.error('Error fetching profile:', error)
           }
         } else if (data) {
-          setProfile({
+          setProfileData({
             name: data.name || '',
-            cpf: data.cpf || '',
+            cpf_cnpj: data.cpf_cnpj || '',
             phone: data.phone || '',
-            handicap: data.handicap || 0,
-            category: data.category || '',
             avatar_url: data.photo_url || '',
           })
         }
@@ -72,15 +69,22 @@ export default function Profile() {
     }
   }, [user])
 
-  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCpfCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, '')
-    if (value.length > 11) value = value.slice(0, 11)
+    if (value.length > 14) value = value.slice(0, 14)
 
-    value = value.replace(/(\d{3})(\d)/, '$1.$2')
-    value = value.replace(/(\d{3})(\d)/, '$1.$2')
-    value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+    if (value.length <= 11) {
+      value = value.replace(/(\d{3})(\d)/, '$1.$2')
+      value = value.replace(/(\d{3})(\d)/, '$1.$2')
+      value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+    } else {
+      value = value.replace(/^(\d{2})(\d)/, '$1.$2')
+      value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+      value = value.replace(/\.(\d{3})(\d)/, '.$1/$2')
+      value = value.replace(/(\d{4})(\d)/, '$1-$2')
+    }
 
-    setProfile((prev) => ({ ...prev, cpf: value }))
+    setProfileData((prev) => ({ ...prev, cpf_cnpj: value }))
   }
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,12 +98,12 @@ export default function Profile() {
       value = `${value.slice(0, 10)}-${value.slice(10)}`
     }
 
-    setProfile((prev) => ({ ...prev, phone: value }))
+    setProfileData((prev) => ({ ...prev, phone: value }))
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setProfile((prev) => ({ ...prev, [name]: value }))
+    setProfileData((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,23 +121,14 @@ export default function Profile() {
 
       const { data } = supabase.storage.from('avatars').getPublicUrl(filePath)
 
-      setProfile((prev) => ({ ...prev, avatar_url: data.publicUrl }))
+      setProfileData((prev) => ({ ...prev, avatar_url: data.publicUrl }))
 
-      const { data: existingAthlete } = await supabase
-        .from('athletes')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
+      const { error } = await supabase
+        .from('profiles')
+        .update({ photo_url: data.publicUrl })
+        .eq('id', user.id)
 
-      if (existingAthlete) {
-        await supabase.from('athletes').update({ photo_url: data.publicUrl }).eq('user_id', user.id)
-      } else {
-        await supabase.from('athletes').insert({
-          user_id: user.id,
-          photo_url: data.publicUrl,
-          email: user.email,
-        })
-      }
+      if (error) throw error
 
       toast({
         title: t('profile.profileUpdated') || 'Perfil atualizado',
@@ -157,34 +152,16 @@ export default function Profile() {
 
     setSaving(true)
     try {
-      const { data: existingAthlete } = await supabase
-        .from('athletes')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (existingAthlete) {
-        const { error } = await supabase
-          .from('athletes')
-          .update({
-            name: profile.name,
-            cpf: profile.cpf,
-            phone: profile.phone,
-          })
-          .eq('user_id', user.id)
-
-        if (error) throw error
-      } else {
-        const { error } = await supabase.from('athletes').insert({
-          user_id: user.id,
-          name: profile.name,
-          cpf: profile.cpf,
-          phone: profile.phone,
-          email: user.email,
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: profileData.name,
+          cpf_cnpj: profileData.cpf_cnpj,
+          phone: profileData.phone,
         })
+        .eq('id', user.id)
 
-        if (error) throw error
-      }
+      if (error) throw error
 
       toast({
         title: t('profile.profileUpdated'),
@@ -199,6 +176,25 @@ export default function Profile() {
       })
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleValidateSession = async () => {
+    setValidating(true)
+    try {
+      await validateSession()
+      toast({
+        title: 'Sessão validada',
+        description: 'A sua sessão e permissões foram atualizadas com sucesso.',
+      })
+    } catch (error) {
+      toast({
+        title: 'Erro na validação',
+        description: 'Houve um erro ao validar sua sessão.',
+        variant: 'destructive',
+      })
+    } finally {
+      setValidating(false)
     }
   }
 
@@ -218,7 +214,7 @@ export default function Profile() {
   if (!user) return null
 
   return (
-    <div className="container max-w-2xl py-10 animate-fade-in-up">
+    <div className="container max-w-2xl py-10 animate-fade-in-up space-y-6">
       <Card>
         <CardHeader className="flex flex-col sm:flex-row items-center sm:justify-between gap-4 pb-8">
           <div className="flex items-center gap-4">
@@ -226,11 +222,13 @@ export default function Profile() {
               <Avatar className="h-20 w-20">
                 <AvatarImage
                   src={
-                    profile.avatar_url ||
-                    `https://api.dicebear.com/7.x/initials/svg?seed=${profile.name || user.email}`
+                    profileData.avatar_url ||
+                    `https://api.dicebear.com/7.x/initials/svg?seed=${profileData.name || user.email}`
                   }
                 />
-                <AvatarFallback>{profile.name?.charAt(0) || user.email?.charAt(0)}</AvatarFallback>
+                <AvatarFallback>
+                  {profileData.name?.charAt(0) || user.email?.charAt(0)}
+                </AvatarFallback>
               </Avatar>
               <label
                 htmlFor="avatar-upload"
@@ -248,7 +246,7 @@ export default function Profile() {
               </label>
             </div>
             <div>
-              <CardTitle className="text-2xl">{profile.name || t('profile.title')}</CardTitle>
+              <CardTitle className="text-2xl">{profileData.name || t('profile.title')}</CardTitle>
               <CardDescription>{user.email}</CardDescription>
             </div>
           </div>
@@ -264,19 +262,19 @@ export default function Profile() {
                 <Input
                   id="name"
                   name="name"
-                  value={profile.name}
+                  value={profileData.name}
                   onChange={handleChange}
                   placeholder={t('profile.namePlaceholder')}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cpf">{t('profile.cpf')}</Label>
+                <Label htmlFor="cpf_cnpj">CPF/CNPJ</Label>
                 <Input
-                  id="cpf"
-                  name="cpf"
-                  value={profile.cpf}
-                  onChange={handleCpfChange}
+                  id="cpf_cnpj"
+                  name="cpf_cnpj"
+                  value={profileData.cpf_cnpj}
+                  onChange={handleCpfCnpjChange}
                   placeholder="000.000.000-00"
                 />
               </div>
@@ -285,19 +283,9 @@ export default function Profile() {
                 <Input
                   id="phone"
                   name="phone"
-                  value={profile.phone}
+                  value={profileData.phone}
                   onChange={handlePhoneChange}
                   placeholder="(00) 00000-0000"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="handicap">{t('profile.handicap')}</Label>
-                <Input
-                  id="handicap"
-                  name="handicap"
-                  value={profile.handicap}
-                  disabled
-                  className="bg-muted"
                 />
               </div>
             </div>
@@ -313,6 +301,48 @@ export default function Profile() {
               </Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-primary" />
+            Validação de Sessão
+          </CardTitle>
+          <CardDescription>Ferramenta de diagnóstico de sessão e permissões</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-muted/50 p-3 rounded-lg">
+              <Label className="text-muted-foreground text-xs uppercase">ID do Usuário</Label>
+              <div className="font-mono text-sm mt-1 truncate" title={user.id}>
+                {user.id}
+              </div>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-lg">
+              <Label className="text-muted-foreground text-xs uppercase">E-mail</Label>
+              <div className="font-medium text-sm mt-1 truncate" title={user.email}>
+                {user.email}
+              </div>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-lg">
+              <Label className="text-muted-foreground text-xs uppercase">Perfil de Acesso</Label>
+              <div className="font-medium text-sm mt-1 capitalize">
+                {authProfile?.role || 'Não definido'}
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={handleValidateSession} variant="secondary" disabled={validating}>
+              {validating ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <ShieldCheck className="h-4 w-4 mr-2" />
+              )}
+              Validar Sessão
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
