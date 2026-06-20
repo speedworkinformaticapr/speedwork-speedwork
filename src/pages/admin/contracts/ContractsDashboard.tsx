@@ -210,6 +210,7 @@ export default function ContractsDashboard() {
                   <TableHead>Parte Contratada</TableHead>
                   <TableHead>Início</TableHead>
                   <TableHead>Vencimento</TableHead>
+                  <TableHead>Valor</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -241,6 +242,14 @@ export default function ContractsDashboard() {
                               />
                             )}
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          {item.valor_ciclo
+                            ? new Intl.NumberFormat('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL',
+                              }).format(item.valor_ciclo)
+                            : '-'}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="capitalize">

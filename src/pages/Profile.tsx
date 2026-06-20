@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { Loader2, ShieldCheck } from 'lucide-react'
 import { useTranslation } from '@/hooks/use-translation'
 
@@ -26,6 +27,9 @@ export default function Profile() {
     cpf_cnpj: '',
     phone: '',
     avatar_url: '',
+    is_client: false,
+    is_supplier: false,
+    is_athlete: false,
   })
 
   useEffect(() => {
@@ -55,6 +59,9 @@ export default function Profile() {
             cpf_cnpj: data.cpf_cnpj || '',
             phone: data.phone || '',
             avatar_url: data.photo_url || '',
+            is_client: !!data.is_client,
+            is_supplier: !!data.is_supplier,
+            is_athlete: !!data.is_athlete,
           })
         }
       } catch (err) {
@@ -330,6 +337,17 @@ export default function Profile() {
               <Label className="text-muted-foreground text-xs uppercase">Perfil de Acesso</Label>
               <div className="font-medium text-sm mt-1 capitalize">
                 {authProfile?.role || 'Não definido'}
+              </div>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-lg sm:col-span-3">
+              <Label className="text-muted-foreground text-xs uppercase">Tipo de Conta</Label>
+              <div className="font-medium text-sm mt-1 flex gap-2">
+                {profileData.is_client && <Badge variant="outline">Cliente</Badge>}
+                {profileData.is_supplier && <Badge variant="outline">Fornecedor</Badge>}
+                {profileData.is_athlete && <Badge variant="outline">Atleta</Badge>}
+                {!profileData.is_client && !profileData.is_supplier && !profileData.is_athlete && (
+                  <span className="text-muted-foreground">Padrão</span>
+                )}
               </div>
             </div>
           </div>

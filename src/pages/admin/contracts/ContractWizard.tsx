@@ -27,8 +27,11 @@ export default function ContractWizard() {
   // Data States
   const [allClauses, setAllClauses] = useState<any[]>([])
   const [clients, setClients] = useState<any[]>([])
+  const [templates, setTemplates] = useState<any[]>([])
+  const [accounts, setAccounts] = useState<any[]>([])
 
   // Wizard States
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
   const [selectedClauseIds, setSelectedClauseIds] = useState<string[]>([])
   const [variables, setVariables] = useState<Record<string, string>>({})
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null)
@@ -36,6 +39,8 @@ export default function ContractWizard() {
     cliente_id: '',
     data_inicio: new Date().toISOString().split('T')[0],
     data_fim: '',
+    conta_id: '',
+    valor_ciclo: '',
   })
 
   useEffect(() => {
@@ -47,8 +52,18 @@ export default function ContractWizard() {
     supabase
       .from('profiles')
       .select('*')
-      .or('is_client.eq.true,is_club.eq.true')
+      .eq('is_client', true)
       .then(({ data }) => setClients(data || []))
+    supabase
+      .from('contract_templates')
+      .select('*')
+      .eq('is_active', true)
+      .then(({ data }) => setTemplates(data || []))
+    supabase
+      .from('plano_contas')
+      .select('*')
+      .eq('is_active', true)
+      .then(({ data }) => setAccounts(data || []))
   }, [])
 
   if (role === 'Viewer') {
@@ -64,15 +79,26 @@ export default function ContractWizard() {
     .filter(Boolean)
 
   const extractVariables = () => {
-    const text = orderedClauses.map((c) => c.content).join(' ')
+    let text = ''
+    if (selectedTemplateId) {
+      const t = templates.find((x) => x.id === selectedTemplateId)
+      text = t?.content || ''
+    } else {
+      text = orderedClauses.map((c) => c.content).join(' ')
+    }
     const matches = text.match(/\[(.*?)\]/g) || []
     return Array.from(new Set(matches.map((m) => m.replace(/\[|\]/g, ''))))
   }
 
   const getPreviewText = () => {
-    const finalHtml = orderedClauses
-      .map((c) => `<h3>${c.title}</h3>${c.content}`)
-      .join('<br/><br/>')
+    let finalHtml = ''
+    if (selectedTemplateId) {
+      const t = templates.find((x) => x.id === selectedTemplateId)
+      finalHtml = t?.content || ''
+    } else {
+      finalHtml = orderedClauses.map((c) => `<h3>${c.title}</h3>${c.content}`).join('<br/><br/>')
+    }
+
     return extractVariables().reduce(
       (acc, v) =>
         acc.replaceAll(
@@ -95,6 +121,8 @@ export default function ContractWizard() {
       status,
       data_inicio: clientData.data_inicio,
       data_fim: clientData.data_fim || null,
+      conta_id: clientData.conta_id || null,
+      valor_ciclo: clientData.valor_ciclo ? parseFloat(clientData.valor_ciclo) : null,
       content: finalText,
       numero_contrato: `CTR-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000)}`,
       tipo_contrato: 'servico',
@@ -134,10 +162,13 @@ export default function ContractWizard() {
               <p className="text-muted-foreground">
                 Escolha um modelo base ou comece do zero para selecionar as cláusulas manualmente.
               </p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card
-                  className="cursor-pointer border-primary bg-primary/5"
-                  onClick={() => setStep(2)}
+                  className="cursor-pointer border-primary bg-primary/5 hover:bg-primary/10 transition-colors"
+                  onClick={() => {
+                    setSelectedTemplateId(null)
+                    setStep(2)
+                  }}
                 >
                   <CardHeader>
                     <CardTitle>Contrato em Branco</CardTitle>
@@ -146,6 +177,25 @@ export default function ContractWizard() {
                     <p className="text-sm">Selecione cláusulas individualmente da biblioteca.</p>
                   </CardContent>
                 </Card>
+                {templates.map((t) => (
+                  <Card
+                    key={t.id}
+                    className="cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+                    onClick={() => {
+                      setSelectedTemplateId(t.id)
+                      setStep(3) // Pula o passo 2 ao usar um template completo
+                    }}
+                  >
+                    <CardHeader>
+                      <CardTitle>{t.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground truncate">
+                        Usar modelo pré-definido.
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             </div>
           )}
@@ -326,6 +376,42 @@ export default function ContractWizard() {
                       />
                     </div>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Conta Financeira (Opcional)</Label>
+                      <Select
+                        value={clientData.conta_id || 'none'}
+                        onValueChange={(v) =>
+                          setClientData({ ...clientData, conta_id: v === 'none' ? '' : v })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Nenhuma</SelectItem>
+                          {accounts.map((a) => (
+                            <SelectItem key={a.id} value={a.id}>
+                              {a.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Valor do Ciclo (R$)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={clientData.valor_ciclo}
+                        onChange={(e) =>
+                          setClientData({ ...clientData, valor_ciclo: e.target.value })
+                        }
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -338,7 +424,7 @@ export default function ContractWizard() {
           {step < 5 ? (
             <Button
               onClick={() => {
-                if (step === 2 && selectedClauseIds.length === 0)
+                if (step === 2 && !selectedTemplateId && selectedClauseIds.length === 0)
                   return toast({ title: 'Selecione ao menos 1 cláusula' })
                 setStep(step + 1)
               }}

@@ -81,6 +81,8 @@ import AdminContratoView from './pages/admin/commercial/AdminContratoView'
 import AdminCommercialDashboard from './pages/admin/commercial/AdminCommercialDashboard'
 import AdminContractsDashboard from './pages/admin/contracts/ContractsDashboard'
 import AdminContractWizard from './pages/admin/contracts/ContractWizard'
+import AdminTemplateList from './pages/admin/contracts/TemplateList'
+import AdminTemplateForm from './pages/admin/contracts/TemplateForm'
 import AdminClausesList from './pages/admin/contracts/ClausesList'
 import AdminClauseForm from './pages/admin/contracts/ClauseForm'
 import AdminEntitiesList from './pages/admin/contracts/EntitiesList'
@@ -205,6 +207,9 @@ const App = () => (
                   />
                   <Route path="contracts/dashboard" element={<AdminContractsDashboard />} />
                   <Route path="contracts/wizard" element={<AdminContractWizard />} />
+                  <Route path="contracts/templates" element={<AdminTemplateList />} />
+                  <Route path="contracts/templates/new" element={<AdminTemplateForm />} />
+                  <Route path="contracts/templates/:id/edit" element={<AdminTemplateForm />} />
                   <Route path="contracts/clauses" element={<AdminClausesList />} />
                   <Route path="contracts/clauses/new" element={<AdminClauseForm />} />
                   <Route path="contracts/clauses/:id/edit" element={<AdminClauseForm />} />
