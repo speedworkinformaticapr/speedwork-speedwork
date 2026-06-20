@@ -887,6 +887,166 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_additives: {
+        Row: {
+          content: string
+          contract_id: string | null
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          start_date: string | null
+          status: string | null
+          title: string
+        }
+        Insert: {
+          content: string
+          contract_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          status?: string | null
+          title: string
+        }
+        Update: {
+          content?: string
+          contract_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          status?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'contract_additives_contract_id_fkey'
+            columns: ['contract_id']
+            isOneToOne: false
+            referencedRelation: 'contratos'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      contract_clause_versions: {
+        Row: {
+          clause_id: string | null
+          content: string
+          created_at: string | null
+          id: string
+          version_label: string
+        }
+        Insert: {
+          clause_id?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          version_label: string
+        }
+        Update: {
+          clause_id?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          version_label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'contract_clause_versions_clause_id_fkey'
+            columns: ['clause_id']
+            isOneToOne: false
+            referencedRelation: 'contract_clauses'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      contract_clauses: {
+        Row: {
+          category: string
+          content: string
+          created_at: string | null
+          id: string
+          status: string | null
+          title: string
+          updated_at: string | null
+          version: string | null
+        }
+        Insert: {
+          category: string
+          content: string
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          title: string
+          updated_at?: string | null
+          version?: string | null
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+          version?: string | null
+        }
+        Relationships: []
+      }
+      contract_signers: {
+        Row: {
+          contract_id: string | null
+          created_at: string | null
+          id: string
+          order_index: number | null
+          profile_id: string | null
+          role: string
+          signed_at: string | null
+          status: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          contract_id?: string | null
+          created_at?: string | null
+          id?: string
+          order_index?: number | null
+          profile_id?: string | null
+          role: string
+          signed_at?: string | null
+          status?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          contract_id?: string | null
+          created_at?: string | null
+          id?: string
+          order_index?: number | null
+          profile_id?: string | null
+          role?: string
+          signed_at?: string | null
+          status?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'contract_signers_contract_id_fkey'
+            columns: ['contract_id']
+            isOneToOne: false
+            referencedRelation: 'contratos'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'contract_signers_profile_id_fkey'
+            columns: ['profile_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       contract_templates: {
         Row: {
           content: string | null
@@ -918,6 +1078,7 @@ export type Database = {
         Row: {
           cliente_id: string | null
           conta_id: string | null
+          content: string | null
           created_at: string | null
           data_cancelamento: string | null
           data_fim: string | null
@@ -930,6 +1091,7 @@ export type Database = {
           observacoes: string | null
           renovacao_automatica: boolean | null
           responsavel_id: string | null
+          signature_order_type: string | null
           sla_id: string | null
           status: string | null
           tipo_contrato: string | null
@@ -940,6 +1102,7 @@ export type Database = {
         Insert: {
           cliente_id?: string | null
           conta_id?: string | null
+          content?: string | null
           created_at?: string | null
           data_cancelamento?: string | null
           data_fim?: string | null
@@ -952,6 +1115,7 @@ export type Database = {
           observacoes?: string | null
           renovacao_automatica?: boolean | null
           responsavel_id?: string | null
+          signature_order_type?: string | null
           sla_id?: string | null
           status?: string | null
           tipo_contrato?: string | null
@@ -962,6 +1126,7 @@ export type Database = {
         Update: {
           cliente_id?: string | null
           conta_id?: string | null
+          content?: string | null
           created_at?: string | null
           data_cancelamento?: string | null
           data_fim?: string | null
@@ -974,6 +1139,7 @@ export type Database = {
           observacoes?: string | null
           renovacao_automatica?: boolean | null
           responsavel_id?: string | null
+          signature_order_type?: string | null
           sla_id?: string | null
           status?: string | null
           tipo_contrato?: string | null

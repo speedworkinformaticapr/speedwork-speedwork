@@ -21,10 +21,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Eye, Edit, ShieldAlert } from 'lucide-react'
-import { useSimulatedRole } from './use-simulated-role'
+import { useAuth } from '@/hooks/use-auth'
 
 export default function ContractsDashboard() {
-  const { role, setRole } = useSimulatedRole()
+  const { roles } = useAuth()
+  const role = roles.includes('master') || roles.includes('admin') ? 'Admin' : 'Viewer'
   const [contracts, setContracts] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -93,20 +94,6 @@ export default function ContractsDashboard() {
           <p className="text-sm text-muted-foreground">Sistema Centralizado de Documentos</p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <ShieldAlert className="w-5 h-5 text-muted-foreground" />
-            <Select value={role} onValueChange={setRole}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Admin">Admin</SelectItem>
-                <SelectItem value="Legal">Legal</SelectItem>
-                <SelectItem value="Commercial">Comercial</SelectItem>
-                <SelectItem value="Viewer">Visualizador</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
           {role !== 'Viewer' && (
             <Button asChild>
               <Link to="/admin/contracts/wizard">Novo Contrato</Link>
@@ -228,41 +215,49 @@ export default function ContractsDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((item) => {
-                  const days = getDaysToExpire(item.data_fim)
-                  const isExpiring = days <= 30 && days >= 0
-                  return (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.numero_contrato}</TableCell>
-                      <TableCell>{item.profiles?.name || 'N/A'}</TableCell>
-                      <TableCell>
-                        {item.data_inicio ? new Date(item.data_inicio).toLocaleDateString() : '-'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {item.data_fim ? new Date(item.data_fim).toLocaleDateString() : '-'}
-                          {isExpiring && (
-                            <div
-                              className={`w-2 h-2 rounded-full ${days <= 7 ? 'bg-red-500' : 'bg-yellow-500'}`}
-                            />
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize">
-                          {item.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" asChild>
-                          <Link to={`/admin/contracts/${item.id}`}>
-                            <Eye className="w-4 h-4" />
-                          </Link>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
+                {filtered.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      Nenhum contrato encontrado.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filtered.map((item) => {
+                    const days = getDaysToExpire(item.data_fim)
+                    const isExpiring = days <= 30 && days >= 0
+                    return (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{item.numero_contrato}</TableCell>
+                        <TableCell>{item.profiles?.name || 'N/A'}</TableCell>
+                        <TableCell>
+                          {item.data_inicio ? new Date(item.data_inicio).toLocaleDateString() : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {item.data_fim ? new Date(item.data_fim).toLocaleDateString() : '-'}
+                            {isExpiring && (
+                              <div
+                                className={`w-2 h-2 rounded-full ${days <= 7 ? 'bg-red-500' : 'bg-yellow-500'}`}
+                              />
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {item.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="icon" asChild>
+                            <Link to={`/admin/contracts/${item.id}`}>
+                              <Eye className="w-4 h-4" />
+                            </Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
+                )}
               </TableBody>
             </Table>
           </div>

@@ -59,9 +59,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const allRoles = new Set<string>()
       if (fetchedProfile?.role) {
-        allRoles.add(fetchedProfile.role)
+        allRoles.add(fetchedProfile.role.toLowerCase())
       }
-      fetchedRoles.forEach((r: string) => allRoles.add(r))
+      fetchedRoles.forEach((r: string) => allRoles.add(r.toLowerCase()))
 
       const rolesArray = Array.from(allRoles)
       setRoles(rolesArray)
@@ -88,9 +88,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    // Only let getSession handle the initial load completion to avoid race conditions
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
@@ -98,21 +98,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (mounted) setLoading(false)
         })
       } else {
-        setProfile(null)
-        setRoles([])
-        setActiveRoleState(null)
         setLoading(false)
       }
     })
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return
+      // Skip INITIAL_SESSION event to prevent overriding getSession's loading state
+      if (event === 'INITIAL_SESSION') return
+
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
-        fetchProfileAndRoles(session.user).then(() => {
-          if (mounted) setLoading(false)
-        })
+        // Keep loading state mostly intact here or let it be if it's already false
+        fetchProfileAndRoles(session.user)
       } else {
+        setProfile(null)
+        setRoles([])
+        setActiveRoleState(null)
         setLoading(false)
       }
     })

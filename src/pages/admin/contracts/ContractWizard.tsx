@@ -15,11 +15,12 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { toast } from '@/hooks/use-toast'
-import { useSimulatedRole } from './use-simulated-role'
+import { useAuth } from '@/hooks/use-auth'
 import { ArrowUp, ArrowDown, CheckCircle2 } from 'lucide-react'
 
 export default function ContractWizard() {
-  const { role } = useSimulatedRole()
+  const { roles } = useAuth()
+  const role = roles.includes('master') || roles.includes('admin') ? 'Admin' : 'Viewer'
   const navigate = useNavigate()
   const [step, setStep] = useState(1)
 
@@ -100,7 +101,10 @@ export default function ContractWizard() {
     }
 
     const { data, error } = await supabase.from('contratos').insert(payload).select().single()
-    if (error) return toast({ title: 'Erro ao salvar', variant: 'destructive' })
+    if (error) {
+      console.error('Error saving contract:', error)
+      return toast({ title: 'Erro ao salvar o contrato', variant: 'destructive' })
+    }
 
     toast({ title: 'Contrato gerado com sucesso!' })
     navigate(`/admin/contracts/${data.id}`)
