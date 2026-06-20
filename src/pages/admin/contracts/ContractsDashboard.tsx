@@ -29,6 +29,7 @@ export default function ContractsDashboard() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
+  const [expiryFilter, setExpiryFilter] = useState('all')
 
   useEffect(() => {
     fetchData()
@@ -71,7 +72,17 @@ export default function ContractsDashboard() {
       c.profiles?.name?.toLowerCase().includes(search.toLowerCase())
     const matchStatus = statusFilter === 'all' || c.status === statusFilter
     const matchType = typeFilter === 'all' || c.tipo_contrato === typeFilter
-    return matchSearch && matchStatus && matchType
+
+    let matchExpiry = true
+    if (expiryFilter !== 'all') {
+      const days = getDaysToExpire(c.data_fim)
+      if (expiryFilter === '7') matchExpiry = days <= 7 && days >= 0
+      if (expiryFilter === '15') matchExpiry = days <= 15 && days >= 0
+      if (expiryFilter === '30') matchExpiry = days <= 30 && days >= 0
+      if (expiryFilter === 'expired') matchExpiry = days < 0
+    }
+
+    return matchSearch && matchStatus && matchType && matchExpiry
   })
 
   return (
@@ -188,6 +199,18 @@ export default function ContractsDashboard() {
                 <SelectItem value="assinatura">Assinatura</SelectItem>
                 <SelectItem value="manutencao">Manutenção</SelectItem>
                 <SelectItem value="servico">Serviço</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={expiryFilter} onValueChange={setExpiryFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Vencimento" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Qualquer Vencimento</SelectItem>
+                <SelectItem value="7">Até 7 dias</SelectItem>
+                <SelectItem value="15">Até 15 dias</SelectItem>
+                <SelectItem value="30">Até 30 dias</SelectItem>
+                <SelectItem value="expired">Vencidos</SelectItem>
               </SelectContent>
             </Select>
           </div>

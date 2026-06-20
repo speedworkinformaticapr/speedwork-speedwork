@@ -89,6 +89,50 @@ export default function Reports() {
         </Card>
       </div>
 
+      <div className="grid md:grid-cols-3 gap-6">
+        {[
+          { label: 'Vencendo em 30 dias', days: 30, color: 'text-red-600' },
+          { label: 'Vencendo em 60 dias', days: 60, color: 'text-orange-600' },
+          { label: 'Vencendo em 90 dias', days: 90, color: 'text-yellow-600' },
+        ].map((block) => {
+          const expiring = data.filter((c) => {
+            if (!c.data_fim) return false
+            const d = Math.ceil(
+              (new Date(c.data_fim).getTime() - new Date().getTime()) / (1000 * 3600 * 24),
+            )
+            return d > block.days - 30 && d <= block.days
+          })
+
+          return (
+            <Card key={block.days} className="print:shadow-none print:border-black">
+              <CardHeader>
+                <CardTitle className={`text-lg ${block.color}`}>{block.label}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {expiring.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Nenhum contrato neste período.</p>
+                  ) : (
+                    expiring.map((c) => (
+                      <div
+                        key={c.id}
+                        className="flex justify-between items-center border-b pb-2 text-sm"
+                      >
+                        <div>
+                          <p className="font-medium">{c.numero_contrato}</p>
+                          <p className="text-xs text-muted-foreground">{c.profiles?.name}</p>
+                        </div>
+                        <div className="font-bold">{new Date(c.data_fim).toLocaleDateString()}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+
       <Card className="print:shadow-none print:border-black">
         <CardHeader>
           <CardTitle>Listagem Consolidada</CardTitle>

@@ -30,6 +30,7 @@ export default function ContractWizard() {
   // Wizard States
   const [selectedClauseIds, setSelectedClauseIds] = useState<string[]>([])
   const [variables, setVariables] = useState<Record<string, string>>({})
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null)
   const [clientData, setClientData] = useState({
     cliente_id: '',
     data_inicio: new Date().toISOString().split('T')[0],
@@ -183,7 +184,20 @@ export default function ContractWizard() {
                       return (
                         <div
                           key={id}
-                          className="flex items-center justify-between bg-background border p-2 mb-2 rounded-md shadow-sm"
+                          draggable
+                          onDragStart={() => setDraggedIdx(index)}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => {
+                            e.preventDefault()
+                            if (draggedIdx !== null && draggedIdx !== index) {
+                              const newArr = [...selectedClauseIds]
+                              const item = newArr.splice(draggedIdx, 1)[0]
+                              newArr.splice(index, 0, item)
+                              setSelectedClauseIds(newArr)
+                            }
+                            setDraggedIdx(null)
+                          }}
+                          className={`flex items-center justify-between bg-background border p-2 mb-2 rounded-md shadow-sm cursor-move ${draggedIdx === index ? 'opacity-50' : ''}`}
                         >
                           <span className="text-sm truncate mr-2">
                             {index + 1}. {clause?.title}
@@ -192,7 +206,7 @@ export default function ContractWizard() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6"
+                              className="h-6 w-6 cursor-pointer"
                               disabled={index === 0}
                               onClick={() => {
                                 const newArr = [...selectedClauseIds]
@@ -208,7 +222,7 @@ export default function ContractWizard() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6"
+                              className="h-6 w-6 cursor-pointer"
                               disabled={index === selectedClauseIds.length - 1}
                               onClick={() => {
                                 const newArr = [...selectedClauseIds]

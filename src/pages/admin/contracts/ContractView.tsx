@@ -1,10 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
   Select,
   SelectContent,
@@ -13,9 +21,28 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Progress } from '@/components/ui/progress'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { toast } from '@/hooks/use-toast'
-import { ArrowLeft, Edit, FilePlus, Send, Trash2 } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { useSimulatedRole } from './use-simulated-role'
+import {
+  ArrowLeft,
+  Clock,
+  FileSignature,
+  FileText,
+  AlertTriangle,
+  Plus,
+  Trash2,
+} from 'lucide-react'
 
 export default function ContractView() {
   const { id } = useParams()
@@ -23,286 +50,446 @@ export default function ContractView() {
   const { role } = useSimulatedRole()
 
   const [contract, setContract] = useState<any>(null)
-  const [signatories, setSignatories] = useState<any[]>([])
-  const [addendums, setAddendums] = useState<any[]>([])
+  const [signers, setSigners] = useState<any[]>([])
+  const [additives, setAdditives] = useState<any[]>([])
   const [profiles, setProfiles] = useState<any[]>([])
 
-  // Add Signatory State
-  const [newSig, setNewSig] = useState({ profile_id: '', role: 'Testemunha' })
-  const [simulatedDate, setSimulatedDate] = useState<string | null>(null)
+  // States for Modals
+  const [newSigner, setNewSigner] = useState({ profile_id: '', role: 'Contratado' })
+  const [newAdditive, setNewAdditive] = useState({
+    title: '',
+    description: '',
+    content: '',
+    start_date: '',
+    end_date: '',
+  })
+
+  const isReadOnly = role === 'Viewer' || role === 'Commercial'
 
   useEffect(() => {
-    loadData()
-    supabase
-      .from('profiles')
-      .select('id, name, cpf_cnpj')
-      .then(({ data }) => setProfiles(data || []))
+    fetchData()
   }, [id])
 
-  const loadData = async () => {
-    const { data: c } = await supabase
+  const fetchData = async () => {
+    if (!id) return
+    const { data: cData } = await supabase
       .from('contratos')
       .select('*, profiles:cliente_id(name)')
       .eq('id', id)
       .single()
-    if (c) setContract(c)
+    if (cData) setContract(cData)
 
-    const { data: sigs } = await supabase
-      .from('contract_signatories')
-      .select('*, profiles(name, email)')
+    const { data: sData } = await supabase
+      .from('contract_signers')
+      .select('*, profiles(name)')
       .eq('contract_id', id)
-      .order('signing_order')
-    if (sigs) setSignatories(sigs)
+      .order('order_index')
+    if (sData) setSigners(sData)
 
-    const { data: adds } = await supabase
-      .from('contratos')
-      .select('id, numero_contrato, status, data_inicio')
-      .eq('parent_contract_id', id)
-    if (adds) setAddendums(adds)
+    const { data: aData } = await supabase
+      .from('contract_additives')
+      .select('*')
+      .eq('contract_id', id)
+      .order('created_at', { ascending: false })
+    if (aData) setAdditives(aData)
+
+    const { data: pData } = await supabase.from('profiles').select('id, name')
+    if (pData) setProfiles(pData)
   }
 
-  const handleAddSignatory = async () => {
-    if (!newSig.profile_id) return
-    await supabase.from('contract_signatories').insert({
+  const handleUpdateOrderType = async (type: string) => {
+    await supabase.from('contratos').update({ signature_order_type: type }).eq('id', id)
+    setContract({ ...contract, signature_order_type: type })
+    toast({ title: 'Ordem de assinatura atualizada' })
+  }
+
+  const handleAddSigner = async () => {
+    if (!newSigner.profile_id)
+      return toast({ title: 'Selecione uma entidade', variant: 'destructive' })
+    const payload = {
       contract_id: id,
-      profile_id: newSig.profile_id,
-      role: newSig.role,
+      profile_id: newSigner.profile_id,
+      role: newSigner.role,
       status: 'Pendente',
-    })
-    setNewSig({ profile_id: '', role: 'Testemunha' })
-    loadData()
+      order_index: signers.length + 1,
+    }
+    await supabase.from('contract_signers').insert(payload)
+    toast({ title: 'Signatário adicionado' })
+    fetchData()
   }
 
-  const handleSendSignature = async () => {
+  const handleRemoveSigner = async (signerId: string) => {
+    await supabase.from('contract_signers').delete().eq('id', signerId)
+    toast({ title: 'Signatário removido' })
+    fetchData()
+  }
+
+  const handleSendToSign = async () => {
+    if (signers.length === 0)
+      return toast({ title: 'Adicione pelo menos um signatário', variant: 'destructive' })
     await supabase.from('contratos').update({ status: 'em assinatura' }).eq('id', id)
-    toast({ title: 'Status atualizado', description: 'O contrato foi movido para Em Assinatura.' })
-    loadData()
+    toast({ title: 'Contrato enviado para assinatura!' })
+    fetchData()
   }
 
-  const handleSimulate = () => {
+  const handleSimulateRenewal = async () => {
     if (!contract.data_fim) return
-    const curr = new Date(contract.data_fim)
-    curr.setMonth(curr.getMonth() + 12)
-    setSimulatedDate(curr.toISOString())
-  }
-
-  const createAddendum = async () => {
-    const { data, error } = await supabase
+    const currentEnd = new Date(contract.data_fim)
+    currentEnd.setFullYear(currentEnd.getFullYear() + 1)
+    await supabase
       .from('contratos')
-      .insert({
-        parent_contract_id: contract.id,
-        cliente_id: contract.cliente_id,
-        status: 'rascunho',
-        numero_contrato: `${contract.numero_contrato}-A${addendums.length + 1}`,
-        content: contract.content,
-      })
-      .select()
-      .single()
-    if (error) return toast({ title: 'Erro ao criar aditivo', variant: 'destructive' })
-    toast({ title: 'Aditivo Criado' })
-    navigate(`/admin/contracts/${data.id}`)
+      .update({ data_fim: currentEnd.toISOString().split('T')[0] })
+      .eq('id', id)
+    toast({ title: 'Vigência renovada com sucesso!' })
+    fetchData()
   }
 
-  const handleDelete = async () => {
-    if (addendums.length > 0)
-      return toast({
-        title: 'Erro',
-        description: 'Existem aditivos vinculados. Exclua-os primeiro.',
-        variant: 'destructive',
-      })
-    await supabase.from('contratos').delete().eq('id', id)
-    toast({ title: 'Contrato excluído' })
-    navigate('/admin/contracts/dashboard')
+  const handleCreateAdditive = async () => {
+    if (!newAdditive.title || !newAdditive.content)
+      return toast({ title: 'Preencha título e conteúdo', variant: 'destructive' })
+    await supabase
+      .from('contract_additives')
+      .insert({ ...newAdditive, contract_id: id, status: 'Ativo' })
+    toast({ title: 'Aditivo criado com sucesso' })
+    fetchData()
   }
 
-  if (!contract) return <div className="p-10 text-center">Carregando...</div>
+  if (!contract) return <div className="p-6">Carregando...</div>
 
-  // Timeline calc
-  const start = new Date(contract.data_inicio).getTime()
-  const end = new Date(simulatedDate || contract.data_fim).getTime()
-  const now = new Date().getTime()
-  const progress = contract.data_fim
-    ? Math.max(0, Math.min(100, ((now - start) / (end - start)) * 100))
-    : 0
+  const getVigencyStats = () => {
+    if (!contract.data_inicio || !contract.data_fim) return { progress: 0, daysLeft: 0, alert: '' }
+    const start = new Date(contract.data_inicio).getTime()
+    const end = new Date(contract.data_fim).getTime()
+    const now = new Date().getTime()
+    const total = end - start
+    const passed = now - start
+    const progress = Math.min(100, Math.max(0, (passed / total) * 100))
+    const daysLeft = Math.ceil((end - now) / (1000 * 3600 * 24))
+
+    let alert = ''
+    if (daysLeft < 0) alert = 'Expirado'
+    else if (daysLeft <= 7) alert = 'Vence em 7 dias ou menos!'
+    else if (daysLeft <= 30) alert = 'Vence em 30 dias ou menos'
+
+    return { progress, daysLeft, alert }
+  }
+
+  const vigency = getVigencyStats()
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-5 h-5" />
+          <Button variant="ghost" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-2xl font-bold flex items-center gap-3">
               {contract.numero_contrato}
-              <Badge variant="outline" className="capitalize text-sm">
+              <Badge variant="outline" className="capitalize">
                 {contract.status}
               </Badge>
             </h1>
-            <p className="text-muted-foreground">Parte: {contract.profiles?.name}</p>
+            <p className="text-muted-foreground">
+              {contract.profiles?.name} • Tipo: {contract.tipo_contrato}
+            </p>
           </div>
-        </div>
-        <div className="flex gap-2">
-          {contract.status === 'rascunho' && (
-            <Button onClick={handleSendSignature}>
-              <Send className="w-4 h-4 mr-2" /> Enviar Assinatura
-            </Button>
-          )}
-          {role === 'Admin' && (
-            <Button variant="destructive" onClick={handleDelete}>
-              <Trash2 className="w-4 h-4 mr-2" /> Excluir
-            </Button>
-          )}
         </div>
       </div>
 
-      <Tabs defaultValue="geral" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="geral">Visão Geral do Documento</TabsTrigger>
-          <TabsTrigger value="signatarios">Signatários & Fluxo</TabsTrigger>
-          <TabsTrigger value="vigencia">Vigência & Aditivos</TabsTrigger>
+      <Tabs defaultValue="document">
+        <TabsList className="mb-4 overflow-x-auto w-full justify-start">
+          <TabsTrigger value="document">
+            <FileText className="w-4 h-4 mr-2" /> Documento
+          </TabsTrigger>
+          <TabsTrigger value="signatures">
+            <FileSignature className="w-4 h-4 mr-2" /> Assinaturas
+          </TabsTrigger>
+          <TabsTrigger value="vigency">
+            <Clock className="w-4 h-4 mr-2" /> Vigência e Renovações
+          </TabsTrigger>
+          <TabsTrigger value="additives">
+            <Plus className="w-4 h-4 mr-2" /> Aditivos ({additives.length})
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="geral" className="mt-4">
+        <TabsContent value="document">
           <Card>
-            <CardContent
-              className="p-6 prose max-w-none bg-white text-black min-h-[400px]"
-              dangerouslySetInnerHTML={{ __html: contract.content || 'Nenhum conteúdo.' }}
-            />
+            <CardHeader>
+              <CardTitle>Conteúdo do Contrato</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div
+                className="border rounded-lg p-8 bg-white min-h-[500px] prose max-w-none text-black"
+                dangerouslySetInnerHTML={{
+                  __html: contract.content || 'Nenhum conteúdo disponível.',
+                }}
+              />
+            </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="signatarios" className="mt-4 space-y-6">
+        <TabsContent value="signatures">
           <Card>
-            <CardHeader>
-              <CardTitle>Lista de Assinaturas</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {signatories.map((s) => (
-                <div key={s.id} className="flex justify-between items-center p-3 border rounded-lg">
-                  <div>
-                    <div className="font-medium">{s.profiles?.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {s.profiles?.email} • Papel: {s.role}
-                    </div>
-                  </div>
-                  <Badge variant={s.status === 'Assinado' ? 'default' : 'secondary'}>
-                    {s.status}
-                  </Badge>
-                </div>
-              ))}
-              {signatories.length === 0 && (
-                <p className="text-muted-foreground text-center py-4">
-                  Nenhum signatário adicionado.
-                </p>
+            <CardHeader className="flex flex-row justify-between items-start">
+              <div>
+                <CardTitle>Fluxo de Assinaturas</CardTitle>
+                <CardDescription>Gerencie quem deve assinar este documento.</CardDescription>
+              </div>
+              {!isReadOnly && contract.status === 'rascunho' && (
+                <Button onClick={handleSendToSign}>Enviar para Assinatura</Button>
               )}
-            </CardContent>
-          </Card>
-
-          {['rascunho', 'em assinatura'].includes(contract.status) && role !== 'Viewer' && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Adicionar Signatário</CardTitle>
-              </CardHeader>
-              <CardContent className="flex gap-4">
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center gap-4 bg-muted/30 p-4 rounded-lg border">
+                <Label>Ordem de Assinatura:</Label>
                 <Select
-                  value={newSig.profile_id}
-                  onValueChange={(v) => setNewSig({ ...newSig, profile_id: v })}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Selecione a pessoa/empresa" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {profiles.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name} ({p.cpf_cnpj})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={newSig.role}
-                  onValueChange={(v) => setNewSig({ ...newSig, role: v })}
+                  value={contract.signature_order_type || 'simultaneous'}
+                  onValueChange={handleUpdateOrderType}
+                  disabled={isReadOnly || contract.status !== 'rascunho'}
                 >
                   <SelectTrigger className="w-[200px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Contratante">Contratante</SelectItem>
-                    <SelectItem value="Contratado">Contratado</SelectItem>
-                    <SelectItem value="Interveniente">Interveniente</SelectItem>
-                    <SelectItem value="Testemunha">Testemunha</SelectItem>
+                    <SelectItem value="simultaneous">Simultânea (Todos recebem)</SelectItem>
+                    <SelectItem value="sequential">Sequencial (Um por vez)</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button onClick={handleAddSignatory}>Adicionar</Button>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ordem</TableHead>
+                      <TableHead>Entidade</TableHead>
+                      <TableHead>Papel</TableHead>
+                      <TableHead>Status</TableHead>
+                      {!isReadOnly && contract.status === 'rascunho' && (
+                        <TableHead className="text-right">Ações</TableHead>
+                      )}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {signers.map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell>{s.order_index}</TableCell>
+                        <TableCell>{s.profiles?.name}</TableCell>
+                        <TableCell>{s.role}</TableCell>
+                        <TableCell>
+                          <Badge variant={s.status === 'Assinado' ? 'default' : 'secondary'}>
+                            {s.status}
+                          </Badge>
+                        </TableCell>
+                        {!isReadOnly && contract.status === 'rascunho' && (
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRemoveSigner(s.id)}
+                            >
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                            </Button>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                    {signers.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center text-muted-foreground py-4">
+                          Nenhum signatário adicionado.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {!isReadOnly && contract.status === 'rascunho' && (
+                <div className="flex flex-col md:flex-row gap-4 items-end bg-muted/20 p-4 rounded-lg border">
+                  <div className="space-y-2 flex-1 w-full">
+                    <Label>Entidade</Label>
+                    <Select
+                      value={newSigner.profile_id}
+                      onValueChange={(v) => setNewSigner({ ...newSigner, profile_id: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {profiles.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2 flex-1 w-full">
+                    <Label>Papel</Label>
+                    <Select
+                      value={newSigner.role}
+                      onValueChange={(v) => setNewSigner({ ...newSigner, role: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Contratante">Contratante</SelectItem>
+                        <SelectItem value="Contratado">Contratado</SelectItem>
+                        <SelectItem value="Interveniente Anuente">Interveniente Anuente</SelectItem>
+                        <SelectItem value="Testemunha">Testemunha</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    onClick={handleAddSigner}
+                    variant="secondary"
+                    className="w-full md:w-auto"
+                  >
+                    Adicionar
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        <TabsContent value="vigencia" className="mt-4 space-y-6">
+        <TabsContent value="vigency">
           <Card>
             <CardHeader>
-              <CardTitle>Linha do Tempo</CardTitle>
+              <CardTitle>Controle de Vigência</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2 mt-4">
-                <Progress value={progress} className="h-3" />
-                <div className="flex justify-between text-sm text-muted-foreground font-medium">
-                  <span>Início: {new Date(contract.data_inicio).toLocaleDateString()}</span>
-                  <span className={simulatedDate ? 'text-primary' : ''}>
-                    Vencimento:{' '}
-                    {contract.data_fim
-                      ? new Date(simulatedDate || contract.data_fim).toLocaleDateString()
-                      : 'Indeterminado'}
+            <CardContent className="space-y-8">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>
+                    Início:{' '}
+                    {contract.data_inicio
+                      ? new Date(contract.data_inicio).toLocaleDateString()
+                      : '-'}
+                  </span>
+                  <span>
+                    Fim:{' '}
+                    {contract.data_fim ? new Date(contract.data_fim).toLocaleDateString() : '-'}
                   </span>
                 </div>
+                <Progress value={vigency.progress} className="h-3" />
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-sm text-muted-foreground">
+                    {vigency.daysLeft} dias restantes
+                  </span>
+                  {vigency.alert && (
+                    <span
+                      className={`text-sm font-bold flex items-center gap-1 ${vigency.daysLeft <= 7 ? 'text-red-500' : 'text-yellow-500'}`}
+                    >
+                      <AlertTriangle className="w-4 h-4" /> {vigency.alert}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="mt-8 flex gap-4">
-                <Button variant="outline" onClick={handleSimulate} disabled={!contract.data_fim}>
-                  Simular Renovação (+12m)
-                </Button>
-                {simulatedDate && (
-                  <Button variant="ghost" onClick={() => setSimulatedDate(null)}>
-                    Limpar Simulação
+
+              <div className="flex flex-col md:flex-row gap-6 bg-muted/20 p-6 rounded-lg border items-start md:items-center justify-between">
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox id="auto_renew" checked={contract.renovacao_automatica} disabled />
+                    <Label htmlFor="auto_renew">Renovação Automática</Label>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Ciclo: {contract.duracao_ciclo || '12 meses'}
+                  </p>
+                </div>
+                {!isReadOnly && (
+                  <Button onClick={handleSimulateRenewal} variant="outline">
+                    Simular Renovação (+1 ano)
                   </Button>
                 )}
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
 
+        <TabsContent value="additives">
           <Card>
-            <CardHeader className="flex flex-row justify-between items-center">
-              <CardTitle>Aditivos Vinculados</CardTitle>
-              {contract.status === 'ativo' && role !== 'Viewer' && (
-                <Button onClick={createAddendum} variant="secondary" size="sm">
-                  <FilePlus className="w-4 h-4 mr-2" /> Criar Aditivo
-                </Button>
+            <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <CardTitle>Aditivos Contratuais</CardTitle>
+              {!isReadOnly && contract.status === 'ativo' && (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="w-4 h-4 mr-2" /> Criar Aditivo
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Novo Aditivo Contratual</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label>Título do Aditivo</Label>
+                        <Input
+                          value={newAdditive.title}
+                          onChange={(e) =>
+                            setNewAdditive({ ...newAdditive, title: e.target.value })
+                          }
+                          placeholder="Ex: Aditivo de Prazo 01"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Nova Data Fim (Opcional)</Label>
+                          <Input
+                            type="date"
+                            value={newAdditive.end_date}
+                            onChange={(e) =>
+                              setNewAdditive({ ...newAdditive, end_date: e.target.value })
+                            }
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Conteúdo Modificado</Label>
+                        <RichTextEditor
+                          value={newAdditive.content}
+                          onChange={(v: string) => setNewAdditive({ ...newAdditive, content: v })}
+                        />
+                      </div>
+                      <Button onClick={handleCreateAdditive} className="w-full">
+                        Salvar Aditivo
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               )}
             </CardHeader>
             <CardContent>
-              {addendums.length === 0 ? (
-                <p className="text-muted-foreground text-sm">Nenhum aditivo registrado.</p>
+              {additives.length === 0 ? (
+                <div className="text-center p-6 text-muted-foreground bg-muted/20 rounded-lg border">
+                  Nenhum aditivo registrado para este contrato.
+                </div>
               ) : (
-                <div className="space-y-3">
-                  {addendums.map((add) => (
-                    <div
-                      key={add.id}
-                      className="flex justify-between items-center p-3 border rounded-lg bg-muted/30"
-                    >
-                      <div>
-                        <div className="font-medium">{add.numero_contrato}</div>
-                        <div className="text-sm text-muted-foreground">
-                          Criado em: {new Date(add.data_inicio).toLocaleDateString()}
+                <div className="space-y-4">
+                  {additives.map((add) => (
+                    <div key={add.id} className="border p-4 rounded-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="font-bold text-lg">{add.title}</h4>
+                          <span className="text-xs text-muted-foreground">
+                            Criado em {new Date(add.created_at).toLocaleDateString()}
+                          </span>
                         </div>
+                        <Badge variant="outline">{add.status}</Badge>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => navigate(`/admin/contracts/${add.id}`)}
-                      >
-                        Acessar
-                      </Button>
+                      {add.end_date && (
+                        <p className="text-sm font-medium text-blue-600 mb-2">
+                          Nova Data Fim: {new Date(add.end_date).toLocaleDateString()}
+                        </p>
+                      )}
+                      <div
+                        className="text-sm bg-muted/50 p-3 rounded prose max-w-none"
+                        dangerouslySetInnerHTML={{ __html: add.content }}
+                      />
                     </div>
                   ))}
                 </div>
