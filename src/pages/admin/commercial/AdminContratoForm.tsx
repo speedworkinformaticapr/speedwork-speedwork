@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import {
   Select,
   SelectContent,
@@ -313,10 +314,11 @@ export default function AdminContratoForm() {
           </div>
           <div className="space-y-2">
             <Label>Observações e Termos Adicionais</Label>
-            <Textarea
-              rows={5}
-              value={form.observacoes}
-              onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
+            <RichTextEditor
+              value={form.observacoes || ''}
+              onChange={(v) => setForm({ ...form, observacoes: v })}
+              withAi
+              aiContext="Termos contratuais adicionais e observações para um contrato de serviço"
             />
           </div>
         </TabsContent>
