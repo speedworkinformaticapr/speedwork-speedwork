@@ -17,12 +17,12 @@ interface BreadcrumbProp {
 interface PageHeroProps {
   title: string
   description?: string
-  breadcrumbs: BreadcrumbProp[]
+  breadcrumbs?: BreadcrumbProp[]
   icon?: React.ReactNode
   children?: React.ReactNode
 }
 
-export function PageHero({ title, description, breadcrumbs, icon, children }: PageHeroProps) {
+export function PageHero({ title, description, breadcrumbs = [], icon, children }: PageHeroProps) {
   return (
     <div className="bg-[#0052CC] pt-24 pb-20 text-white relative overflow-hidden">
       {icon && (
@@ -31,30 +31,32 @@ export function PageHero({ title, description, breadcrumbs, icon, children }: Pa
         </div>
       )}
       <div className="container mx-auto px-4 relative z-10">
-        <Breadcrumb className="mb-6">
-          <BreadcrumbList className="text-white/70">
-            {breadcrumbs.map((crumb, index) => (
-              <React.Fragment key={index}>
-                <BreadcrumbItem>
-                  {crumb.href ? (
-                    <BreadcrumbLink asChild>
-                      <Link to={crumb.href} className="hover:text-white transition-colors">
+        {Array.isArray(breadcrumbs) && breadcrumbs.length > 0 && (
+          <Breadcrumb className="mb-6">
+            <BreadcrumbList className="text-white/70">
+              {breadcrumbs.map((crumb, index) => (
+                <React.Fragment key={index}>
+                  <BreadcrumbItem>
+                    {crumb.href ? (
+                      <BreadcrumbLink asChild>
+                        <Link to={crumb.href} className="hover:text-white transition-colors">
+                          {crumb.label}
+                        </Link>
+                      </BreadcrumbLink>
+                    ) : (
+                      <BreadcrumbPage className="text-white font-medium">
                         {crumb.label}
-                      </Link>
-                    </BreadcrumbLink>
-                  ) : (
-                    <BreadcrumbPage className="text-white font-medium">
-                      {crumb.label}
-                    </BreadcrumbPage>
+                      </BreadcrumbPage>
+                    )}
+                  </BreadcrumbItem>
+                  {index < breadcrumbs.length - 1 && (
+                    <BreadcrumbSeparator className="text-white/50" />
                   )}
-                </BreadcrumbItem>
-                {index < breadcrumbs.length - 1 && (
-                  <BreadcrumbSeparator className="text-white/50" />
-                )}
-              </React.Fragment>
-            ))}
-          </BreadcrumbList>
-        </Breadcrumb>
+                </React.Fragment>
+              ))}
+            </BreadcrumbList>
+          </Breadcrumb>
+        )}
 
         <h1
           className="text-4xl md:text-6xl font-montserrat font-black mb-4 uppercase leading-tight animate-fade-in-up"
