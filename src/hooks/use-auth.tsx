@@ -20,6 +20,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signOut: () => Promise<{ error: any }>
   loading: boolean
+  validateSession: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -80,6 +81,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+  const validateSession = async () => {
+    setLoading(true)
+    try {
+      const {
+        data: { session: currentSession },
+      } = await supabase.auth.getSession()
+      setSession(currentSession)
+      setUser(currentSession?.user ?? null)
+      if (currentSession?.user) {
+        await fetchProfileAndRoles(currentSession.user)
+      } else {
+        setProfile(null)
+        setRoles([])
+        setActiveRoleState(null)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const setActiveRole = (role: string) => {
     setActiveRoleState(role)
     localStorage.setItem('activeRole', role)
@@ -98,7 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (mounted) setLoading(false)
         })
       } else {
-        setLoading(false)
+        if (mounted) setLoading(false)
       }
     })
 
@@ -106,19 +127,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return
-      // Skip INITIAL_SESSION event to prevent overriding getSession's loading state
       if (event === 'INITIAL_SESSION') return
 
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
-        // Keep loading state mostly intact here or let it be if it's already false
-        fetchProfileAndRoles(session.user)
+        setLoading(true)
+        fetchProfileAndRoles(session.user).then(() => {
+          if (mounted) setLoading(false)
+        })
       } else {
         setProfile(null)
         setRoles([])
         setActiveRoleState(null)
-        setLoading(false)
+        if (mounted) setLoading(false)
       }
     })
 
@@ -158,6 +180,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         signIn,
         signOut,
         loading,
+        validateSession,
       }}
     >
       {children}

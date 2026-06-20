@@ -26,7 +26,7 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
   const hasRequiredRole = roles.some((role) => allowedRoles.includes(role))
 
   if (!hasRequiredRole && !roles.includes('master')) {
-    return <Navigate to="/profile" replace />
+    return <Navigate to="/forbidden" replace />
   }
 
   return <>{children}</>

@@ -14,11 +14,14 @@ import { useAuth } from '@/hooks/use-auth'
 import { useSystemData } from '@/hooks/use-system-data'
 import { supabase } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
+import { RefreshCcw } from 'lucide-react'
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [pages, setPages] = useState<any[]>([])
-  const { user, profile, activeRole, roles, setActiveRole, signOut } = useAuth()
+  const { user, profile, activeRole, roles, setActiveRole, signOut, validateSession } = useAuth()
+  const { toast } = useToast()
   const location = useLocation()
   const navigate = useNavigate()
   const { data: systemData } = useSystemData()
@@ -57,8 +60,25 @@ export default function Header() {
       client: 'Cliente',
       staff: 'Staff',
       user: 'Usuário',
+      master: 'Master',
     }
     return names[role] || role
+  }
+
+  const handleValidateSession = async () => {
+    try {
+      await validateSession()
+      toast({
+        title: 'Sessão Validada',
+        description: `E-mail: ${user?.email} | Papéis: ${roles.join(', ') || 'Nenhum'}`,
+      })
+    } catch (e: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao validar',
+        description: e?.message || 'Houve um erro ao validar sua sessão.',
+      })
+    }
   }
 
   return (
@@ -233,6 +253,12 @@ export default function Header() {
                       Meu Perfil
                     </Link>
                   </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={handleValidateSession} className="cursor-pointer">
+                    <RefreshCcw className="mr-2 h-4 w-4" />
+                    <span>Validar Sessão</span>
+                  </DropdownMenuItem>
+
                   {isAdmin && (
                     <DropdownMenuItem asChild>
                       <Link to="/admin/dashboard" className="w-full">
@@ -400,6 +426,15 @@ export default function Header() {
                 >
                   Meu Perfil
                 </Link>
+                <button
+                  className="text-sm font-medium hover:text-primary text-left flex items-center gap-2"
+                  onClick={() => {
+                    handleValidateSession()
+                    setIsMobileMenuOpen(false)
+                  }}
+                >
+                  <RefreshCcw className="h-4 w-4" /> Validar Sessão
+                </button>
                 {isAdmin && (
                   <Link
                     to="/admin/dashboard"
