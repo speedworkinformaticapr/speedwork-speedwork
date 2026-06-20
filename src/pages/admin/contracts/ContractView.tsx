@@ -63,14 +63,12 @@ export default function ContractView() {
 
   const handleAddSignatory = async () => {
     if (!newSig.profile_id) return
-    await supabase
-      .from('contract_signatories')
-      .insert({
-        contract_id: id,
-        profile_id: newSig.profile_id,
-        role: newSig.role,
-        status: 'Pendente',
-      })
+    await supabase.from('contract_signatories').insert({
+      contract_id: id,
+      profile_id: newSig.profile_id,
+      role: newSig.role,
+      status: 'Pendente',
+    })
     setNewSig({ profile_id: '', role: 'Testemunha' })
     loadData()
   }
