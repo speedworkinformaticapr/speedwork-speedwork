@@ -10,8 +10,8 @@ import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 interface DatePickerWithRangeProps extends React.HTMLAttributes<HTMLDivElement> {
-  date: DateRange | undefined
-  setDate: (date: DateRange | undefined) => void
+  date?: DateRange
+  setDate?: (date: DateRange | undefined) => void
 }
 
 export function DatePickerWithRange({ className, date, setDate }: DatePickerWithRangeProps) {
@@ -23,7 +23,7 @@ export function DatePickerWithRange({ className, date, setDate }: DatePickerWith
             id="date"
             variant={'outline'}
             className={cn(
-              'w-[300px] justify-start text-left font-normal bg-background text-foreground border-input',
+              'w-full justify-start text-left font-normal',
               !date && 'text-muted-foreground',
             )}
           >
@@ -38,14 +38,11 @@ export function DatePickerWithRange({ className, date, setDate }: DatePickerWith
                 format(date.from, 'dd/MM/yyyy', { locale: ptBR })
               )
             ) : (
-              <span>Filtrar por Período</span>
+              <span>Filtrar por período</span>
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent
-          className="w-auto p-0 dark bg-slate-950 text-slate-50 border-slate-800"
-          align="start"
-        >
+        <PopoverContent className="w-auto p-0" align="start">
           <Calendar
             initialFocus
             mode="range"
@@ -54,7 +51,6 @@ export function DatePickerWithRange({ className, date, setDate }: DatePickerWith
             onSelect={setDate}
             numberOfMonths={2}
             locale={ptBR}
-            className="bg-slate-950 text-slate-50 rounded-md border-slate-800"
           />
         </PopoverContent>
       </Popover>
