@@ -3,14 +3,13 @@ import { getMaintenanceConfig, MaintenanceConfig } from '@/services/maintenance'
 import MaintenancePage from '@/pages/MaintenancePage'
 import { Loader2 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
-import { supabase } from '@/lib/supabase/client'
+import { useLocation } from 'react-router-dom'
 
 export function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   const [config, setConfig] = useState<MaintenanceConfig | null>(null)
   const [configLoading, setConfigLoading] = useState(true)
-  const [roleLoading, setRoleLoading] = useState(true)
-  const [userRole, setUserRole] = useState<string | null>(null)
-  const { user, loading: authLoading } = useAuth()
+  const { user, profile, roles, loading: authLoading } = useAuth()
+  const location = useLocation()
 
   useEffect(() => {
     let mounted = true
@@ -30,39 +29,13 @@ export function MaintenanceGuard({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  useEffect(() => {
-    let mounted = true
-    const fetchRole = async () => {
-      if (!user) {
-        if (mounted) {
-          setUserRole(null)
-          setRoleLoading(false)
-        }
-        return
-      }
-      try {
-        const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-        if (mounted) {
-          setUserRole(data?.role || 'user')
-        }
-      } catch (error) {
-        console.error('Error fetching user role:', error)
-        if (mounted) setUserRole('user')
-      } finally {
-        if (mounted) setRoleLoading(false)
-      }
-    }
+  // Explicit bypass for the login route to allow authentication
+  const isLoginRoute = location.pathname === '/login' || location.pathname === '/login/'
+  if (isLoginRoute) {
+    return <>{children}</>
+  }
 
-    if (!authLoading) {
-      fetchRole()
-    }
-
-    return () => {
-      mounted = false
-    }
-  }, [user, authLoading])
-
-  if (configLoading || authLoading || (user && roleLoading)) {
+  if (configLoading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -70,8 +43,14 @@ export function MaintenanceGuard({ children }: { children: React.ReactNode }) {
     )
   }
 
-  const isMasterOrAdmin = userRole === 'master' || userRole === 'admin'
+  // Check for master or admin role, handling case-insensitivity
+  const profileRole = profile?.role?.toLowerCase()
+  const isMasterOrAdmin =
+    profileRole === 'master' ||
+    profileRole === 'admin' ||
+    roles.some((r) => r.toLowerCase() === 'master' || r.toLowerCase() === 'admin')
 
+  // If maintenance is active and user is not an admin/master, show maintenance screen
   if (config?.is_active && !isMasterOrAdmin) {
     return <MaintenancePage config={config} />
   }
