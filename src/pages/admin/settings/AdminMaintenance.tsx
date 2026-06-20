@@ -127,7 +127,8 @@ export default function AdminMaintenance() {
                     <FormLabel>Mensagem Explicativa</FormLabel>
                     <FormControl>
                       <RichTextEditor
-                        {...field}
+                        value={field.value}
+                        onChange={field.onChange}
                         withAi
                         aiContext="Mensagem simpática avisando os usuários que o sistema está em atualização e voltará em breve"
                       />

@@ -111,9 +111,10 @@ export default function MaintenancePage({ config }: MaintenancePageProps) {
           {config.title}
         </h1>
 
-        <p className="text-lg md:text-xl opacity-90 leading-relaxed max-w-lg mx-auto dark:text-slate-200">
-          {config.message}
-        </p>
+        <div
+          className="text-lg md:text-xl opacity-90 leading-relaxed max-w-lg mx-auto dark:text-slate-200 [&>p]:mb-4 last:[&>p]:mb-0 [&_a]:text-primary [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h1]:text-3xl [&_h2]:text-2xl [&_h3]:text-xl"
+          dangerouslySetInnerHTML={{ __html: config.message || '' }}
+        />
 
         {config.return_date && (
           <div className="py-6">
