@@ -1,17 +1,23 @@
 import { UseFormReturn } from 'react-hook-form'
-import { SystemDataFormValues } from '../schema'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
-import { Textarea } from '@/components/ui/textarea'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import { SystemDataFormValues } from '../schema'
 
-export function SystemLegalTab({ form }: { form: UseFormReturn<SystemDataFormValues> }) {
+interface Props {
+  form: UseFormReturn<SystemDataFormValues>
+}
+
+export function SystemLegalTab({ form }: Props) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Termos e Legal</CardTitle>
-        <CardDescription>Política de privacidade, LGPD e termos de uso.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="space-y-6 animate-fade-in-up">
+      <div>
+        <h2 className="text-lg font-medium">Termos e Legal</h2>
+        <p className="text-sm text-muted-foreground">
+          Política de privacidade, LGPD e termos de uso.
+        </p>
+      </div>
+
+      <div className="space-y-6">
         <FormField
           control={form.control}
           name="terms_uso"
@@ -19,12 +25,18 @@ export function SystemLegalTab({ form }: { form: UseFormReturn<SystemDataFormVal
             <FormItem>
               <FormLabel>Termos de Uso</FormLabel>
               <FormControl>
-                <Textarea className="min-h-[100px]" {...field} value={field.value || ''} />
+                <RichTextEditor
+                  value={field.value || ''}
+                  onChange={field.onChange}
+                  withAi
+                  aiContext="Termos de Uso do Sistema"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name="terms_lgpd"
@@ -32,12 +44,18 @@ export function SystemLegalTab({ form }: { form: UseFormReturn<SystemDataFormVal
             <FormItem>
               <FormLabel>Política de Privacidade (LGPD)</FormLabel>
               <FormControl>
-                <Textarea className="min-h-[100px]" {...field} value={field.value || ''} />
+                <RichTextEditor
+                  value={field.value || ''}
+                  onChange={field.onChange}
+                  withAi
+                  aiContext="Política de Privacidade e Tratamento de Dados (LGPD)"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name="terms_cookies"
@@ -45,13 +63,18 @@ export function SystemLegalTab({ form }: { form: UseFormReturn<SystemDataFormVal
             <FormItem>
               <FormLabel>Política de Cookies</FormLabel>
               <FormControl>
-                <Textarea className="min-h-[100px]" {...field} value={field.value || ''} />
+                <RichTextEditor
+                  value={field.value || ''}
+                  onChange={field.onChange}
+                  withAi
+                  aiContext="Política de Cookies"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
