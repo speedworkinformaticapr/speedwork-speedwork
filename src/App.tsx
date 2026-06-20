@@ -88,6 +88,8 @@ import AdminClauseForm from './pages/admin/contracts/ClauseForm'
 import AdminEntitiesList from './pages/admin/contracts/EntitiesList'
 import AdminContractReports from './pages/admin/contracts/Reports'
 import AdminContractView from './pages/admin/contracts/ContractView'
+import AdminAddendumsList from './pages/admin/contracts/AddendumsList'
+import AdminAddendumForm from './pages/admin/contracts/AddendumForm'
 import QuoteForm from './pages/admin/quotes/QuoteForm'
 import QuoteView from './pages/admin/quotes/QuoteView'
 import StaffDashboard from './pages/staff/dashboard/StaffDashboard'
@@ -214,6 +216,9 @@ const App = () => (
                     <Route path="contracts/clauses" element={<AdminClausesList />} />
                     <Route path="contracts/clauses/new" element={<AdminClauseForm />} />
                     <Route path="contracts/clauses/:id/edit" element={<AdminClauseForm />} />
+                    <Route path="contracts/addendums" element={<AdminAddendumsList />} />
+                    <Route path="contracts/addendums/new" element={<AdminAddendumForm />} />
+                    <Route path="contracts/addendums/:id/edit" element={<AdminAddendumForm />} />
                     <Route path="contracts/entities" element={<AdminEntitiesList />} />
                     <Route path="contracts/reports" element={<AdminContractReports />} />
                     <Route path="contracts/:id" element={<AdminContractView />} />

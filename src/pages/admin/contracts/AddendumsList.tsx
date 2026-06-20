@@ -15,30 +15,30 @@ import { Badge } from '@/components/ui/badge'
 import { Edit, Trash2 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 
-export default function ClausesList() {
-  const [clauses, setClauses] = useState<any[]>([])
+export default function AddendumsList() {
+  const [addendums, setAddendums] = useState<any[]>([])
   const { toast } = useToast()
 
-  const fetchClauses = async () => {
+  const fetchAddendums = async () => {
     const { data } = await supabase
-      .from('contract_clauses')
-      .select('*')
+      .from('contract_additives')
+      .select('*, contratos(numero_contrato)')
       .order('created_at', { ascending: false })
-    if (data) setClauses(data)
+    if (data) setAddendums(data)
   }
 
   useEffect(() => {
-    fetchClauses()
+    fetchAddendums()
   }, [])
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir esta cláusula?')) return
-    const { error } = await supabase.from('contract_clauses').delete().eq('id', id)
+    if (!confirm('Tem certeza que deseja excluir este aditivo?')) return
+    const { error } = await supabase.from('contract_additives').delete().eq('id', id)
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' })
     } else {
-      toast({ title: 'Sucesso', description: 'Cláusula excluída.' })
-      fetchClauses()
+      toast({ title: 'Sucesso', description: 'Aditivo excluído.' })
+      fetchAddendums()
     }
   }
 
@@ -46,30 +46,38 @@ export default function ClausesList() {
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       <Card>
         <CardHeader className="flex flex-row justify-between items-center">
-          <CardTitle>Biblioteca de Cláusulas</CardTitle>
+          <CardTitle>Aditivos de Contrato</CardTitle>
           <Button asChild>
-            <Link to="new">Nova Cláusula</Link>
+            <Link to="new">Novo Aditivo</Link>
           </Button>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Nº Contrato</TableHead>
                 <TableHead>Título</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Versão</TableHead>
+                <TableHead>Início</TableHead>
+                <TableHead>Fim</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {clauses.map((item) => (
+              {addendums.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.title}</TableCell>
-                  <TableCell>{item.category}</TableCell>
-                  <TableCell>v{item.version}</TableCell>
+                  <TableCell className="font-medium">
+                    {item.contratos?.numero_contrato || 'N/A'}
+                  </TableCell>
+                  <TableCell>{item.title}</TableCell>
                   <TableCell>
-                    <Badge variant={item.status === 'Ativa' ? 'default' : 'secondary'}>
+                    {item.start_date ? new Date(item.start_date).toLocaleDateString('pt-BR') : '-'}
+                  </TableCell>
+                  <TableCell>
+                    {item.end_date ? new Date(item.end_date).toLocaleDateString('pt-BR') : '-'}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={item.status === 'Ativo' ? 'default' : 'secondary'}>
                       {item.status}
                     </Badge>
                   </TableCell>
@@ -85,10 +93,10 @@ export default function ClausesList() {
                   </TableCell>
                 </TableRow>
               ))}
-              {clauses.length === 0 && (
+              {addendums.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                    Nenhuma cláusula cadastrada.
+                  <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                    Nenhum aditivo cadastrado.
                   </TableCell>
                 </TableRow>
               )}

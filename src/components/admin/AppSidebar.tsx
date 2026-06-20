@@ -37,10 +37,9 @@ export function AppSidebar() {
       label: 'Gestão de Contratos',
       icon: 'FileText',
       items: [
-        { id: 'c-dashboard', label: 'Dashboard', path: '/admin/contracts/dashboard' },
-        { id: 'c-wizard', label: 'Novo Contrato (Wizard)', path: '/admin/contracts/wizard' },
+        { id: 'c-list', label: 'Contratos', path: '/admin/commercial/contracts' },
         { id: 'c-clauses', label: 'Biblioteca de Cláusulas', path: '/admin/contracts/clauses' },
-        { id: 'c-entities', label: 'Entidades', path: '/admin/contracts/entities' },
+        { id: 'c-addendums', label: 'Aditivos', path: '/admin/contracts/addendums' },
         { id: 'c-reports', label: 'Relatórios', path: '/admin/contracts/reports' },
       ],
     },
