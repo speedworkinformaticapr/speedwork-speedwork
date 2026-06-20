@@ -41,6 +41,7 @@ export default function AdminContratoForm() {
     sla_id: '',
     tipo_contrato: 'assinatura',
     data_inicio: new Date().toISOString().split('T')[0],
+    data_fim: '',
     duracao_ciclo: 'mensal',
     valor_ciclo: 0,
     renovacao_automatica: true,
@@ -64,9 +65,13 @@ export default function AdminContratoForm() {
       .order('codigo_estrutural')
       .then(({ data }) => setPlanoContas(data || []))
     supabase
-      .from('clientes')
-      .select('id, nome')
-      .then(({ data }) => setClientes(data || []))
+      .from('profiles')
+      .select('id, name')
+      .eq('is_client', true)
+      .then(({ data }) => {
+        const mapped = (data || []).map((p) => ({ id: p.id, nome: p.name }))
+        setClientes(mapped)
+      })
     supabase
       .from('sla_types')
       .select('id, name')
@@ -86,15 +91,29 @@ export default function AdminContratoForm() {
     if (!form.cliente_id)
       return toast({ title: 'Erro', description: 'Cliente obrigatório', variant: 'destructive' })
 
+    let responsavel_id = user?.id
+    if (user?.id) {
+      const { data: usuario } = await supabase
+        .from('usuarios')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (usuario?.id) {
+        responsavel_id = usuario.id
+      }
+    }
+
     const payload: any = {
       ...form,
       status,
-      responsavel_id: user?.id,
+      user_id: user?.id,
+      responsavel_id,
       numero_contrato: (form as any).numero_contrato || `CTR-${Date.now()}`,
       data_proxima_cobranca: (form as any).data_proxima_cobranca || form.data_inicio,
     }
     if (!payload.conta_id) payload.conta_id = null
     if (!payload.sla_id) payload.sla_id = null
+    if (!payload.data_fim) payload.data_fim = null
 
     if (id) await supabase.from('contratos').update(payload).eq('id', id)
     else await supabase.from('contratos').insert([payload])
@@ -106,12 +125,12 @@ export default function AdminContratoForm() {
   const handleQuickAddClient = async () => {
     if (!newClientName) return
     const { data } = await supabase
-      .from('clientes')
-      .insert([{ nome: newClientName }])
+      .from('profiles')
+      .insert([{ name: newClientName, is_client: true }])
       .select()
       .single()
     if (data) {
-      setClientes([...clientes, data])
+      setClientes([...clientes, { id: data.id, nome: data.name }])
       setForm({ ...form, cliente_id: data.id })
       setNewClientOpen(false)
       setNewClientName('')
@@ -223,6 +242,14 @@ export default function AdminContratoForm() {
                 type="date"
                 value={form.data_inicio}
                 onChange={(e) => setForm({ ...form, data_inicio: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Data Fim</Label>
+              <Input
+                type="date"
+                value={form.data_fim || ''}
+                onChange={(e) => setForm({ ...form, data_fim: e.target.value })}
               />
             </div>
             <div className="space-y-2">

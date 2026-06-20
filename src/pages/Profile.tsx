@@ -368,7 +368,9 @@ export default function Profile() {
               </div>
             </div>
             <div className="bg-muted/50 p-3 rounded-lg">
-              <Label className="text-muted-foreground text-xs uppercase">Tempo de Sessão</Label>
+              <Label className="text-muted-foreground text-xs uppercase">
+                Tempo de Sessão Ativa
+              </Label>
               <div
                 className="font-mono text-sm mt-1 text-primary font-bold"
                 title="Tempo desde o último login"
