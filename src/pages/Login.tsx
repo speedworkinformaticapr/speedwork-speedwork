@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2, Facebook, Instagram, Key } from 'lucide-react'
+import { useSystemData } from '@/hooks/use-system-data'
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
@@ -61,6 +62,7 @@ export default function Login() {
   const navigate = useNavigate()
   const location = useLocation()
   const { toast } = useToast()
+  const { data: systemData, loading: systemLoading } = useSystemData()
 
   const from = location.state?.from?.pathname
 
@@ -145,11 +147,19 @@ export default function Login() {
         </div>
         <div className="relative z-10 space-y-6">
           <Link to="/">
-            <img
-              src="/skip.png"
-              alt="Speedwork"
-              className="h-14 w-auto mb-8 bg-white/10 p-2 rounded-lg backdrop-blur-sm"
-            />
+            {systemData?.logo_url ? (
+              <img
+                src={systemData.logo_url}
+                alt={systemData?.platform_name || 'Logo'}
+                className="h-14 w-auto mb-8 bg-white/10 p-2 rounded-lg backdrop-blur-sm object-contain"
+              />
+            ) : (
+              <img
+                src="/skip.png"
+                alt="Speedwork"
+                className="h-14 w-auto mb-8 bg-white/10 p-2 rounded-lg backdrop-blur-sm"
+              />
+            )}
           </Link>
           <h1 className="text-5xl font-bold text-white tracking-tight leading-tight">
             Growth Marketing <br />
@@ -165,6 +175,22 @@ export default function Login() {
       {/* Right Panel */}
       <div className="flex w-full lg:w-1/2 items-center justify-center p-8 relative">
         <div className="w-full max-w-md space-y-8">
+          <div className="flex justify-center mb-6">
+            {systemLoading ? (
+              <div className="h-24 w-48 bg-muted animate-pulse rounded-md" />
+            ) : systemData?.logo_url ? (
+              <img
+                src={systemData.logo_url}
+                alt={systemData?.platform_name || 'Logo da Plataforma'}
+                className="h-24 max-w-[200px] object-contain"
+              />
+            ) : (
+              <h1 className="text-4xl font-extrabold tracking-tight text-foreground text-center">
+                {systemData?.platform_name || 'Plataforma'}
+              </h1>
+            )}
+          </div>
+
           {!showMfa ? (
             <div className="animate-fade-in-up">
               <div className="space-y-2 text-center lg:text-left mb-8">
