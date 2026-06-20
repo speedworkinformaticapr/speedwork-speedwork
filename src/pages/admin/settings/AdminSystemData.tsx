@@ -108,6 +108,37 @@ export default function AdminSystemData() {
         throw new Error('Formato JSON inválido em Horários de Funcionamento.')
       }
 
+      const dayNames: Record<string, string> = {
+        monday: 'Segunda-feira',
+        tuesday: 'Terça-feira',
+        wednesday: 'Quarta-feira',
+        thursday: 'Quinta-feira',
+        friday: 'Sexta-feira',
+        saturday: 'Sábado',
+        sunday: 'Domingo',
+      }
+
+      for (const [day, data] of Object.entries(businessHours)) {
+        const d = data as any
+        const dayName = dayNames[day] || day
+        if (d.active) {
+          if (d.open >= d.close) {
+            throw new Error(`Fechamento deve ser após a abertura (${dayName}).`)
+          }
+          if (d.has_lunch_break) {
+            if (d.lunch_start < d.open) {
+              throw new Error(`Almoço começa antes da abertura (${dayName}).`)
+            }
+            if (d.lunch_end > d.close) {
+              throw new Error(`Almoço termina após o fechamento (${dayName}).`)
+            }
+            if (d.lunch_start >= d.lunch_end) {
+              throw new Error(`Fim do almoço deve ser após o início (${dayName}).`)
+            }
+          }
+        }
+      }
+
       await supabase.from('system_data').upsert({
         id: TENANT_ID,
         platform_name: values.platform_name,
