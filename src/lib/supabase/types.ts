@@ -1703,6 +1703,8 @@ export type Database = {
         Row: {
           bg_color: string
           bg_image_url: string | null
+          bg_opacity: number | null
+          bg_video_url: string | null
           created_at: string
           facebook_url: string | null
           font_family: string
@@ -1719,6 +1721,8 @@ export type Database = {
         Insert: {
           bg_color?: string
           bg_image_url?: string | null
+          bg_opacity?: number | null
+          bg_video_url?: string | null
           created_at?: string
           facebook_url?: string | null
           font_family?: string
@@ -1735,6 +1739,8 @@ export type Database = {
         Update: {
           bg_color?: string
           bg_image_url?: string | null
+          bg_opacity?: number | null
+          bg_video_url?: string | null
           created_at?: string
           facebook_url?: string | null
           font_family?: string

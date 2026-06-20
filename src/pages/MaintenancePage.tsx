@@ -52,7 +52,7 @@ export default function MaintenancePage({ config }: MaintenancePageProps) {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden animate-fade-in"
+      className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden animate-fade-in dark:!text-slate-50"
       style={{
         color: config.text_color,
         fontFamily: config.font_family,
@@ -75,7 +75,7 @@ export default function MaintenancePage({ config }: MaintenancePageProps) {
       ) : null}
 
       <div
-        className="absolute inset-0 z-10"
+        className="absolute inset-0 z-10 dark:!bg-slate-950"
         style={{
           backgroundColor: config.bg_color,
           opacity: bgOpacity,
@@ -87,10 +87,10 @@ export default function MaintenancePage({ config }: MaintenancePageProps) {
         className="absolute top-6 right-6 z-50 p-3 rounded-full hover:bg-black/10 dark:hover:bg-white/10 backdrop-blur-sm transition-all duration-300 group"
         aria-label="Acesso Administrativo"
       >
-        <LogIn className="w-6 h-6 opacity-40 group-hover:opacity-100 transition-opacity" />
+        <LogIn className="w-6 h-6 opacity-40 group-hover:opacity-100 transition-opacity dark:text-slate-200" />
       </Link>
 
-      <div className="z-20 w-full max-w-2xl text-center space-y-8 p-8 bg-background/80 backdrop-blur-md rounded-2xl shadow-2xl border border-border/50">
+      <div className="z-20 w-full max-w-2xl text-center space-y-8 p-8 bg-background/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl shadow-2xl border border-border/50 dark:border-slate-800">
         <div className="flex justify-center mb-6">
           {systemData?.logo_url ? (
             <img
@@ -107,9 +107,11 @@ export default function MaintenancePage({ config }: MaintenancePageProps) {
           )}
         </div>
 
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight">{config.title}</h1>
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight dark:text-slate-50">
+          {config.title}
+        </h1>
 
-        <p className="text-lg md:text-xl opacity-90 leading-relaxed max-w-lg mx-auto">
+        <p className="text-lg md:text-xl opacity-90 leading-relaxed max-w-lg mx-auto dark:text-slate-200">
           {config.message}
         </p>
 
@@ -129,30 +131,32 @@ export default function MaintenancePage({ config }: MaintenancePageProps) {
                 ].map((item, i) => (
                   <div
                     key={i}
-                    className="flex flex-col items-center p-3 bg-primary/10 rounded-lg min-w-[80px]"
+                    className="flex flex-col items-center p-3 bg-primary/10 dark:bg-slate-800/80 rounded-lg min-w-[80px] dark:border dark:border-slate-700"
                   >
-                    <span className="text-3xl font-bold text-primary">{item.value}</span>
-                    <span className="text-xs uppercase tracking-wider opacity-75">
+                    <span className="text-3xl font-bold text-primary dark:text-slate-50">
+                      {item.value}
+                    </span>
+                    <span className="text-xs uppercase tracking-wider opacity-75 dark:text-slate-300">
                       {item.label}
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-2xl font-semibold text-primary animate-pulse">
+              <div className="text-2xl font-semibold text-primary dark:text-slate-50 animate-pulse">
                 Retornaremos em breve!
               </div>
             )}
           </div>
         )}
 
-        <div className="flex justify-center gap-6 pt-4 border-t border-border/50">
+        <div className="flex justify-center gap-6 pt-4 border-t border-border/50 dark:border-slate-800">
           {config.whatsapp_url && (
             <a
               href={config.whatsapp_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-primary transition-colors hover:scale-110 transform duration-200"
+              className="hover:text-primary transition-colors hover:scale-110 transform duration-200 dark:text-slate-300 dark:hover:text-white"
             >
               <MessageCircle className="w-8 h-8" />
               <span className="sr-only">WhatsApp</span>
@@ -163,7 +167,7 @@ export default function MaintenancePage({ config }: MaintenancePageProps) {
               href={config.instagram_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-primary transition-colors hover:scale-110 transform duration-200"
+              className="hover:text-primary transition-colors hover:scale-110 transform duration-200 dark:text-slate-300 dark:hover:text-white"
             >
               <Instagram className="w-8 h-8" />
               <span className="sr-only">Instagram</span>
@@ -174,7 +178,7 @@ export default function MaintenancePage({ config }: MaintenancePageProps) {
               href={config.facebook_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-primary transition-colors hover:scale-110 transform duration-200"
+              className="hover:text-primary transition-colors hover:scale-110 transform duration-200 dark:text-slate-300 dark:hover:text-white"
             >
               <Facebook className="w-8 h-8" />
               <span className="sr-only">Facebook</span>
