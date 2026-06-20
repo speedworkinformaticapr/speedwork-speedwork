@@ -193,7 +193,9 @@ export default function AdminContratosList({
               </SelectContent>
             </Select>
             <Button asChild>
-              <Link to="wizard">Novo {isAddendums ? 'Aditivo' : 'Contrato'}</Link>
+              <Link to={isAddendums ? '/admin/contracts/wizard' : 'new'}>
+                Novo {isAddendums ? 'Aditivo' : 'Contrato'}
+              </Link>
             </Button>
           </div>
         </CardHeader>

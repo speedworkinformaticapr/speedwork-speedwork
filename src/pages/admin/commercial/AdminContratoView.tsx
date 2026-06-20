@@ -47,11 +47,25 @@ export default function AdminContratoView() {
   const [simOpen, setSimOpen] = useState(false)
   const [simDate, setSimDate] = useState('')
 
+  const isUuidValid = (uuid?: string) => {
+    if (!uuid) return false
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uuid)
+  }
+
   useEffect(() => {
-    load()
-  }, [id])
+    if (id === 'wizard') {
+      navigate('/admin/contracts/wizard', { replace: true })
+      return
+    }
+
+    if (isUuidValid(id)) {
+      load()
+    }
+  }, [id, navigate])
 
   const load = async () => {
+    if (!id || !isUuidValid(id)) return
+
     const { data } = await supabase
       .from('contratos')
       .select('*, profiles!cliente_id(name), usuarios(nome)')
@@ -153,7 +167,7 @@ export default function AdminContratoView() {
           {contrato.status === 'ativo' && (
             <>
               <Button variant="secondary" asChild>
-                <Link to="/admin/commercial/contracts/wizard">
+                <Link to="/admin/contracts/wizard">
                   <Plus className="w-4 h-4 mr-2" /> Criar Aditivo
                 </Link>
               </Button>
