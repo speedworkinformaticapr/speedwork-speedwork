@@ -8,6 +8,7 @@ export function useUserRole() {
   const [isClubAdmin, setIsClubAdmin] = useState(false)
   const [clubId, setClubId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [role, setRole] = useState<string>('user')
 
   useEffect(() => {
     let mounted = true
@@ -31,9 +32,10 @@ export function useUserRole() {
 
         if (mounted) {
           if (data) {
-            const role = data.role || 'user'
-            setIsAdmin(role === 'admin' || role === 'master')
-            setIsClubAdmin(!!data.is_club || role === 'club')
+            const currentRole = data.role || 'user'
+            setRole(currentRole)
+            setIsAdmin(currentRole === 'admin' || currentRole === 'master')
+            setIsClubAdmin(!!data.is_club || currentRole === 'club')
             setClubId(data.club_id || null)
           } else {
             setIsAdmin(false)
@@ -57,5 +59,5 @@ export function useUserRole() {
     }
   }, [user])
 
-  return { isAdmin, isClubAdmin, clubId, loading }
+  return { isAdmin, isClubAdmin, clubId, role, loading }
 }

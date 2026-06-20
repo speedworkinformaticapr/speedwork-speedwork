@@ -31,6 +31,22 @@ export function AppSidebar() {
   const rawMenuConfig = data?.admin_menu_config as any[] | undefined
   const menuConfig = rawMenuConfig?.length ? rawMenuConfig : DEFAULT_MENU_CONFIG
 
+  const extendedMenuConfig = [
+    {
+      id: 'contracts',
+      label: 'Gestão de Contratos',
+      icon: 'FileText',
+      items: [
+        { id: 'c-dashboard', label: 'Dashboard', path: '/admin/contracts/dashboard' },
+        { id: 'c-wizard', label: 'Novo Contrato (Wizard)', path: '/admin/contracts/wizard' },
+        { id: 'c-clauses', label: 'Biblioteca de Cláusulas', path: '/admin/contracts/clauses' },
+        { id: 'c-entities', label: 'Entidades', path: '/admin/contracts/entities' },
+        { id: 'c-reports', label: 'Relatórios', path: '/admin/contracts/reports' },
+      ],
+    },
+    ...menuConfig,
+  ]
+
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader className="p-4 flex items-center justify-center min-h-[72px]">
@@ -51,7 +67,7 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>
-            {menuConfig.map((group: any) => {
+            {extendedMenuConfig.map((group: any) => {
               const isActiveGroup = group.items?.some((i: any) =>
                 location.pathname.startsWith(i.path),
               )

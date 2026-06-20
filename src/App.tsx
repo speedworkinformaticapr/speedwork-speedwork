@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
@@ -78,6 +78,16 @@ import AdminContratosList from './pages/admin/commercial/AdminContratosList'
 import AdminContratoForm from './pages/admin/commercial/AdminContratoForm'
 import AdminContratoView from './pages/admin/commercial/AdminContratoView'
 import AdminCommercialDashboard from './pages/admin/commercial/AdminCommercialDashboard'
+import AdminClausesList from './pages/admin/commercial/contracts/AdminClausesList'
+import AdminContractWizard from './pages/admin/commercial/contracts/AdminContractWizard'
+import AdminContractReports from './pages/admin/commercial/contracts/AdminContractReports'
+import AdminContractsDashboard from './pages/admin/contracts/ContractsDashboard'
+import AdminContractWizard from './pages/admin/contracts/ContractWizard'
+import AdminClausesList from './pages/admin/contracts/ClausesList'
+import AdminClauseForm from './pages/admin/contracts/ClauseForm'
+import AdminEntitiesList from './pages/admin/contracts/EntitiesList'
+import AdminContractReports from './pages/admin/contracts/Reports'
+import AdminContractView from './pages/admin/contracts/ContractView'
 import QuoteForm from './pages/admin/quotes/QuoteForm'
 import QuoteView from './pages/admin/quotes/QuoteView'
 import StaffDashboard from './pages/staff/dashboard/StaffDashboard'
@@ -191,6 +201,18 @@ const App = () => (
                   <Route path="commercial/contracts/new" element={<AdminContratoForm />} />
                   <Route path="commercial/contracts/:id/edit" element={<AdminContratoForm />} />
                   <Route path="commercial/contracts/:id" element={<AdminContratoView />} />
+                  <Route
+                    path="contracts"
+                    element={<Navigate to="/admin/contracts/dashboard" replace />}
+                  />
+                  <Route path="contracts/dashboard" element={<AdminContractsDashboard />} />
+                  <Route path="contracts/wizard" element={<AdminContractWizard />} />
+                  <Route path="contracts/clauses" element={<AdminClausesList />} />
+                  <Route path="contracts/clauses/new" element={<AdminClauseForm />} />
+                  <Route path="contracts/clauses/:id/edit" element={<AdminClauseForm />} />
+                  <Route path="contracts/entities" element={<AdminEntitiesList />} />
+                  <Route path="contracts/reports" element={<AdminContractReports />} />
+                  <Route path="contracts/:id" element={<AdminContractView />} />
                   <Route path="services" element={<AdminServices />} />
                   <Route path="whatsapp" element={<AdminWhatsApp />} />
                   <Route path="email" element={<AdminEmail />} />
