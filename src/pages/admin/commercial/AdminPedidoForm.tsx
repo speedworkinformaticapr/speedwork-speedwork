@@ -5,8 +5,8 @@ import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import {
   Select,
   SelectContent,
@@ -776,10 +776,11 @@ export default function AdminPedidoForm() {
           </div>
           <div className="space-y-2 pt-4">
             <Label>Observações Logísticas / Internas</Label>
-            <Textarea
-              rows={4}
-              value={formData.observacoes}
-              onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
+            <RichTextEditor
+              value={formData.observacoes || ''}
+              onChange={(v) => setFormData({ ...formData, observacoes: v })}
+              withAi
+              aiContext="Observações logísticas, prazo e detalhes internos de entrega/serviço"
             />
           </div>
         </TabsContent>
@@ -883,9 +884,11 @@ export default function AdminPedidoForm() {
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Observações</Label>
-              <Textarea
-                value={newClient.observacoes}
-                onChange={(e) => setNewClient({ ...newClient, observacoes: e.target.value })}
+              <RichTextEditor
+                value={newClient.observacoes || ''}
+                onChange={(v) => setNewClient({ ...newClient, observacoes: v })}
+                withAi
+                aiContext="Observações sobre o perfil e preferências do cliente"
               />
             </div>
             <div className="space-y-2 md:col-span-2 flex items-center gap-2">
@@ -977,9 +980,11 @@ export default function AdminPedidoForm() {
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Descrição Técnica</Label>
-              <Textarea
-                value={newProduct.description}
-                onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+              <RichTextEditor
+                value={newProduct.description || ''}
+                onChange={(v) => setNewProduct({ ...newProduct, description: v })}
+                withAi
+                aiContext="Descrição técnica detalhada de uma peça ou material"
               />
             </div>
           </div>
@@ -1007,9 +1012,11 @@ export default function AdminPedidoForm() {
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Descrição Detalhada</Label>
-              <Textarea
-                value={newService.description}
-                onChange={(e) => setNewService({ ...newService, description: e.target.value })}
+              <RichTextEditor
+                value={newService.description || ''}
+                onChange={(v) => setNewService({ ...newService, description: v })}
+                withAi
+                aiContext="Descrição detalhada e passo a passo de um serviço prestado"
               />
             </div>
             <div className="space-y-2">

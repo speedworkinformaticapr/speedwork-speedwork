@@ -3,19 +3,9 @@ import { useSystemData } from '@/hooks/use-system-data'
 import { useAuth } from '@/hooks/use-auth'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import {
-  Download,
-  Bold,
-  Italic,
-  Underline,
-  Link as LinkIcon,
-  List,
-  Heading1,
-  Heading2,
-} from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Download } from 'lucide-react'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 
 export default function LGPDSettings() {
   const { data, updateData } = useSystemData()
@@ -33,34 +23,6 @@ export default function LGPDSettings() {
 
   const handleChange = (key: string, value: string) => {
     setTerms((prev) => ({ ...prev, [key]: value }))
-  }
-
-  const insertFormat = (tag: string) => {
-    const el = document.getElementById(`textarea-${activeTab}`) as HTMLTextAreaElement
-    if (!el) return
-    const start = el.selectionStart
-    const end = el.selectionEnd
-    const text = terms[activeTab as keyof typeof terms]
-    const selected = text.substring(start, end)
-    let replacement = ''
-
-    if (tag === 'link') {
-      replacement = `<a href="URL_AQUI" target="_blank">${selected || 'texto do link'}</a>`
-    } else if (tag === 'list') {
-      replacement = `<ul>\n  <li>${selected || 'item'}</li>\n</ul>`
-    } else if (tag.startsWith('h')) {
-      replacement = `<${tag}>${selected || 'Título'}</${tag}>`
-    } else {
-      replacement = `<${tag}>${selected || 'texto'}</${tag}>`
-    }
-
-    const newText = text.substring(0, start) + replacement + text.substring(end)
-    handleChange(activeTab, newText)
-
-    setTimeout(() => {
-      el.focus()
-      el.setSelectionRange(start + tag.length + 2, start + tag.length + 2 + (selected.length || 5))
-    }, 0)
   }
 
   const { toast } = useToast()
@@ -104,25 +66,6 @@ export default function LGPDSettings() {
     }
   }
 
-  const FormatButton = ({ icon: Icon, tag, label }: { icon: any; tag: string; label: string }) => (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-8 w-8"
-          onClick={(e) => {
-            e.preventDefault()
-            insertFormat(tag)
-          }}
-        >
-          <Icon className="h-4 w-4" />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
-  )
-
   return (
     <div className="space-y-6 animate-fade-in-up">
       <Card>
@@ -136,17 +79,11 @@ export default function LGPDSettings() {
 
             {(['lgpd', 'uso', 'cookies'] as const).map((tab) => (
               <TabsContent key={tab} value={tab} className="space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-muted/30 p-3 rounded-md border">
-                  <div className="flex gap-1 flex-wrap">
-                    <FormatButton icon={Bold} tag="b" label="Negrito" />
-                    <FormatButton icon={Italic} tag="i" label="Itálico" />
-                    <FormatButton icon={Underline} tag="u" label="Sublinhado" />
-                    <div className="w-px h-8 bg-border mx-1" />
-                    <FormatButton icon={Heading1} tag="h2" label="Título Principal" />
-                    <FormatButton icon={Heading2} tag="h3" label="Subtítulo" />
-                    <div className="w-px h-8 bg-border mx-1" />
-                    <FormatButton icon={List} tag="list" label="Lista" />
-                    <FormatButton icon={LinkIcon} tag="link" label="Inserir Link" />
+                <div className="flex justify-between items-center mb-4">
+                  <div className="text-xs text-muted-foreground bg-muted/20 p-2 rounded-md border inline-block">
+                    <strong>Variáveis dinâmicas:</strong> Use <code>{'{{company_name}}'}</code>,{' '}
+                    <code>{'{{company_cnpj}}'}</code>, <code>{'{{company_email}}'}</code> ou{' '}
+                    <code>{'{{user_name}}'}</code>.
                   </div>
                   <Button
                     variant="secondary"
@@ -156,18 +93,12 @@ export default function LGPDSettings() {
                     <Download className="w-4 h-4 mr-2" /> Pré-visualizar / PDF
                   </Button>
                 </div>
-                <div className="text-xs text-muted-foreground bg-muted/20 p-2 rounded-md border">
-                  <strong>Variáveis dinâmicas:</strong> Use <code>{'{{company_name}}'}</code>,{' '}
-                  <code>{'{{company_cnpj}}'}</code>, <code>{'{{company_email}}'}</code> ou{' '}
-                  <code>{'{{user_name}}'}</code> para preenchimento automático.
-                </div>
-                <Textarea
-                  id={`textarea-${tab}`}
-                  rows={18}
-                  className="font-mono text-sm leading-relaxed"
-                  placeholder="Escreva os termos aqui usando as opções de formatação acima ou HTML direto..."
-                  value={terms[tab]}
-                  onChange={(e) => handleChange(tab, e.target.value)}
+                <RichTextEditor
+                  className="min-h-[400px]"
+                  value={terms[tab] || ''}
+                  onChange={(v) => handleChange(tab, v)}
+                  withAi
+                  aiContext={`Documento legal: ${tab === 'lgpd' ? 'Política de Privacidade e Tratamento de Dados' : tab === 'uso' ? 'Termos de Uso do Sistema' : 'Política de Cookies'}`}
                 />
               </TabsContent>
             ))}

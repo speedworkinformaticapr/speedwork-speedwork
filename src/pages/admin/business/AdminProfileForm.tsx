@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { Loader2, Save, ArrowLeft, User, MapPin, Shield } from 'lucide-react'
 
 const profileSchema = z.object({
@@ -46,6 +47,7 @@ const profileSchema = z.object({
   status: z.string().default('active'),
   mfa_enabled: z.boolean().default(false),
   mfa_type: z.string().default('email'),
+  observacoes: z.string().optional(),
 })
 
 type ProfileFormValues = z.infer<typeof profileSchema>
@@ -74,6 +76,7 @@ export default function AdminProfileForm() {
       status: 'active',
       mfa_enabled: false,
       mfa_type: 'email',
+      observacoes: '',
     },
   })
 
@@ -101,6 +104,7 @@ export default function AdminProfileForm() {
         status: data.status || 'active',
         mfa_enabled: data.mfa_enabled || false,
         mfa_type: data.mfa_type || 'email',
+        observacoes: data.observacoes || '',
       })
     }
   }
@@ -282,6 +286,27 @@ export default function AdminProfileForm() {
                         )}
                       />
                     </div>
+                  </div>
+
+                  <div className="pt-6 border-t space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="observacoes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Observações Internas</FormLabel>
+                          <FormControl>
+                            <RichTextEditor
+                              value={field.value || ''}
+                              onChange={field.onChange}
+                              withAi
+                              aiContext="Anotações e perfil do cliente/usuário"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
                 </CardContent>
               </Card>

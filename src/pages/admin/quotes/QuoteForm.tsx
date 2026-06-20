@@ -20,7 +20,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { Textarea } from '@/components/ui/textarea'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { useToast } from '@/hooks/use-toast'
 import { useSystemData } from '@/hooks/use-system-data'
