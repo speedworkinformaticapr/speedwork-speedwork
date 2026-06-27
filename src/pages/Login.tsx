@@ -110,10 +110,26 @@ export default function Login() {
           })
 
           if (mfaError) {
+            let errorDescription =
+              'Falha ao enviar o e-mail de verificação. Verifique a configuração de SMTP ou contate o suporte.'
+            try {
+              const errorResp = (mfaError as any).context || mfaError
+              if (errorResp?.json) {
+                const errorData = await errorResp.json()
+                if (errorData?.error) {
+                  errorDescription = errorData.error
+                }
+              } else if ((mfaError as any).message) {
+                errorDescription = (mfaError as any).message
+              }
+            } catch {
+              if ((mfaError as any).message) {
+                errorDescription = (mfaError as any).message
+              }
+            }
             toast({
               title: 'Erro ao enviar código de verificação',
-              description:
-                'Falha ao enviar o e-mail de verificação. Verifique a configuração de SMTP ou contate o suporte.',
+              description: errorDescription,
               variant: 'destructive',
             })
             setLoading(false)
@@ -240,7 +256,7 @@ export default function Login() {
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage: `url('https://img.usecurling.com/p/1920/1080?q=golf%20course%20green%20field&color=green&dpr=2')`,
+            backgroundImage: `url('https://img.usecurling.com/p/1920/1080?q=footgolf%20soccer%20ball%20golf%20course&color=green&dpr=2')`,
           }}
         />
         <div className="absolute inset-0 bg-gradient-to-br from-zinc-950/90 via-zinc-950/80 to-primary/40" />
@@ -261,12 +277,12 @@ export default function Login() {
             )}
           </Link>
           <h1 className="text-5xl font-bold text-white tracking-tight leading-tight">
-            Soluções completas em <br />
-            <span className="text-primary">produtos e serviços</span>
+            {systemData?.platform_name || 'Speedwork'} <br />
+            <span className="text-primary">FootGolf Platform</span>
           </h1>
           <p className="text-zinc-400 text-lg max-w-md mt-4">
-            Gerencie seus produtos e serviços com eficiência. Potencialize seu negócio com
-            segurança, performance e resultados.
+            {systemData?.slogan ||
+              'Plataforma completa para gestão de eventos, atletas e clubes de footgolf. Organize, compita e evolua seu jogo.'}
           </p>
         </div>
       </div>

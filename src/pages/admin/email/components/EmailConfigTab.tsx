@@ -63,12 +63,23 @@ export default function EmailConfigTab() {
         },
       })
       if (error) {
-        const errBody = typeof error === 'object' ? JSON.stringify(error) : String(error)
+        let errorDetail = ''
+        try {
+          const errorResp = (error as any).context || error
+          if (errorResp?.json) {
+            const errorData = await errorResp.json()
+            errorDetail = errorData?.error || JSON.stringify(errorData)
+          } else {
+            errorDetail = (error as any).message || String(error)
+          }
+        } catch {
+          errorDetail = (error as any).message || String(error)
+        }
         toast({
           title: 'Falha no teste de conexão SMTP2GO',
           description:
             'Não foi possível enviar o e-mail de teste. Verifique a API Key e o e-mail remetente. Detalhe: ' +
-            errBody,
+            errorDetail,
           variant: 'destructive',
         })
       } else {

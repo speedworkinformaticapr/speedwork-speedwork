@@ -21,6 +21,18 @@ Deno.serve(async (req: Request) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey)
 
+    const body = await req.json()
+    const {
+      type,
+      email,
+      name,
+      eventDetails,
+      confirmationLink,
+      subject: customSubject,
+      html: customHtml,
+      attachments = [],
+    } = body
+
     const { data: rawSysData } = await supabaseAdmin.from('system_data').select('*').single()
 
     const sysData = rawSysData || {}
@@ -28,6 +40,7 @@ Deno.serve(async (req: Request) => {
       typeof sysData.integrations === 'object' && sysData.integrations !== null
         ? sysData.integrations
         : {}
+
     const smtpKey = body.smtpKey || (integrations as any).smtp_key
     const emailTemplates = (integrations as any).email_templates || {}
 
@@ -53,18 +66,6 @@ Deno.serve(async (req: Request) => {
     const phone = sysData.phone || '(00) 0000-0000'
     const presidentName = sysData.responsible_name || 'Administrador'
     const presidentRole = sysData.responsible_role || 'Administrador'
-
-    const body = await req.json()
-    const {
-      type,
-      email,
-      name,
-      eventDetails,
-      confirmationLink,
-      subject: customSubject,
-      html: customHtml,
-      attachments = [],
-    } = body
 
     let subject = ''
     let bodyContent = ''
