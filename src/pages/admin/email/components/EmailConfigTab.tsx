@@ -12,6 +12,7 @@ export default function EmailConfigTab() {
   const { data, updateData } = useSystemData()
   const { toast } = useToast()
   const [smtpKey, setSmtpKey] = useState('')
+  const [senderEmail, setSenderEmail] = useState('')
   const [isSavingConfig, setIsSavingConfig] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
 
@@ -19,6 +20,13 @@ export default function EmailConfigTab() {
     if (data?.integrations) {
       const integrations = data.integrations as any
       if (integrations.smtp_key) setSmtpKey(integrations.smtp_key)
+      if (integrations.smtp_sender_email) {
+        setSenderEmail(integrations.smtp_sender_email)
+      } else if (data?.email) {
+        setSenderEmail(data.email)
+      }
+    } else if (data?.email) {
+      setSenderEmail(data.email)
     }
   }, [data])
 
@@ -30,6 +38,7 @@ export default function EmailConfigTab() {
         integrations: {
           ...currentIntegrations,
           smtp_key: smtpKey,
+          smtp_sender_email: senderEmail,
         },
       })
       toast({ title: 'Sucesso', description: 'Configurações de SMTP salvas com sucesso.' })
@@ -43,16 +52,38 @@ export default function EmailConfigTab() {
   const handleTestSMTP = async () => {
     setIsTesting(true)
     try {
+      const currentIntegrations = (data?.integrations || {}) as any
+      const testEmail = senderEmail || data?.email || 'admin@example.com'
       const { error } = await supabase.functions.invoke('send-email', {
-        body: { type: 'test_smtp', email: data?.email || 'admin@example.com' },
+        body: {
+          type: 'test_smtp',
+          email: testEmail,
+          senderEmail: senderEmail || currentIntegrations.smtp_sender_email || data?.email,
+          smtpKey: smtpKey || currentIntegrations.smtp_key,
+        },
       })
-      if (error) throw error
-      toast({
-        title: 'Teste enviado com sucesso',
-        description: 'Verifique a caixa de entrada do e-mail institucional.',
-      })
+      if (error) {
+        const errBody = typeof error === 'object' ? JSON.stringify(error) : String(error)
+        toast({
+          title: 'Falha no teste de conexão SMTP2GO',
+          description:
+            'Não foi possível enviar o e-mail de teste. Verifique a API Key e o e-mail remetente. Detalhe: ' +
+            errBody,
+          variant: 'destructive',
+        })
+      } else {
+        toast({
+          title: 'Teste enviado com sucesso',
+          description: `Verifique a caixa de entrada de ${testEmail}.`,
+        })
+      }
     } catch (err: any) {
-      toast({ title: 'Erro no envio de teste', description: err.message, variant: 'destructive' })
+      toast({
+        title: 'Erro no envio de teste',
+        description:
+          err.message || 'Ocorreu um erro inesperado ao testar a conexão. Contate o suporte.',
+        variant: 'destructive',
+      })
     } finally {
       setIsTesting(false)
     }
@@ -80,10 +111,16 @@ export default function EmailConfigTab() {
           />
         </div>
         <div className="space-y-2">
-          <Label>E-mail Remetente Padrão</Label>
-          <Input value={data?.email || 'contato@footgolfpr.com.br'} disabled className="bg-muted" />
+          <Label>E-mail Remetente SMTP2GO</Label>
+          <Input
+            type="email"
+            value={senderEmail}
+            onChange={(e) => setSenderEmail(e.target.value)}
+            placeholder="noreply@suaempresa.com.br"
+          />
           <p className="text-xs text-muted-foreground mt-1">
-            Este e-mail é definido na aba Geral de Dados do Sistema.
+            Este é o endereço de e-mail que aparecerá como remetente nas mensagens enviadas via
+            SMTP2GO.
           </p>
         </div>
         <div className="flex justify-between items-center pt-4">

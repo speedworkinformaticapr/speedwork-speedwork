@@ -110,10 +110,23 @@ export default function Login() {
           })
 
           if (mfaError) {
-            console.error('Failed to send MFA code:', mfaError)
+            toast({
+              title: 'Erro ao enviar código de verificação',
+              description:
+                'Falha ao enviar o e-mail de verificação. Verifique a configuração de SMTP ou contate o suporte.',
+              variant: 'destructive',
+            })
+            setLoading(false)
+            return
           }
         } catch (err) {
-          console.error('Failed to send MFA code:', err)
+          toast({
+            title: 'Erro ao enviar código de verificação',
+            description: 'Ocorreu um erro inesperado ao enviar o e-mail. Contate o suporte.',
+            variant: 'destructive',
+          })
+          setLoading(false)
+          return
         }
 
         sessionStorage.setItem('mfa_pending', 'true')
@@ -223,7 +236,14 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <div className="hidden lg:flex w-1/2 bg-zinc-950 relative overflow-hidden flex-col justify-center p-16">
+      <div className="hidden lg:flex w-1/2 relative overflow-hidden flex-col justify-center p-16">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage: `url('https://img.usecurling.com/p/1920/1080?q=golf%20course%20green%20field&color=green&dpr=2')`,
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-zinc-950/90 via-zinc-950/80 to-primary/40" />
         <div className="relative z-10 space-y-6">
           <Link to="/">
             {systemData?.logo_url ? (

@@ -28,10 +28,14 @@ Deno.serve(async (req: Request) => {
       typeof sysData.integrations === 'object' && sysData.integrations !== null
         ? sysData.integrations
         : {}
-    const smtpKey = (integrations as any).smtp_key
+    const smtpKey = body.smtpKey || (integrations as any).smtp_key
     const emailTemplates = (integrations as any).email_templates || {}
 
-    const senderEmail = sysData.email || 'contato@speedwork.com.br'
+    const senderEmail =
+      body.senderEmail ||
+      (integrations as any).smtp_sender_email ||
+      sysData.email ||
+      'contato@speedwork.com.br'
     const senderName = sysData.razao_social || sysData.platform_name || 'Speedwork'
 
     const address =
@@ -260,7 +264,16 @@ Deno.serve(async (req: Request) => {
     }
   } catch (error: any) {
     console.error('Send email error:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    const message = error.message || 'Unknown error'
+    let code = 'EMAIL_SEND_ERROR'
+    if (message.includes('SMTP2GO')) {
+      code = 'SMTP_PROVIDER_ERROR'
+    } else if (message.includes('Nenhum provedor')) {
+      code = 'NO_PROVIDER_CONFIGURED'
+    } else if (message.includes('Perfil não encontrado')) {
+      code = 'PROFILE_NOT_FOUND'
+    }
+    return new Response(JSON.stringify({ error: message, code }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     })
