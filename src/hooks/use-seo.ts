@@ -10,9 +10,9 @@ export interface SeoProps {
 }
 
 export function useSeo({
-  title = 'Footgolf PR',
-  description = 'A plataforma oficial para a Federação Paranaense de Footgolf.',
-  keywords = 'footgolf, parana, esporte, torneios, ranking',
+  title = 'Speedwork - Soluções Inteligentes em Tecnologia',
+  description = 'Speedwork - Empresa de tecnologia que oferece serviços e produtos de TI.',
+  keywords = 'speedwork, tecnologia, TI, serviços, produtos, software, desenvolvimento',
   ogImage = '/og-image.png',
   canonicalUrl,
   schema,

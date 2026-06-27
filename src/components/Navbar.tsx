@@ -320,7 +320,7 @@ export function Navbar() {
                     className="rounded-full px-2 pl-3 h-10 gap-2 hover:bg-[#1B7D3A]/10 hover:text-[#1B7D3A] transition-colors group"
                   >
                     <span className="text-sm font-bold truncate max-w-[100px]">
-                      {user.user_metadata?.name?.split(' ')[0] || 'Atleta'}
+                      {user.user_metadata?.name?.split(' ')[0] || 'Usuário'}
                     </span>
                     <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-[#1B7D3A] group-hover:bg-[#1B7D3A] group-hover:text-white transition-colors">
                       <UserIcon className="w-3.5 h-3.5" />
@@ -337,7 +337,7 @@ export function Navbar() {
                     </div>
                     <div className="flex flex-col overflow-hidden">
                       <span className="font-bold text-sm truncate">
-                        {user.user_metadata?.name || 'Atleta'}
+                        {user.user_metadata?.name || 'Usuário'}
                       </span>
                       <span className="text-xs text-muted-foreground truncate">{user.email}</span>
                     </div>
@@ -458,7 +458,7 @@ export function Navbar() {
                     </div>
                     <div className="flex flex-col overflow-hidden">
                       <span className="font-bold text-base truncate">
-                        {user.user_metadata?.name || 'Atleta'}
+                        {user.user_metadata?.name || 'Usuário'}
                       </span>
                       <span className="text-xs text-muted-foreground truncate">{user.email}</span>
                     </div>

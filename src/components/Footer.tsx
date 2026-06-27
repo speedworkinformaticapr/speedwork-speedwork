@@ -131,10 +131,7 @@ export function Footer() {
 
             {(systemData?.slogan || !systemData) && (
               <p className="text-foreground/90 font-medium text-base md:text-lg max-w-sm mb-4 leading-relaxed italic border-l-4 border-primary pl-4">
-                "
-                {systemData?.slogan ||
-                  'Eleve o seu jogo, viva a paixão pelo esporte. Junte-se à revolução!'}
-                "
+                "{systemData?.slogan || 'Soluções inteligentes em tecnologia para o seu negócio.'}"
               </p>
             )}
 
