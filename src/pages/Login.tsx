@@ -101,23 +101,17 @@ export default function Login() {
         .single()
 
       if (profile?.mfa_enabled) {
-        const code = Math.floor(100000 + Math.random() * 900000).toString()
-        const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
-
-        await supabase
-          .from('profiles')
-          .update({ mfa_code: code, mfa_code_expires_at: expiresAt })
-          .eq('id', authData.user.id)
-
         try {
-          await supabase.functions.invoke('send-email', {
+          const { error: mfaError } = await supabase.functions.invoke('send-email', {
             body: {
-              type: 'custom',
+              type: 'mfa_code',
               email,
-              subject: 'Código de Verificação - ' + (systemData?.platform_name || 'Speedwork'),
-              html: `<p>Olá <strong>${profile.name || ''}</strong>,</p><p>Seu código de verificação é:</p><p style="font-size:32px;font-weight:bold;letter-spacing:8px;text-align:center;padding:20px;background:#f4f4f4;border-radius:8px;">${code}</p><p>Este código expira em 15 minutos.</p>`,
             },
           })
+
+          if (mfaError) {
+            console.error('Failed to send MFA code:', mfaError)
+          }
         } catch (err) {
           console.error('Failed to send MFA code:', err)
         }
@@ -145,16 +139,37 @@ export default function Login() {
       return
     }
 
+    if (!profileData?.id) {
+      toast({
+        title: 'Erro ao verificar código',
+        description: 'Dados de sessão não encontrados. Faça login novamente.',
+        variant: 'destructive',
+      })
+      setVerifying(false)
+      setShowMfa(false)
+      return
+    }
+
     setVerifying(true)
 
     try {
-      const { data: profile } = await supabase
+      const { data: profile, error: fetchError } = await supabase
         .from('profiles')
         .select('mfa_code, mfa_code_expires_at')
         .eq('id', profileData.id)
         .single()
 
-      if (!profile?.mfa_code || profile.mfa_code !== mfaCode) {
+      if (fetchError || !profile) {
+        toast({
+          title: 'Erro ao verificar código',
+          description: 'Não foi possível validar o código. Tente novamente.',
+          variant: 'destructive',
+        })
+        setVerifying(false)
+        return
+      }
+
+      if (!profile.mfa_code || profile.mfa_code !== mfaCode) {
         toast({ title: 'Código incorreto', variant: 'destructive' })
         setVerifying(false)
         return
@@ -178,7 +193,11 @@ export default function Login() {
       toast({ title: 'MFA verificado com sucesso!' })
       handleRedirect(profileData?.role)
     } catch (err) {
-      toast({ title: 'Erro ao verificar código', variant: 'destructive' })
+      toast({
+        title: 'Erro ao verificar código',
+        description: 'Ocorreu um erro inesperado. Tente novamente.',
+        variant: 'destructive',
+      })
     } finally {
       setVerifying(false)
     }
@@ -205,26 +224,19 @@ export default function Login() {
   return (
     <div className="flex min-h-screen bg-background">
       <div className="hidden lg:flex w-1/2 bg-zinc-950 relative overflow-hidden flex-col justify-center p-16">
-        <div className="absolute inset-0 z-0">
-          <img
-            src="https://img.usecurling.com/p/800/1200?q=office%20growth&color=black"
-            className="object-cover w-full h-full opacity-30"
-            alt="Background"
-          />
-        </div>
         <div className="relative z-10 space-y-6">
           <Link to="/">
             {systemData?.logo_url ? (
               <img
                 src={systemData.logo_url}
-                alt={systemData?.platform_name || 'Logo'}
-                className="h-[5.25rem] w-auto mb-8 object-contain"
+                alt={systemData?.platform_name || 'Speedwork'}
+                className="h-[7.875rem] w-auto mb-8 object-contain"
               />
             ) : (
               <img
                 src="/skip.png"
                 alt="Speedwork"
-                className="h-[5.25rem] w-auto mb-8 object-contain"
+                className="h-[7.875rem] w-auto mb-8 object-contain"
               />
             )}
           </Link>
@@ -233,8 +245,8 @@ export default function Login() {
             <span className="text-primary">produtos e serviços</span>
           </h1>
           <p className="text-zinc-400 text-lg max-w-md mt-4">
-            Soluções completas em produtos e serviços para otimizar sua gestão. Potencialize seu
-            negócio com segurança e performance.
+            Gerencie seus produtos e serviços com eficiência. Potencialize seu negócio com
+            segurança, performance e resultados.
           </p>
         </div>
       </div>
@@ -326,7 +338,7 @@ export default function Login() {
                   onClick={() => handleSocialLogin('google')}
                 >
                   <GoogleIcon />
-                  <span className="ml-2">Google</span>
+                  <span className="ml-2">Entrar com Google</span>
                 </Button>
                 <Button
                   variant="outline"
@@ -335,7 +347,7 @@ export default function Login() {
                   onClick={() => handleSocialLogin('azure')}
                 >
                   <MicrosoftIcon />
-                  <span className="ml-2">Microsoft</span>
+                  <span className="ml-2">Entrar com Microsoft</span>
                 </Button>
               </div>
 

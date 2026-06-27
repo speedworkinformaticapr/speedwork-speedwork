@@ -24,10 +24,13 @@ import {
 } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
+const BRAND_COLOR = '#2563EB'
+
 const TEMPLATES = [
-  { id: 'welcome', name: 'Boas-vindas (Cadastro de Atleta)' },
-  { id: 'welcome_club', name: 'Boas-vindas (Cadastro de Clube)' },
+  { id: 'welcome', name: 'Boas-vindas (Cadastro de Usuário)' },
+  { id: 'welcome_club', name: 'Boas-vindas (Cadastro de Empresa)' },
   { id: 'password_reset', name: 'Recuperação de Senha' },
+  { id: 'mfa_code', name: 'Código de Verificação (2FA)' },
   { id: 'billing_reminder', name: 'Lembrete de Cobrança' },
   { id: 'billing_overdue', name: 'Cobrança em Atraso' },
   { id: 'event_registration', name: 'Confirmação de Inscrição' },
@@ -35,28 +38,32 @@ const TEMPLATES = [
 
 const DEFAULT_TEMPLATES: Record<string, { subject: string; body: string }> = {
   welcome: {
-    subject: 'Bem-vindo ao Footgolf PR!',
-    body: '<p>Olá <strong>{{name}}</strong>,</p>\n<p>Estamos felizes em ter você!</p>',
+    subject: 'Bem-vindo à Speedwork!',
+    body: '<p>Olá <strong>{{name}}</strong>,</p>\n<p>Estamos felizes em ter você na plataforma Speedwork!</p>\n<p>Para ativar sua conta, confirme seu e-mail clicando no link abaixo:</p>\n<p><a href="{{link}}">Confirmar meu e-mail</a></p>',
   },
   welcome_club: {
-    subject: 'Cadastro de Clube',
-    body: '<p>Olá <strong>{{name}}</strong>,</p>\n<p>Seu clube foi recebido.</p>',
+    subject: 'Cadastro de Empresa Recebido - Speedwork',
+    body: '<p>Olá,</p>\n<p>O cadastro de <strong>{{name}}</strong> foi recebido com sucesso.</p>\n<p>Sua solicitação está em análise e em breve você terá acesso completo ao painel.</p>',
   },
   password_reset: {
-    subject: 'Alteração de Senha',
-    body: '<p>Olá <strong>{{name}}</strong>,</p>\n<p>Redefina no link: {{link}}</p>',
+    subject: 'Alteração de Senha - Speedwork',
+    body: '<p>Olá <strong>{{name}}</strong>,</p>\n<p>Você solicitou a alteração da sua senha. Clique no link abaixo para redefinir:</p>\n<p><a href="{{link}}">Redefinir Senha</a></p>',
+  },
+  mfa_code: {
+    subject: 'Código de Verificação - Speedwork',
+    body: '<p>Olá <strong>{{name}}</strong>,</p>\n<p>Seu código de verificação é:</p>\n<p style="font-size:32px;font-weight:bold;letter-spacing:8px;text-align:center;padding:20px;background:#f4f4f4;border-radius:8px;color:#2563EB;">{{code}}</p>\n<p>Este código expira em 15 minutos.</p>',
   },
   billing_reminder: {
-    subject: 'Lembrete de Vencimento',
-    body: '<p>Olá <strong>{{name}}</strong>,</p>\n<p>Sua cobrança vencerá em {{due_date}}.</p>',
+    subject: 'Lembrete de Vencimento - Speedwork',
+    body: '<p>Olá <strong>{{name}}</strong>,</p>\n<p>Sua cobrança referente a <strong>{{description}}</strong> vencerá em {{due_date}} no valor de R$ {{amount}}.</p>',
   },
   billing_overdue: {
-    subject: 'Aviso de Atraso',
-    body: '<p>Olá <strong>{{name}}</strong>,</p>\n<p>Sua cobrança está vencida.</p>',
+    subject: 'Aviso de Atraso - Speedwork',
+    body: '<p>Olá <strong>{{name}}</strong>,</p>\n<p>Sua cobrança referente a <strong>{{description}}</strong> está vencida. Regularize o mais breve possível.</p>',
   },
   event_registration: {
-    subject: 'Inscrição Confirmada',
-    body: '<p>Olá <strong>{{name}}</strong>,</p>\n<p>Inscrição no evento confirmada.</p>',
+    subject: 'Inscrição Confirmada - Speedwork',
+    body: '<p>Olá <strong>{{name}}</strong>,</p>\n<p>Sua inscrição foi confirmada com sucesso.</p>\n<p><strong>Evento:</strong> {{event_name}}<br><strong>Data:</strong> {{event_date}}<br><strong>Local:</strong> {{event_location}}</p>',
   },
 }
 
@@ -75,28 +82,65 @@ export default function EmailTemplatesTab() {
     }
   }, [data])
 
+  const currentTemplate = templates[selectedTemplate] || DEFAULT_TEMPLATES['welcome']
+
+  const generatePreview = (bodyContent: string) => {
+    const sn = data?.razao_social || data?.platform_name || 'Speedwork'
+    const logo = data?.logo_url
+      ? `<img src="${data.logo_url}" alt="Logo" style="max-height: 80px; max-width: 250px; display: block; margin: 0 auto;" />`
+      : `<h1 style="color: ${BRAND_COLOR}; margin: 0; font-size: 24px;">${sn}</h1>`
+    const addr =
+      [data?.address_street, data?.address_city].filter(Boolean).join(' - ') ||
+      'Endereço da Empresa'
+    const cnpj = data?.cnpj || '00.000.000/0000-00'
+    const phone = data?.phone || '(00) 0000-0000'
+    const responsibleName = data?.responsible_name || 'Administrador'
+    const responsibleRole = data?.responsible_role || 'Administrador'
+    const email = data?.email || 'contato@speedwork.com.br'
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+        <div style="background-color: #f5f5f5; padding: 25px 20px; text-align: center; border-bottom: 4px solid ${BRAND_COLOR};">
+          ${logo}
+        </div>
+        <div style="padding: 40px 30px; color: #333333; line-height: 1.6; font-size: 16px;">
+          ${bodyContent}
+        </div>
+        <div style="background-color: #f9f9f9; padding: 30px 20px; text-align: center; border-top: 1px solid #e0e0e0; font-size: 13px; color: #666666; line-height: 1.6;">
+          <p style="margin: 0 0 15px 0; font-size: 15px; color: #1D4ED8;"><strong>${responsibleName}</strong><br><span style="font-size: 13px; color: #666;">${responsibleRole}</span></p>
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 15px auto; width: 50%;" />
+          <p style="margin: 5px 0; color: #444;"><strong>${sn}</strong></p>
+          <p style="margin: 5px 0;">CNPJ: ${cnpj}</p>
+          <p style="margin: 5px 0;">${addr}</p>
+          <p style="margin: 5px 0;">Telefone: ${phone} | E-mail: ${email}</p>
+        </div>
+      </div>
+    `
+  }
+
   const handleTestEmail = async () => {
     const emailToTest = window.prompt('Digite o e-mail para receber o teste:', data?.email || '')
     if (!emailToTest) return
 
     setIsTesting(true)
     try {
+      const previewBody = currentTemplate.body
+        .replace(/{{name}}/g, 'Usuário Teste')
+        .replace(/{{link}}/g, 'https://www.speedworkinformatica.com/teste')
+        .replace(/{{due_date}}/g, '10/10/2026')
+        .replace(/{{amount}}/g, '150,00')
+        .replace(/{{description}}/g, 'Serviço Teste')
+        .replace(/{{code}}/g, '123456')
+        .replace(/{{event_name}}/g, 'Evento Teste')
+        .replace(/{{event_date}}/g, '15/11/2026')
+        .replace(/{{event_location}}/g, 'Local Teste')
+
       const { error } = await supabase.functions.invoke('send-email', {
         body: {
           type: 'custom',
           email: emailToTest,
           name: 'Usuário Teste',
           subject: '[TESTE] ' + currentTemplate.subject,
-          html: generatePreview(
-            currentTemplate.body
-              .replace(/{{name}}/g, 'Usuário Teste')
-              .replace(/{{link}}/g, 'https://footgolfpr.com.br/teste')
-              .replace(/{{due_date}}/g, '10/10/2026')
-              .replace(/{{amount}}/g, '150,00')
-              .replace(/{{event_name}}/g, 'Torneio Teste')
-              .replace(/{{event_date}}/g, '15/11/2026')
-              .replace(/{{event_location}}/g, 'Clube Teste'),
-          ),
+          html: generatePreview(previewBody),
         },
       })
       if (error) throw error
@@ -126,29 +170,6 @@ export default function EmailTemplatesTab() {
     } finally {
       setIsSaving(false)
     }
-  }
-
-  const currentTemplate = templates[selectedTemplate] || DEFAULT_TEMPLATES['welcome']
-
-  const generatePreview = (bodyContent: string) => {
-    const sn = data?.razao_social || data?.platform_name || 'Federação de Footgolf do Paraná'
-    const logo = data?.logo_url
-      ? `<img src="${data.logo_url}" alt="Logo" style="max-height: 80px;" />`
-      : `<h1 style="color: #1B7D3A;">${sn}</h1>`
-    const addr =
-      [data?.address_street, data?.address_city].filter(Boolean).join(' - ') ||
-      'Endereço da Federação'
-    return `
-      <div style="font-family: Arial; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px;">
-        <div style="background-color: #f5f5f5; padding: 25px; text-align: center; border-bottom: 4px solid #1B7D3A;">${logo}</div>
-        <div style="padding: 40px 30px;">${bodyContent}</div>
-        <div style="background-color: #f9f9f9; padding: 30px; text-align: center; font-size: 13px; color: #666;">
-          <p><strong>${data?.responsible_name || 'Presidente'}</strong></p>
-          <hr style="margin: 15px auto; width: 50%;" />
-          <p><strong>${sn}</strong><br/>CNPJ: ${data?.cnpj || '00.000.000/0000-00'}<br/>${addr}</p>
-        </div>
-      </div>
-    `
   }
 
   return (
@@ -183,7 +204,7 @@ export default function EmailTemplatesTab() {
             <Alert className="bg-primary/5 border-primary/20">
               <Info className="h-4 w-4 text-primary" />
               <AlertDescription className="text-xs mt-1 text-primary/80">
-                Variáveis: {'{{name}}, {{link}}, {{amount}}'}, etc.
+                Variáveis: {'{{name}}, {{link}}, {{amount}}, {{code}}'}, etc.
               </AlertDescription>
             </Alert>
           </div>
@@ -223,7 +244,7 @@ export default function EmailTemplatesTab() {
               </div>
               <RichTextEditor
                 value={currentTemplate.body}
-                onChange={(v) =>
+                onChange={(v: string) =>
                   setTemplates((p) => ({
                     ...p,
                     [selectedTemplate]: { ...p[selectedTemplate], body: v },
@@ -233,8 +254,10 @@ export default function EmailTemplatesTab() {
                 variables={[
                   { label: 'Nome do Usuário', value: '{{name}}' },
                   { label: 'Link de Conf./Senha', value: '{{link}}' },
+                  { label: 'Código 2FA', value: '{{code}}' },
                   { label: 'Data de Vencimento', value: '{{due_date}}' },
                   { label: 'Valor', value: '{{amount}}' },
+                  { label: 'Descrição', value: '{{description}}' },
                   { label: 'Nome do Evento', value: '{{event_name}}' },
                   { label: 'Data do Evento', value: '{{event_date}}' },
                   { label: 'Local do Evento', value: '{{event_location}}' },

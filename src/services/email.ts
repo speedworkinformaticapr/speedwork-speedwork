@@ -29,3 +29,14 @@ export const sendEventRegistrationEmail = async (
   if (error) throw error
   return data
 }
+
+export const sendMfaCode = async (email: string) => {
+  const { data, error } = await supabase.functions.invoke('send-email', {
+    body: {
+      type: 'mfa_code',
+      email,
+    },
+  })
+  if (error) throw error
+  return data
+}

@@ -8,6 +8,9 @@ const corsHeaders = {
     'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
 }
 
+const BRAND_COLOR = '#2563EB'
+const BRAND_COLOR_DARK = '#1D4ED8'
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -20,7 +23,6 @@ Deno.serve(async (req: Request) => {
 
     const { data: rawSysData } = await supabaseAdmin.from('system_data').select('*').single()
 
-    // Provide robust defaults if system_data is missing or empty
     const sysData = rawSysData || {}
     const integrations =
       typeof sysData.integrations === 'object' && sysData.integrations !== null
@@ -41,12 +43,12 @@ Deno.serve(async (req: Request) => {
         sysData.address_state ? `/${sysData.address_state}` : '',
       ]
         .filter(Boolean)
-        .join(' ') || 'Rua da Federação, 100 - Curitiba/PR'
+        .join(' ') || 'Endereço da Empresa'
 
     const cnpj = sysData.cnpj || '00.000.000/0000-00'
     const phone = sysData.phone || '(00) 0000-0000'
-    const presidentName = sysData.responsible_name || 'Presidente da Federação'
-    const presidentRole = sysData.responsible_role || 'Presidente'
+    const presidentName = sysData.responsible_name || 'Administrador'
+    const presidentRole = sysData.responsible_role || 'Administrador'
 
     const body = await req.json()
     const {
@@ -63,7 +65,28 @@ Deno.serve(async (req: Request) => {
     let subject = ''
     let bodyContent = ''
 
-    if (type === 'test_smtp') {
+    if (type === 'mfa_code') {
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('id, name, email, mfa_enabled')
+        .eq('email', email)
+        .single()
+
+      if (!profile) {
+        throw new Error('Perfil não encontrado para o e-mail informado.')
+      }
+
+      const code = Math.floor(100000 + Math.random() * 900000).toString()
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
+
+      await supabaseAdmin
+        .from('profiles')
+        .update({ mfa_code: code, mfa_code_expires_at: expiresAt })
+        .eq('id', profile.id)
+
+      subject = `Código de Verificação - ${senderName}`
+      bodyContent = `<p>Olá <strong>${profile.name || ''}</strong>,</p><p>Seu código de verificação é:</p><p style="font-size:32px;font-weight:bold;letter-spacing:8px;text-align:center;padding:20px;background:#f4f4f4;border-radius:8px;color:${BRAND_COLOR};">${code}</p><p>Este código expira em 15 minutos.</p><p>Se você não solicitou este código, ignore este e-mail.</p>`
+    } else if (type === 'test_smtp') {
       subject = `Teste de Integração SMTP - ${senderName}`
       bodyContent =
         '<p>Olá,</p><p>Este é um e-mail de teste para confirmar que a integração com o provedor de e-mail está funcionando corretamente.</p>'
@@ -76,7 +99,7 @@ Deno.serve(async (req: Request) => {
         subject = template.subject
         bodyContent = template.body
 
-        bodyContent = bodyContent.replace(/{{name}}/g, name || 'Atleta')
+        bodyContent = bodyContent.replace(/{{name}}/g, name || 'Usuário')
 
         if (type === 'welcome') {
           bodyContent = bodyContent.replace(/{{link}}/g, confirmationLink || '#')
@@ -91,23 +114,23 @@ Deno.serve(async (req: Request) => {
           )
         } else if (type === 'billing_reminder' || type === 'billing_overdue') {
           const c = body.chargeDetails || {}
-          bodyContent = bodyContent.replace(/{{description}}/g, c.description || 'Anuidade')
+          bodyContent = bodyContent.replace(/{{description}}/g, c.description || 'Cobrança')
           bodyContent = bodyContent.replace(/{{due_date}}/g, c.due_date || 'A definir')
           bodyContent = bodyContent.replace(/{{amount}}/g, c.amount || '0,00')
         }
       } else {
         if (type === 'welcome') {
           subject = `Bem-vindo à ${senderName}!`
-          bodyContent = `<p>Olá <strong>${name}</strong>,</p><p>Estamos muito felizes em ter você na comunidade oficial de Footgolf do Paraná!</p><p>Para ativar sua conta, por favor confirme seu e-mail clicando no botão abaixo:</p><div style="text-align: center; margin: 30px 0;"><a href="${confirmationLink || '#'}" style="background-color: #1B7D3A; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px; display: inline-block;">Confirmar meu e-mail</a></div>`
+          bodyContent = `<p>Olá <strong>${name}</strong>,</p><p>Estamos muito felizes em ter você na plataforma ${senderName}!</p><p>Para ativar sua conta, por favor confirme seu e-mail clicando no botão abaixo:</p><div style="text-align: center; margin: 30px 0;"><a href="${confirmationLink || '#'}" style="background-color: ${BRAND_COLOR}; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px; display: inline-block;">Confirmar meu e-mail</a></div>`
         } else if (type === 'welcome_club') {
-          subject = `Cadastro de Clube Recebido - ${senderName}`
-          bodyContent = `<p>Olá,</p><p>O cadastro do clube <strong>${name}</strong> foi recebido com sucesso pela nossa federação.</p><p>Sua solicitação está em análise e, assim que for aprovada, você terá acesso completo ao painel administrativo.</p><p>Em caso de dúvidas, entre em contato conosco.</p>`
+          subject = `Cadastro Recebido - ${senderName}`
+          bodyContent = `<p>Olá,</p><p>O cadastro de <strong>${name}</strong> foi recebido com sucesso.</p><p>Sua solicitação está em análise e, assim que for aprovada, você terá acesso completo ao painel administrativo.</p><p>Em caso de dúvidas, entre em contato conosco.</p>`
         } else if (type === 'password_reset') {
           subject = `Alteração de Senha - ${senderName}`
-          bodyContent = `<p>Olá <strong>${name}</strong>,</p><p>Você solicitou a alteração da sua senha. Clique no link abaixo para redefinir:</p><div style="text-align: center; margin: 30px 0;"><a href="${body.resetLink || '#'}" style="background-color: #1B7D3A; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px; display: inline-block;">Redefinir Senha</a></div>`
+          bodyContent = `<p>Olá <strong>${name}</strong>,</p><p>Você solicitou a alteração da sua senha. Clique no link abaixo para redefinir:</p><div style="text-align: center; margin: 30px 0;"><a href="${body.resetLink || '#'}" style="background-color: ${BRAND_COLOR}; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px; display: inline-block;">Redefinir Senha</a></div>`
         } else if (type === 'event_registration') {
           subject = `Confirmação de Inscrição - ${senderName}`
-          bodyContent = `<p>Olá <strong>${name}</strong>,</p><p>Sua inscrição para o evento foi realizada com sucesso.</p><div style="background-color: #f9f9f9; border-left: 4px solid #1B7D3A; padding: 15px; margin: 20px 0;"><h3 style="margin-top: 0; color: #1B7D3A;">Detalhes do Evento:</h3><p style="margin: 5px 0;"><strong>Evento:</strong> ${eventDetails?.title || 'Torneio Oficial'}</p><p style="margin: 5px 0;"><strong>Data:</strong> ${eventDetails?.date || 'A definir'}</p><p style="margin: 5px 0;"><strong>Local:</strong> ${eventDetails?.location || 'A definir'}</p></div><p>Prepare-se e nos vemos no campo!</p>`
+          bodyContent = `<p>Olá <strong>${name}</strong>,</p><p>Sua inscrição para o evento foi realizada com sucesso.</p><div style="background-color: #f9f9f9; border-left: 4px solid ${BRAND_COLOR}; padding: 15px; margin: 20px 0;"><h3 style="margin-top: 0; color: ${BRAND_COLOR};">Detalhes do Evento:</h3><p style="margin: 5px 0;"><strong>Evento:</strong> ${eventDetails?.title || 'Evento'}</p><p style="margin: 5px 0;"><strong>Data:</strong> ${eventDetails?.date || 'A definir'}</p><p style="margin: 5px 0;"><strong>Local:</strong> ${eventDetails?.location || 'A definir'}</p></div>`
         }
       }
     }
@@ -119,22 +142,23 @@ Deno.serve(async (req: Request) => {
     } else if (fullLogoUrl && fullLogoUrl.startsWith('/')) {
       fullLogoUrl = `https://www.speedworkinformatica.com${fullLogoUrl}`
     }
+
     const logoUrl = fullLogoUrl
       ? `<img src="${fullLogoUrl}" alt="Logo" style="max-height: 80px; max-width: 250px; display: block; margin: 0 auto;" />`
-      : `<h1 style="color: #1B7D3A; margin: 0; font-size: 24px;">${senderName}</h1>`
+      : `<h1 style="color: ${BRAND_COLOR}; margin: 0; font-size: 24px;">${senderName}</h1>`
 
     let finalHtml = bodyContent
     if (!bodyContent.includes('<html')) {
       finalHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-          <div style="background-color: #f5f5f5; padding: 25px 20px; text-align: center; border-bottom: 4px solid #1B7D3A;">
+          <div style="background-color: #f5f5f5; padding: 25px 20px; text-align: center; border-bottom: 4px solid ${BRAND_COLOR};">
             ${logoUrl}
           </div>
           <div style="padding: 40px 30px; color: #333333; line-height: 1.6; font-size: 16px;">
             ${bodyContent}
           </div>
           <div style="background-color: #f9f9f9; padding: 30px 20px; text-align: center; border-top: 1px solid #e0e0e0; font-size: 13px; color: #666666; line-height: 1.6;">
-            <p style="margin: 0 0 15px 0; font-size: 15px; color: #1B7D3A;"><strong>${presidentName}</strong><br><span style="font-size: 13px; color: #666;">${presidentRole}</span></p>
+            <p style="margin: 0 0 15px 0; font-size: 15px; color: ${BRAND_COLOR_DARK};"><strong>${presidentName}</strong><br><span style="font-size: 13px; color: #666;">${presidentRole}</span></p>
             <hr style="border: none; border-top: 1px solid #ddd; margin: 15px auto; width: 50%;" />
             <p style="margin: 5px 0; color: #444;"><strong>${senderName}</strong></p>
             <p style="margin: 5px 0;">CNPJ: ${cnpj}</p>
@@ -147,7 +171,7 @@ Deno.serve(async (req: Request) => {
 
     let logStatus = 'enviado'
     let logProvider = ''
-    let logError = null
+    let logError: string | null = null
     let successData = null
 
     try {
@@ -187,7 +211,7 @@ Deno.serve(async (req: Request) => {
             Authorization: `Bearer ${resendKey}`,
           },
           body: JSON.stringify({
-            from: 'Speedwork <onboarding@resend.dev>',
+            from: `${senderName} <onboarding@resend.dev>`,
             to: [email],
             subject: subject,
             html: finalHtml,
