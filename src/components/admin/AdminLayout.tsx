@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 import { useSystemData } from '@/hooks/use-system-data'
-import { DEFAULT_MENU_CONFIG } from '@/lib/menu-constants'
+import { DEFAULT_MENU_CONFIG, type MenuConfig } from '@/lib/menu-constants'
 import { cn } from '@/lib/utils'
 import {
   Sidebar,
@@ -21,26 +21,13 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import {
-  LayoutDashboard,
-  Briefcase,
-  Trophy,
-  DollarSign,
-  ShoppingCart,
-  Settings,
-  ChevronRight,
-  LogOut,
-  User,
-} from 'lucide-react'
+import * as Icons from 'lucide-react'
+import { ChevronRight, LogOut, User } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 
-const ICON_MAP: Record<string, React.ElementType> = {
-  LayoutDashboard,
-  Briefcase,
-  Trophy,
-  DollarSign,
-  ShoppingCart,
-  Settings,
+const renderIcon = (iconName: string, className?: string) => {
+  const IconCmp = (Icons as any)[iconName] || Icons.Circle
+  return <IconCmp className={className || 'size-4'} />
 }
 
 export default function AdminLayout() {
@@ -49,11 +36,10 @@ export default function AdminLayout() {
   const { signOut, user } = useAuth()
   const { data: systemData } = useSystemData()
   const [profile, setProfile] = useState<any>(null)
-
-  const menuConfig = systemData?.admin_menu_config || DEFAULT_MENU_CONFIG
-
-  // Accordion state: only one menu open at a time
   const [openMenu, setOpenMenu] = useState<string | null>(null)
+
+  const rawMenuConfig = systemData?.admin_menu_config as MenuConfig[] | undefined
+  const menuConfig = rawMenuConfig?.length ? rawMenuConfig : DEFAULT_MENU_CONFIG
 
   useEffect(() => {
     if (user?.id) {
@@ -68,31 +54,24 @@ export default function AdminLayout() {
     }
   }, [user?.id])
 
-  // Initialize or update open menu based on current route
   useEffect(() => {
-    let matchedMenu = null
-
-    // Find if current path matches any submenu item
+    let matchedMenu: string | null = null
     for (const group of menuConfig) {
       if (
-        group.items?.some(
-          (item: any) =>
-            location.pathname === item.path || location.pathname.startsWith(`${item.path}/`),
+        group.submenus?.some(
+          (sub) => location.pathname === sub.url || location.pathname.startsWith(`${sub.url}/`),
         )
       ) {
         matchedMenu = group.id
         break
       }
     }
-
-    // If we're at /admin or /admin/dashboard and no match, default to dashboards
     if (
       !matchedMenu &&
       (location.pathname === '/admin' || location.pathname === '/admin/dashboard')
     ) {
-      matchedMenu = 'dashboards'
+      matchedMenu = null
     }
-
     if (matchedMenu) {
       setOpenMenu(matchedMenu)
     }
@@ -102,6 +81,9 @@ export default function AdminLayout() {
     await signOut()
     navigate('/login')
   }
+
+  const isPathActive = (url: string) =>
+    location.pathname === url || location.pathname.startsWith(`${url}/`)
 
   return (
     <div className="flex w-full min-h-screen bg-background">
@@ -120,13 +102,26 @@ export default function AdminLayout() {
         </SidebarHeader>
         <SidebarContent className="p-2">
           <SidebarMenu>
-            {menuConfig.map((group: any) => {
-              const Icon = ICON_MAP[group.icon] || LayoutDashboard
+            {menuConfig.map((group) => {
               const isOpen = openMenu === group.id
-              const isActiveGroup = group.items?.some(
-                (item: any) =>
-                  location.pathname === item.path || location.pathname.startsWith(`${item.path}/`),
-              )
+              const isActiveGroup = group.submenus?.some((sub) => isPathActive(sub.url))
+
+              if (!group.submenus && group.url) {
+                return (
+                  <SidebarMenuItem key={group.id}>
+                    <SidebarMenuButton
+                      tooltip={group.label}
+                      isActive={isPathActive(group.url)}
+                      asChild
+                    >
+                      <Link to={group.url}>
+                        {group.icon && renderIcon(group.icon)}
+                        <span>{group.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              }
 
               return (
                 <Collapsible
@@ -146,7 +141,7 @@ export default function AdminLayout() {
                         )}
                       >
                         <div className="flex items-center gap-3">
-                          <Icon className="size-4" />
+                          {group.icon && renderIcon(group.icon)}
                           <span>{group.label}</span>
                         </div>
                         <ChevronRight
@@ -159,12 +154,10 @@ export default function AdminLayout() {
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <SidebarMenuSub>
-                        {group.items?.map((item: any) => {
-                          const isItemActive =
-                            location.pathname === item.path ||
-                            location.pathname.startsWith(`${item.path}/`)
+                        {group.submenus?.map((sub) => {
+                          const isItemActive = isPathActive(sub.url)
                           return (
-                            <SidebarMenuSubItem key={item.id}>
+                            <SidebarMenuSubItem key={sub.id}>
                               <SidebarMenuSubButton
                                 asChild
                                 isActive={isItemActive}
@@ -173,7 +166,7 @@ export default function AdminLayout() {
                                   isItemActive && 'font-semibold text-primary bg-primary/10',
                                 )}
                               >
-                                <Link to={item.path}>{item.label}</Link>
+                                <Link to={sub.url}>{sub.label}</Link>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>
                           )

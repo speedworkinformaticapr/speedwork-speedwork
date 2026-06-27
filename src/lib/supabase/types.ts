@@ -996,6 +996,42 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_services: {
+        Row: {
+          contract_id: string | null
+          created_at: string
+          id: string
+          service_id: string | null
+        }
+        Insert: {
+          contract_id?: string | null
+          created_at?: string
+          id?: string
+          service_id?: string | null
+        }
+        Update: {
+          contract_id?: string | null
+          created_at?: string
+          id?: string
+          service_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'contract_services_contract_id_fkey'
+            columns: ['contract_id']
+            isOneToOne: false
+            referencedRelation: 'contratos'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'contract_services_service_id_fkey'
+            columns: ['service_id']
+            isOneToOne: false
+            referencedRelation: 'plan_services'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       contract_signers: {
         Row: {
           contract_id: string | null
@@ -1258,6 +1294,41 @@ export type Database = {
             columns: ['club_id']
             isOneToOne: false
             referencedRelation: 'clubs'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      customer_feedback: {
+        Row: {
+          client_id: string | null
+          comments: string | null
+          created_at: string
+          id: string
+          score: number
+          type: string
+        }
+        Insert: {
+          client_id?: string | null
+          comments?: string | null
+          created_at?: string
+          id?: string
+          score: number
+          type: string
+        }
+        Update: {
+          client_id?: string | null
+          comments?: string | null
+          created_at?: string
+          id?: string
+          score?: number
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'customer_feedback_client_id_fkey'
+            columns: ['client_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
         ]
@@ -2569,6 +2640,8 @@ export type Database = {
         Row: {
           annual_discount: number | null
           annual_value: number
+          avulso_discount: number | null
+          avulso_value: number
           category_id: string | null
           contract_template_id: string | null
           created_at: string
@@ -2585,6 +2658,8 @@ export type Database = {
         Insert: {
           annual_discount?: number | null
           annual_value?: number
+          avulso_discount?: number | null
+          avulso_value?: number
           category_id?: string | null
           contract_template_id?: string | null
           created_at?: string
@@ -2601,6 +2676,8 @@ export type Database = {
         Update: {
           annual_discount?: number | null
           annual_value?: number
+          avulso_discount?: number | null
+          avulso_value?: number
           category_id?: string | null
           contract_template_id?: string | null
           created_at?: string
