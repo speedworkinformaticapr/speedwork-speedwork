@@ -1,12 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, Facebook, Instagram, Key } from 'lucide-react'
 import { useSystemData } from '@/hooks/use-system-data'
+import { Loader2, Key, ShieldCheck } from 'lucide-react'
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
@@ -38,18 +38,6 @@ const MicrosoftIcon = () => (
   </svg>
 )
 
-const TikTokIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    width="20"
-    height="20"
-    fill="currentColor"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.01.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.58-.66 3.11-1.73 4.24-1.23 1.31-2.91 2.06-4.69 2.14-1.8.09-3.62-.35-5.06-1.42-1.39-1.02-2.33-2.61-2.58-4.32-.26-1.78.07-3.63 1.05-5.11 1.02-1.55 2.68-2.61 4.51-2.88.42-.06.84-.08 1.26-.07v4.03c-.22.02-.45.03-.66.08-.81.18-1.55.67-2.03 1.34-.46.65-.63 1.48-.52 2.27.12.87.64 1.65 1.38 2.08.77.44 1.72.54 2.58.26.85-.28 1.52-.94 1.83-1.79.23-.62.28-1.3.26-1.95V.02h-.01z" />
-  </svg>
-)
-
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -58,6 +46,7 @@ export default function Login() {
   const [mfaCode, setMfaCode] = useState('')
   const [mfaType, setMfaType] = useState('email')
   const [profileData, setProfileData] = useState<any>(null)
+  const [verifying, setVerifying] = useState(false)
 
   const navigate = useNavigate()
   const location = useLocation()
@@ -66,7 +55,14 @@ export default function Login() {
 
   const from = location.state?.from?.pathname
 
+  useEffect(() => {
+    if (sessionStorage.getItem('mfa_pending') === 'true') {
+      setShowMfa(true)
+    }
+  }, [])
+
   const handleRedirect = (role?: string) => {
+    sessionStorage.removeItem('mfa_pending')
     if (from && from !== '/') {
       navigate(from, { replace: true })
       return
@@ -105,12 +101,34 @@ export default function Login() {
         .single()
 
       if (profile?.mfa_enabled) {
+        const code = Math.floor(100000 + Math.random() * 900000).toString()
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
+
+        await supabase
+          .from('profiles')
+          .update({ mfa_code: code, mfa_code_expires_at: expiresAt })
+          .eq('id', authData.user.id)
+
+        try {
+          await supabase.functions.invoke('send-email', {
+            body: {
+              type: 'custom',
+              email,
+              subject: 'Código de Verificação - ' + (systemData?.platform_name || 'Speedwork'),
+              html: `<p>Olá <strong>${profile.name || ''}</strong>,</p><p>Seu código de verificação é:</p><p style="font-size:32px;font-weight:bold;letter-spacing:8px;text-align:center;padding:20px;background:#f4f4f4;border-radius:8px;">${code}</p><p>Este código expira em 15 minutos.</p>`,
+            },
+          })
+        } catch (err) {
+          console.error('Failed to send MFA code:', err)
+        }
+
+        sessionStorage.setItem('mfa_pending', 'true')
         setProfileData(profile)
         setMfaType(profile.mfa_type || 'email')
         setShowMfa(true)
         toast({
           title: 'Verificação em Duas Etapas',
-          description: `Um código de acesso foi enviado para seu ${profile.mfa_type === 'whatsapp' ? 'WhatsApp' : 'E-mail'}.`,
+          description: 'Um código de acesso foi enviado para seu e-mail.',
         })
         setLoading(false)
         return
@@ -121,22 +139,71 @@ export default function Login() {
     }
   }
 
-  const handleVerifyMfa = () => {
+  const handleVerifyMfa = async () => {
     if (mfaCode.length < 6) {
       toast({ title: 'Código inválido', variant: 'destructive' })
       return
     }
-    toast({ title: 'MFA verificado com sucesso!' })
-    handleRedirect(profileData?.role)
+
+    setVerifying(true)
+
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('mfa_code, mfa_code_expires_at')
+        .eq('id', profileData.id)
+        .single()
+
+      if (!profile?.mfa_code || profile.mfa_code !== mfaCode) {
+        toast({ title: 'Código incorreto', variant: 'destructive' })
+        setVerifying(false)
+        return
+      }
+
+      if (profile.mfa_code_expires_at && new Date(profile.mfa_code_expires_at) < new Date()) {
+        toast({
+          title: 'Código expirado',
+          description: 'Solicite um novo código.',
+          variant: 'destructive',
+        })
+        setVerifying(false)
+        return
+      }
+
+      await supabase
+        .from('profiles')
+        .update({ mfa_code: null, mfa_code_expires_at: null })
+        .eq('id', profileData.id)
+
+      toast({ title: 'MFA verificado com sucesso!' })
+      handleRedirect(profileData?.role)
+    } catch (err) {
+      toast({ title: 'Erro ao verificar código', variant: 'destructive' })
+    } finally {
+      setVerifying(false)
+    }
   }
 
-  const handleSocialLogin = (provider: string) => {
-    toast({ title: `Login via ${provider} em desenvolvimento.` })
+  const handleSocialLogin = async (provider: 'google' | 'azure') => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: window.location.origin },
+    })
+    if (error) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' })
+    }
+  }
+
+  const handleCancelMfa = () => {
+    setShowMfa(false)
+    sessionStorage.removeItem('mfa_pending')
+    setMfaCode('')
+    setProfileData(null)
+    supabase.auth.signOut()
   }
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Left Panel */}
       <div className="hidden lg:flex w-1/2 bg-zinc-950 relative overflow-hidden flex-col justify-center p-16">
         <div className="absolute inset-0 z-0">
           <img
@@ -151,43 +218,44 @@ export default function Login() {
               <img
                 src={systemData.logo_url}
                 alt={systemData?.platform_name || 'Logo'}
-                className="h-14 w-auto mb-8 bg-white/10 p-2 rounded-lg backdrop-blur-sm object-contain"
+                className="h-[5.25rem] w-auto mb-8 object-contain"
               />
             ) : (
               <img
                 src="/skip.png"
                 alt="Speedwork"
-                className="h-14 w-auto mb-8 bg-white/10 p-2 rounded-lg backdrop-blur-sm"
+                className="h-[5.25rem] w-auto mb-8 object-contain"
               />
             )}
           </Link>
           <h1 className="text-5xl font-bold text-white tracking-tight leading-tight">
-            Growth Marketing <br />
-            <span className="text-primary">& Customer Acquisition</span>
+            Soluções completas em <br />
+            <span className="text-primary">produtos e serviços</span>
           </h1>
           <p className="text-zinc-400 text-lg max-w-md mt-4">
-            Plataforma unificada para gestão de clientes, fornecedores e usuários. Potencialize seu
+            Soluções completas em produtos e serviços para otimizar sua gestão. Potencialize seu
             negócio com segurança e performance.
           </p>
         </div>
       </div>
 
-      {/* Right Panel */}
       <div className="flex w-full lg:w-1/2 items-center justify-center p-8 relative">
         <div className="w-full max-w-md space-y-8">
           <div className="flex justify-center mb-6">
             {systemLoading ? (
-              <div className="h-24 w-48 bg-muted animate-pulse rounded-md" />
-            ) : systemData?.logo_url ? (
+              <div className="h-16 w-16 bg-muted animate-pulse rounded-md" />
+            ) : systemData?.browser_icon_url ? (
               <img
-                src={systemData.logo_url}
-                alt={systemData?.platform_name || 'Logo da Plataforma'}
-                className="h-24 max-w-[200px] object-contain"
+                src={systemData.browser_icon_url}
+                alt="Ícone da Plataforma"
+                className="h-16 w-16 object-contain"
               />
             ) : (
-              <h1 className="text-4xl font-extrabold tracking-tight text-foreground text-center">
-                {systemData?.platform_name || 'Plataforma'}
-              </h1>
+              <img
+                src="/favicon.ico"
+                alt="Ícone da Plataforma"
+                className="h-16 w-16 object-contain"
+              />
             )}
           </div>
 
@@ -250,51 +318,24 @@ export default function Login() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <Button
                   variant="outline"
-                  size="icon"
                   className="h-12 w-full"
                   type="button"
-                  onClick={() => handleSocialLogin('Google')}
+                  onClick={() => handleSocialLogin('google')}
                 >
                   <GoogleIcon />
+                  <span className="ml-2">Google</span>
                 </Button>
                 <Button
                   variant="outline"
-                  size="icon"
                   className="h-12 w-full"
                   type="button"
-                  onClick={() => handleSocialLogin('Microsoft')}
+                  onClick={() => handleSocialLogin('azure')}
                 >
                   <MicrosoftIcon />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-12 w-full text-blue-600 hover:text-blue-700"
-                  type="button"
-                  onClick={() => handleSocialLogin('Facebook')}
-                >
-                  <Facebook className="h-5 w-5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-12 w-full text-pink-600 hover:text-pink-700"
-                  type="button"
-                  onClick={() => handleSocialLogin('Instagram')}
-                >
-                  <Instagram className="h-5 w-5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-12 w-full hover:text-black dark:hover:text-white"
-                  type="button"
-                  onClick={() => handleSocialLogin('TikTok')}
-                >
-                  <TikTokIcon />
+                  <span className="ml-2">Microsoft</span>
                 </Button>
               </div>
 
@@ -311,7 +352,7 @@ export default function Login() {
             <div className="space-y-6 animate-fade-in">
               <div className="space-y-2 text-center lg:text-left">
                 <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
-                  <Key className="h-6 w-6" />
+                  <ShieldCheck className="h-6 w-6" />
                 </div>
                 <h2 className="text-3xl font-bold tracking-tight">Verificação em Duas Etapas</h2>
                 <p className="text-muted-foreground">
@@ -325,23 +366,28 @@ export default function Login() {
                   <Label>Código de Verificação</Label>
                   <Input
                     value={mfaCode}
-                    onChange={(e) => setMfaCode(e.target.value)}
+                    onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
                     placeholder="000000"
                     maxLength={6}
                     className="h-14 text-center text-2xl tracking-widest font-mono"
                   />
                 </div>
-                <Button onClick={handleVerifyMfa} className="w-full h-12 text-base mt-2">
-                  Verificar e Entrar
-                </Button>
                 <Button
-                  variant="ghost"
-                  className="w-full h-12"
-                  onClick={() => {
-                    setShowMfa(false)
-                    supabase.auth.signOut()
-                  }}
+                  onClick={handleVerifyMfa}
+                  disabled={verifying}
+                  className="w-full h-12 text-base mt-2"
                 >
+                  {verifying ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Verificando...
+                    </>
+                  ) : (
+                    <>
+                      <Key className="mr-2 h-5 w-5" /> Verificar e Entrar
+                    </>
+                  )}
+                </Button>
+                <Button variant="ghost" className="w-full h-12" onClick={handleCancelMfa}>
                   Voltar ao Login
                 </Button>
               </div>

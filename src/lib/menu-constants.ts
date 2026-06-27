@@ -16,15 +16,6 @@ export type MenuConfig = {
 export const DEFAULT_MENU_CONFIG: MenuConfig[] = [
   { id: 'dashboard', label: 'Dashboard', url: '/admin/dashboard', icon: 'LayoutDashboard' },
   {
-    id: 'gestao',
-    label: 'Gestão',
-    icon: 'Users',
-    submenus: [
-      { id: 'users', label: 'Usuários', url: '/admin/users' },
-      { id: 'feedback', label: 'Satisfação do Cliente', url: '/admin/feedback/dashboard' },
-    ],
-  },
-  {
     id: 'comercial',
     label: 'Comercial',
     icon: 'Briefcase',
@@ -103,25 +94,18 @@ export const DEFAULT_MENU_CONFIG: MenuConfig[] = [
     icon: 'Settings',
     submenus: [
       { id: 'system-data', label: 'Dados do Sistema', url: '/admin/settings/system' },
-      { id: 'maintenance', label: 'Manutenção', url: '/admin/settings/maintenance' },
+      { id: 'users', label: 'Gestão de Usuários', url: '/admin/users' },
+      { id: 'media', label: 'Biblioteca de Mídias', url: '/admin/settings/media' },
+      { id: 'pages', label: 'Páginas', url: '/admin/settings/pages' },
+      { id: 'blog', label: 'Posts do Blog', url: '/admin/settings/blog' },
+      { id: 'maintenance', label: 'Página de Manutenção', url: '/admin/settings/maintenance' },
+      { id: 'menu-config', label: 'Gestão de Menus', url: '/admin/settings/menu' },
       { id: 'plan-services', label: 'Planos/Serviços', url: '/admin/settings/plan-services' },
       { id: 'sla-types', label: 'Tipos de SLA', url: '/admin/settings/sla-types' },
-      { id: 'media', label: 'Mídia', url: '/admin/settings/media' },
       { id: 'analytics', label: 'Analytics', url: '/admin/settings/analytics' },
-    ],
-  },
-  {
-    id: 'suporte',
-    label: 'Suporte',
-    icon: 'LifeBuoy',
-    submenus: [
-      {
-        id: 'sup-tickets',
-        label: 'Gestão de Chamados',
-        url: '/admin/support/tickets',
-        icon: 'Ticket',
-      },
-      { id: 'sup-sla', label: 'Configurações de SLA', url: '/admin/support/sla', icon: 'Clock' },
+      { id: 'feedback', label: 'Satisfação do Cliente', url: '/admin/feedback/dashboard' },
+      { id: 'sup-tickets', label: 'Tickets de Suporte', url: '/admin/support/tickets' },
+      { id: 'sup-sla', label: 'Configurações de SLA', url: '/admin/support/sla' },
     ],
   },
 ]

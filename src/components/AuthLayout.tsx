@@ -13,7 +13,9 @@ const AuthLayout = () => {
     )
   }
 
-  if (user) {
+  const mfaPending = sessionStorage.getItem('mfa_pending') === 'true'
+
+  if (user && !mfaPending) {
     return <Navigate to="/" replace />
   }
 
