@@ -141,6 +141,7 @@ export default function AdminPlanServices() {
                   <th className="p-4 font-medium">Título</th>
                   <th className="p-4 font-medium">Categoria</th>
                   <th className="p-4 font-medium min-w-[200px]">Descrição</th>
+                  <th className="p-4 font-medium">Valor Avulso</th>
                   <th className="p-4 font-medium">Valor Mensal</th>
                   <th className="p-4 font-medium">Valor Semestral</th>
                   <th className="p-4 font-medium">Valor Anual</th>
@@ -157,6 +158,7 @@ export default function AdminPlanServices() {
                         ? `${item.description.substring(0, 50)}...`
                         : item.description}
                     </td>
+                    <td className="p-4">{renderPrice(item.avulso_value, item.avulso_discount)}</td>
                     <td className="p-4">
                       {renderPrice(item.monthly_value, item.monthly_discount)}
                     </td>

@@ -1089,6 +1089,7 @@ export type Database = {
           motivo_cancelamento: string | null
           numero_contrato: string | null
           observacoes: string | null
+          parent_contract_id: string | null
           renovacao_automatica: boolean | null
           responsavel_id: string | null
           signature_order_type: string | null
@@ -1113,6 +1114,7 @@ export type Database = {
           motivo_cancelamento?: string | null
           numero_contrato?: string | null
           observacoes?: string | null
+          parent_contract_id?: string | null
           renovacao_automatica?: boolean | null
           responsavel_id?: string | null
           signature_order_type?: string | null
@@ -1137,6 +1139,7 @@ export type Database = {
           motivo_cancelamento?: string | null
           numero_contrato?: string | null
           observacoes?: string | null
+          parent_contract_id?: string | null
           renovacao_automatica?: boolean | null
           responsavel_id?: string | null
           signature_order_type?: string | null
@@ -1160,6 +1163,13 @@ export type Database = {
             columns: ['conta_id']
             isOneToOne: false
             referencedRelation: 'plano_contas'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'contratos_parent_contract_id_fkey'
+            columns: ['parent_contract_id']
+            isOneToOne: false
+            referencedRelation: 'contratos'
             referencedColumns: ['id']
           },
           {

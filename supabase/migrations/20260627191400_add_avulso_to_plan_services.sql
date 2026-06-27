@@ -1,0 +1,2 @@
+ALTER TABLE public.plan_services ADD COLUMN IF NOT EXISTS avulso_value NUMERIC NOT NULL DEFAULT 0;
+ALTER TABLE public.plan_services ADD COLUMN IF NOT EXISTS avulso_discount NUMERIC DEFAULT 0;

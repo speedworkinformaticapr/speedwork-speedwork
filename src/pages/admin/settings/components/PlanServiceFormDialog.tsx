@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -36,6 +37,8 @@ const schema = z.object({
   title: z.string().min(1, 'Obrigatório'),
   category_id: z.string().optional().nullable(),
   description: z.string().min(1, 'Obrigatório'),
+  avulso_value: z.coerce.number().min(0, 'Inválido'),
+  avulso_discount: z.coerce.number().min(0).max(100).optional().default(0),
   monthly_value: z.coerce.number().min(0, 'Inválido'),
   semiannual_value: z.coerce.number().min(0, 'Inválido'),
   annual_value: z.coerce.number().min(0, 'Inválido'),
@@ -66,6 +69,8 @@ export function PlanServiceFormDialog({ open, onOpenChange, initialData, onSave 
       title: '',
       category_id: '',
       description: '',
+      avulso_value: 0,
+      avulso_discount: 0,
       monthly_value: 0,
       semiannual_value: 0,
       annual_value: 0,
@@ -92,12 +97,16 @@ export function PlanServiceFormDialog({ open, onOpenChange, initialData, onSave 
           ...initialData,
           category_id: initialData.category_id || '',
           observation: initialData.observation || '',
+          avulso_value: initialData.avulso_value || 0,
+          avulso_discount: initialData.avulso_discount || 0,
         })
       } else {
         form.reset({
           title: '',
           category_id: '',
           description: '',
+          avulso_value: 0,
+          avulso_discount: 0,
           monthly_value: 0,
           semiannual_value: 0,
           annual_value: 0,
@@ -218,6 +227,33 @@ export function PlanServiceFormDialog({ open, onOpenChange, initialData, onSave 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
+                  name="avulso_value"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Valor Avulso *</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="avulso_discount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>% Desc. Avulso</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="monthly_value"
                   render={({ field }) => (
                     <FormItem>
@@ -305,7 +341,12 @@ export function PlanServiceFormDialog({ open, onOpenChange, initialData, onSave 
                   <FormItem>
                     <FormLabel>Observação</FormLabel>
                     <FormControl>
-                      <Textarea {...field} />
+                      <RichTextEditor
+                        value={field.value || ''}
+                        onChange={field.onChange}
+                        withAi
+                        aiContext="Observações sobre o serviço comercial"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -36,12 +36,12 @@ export function AppSidebar() {
       id: 'contracts',
       label: 'Gestão de Contratos',
       icon: 'FileText',
-      items: [
-        { id: 'c-list', label: 'Contratos', path: '/admin/commercial/contracts' },
-        { id: 'c-templates', label: 'Modelos', path: '/admin/contracts/templates' },
-        { id: 'c-clauses', label: 'Biblioteca de Cláusulas', path: '/admin/contracts/clauses' },
-        { id: 'c-addendums', label: 'Aditivos', path: '/admin/contracts/addendums' },
-        { id: 'c-reports', label: 'Relatórios', path: '/admin/contracts/reports' },
+      submenus: [
+        { id: 'c-list', label: 'Contratos', url: '/admin/commercial/contracts' },
+        { id: 'c-templates', label: 'Modelos', url: '/admin/contracts/templates' },
+        { id: 'c-clauses', label: 'Biblioteca de Cláusulas', url: '/admin/contracts/clauses' },
+        { id: 'c-addendums', label: 'Aditivos', url: '/admin/contracts/addendums' },
+        { id: 'c-reports', label: 'Relatórios', url: '/admin/contracts/reports' },
       ],
     },
     ...menuConfig,
@@ -68,8 +68,8 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarMenu>
             {extendedMenuConfig.map((group: any) => {
-              const isActiveGroup = group.items?.some((i: any) =>
-                location.pathname.startsWith(i.path),
+              const isActiveGroup = group.submenus?.some((i: any) =>
+                location.pathname.startsWith(i.url),
               )
               return (
                 <Collapsible
@@ -87,13 +87,10 @@ export function AppSidebar() {
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <SidebarMenuSub>
-                        {group.items?.map((item: any) => (
+                        {group.submenus?.map((item: any) => (
                           <SidebarMenuSubItem key={item.id}>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={location.pathname === item.path}
-                            >
-                              <Link to={item.path} onClick={() => isMobile && setOpenMobile(false)}>
+                            <SidebarMenuSubButton asChild isActive={location.pathname === item.url}>
+                              <Link to={item.url} onClick={() => isMobile && setOpenMobile(false)}>
                                 {item.label}
                               </Link>
                             </SidebarMenuSubButton>

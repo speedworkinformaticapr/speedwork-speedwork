@@ -37,22 +37,15 @@ export const DEFAULT_MENU: MenuGroup[] = [
     ],
   },
   {
-    id: 'support',
-    label: 'Suporte & Tickets',
-    icon: 'MessageSquare',
-    items: [
-      { id: 'tickets', label: 'Tickets', path: '/admin/support/tickets' },
-      { id: 'sla', label: 'Configuração de SLA', path: '/admin/support/sla' },
-    ],
-  },
-  {
     id: 'commercial',
     label: 'Comercial',
     icon: 'Briefcase',
     items: [
       { id: 'pedidos', label: 'Pedidos', path: '/admin/commercial/pedidos' },
       { id: 'contratos', label: 'Contratos', path: '/admin/commercial/contratos' },
-      { id: 'quotes', label: 'Orçamentos', path: '/admin/quotes' },
+      { id: 'quotes', label: 'Orçamentos', path: '/admin/commercial/quotes' },
+      { id: 'services', label: 'Serviços', path: '/admin/settings/plan-services' },
+      { id: 'feedback', label: 'Satisfação do Cliente', path: '/admin/feedback/dashboard' },
     ],
   },
   {

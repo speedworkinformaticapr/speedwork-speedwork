@@ -1,99 +1,114 @@
-export const DEFAULT_MENU_CONFIG = [
+export type MenuSubmenu = {
+  id: string
+  label: string
+  url: string
+  icon?: string
+}
+
+export type MenuConfig = {
+  id: string
+  label: string
+  url?: string
+  icon?: string
+  submenus?: MenuSubmenu[]
+}
+
+export const DEFAULT_MENU_CONFIG: MenuConfig[] = [
+  { id: 'dashboard', label: 'Dashboard', url: '/admin/dashboard', icon: 'LayoutDashboard' },
   {
-    id: 'dashboards',
-    label: 'Dashboards',
-    icon: 'LayoutDashboard',
-    items: [
-      { id: 'dash-geral', label: 'Geral', path: '/admin/dashboard' },
-      { id: 'dash-comercial', label: 'Comercial', path: '/admin/commercial/dashboard' },
-      { id: 'dash-financeiro', label: 'Financeiro', path: '/admin/financial/dashboard' },
+    id: 'gestao',
+    label: 'Gestão',
+    icon: 'Users',
+    submenus: [
+      { id: 'users', label: 'Usuários', url: '/admin/users' },
+      { id: 'feedback', label: 'Satisfação do Cliente', url: '/admin/feedback/dashboard' },
     ],
   },
   {
     id: 'comercial',
     label: 'Comercial',
     icon: 'Briefcase',
-    items: [
+    submenus: [
       {
-        id: 'com-agendamentos',
-        label: 'Agendamentos',
-        path: '/admin/commercial/appointments',
-        icon: 'Calendar',
+        id: 'comercial-dashboard',
+        label: 'Dashboard Comercial',
+        url: '/admin/commercial/dashboard',
       },
-      { id: 'com-pedidos', label: 'Pedidos', path: '/admin/commercial/orders' },
-      { id: 'com-orcamentos', label: 'Orçamentos', path: '/admin/commercial/quotes' },
-      { id: 'com-contratos', label: 'Contratos', path: '/admin/commercial/contracts' },
-    ],
-  },
-  {
-    id: 'gestao-esportiva',
-    label: 'Gestão Esportiva',
-    icon: 'Trophy',
-    items: [
-      { id: 'esp-atletas', label: 'Atletas', path: '/admin/sports/athletes' },
-      { id: 'esp-atributos', label: 'Atributos', path: '/admin/sports/attributes' },
-      { id: 'esp-avaliacoes', label: 'Avaliações', path: '/admin/sports/evaluations' },
-      { id: 'esp-categorias', label: 'Categorias', path: '/admin/sports/categories' },
-      { id: 'esp-torneios', label: 'Torneios', path: '/admin/sports/tournaments' },
-      { id: 'esp-cursos', label: 'Cursos', path: '/admin/sports/courses' },
-      { id: 'esp-ranking', label: 'Ranking', path: '/admin/sports/rankings' },
-      { id: 'esp-regras', label: 'Regras', path: '/admin/sports/rules' },
+      { id: 'quotes', label: 'Orçamentos', url: '/admin/commercial/quotes' },
+      { id: 'pedidos', label: 'Pedidos', url: '/admin/commercial/orders' },
+      { id: 'contratos', label: 'Contratos', url: '/admin/commercial/contracts' },
+      { id: 'services', label: 'Serviços', url: '/admin/settings/plan-services' },
+      { id: 'appointments', label: 'Agendamentos', url: '/admin/commercial/appointments' },
     ],
   },
   {
     id: 'financeiro',
     label: 'Financeiro',
     icon: 'DollarSign',
-    items: [
-      { id: 'fin-plano-contas', label: 'Plano de Contas', path: '/admin/financial/accounts' },
-      { id: 'fin-categorias', label: 'Categorias', path: '/admin/financial/categories' },
-      { id: 'fin-pagamentos', label: 'Fluxo de Caixa', path: '/admin/financial/payments' },
-      { id: 'fin-parceiros', label: 'Parceiros', path: '/admin/financial/partners' },
-      { id: 'fin-stripe', label: 'Configurações Stripe', path: '/admin/financial/settings' },
+    submenus: [
+      {
+        id: 'financial-dashboard',
+        label: 'Dashboard Financeiro',
+        url: '/admin/financial/dashboard',
+      },
+      {
+        id: 'chart-of-accounts',
+        label: 'Plano de Contas',
+        url: '/admin/financial/chart-of-accounts',
+      },
+      { id: 'categories', label: 'Categorias', url: '/admin/financial/categories' },
+      { id: 'payments', label: 'Pagamentos', url: '/admin/financial/payments' },
+      { id: 'partners', label: 'Parceiros', url: '/admin/financial/partners' },
+      { id: 'billing-logs', label: 'Logs de Faturamento', url: '/admin/financial/billing-logs' },
+      { id: 'stripe-config', label: 'Configurações Stripe', url: '/admin/financial/stripe-config' },
     ],
   },
   {
     id: 'ecommerce',
     label: 'E-commerce',
     icon: 'ShoppingCart',
-    items: [
-      { id: 'eco-loja', label: 'Loja', path: '/admin/ecommerce/store' },
-      { id: 'eco-produtos', label: 'Produtos', path: '/admin/ecommerce/products' },
-      { id: 'eco-grupos', label: 'Grupos', path: '/admin/ecommerce/groups' },
-      { id: 'eco-pedidos', label: 'Pedidos', path: '/admin/ecommerce/orders' },
+    submenus: [
+      { id: 'ecommerce-groups', label: 'Grupos', url: '/admin/ecommerce/groups' },
+      { id: 'ecommerce-products', label: 'Produtos', url: '/admin/ecommerce/products' },
       {
-        id: 'eco-abandonados',
-        label: 'Carrinhos Abandonados',
-        path: '/admin/ecommerce/abandoned-carts',
+        id: 'ecommerce-store-editor',
+        label: 'Editor da Loja',
+        url: '/admin/ecommerce/store-editor',
       },
-      { id: 'eco-logistica', label: 'Logística', path: '/admin/ecommerce/logistics' },
+      {
+        id: 'ecommerce-abandoned-carts',
+        label: 'Carrinhos Abandonados',
+        url: '/admin/ecommerce/abandoned-carts',
+      },
+      { id: 'ecommerce-logistics', label: 'Logística', url: '/admin/ecommerce/logistics' },
+      { id: 'ecommerce-orders', label: 'Pedidos', url: '/admin/ecommerce/orders' },
     ],
   },
   {
     id: 'configuracoes',
     label: 'Configurações',
     icon: 'Settings',
-    items: [
-      { id: 'cfg-sistema', label: 'Dados do Sistema', path: '/admin/settings/system' },
-      { id: 'cfg-menu', label: 'Gestão de Menus', path: '/admin/settings/menu' },
-      { id: 'cfg-manutencao', label: 'Manutenção', path: '/admin/settings/maintenance' },
-      { id: 'cfg-midias', label: 'Mídias', path: '/admin/settings/media' },
-      { id: 'cfg-blog', label: 'Blog', path: '/admin/settings/blog' },
-      { id: 'cfg-paginas', label: 'Páginas', path: '/admin/settings/pages' },
+    submenus: [
+      { id: 'system-data', label: 'Dados do Sistema', url: '/admin/settings/system-data' },
+      { id: 'maintenance', label: 'Manutenção', url: '/admin/settings/maintenance' },
+      { id: 'plan-services', label: 'Planos/Serviços', url: '/admin/settings/plan-services' },
+      { id: 'sla-types', label: 'Tipos de SLA', url: '/admin/settings/sla-types' },
+      { id: 'media', label: 'Mídia', url: '/admin/settings/media' },
+      { id: 'analytics', label: 'Analytics', url: '/admin/settings/analytics' },
     ],
   },
   {
     id: 'suporte',
     label: 'Suporte',
     icon: 'LifeBuoy',
-    items: [
+    submenus: [
       {
         id: 'sup-tickets',
         label: 'Gestão de Chamados',
-        path: '/admin/support/tickets',
+        url: '/admin/support/tickets',
         icon: 'Ticket',
       },
-      { id: 'sup-sla', label: 'Configurações de SLA', path: '/admin/support/sla', icon: 'Clock' },
+      { id: 'sup-sla', label: 'Configurações de SLA', url: '/admin/support/sla', icon: 'Clock' },
     ],
   },
 ]

@@ -58,6 +58,9 @@ export default function AdminContratoForm() {
   const [newSlaOpen, setNewSlaOpen] = useState(false)
   const [newSlaName, setNewSlaName] = useState('')
 
+  const [services, setServices] = useState<any[]>([])
+  const [selectedServices, setSelectedServices] = useState<string[]>([])
+
   useEffect(() => {
     supabase
       .from('plano_contas')
@@ -76,6 +79,11 @@ export default function AdminContratoForm() {
       .from('sla_types')
       .select('id, name')
       .then(({ data }) => setSlas(data || []))
+    supabase
+      .from('plan_services')
+      .select('id, title, monthly_value, semiannual_value, annual_value, avulso_value')
+      .order('title')
+      .then(({ data }) => setServices(data || []))
 
     if (id) {
       const isUuidValid =
@@ -87,6 +95,13 @@ export default function AdminContratoForm() {
           .eq('id', id)
           .single()
           .then(({ data }) => data && setForm((prev) => ({ ...prev, ...data })))
+        supabase
+          .from('contract_services')
+          .select('service_id')
+          .eq('contract_id', id)
+          .then(({ data }) => {
+            if (data) setSelectedServices(data.map((d: any) => d.service_id))
+          })
       }
     }
   }, [id])
@@ -119,8 +134,29 @@ export default function AdminContratoForm() {
     if (!payload.sla_id) payload.sla_id = null
     if (!payload.data_fim) payload.data_fim = null
 
-    if (id) await supabase.from('contratos').update(payload).eq('id', id)
-    else await supabase.from('contratos').insert([payload])
+    let contractId = id
+    if (id) {
+      await supabase.from('contratos').update(payload).eq('id', id)
+    } else {
+      const { data: newContract } = await supabase
+        .from('contratos')
+        .insert([payload])
+        .select('id')
+        .single()
+      contractId = newContract?.id
+    }
+
+    if (contractId) {
+      await supabase.from('contract_services').delete().eq('contract_id', contractId)
+      if (selectedServices.length > 0) {
+        await supabase.from('contract_services').insert(
+          selectedServices.map((serviceId) => ({
+            contract_id: contractId,
+            service_id: serviceId,
+          })),
+        )
+      }
+    }
 
     toast({ title: 'Contrato salvo com sucesso' })
     navigate('/admin/commercial/contratos')
@@ -184,9 +220,10 @@ export default function AdminContratoForm() {
       </div>
 
       <Tabs defaultValue="cliente" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
+        <TabsList className="grid w-full grid-cols-4 mb-6">
           <TabsTrigger value="cliente">Cliente e Tipo</TabsTrigger>
           <TabsTrigger value="faturamento">Faturamento</TabsTrigger>
+          <TabsTrigger value="servicos">Serviços</TabsTrigger>
           <TabsTrigger value="sla">SLA e Termos</TabsTrigger>
         </TabsList>
 
@@ -309,6 +346,52 @@ export default function AdminContratoForm() {
                   <Plus className="w-4 h-4" />
                 </Button>
               </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="servicos" className="space-y-4 bg-card p-6 border rounded-xl">
+          <div className="space-y-2">
+            <Label>Serviços Vinculados</Label>
+            <p className="text-sm text-muted-foreground">
+              Selecione os serviços comerciais que fazem parte deste contrato.
+            </p>
+            <div className="border rounded-md divide-y max-h-[300px] overflow-y-auto">
+              {services.length === 0 ? (
+                <p className="p-4 text-sm text-muted-foreground text-center">
+                  Nenhum serviço cadastrado. Cadastre serviços em Planos/Serviços.
+                </p>
+              ) : (
+                services.map((svc) => (
+                  <label
+                    key={svc.id}
+                    className="flex items-center gap-3 p-3 hover:bg-muted/50 cursor-pointer transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedServices.includes(svc.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedServices([...selectedServices, svc.id])
+                        } else {
+                          setSelectedServices(selectedServices.filter((s) => s !== svc.id))
+                        }
+                      }}
+                      className="size-4 rounded border-border"
+                    />
+                    <div className="flex-1">
+                      <span className="font-medium text-sm">{svc.title}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL',
+                      }).format(svc.monthly_value || 0)}
+                      /mês
+                    </span>
+                  </label>
+                ))
+              )}
             </div>
           </div>
         </TabsContent>

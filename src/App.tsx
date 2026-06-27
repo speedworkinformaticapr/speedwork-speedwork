@@ -32,13 +32,6 @@ import AdminLayout from './components/admin/AdminLayout'
 import AdminMaintenance from './pages/admin/settings/AdminMaintenance'
 import AdminUsers from './pages/admin/business/AdminUsers'
 import AdminProfileForm from './pages/admin/business/AdminProfileForm'
-import AdminAthleteAttributes from './pages/admin/business/AdminAthleteAttributes'
-import AdminAthleteEvaluations from './pages/admin/business/AdminAthleteEvaluations'
-import AdminAthleteCategories from './pages/admin/business/AdminAthleteCategories'
-import AdminCourses from './pages/admin/business/AdminCourses'
-import AdminTournaments from './pages/admin/business/AdminTournaments'
-import AdminRanking from './pages/admin/business/AdminRanking'
-import AdminRules from './pages/admin/business/AdminRules'
 import AdminChartOfAccounts from './pages/admin/financial/AdminChartOfAccounts'
 import AdminFinancialCategories from './pages/admin/financial/AdminFinancialCategories'
 import AdminFinancialPayments from './pages/admin/financial/AdminFinancialPayments'
@@ -57,8 +50,8 @@ import AdminAbandonedCarts from './pages/admin/ecommerce/AdminAbandonedCarts'
 import AdminCheckoutConfig from './pages/admin/ecommerce/AdminCheckoutConfig'
 import AdminOrders from './pages/admin/ecommerce/AdminOrders'
 import AdminLogistics from './pages/admin/ecommerce/AdminLogistics'
-import AdminAthleteScouting from './pages/admin/business/AdminAthleteScouting'
 import AdminPlanServices from './pages/admin/settings/AdminPlanServices'
+import CustomerFeedbackDashboard from './pages/admin/feedback/CustomerFeedbackDashboard'
 import AdminSlaTypes from './pages/admin/settings/AdminSlaTypes'
 import AdminSystemData from './pages/admin/settings/AdminSystemData'
 import AdminMenuConfig from './pages/admin/settings/AdminMenuConfig'
@@ -242,7 +235,6 @@ const App = () => (
                     <Route path="settings/media" element={<AdminMedia />} />
                     <Route path="settings/analytics" element={<AdminAnalytics />} />
                     <Route path="settings/publish-logs" element={<AdminPublishLogs />} />
-                    <Route path="sports/athletes" element={<AdminUsers />} />
                     <Route path="users" element={<AdminUsers />} />
                     <Route path="users/new" element={<AdminProfileForm />} />
                     <Route path="users/:id/edit" element={<AdminProfileForm />} />
@@ -250,15 +242,7 @@ const App = () => (
                     <Route path="business/profiles" element={<AdminUsers />} />
                     <Route path="business/profiles/new" element={<AdminProfileForm />} />
                     <Route path="business/profiles/:id/edit" element={<AdminProfileForm />} />
-                    <Route path="sports/attributes" element={<AdminAthleteAttributes />} />
-                    <Route path="sports/evaluations" element={<AdminAthleteEvaluations />} />
-                    <Route path="athlete-scouting" element={<AdminAthleteScouting />} />
-                    <Route path="athlete-scouting/:id" element={<AdminAthleteScouting />} />
-                    <Route path="sports/categories" element={<AdminAthleteCategories />} />
-                    <Route path="sports/courses" element={<AdminCourses />} />
-                    <Route path="sports/tournaments" element={<AdminTournaments />} />
-                    <Route path="sports/rankings" element={<AdminRanking />} />
-                    <Route path="sports/rules" element={<AdminRules />} />
+                    <Route path="feedback/dashboard" element={<CustomerFeedbackDashboard />} />
                     <Route path="financial/categories" element={<AdminFinancialCategories />} />
                     <Route path="financial/accounts" element={<AdminChartOfAccounts />} />
                     <Route path="financial/payments" element={<AdminFinancialPayments />} />
