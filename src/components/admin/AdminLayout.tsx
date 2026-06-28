@@ -2,7 +2,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 import { useSystemData } from '@/hooks/use-system-data'
-import { DEFAULT_MENU_CONFIG, normalizeMenuConfig, type MenuConfig } from '@/lib/menu-constants'
+import { DEFAULT_MENU_CONFIG, normalizeMenuConfig } from '@/lib/menu-constants'
 import { cn } from '@/lib/utils'
 import {
   Sidebar,
@@ -38,11 +38,17 @@ export default function AdminLayout() {
   const { data: systemData } = useSystemData()
   const [profile, setProfile] = useState<any>(null)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
-  const { open: sidebarOpen } = useSidebar()
+  const { open: sidebarOpen, state: sidebarState } = useSidebar()
 
   useEffect(() => {
     localStorage.setItem('sidebar_open', String(sidebarOpen))
   }, [sidebarOpen])
+
+  useEffect(() => {
+    if (sidebarState === 'collapsed') {
+      setOpenMenu(null)
+    }
+  }, [sidebarState])
 
   const rawMenuConfig = systemData?.admin_menu_config as any[] | undefined
   const menuConfig = rawMenuConfig?.length
@@ -63,6 +69,7 @@ export default function AdminLayout() {
   }, [user?.id])
 
   useEffect(() => {
+    if (sidebarState === 'collapsed') return
     let matchedMenu: string | null = null
     for (const group of menuConfig) {
       if (
@@ -74,16 +81,10 @@ export default function AdminLayout() {
         break
       }
     }
-    if (
-      !matchedMenu &&
-      (location.pathname === '/admin' || location.pathname === '/admin/dashboard')
-    ) {
-      matchedMenu = null
-    }
     if (matchedMenu) {
       setOpenMenu(matchedMenu)
     }
-  }, [location.pathname, menuConfig])
+  }, [location.pathname, menuConfig, sidebarState])
 
   const handleSignOut = async () => {
     await signOut()
@@ -92,6 +93,9 @@ export default function AdminLayout() {
 
   const isPathActive = (url: string) =>
     location.pathname === url || location.pathname.startsWith(`${url}/`)
+
+  const logoSize = Math.min(systemData?.menu_logo_size || 40, 48)
+  const effectiveLogoSize = sidebarState === 'collapsed' ? 28 : logoSize
 
   return (
     <div className="flex w-full min-h-screen bg-background">
@@ -105,7 +109,8 @@ export default function AdminLayout() {
               <img
                 src={systemData.logo_url}
                 alt="Logo"
-                className="h-8 w-8 object-contain shrink-0"
+                style={{ width: `${effectiveLogoSize}px`, height: `${effectiveLogoSize}px` }}
+                className="object-contain shrink-0 transition-all duration-200"
               />
             ) : (
               <span className="truncate group-data-[collapsible=icon]:hidden">
@@ -130,7 +135,7 @@ export default function AdminLayout() {
                     >
                       <Link to={group.url}>
                         {group.icon && renderIcon(group.icon)}
-                        <span>{group.label}</span>
+                        <span className="group-data-[collapsible=icon]:hidden">{group.label}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -150,17 +155,15 @@ export default function AdminLayout() {
                         tooltip={group.label}
                         isActive={isOpen || isActiveGroup}
                         className={cn(
-                          'w-full justify-between transition-all',
+                          'w-full transition-all',
                           (isOpen || isActiveGroup) && 'font-medium text-primary',
                         )}
                       >
-                        <div className="flex items-center gap-3">
-                          {group.icon && renderIcon(group.icon)}
-                          <span>{group.label}</span>
-                        </div>
+                        {group.icon && renderIcon(group.icon)}
+                        <span className="group-data-[collapsible=icon]:hidden">{group.label}</span>
                         <ChevronRight
                           className={cn(
-                            'size-4 transition-transform duration-200',
+                            'ml-auto size-4 transition-transform duration-200 group-data-[collapsible=icon]:hidden',
                             isOpen && 'rotate-90',
                           )}
                         />
@@ -202,7 +205,7 @@ export default function AdminLayout() {
                 className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors"
               >
                 <LogOut className="size-4" />
-                <span>Sair do Sistema</span>
+                <span className="group-data-[collapsible=icon]:hidden">Sair do Sistema</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
