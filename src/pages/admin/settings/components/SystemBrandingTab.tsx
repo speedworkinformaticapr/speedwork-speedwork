@@ -3,6 +3,7 @@ import { SystemDataFormValues } from '../schema'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -10,6 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { MediaPicker } from '@/components/MediaPicker'
+import { Image as ImageIcon } from 'lucide-react'
 
 export function SystemBrandingTab({ form }: { form: UseFormReturn<SystemDataFormValues> }) {
   return (
@@ -21,7 +24,6 @@ export function SystemBrandingTab({ form }: { form: UseFormReturn<SystemDataForm
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {' '}
             <FormField
               control={form.control}
               name="platform_name"
@@ -117,7 +119,8 @@ export function SystemBrandingTab({ form }: { form: UseFormReturn<SystemDataForm
         <CardHeader>
           <CardTitle>Tela de Login</CardTitle>
           <CardDescription>
-            Customize a aparência da tela de login com imagem de fundo, título e subtítulo.
+            Customize a aparência da tela de login com imagem de fundo, título, subtítulo e texto de
+            impacto.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -127,13 +130,48 @@ export function SystemBrandingTab({ form }: { form: UseFormReturn<SystemDataForm
               name="login_bg_image_url"
               render={({ field }) => (
                 <FormItem className="md:col-span-2">
-                  <FormLabel>URL da Imagem de Fundo do Login</FormLabel>
+                  <FormLabel>Imagem de Fundo do Login</FormLabel>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <div className="flex-1 w-full">
+                      {field.value ? (
+                        <div className="relative w-full max-w-md rounded-lg overflow-hidden border">
+                          <img
+                            src={field.value}
+                            alt="Preview"
+                            className="w-full h-32 object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center w-full max-w-md h-20 rounded-lg border border-dashed text-muted-foreground text-sm">
+                          <ImageIcon className="w-4 h-4 mr-2" /> Nenhuma imagem selecionada
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <MediaPicker
+                        onSelect={(url) => field.onChange(url)}
+                        trigger={
+                          <button
+                            type="button"
+                            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                          >
+                            <ImageIcon className="w-4 h-4 mr-2" /> Selecionar da Galeria
+                          </button>
+                        }
+                      />
+                      {field.value && (
+                        <button
+                          type="button"
+                          onClick={() => field.onChange('')}
+                          className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                        >
+                          Remover
+                        </button>
+                      )}
+                    </div>
+                  </div>
                   <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value || ''}
-                      placeholder="https://exemplo.com/imagem-fundo.jpg"
-                    />
+                    <Input type="hidden" {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -160,6 +198,24 @@ export function SystemBrandingTab({ form }: { form: UseFormReturn<SystemDataForm
                   <FormLabel>Subtítulo do Login</FormLabel>
                   <FormControl>
                     <Input {...field} value={field.value || ''} placeholder="Soluções em TI" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="login_impact_text"
+              render={({ field }) => (
+                <FormItem className="md:col-span-2">
+                  <FormLabel>Texto de Impacto</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      value={field.value || ''}
+                      placeholder="Digite um texto de impacto para a tela de login..."
+                      rows={3}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

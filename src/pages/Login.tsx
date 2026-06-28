@@ -203,6 +203,13 @@ export default function Login() {
             {systemData?.slogan ||
               'Tecnologia, inovação e inteligência para transformar o seu negócio.'}
           </p>
+          {systemData?.login_impact_text && (
+            <div className="mt-6 border-l-4 border-blue-400 pl-4 py-2 max-w-md">
+              <p className="text-white text-base italic leading-relaxed">
+                {systemData.login_impact_text}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

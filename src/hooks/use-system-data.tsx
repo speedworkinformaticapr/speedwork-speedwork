@@ -51,6 +51,7 @@ export interface SystemData {
   login_bg_image_url?: string
   login_title?: string
   login_subtitle?: string
+  login_impact_text?: string
 }
 
 interface SystemDataContextType {
