@@ -16,24 +16,26 @@ export default function AdminAddendumForm() {
 
   const { register, handleSubmit } = useForm({
     defaultValues: {
-      type: 'Renovação',
+      title: '',
       description: '',
-      value_change: 0,
-      term_extension_days: 0,
-      signed_at: new Date().toISOString().split('T')[0],
+      content: '',
+      status: 'Rascunho',
+      start_date: '',
+      end_date: '',
     },
   })
 
   const onSubmit = async (data: any) => {
     setLoading(true)
     try {
-      const { error } = await supabase.from('contract_addendums').insert([
+      const { error } = await supabase.from('contract_additives').insert([
         {
-          type: data.type,
+          title: data.title,
           description: data.description,
-          value_change: Number(data.value_change),
-          term_extension_days: Number(data.term_extension_days),
-          signed_at: data.signed_at,
+          content: data.content,
+          status: data.status,
+          start_date: data.start_date || null,
+          end_date: data.end_date || null,
         },
       ])
 
@@ -64,36 +66,48 @@ export default function AdminAddendumForm() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Tipo de Aditivo</Label>
+                <Label>Título</Label>
                 <Input
-                  {...register('type', { required: true })}
-                  placeholder="Ex: Renovação, Reajuste..."
+                  {...register('title', { required: true })}
+                  placeholder="Título do aditivo..."
                 />
               </div>
               <div className="space-y-2">
-                <Label>Data de Assinatura</Label>
-                <Input type="date" {...register('signed_at', { required: true })} />
+                <Label>Status</Label>
+                <Input
+                  {...register('status')}
+                  placeholder="Ex: Rascunho, Aprovado..."
+                  defaultValue="Rascunho"
+                />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label>Descrição da Alteração</Label>
               <Textarea
-                {...register('description', { required: true })}
+                {...register('description')}
                 placeholder="Descreva detalhadamente o que está sendo alterado..."
-                rows={4}
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Conteúdo</Label>
+              <Textarea
+                {...register('content')}
+                placeholder="Conteúdo completo do aditivo..."
+                rows={5}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Alteração de Valor (R$)</Label>
-                <Input type="number" step="0.01" {...register('value_change')} placeholder="0.00" />
-                <p className="text-xs text-muted-foreground">Pode ser negativo para descontos.</p>
+                <Label>Data de Início</Label>
+                <Input type="date" {...register('start_date')} />
               </div>
               <div className="space-y-2">
-                <Label>Prorrogação de Prazo (Dias)</Label>
-                <Input type="number" {...register('term_extension_days')} placeholder="0" />
+                <Label>Data de Término</Label>
+                <Input type="date" {...register('end_date')} />
               </div>
             </div>
 

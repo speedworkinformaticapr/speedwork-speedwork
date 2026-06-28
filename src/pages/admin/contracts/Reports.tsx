@@ -26,12 +26,11 @@ import { downloadCSV } from '@/lib/utils'
 export default function AdminContractReports() {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({
-    activeValue: 450000.0, // Mocked as requested for end-to-end UX
-    expiringIn30Days: 12, // Mocked to demonstrate functionality
+    activeValue: 450000.0,
+    expiringIn30Days: 12,
     totalAddendums: 0,
   })
 
-  // Mocked distribution data to ensure the chart works properly end-to-end
   const distributionData = [
     { status: 'Ativo', value: 45 },
     { status: 'Em Revisão', value: 12 },
@@ -61,10 +60,11 @@ export default function AdminContractReports() {
 
   const fetchData = async () => {
     try {
-      // Fetch actual data where available
-      const { count: addendumsCount } = await supabase
-        .from('contract_addendums')
+      const { count: addendumsCount, error } = await supabase
+        .from('contract_additives')
         .select('*', { count: 'exact', head: true })
+
+      if (error) throw error
 
       setStats((prev) => ({
         ...prev,
@@ -72,17 +72,22 @@ export default function AdminContractReports() {
       }))
     } catch (error) {
       console.error('Error fetching report data:', error)
+      setStats((prev) => ({ ...prev, totalAddendums: 0 }))
     } finally {
       setLoading(false)
     }
   }
 
   const handleExportCSV = () => {
-    const csvData = distributionData.map((d) => ({
-      Status: d.status,
-      Quantidade: d.value,
-    }))
-    downloadCSV(csvData, 'relatorio_contratos.csv')
+    try {
+      const csvData = distributionData.map((d) => ({
+        Status: d.status,
+        Quantidade: d.value,
+      }))
+      downloadCSV(csvData, 'relatorio_contratos.csv')
+    } catch (error) {
+      console.error('Error exporting CSV:', error)
+    }
   }
 
   return (

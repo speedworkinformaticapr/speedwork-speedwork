@@ -26,7 +26,7 @@ export default function AdminAddendumsList() {
   const fetchAddendums = async () => {
     try {
       const { data, error } = await supabase
-        .from('contract_addendums')
+        .from('contract_additives')
         .select('*')
         .order('created_at', { ascending: false })
 
@@ -34,8 +34,18 @@ export default function AdminAddendumsList() {
       setAddendums(data || [])
     } catch (error) {
       console.error('Error fetching addendums:', error)
+      setAddendums([])
     } finally {
       setLoading(false)
+    }
+  }
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return '-'
+    try {
+      return format(new Date(dateStr), 'dd/MM/yyyy')
+    } catch {
+      return '-'
     }
   }
 
@@ -68,10 +78,10 @@ export default function AdminAddendumsList() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Data</TableHead>
-                  <TableHead>Tipo</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Título</TableHead>
                   <TableHead>Descrição</TableHead>
-                  <TableHead>Alteração de Valor</TableHead>
-                  <TableHead>Prazo Adicional</TableHead>
+                  <TableHead>Vigência</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -84,24 +94,17 @@ export default function AdminAddendumsList() {
                 ) : (
                   addendums.map((addendum) => (
                     <TableRow key={addendum.id}>
+                      <TableCell>{formatDate(addendum.created_at)}</TableCell>
                       <TableCell>
-                        {format(new Date(addendum.signed_at || addendum.created_at), 'dd/MM/yyyy')}
+                        <Badge variant="outline">{addendum.status || 'Rascunho'}</Badge>
+                      </TableCell>
+                      <TableCell className="font-medium">{addendum.title}</TableCell>
+                      <TableCell className="max-w-md truncate">
+                        {addendum.description || '-'}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{addendum.type}</Badge>
-                      </TableCell>
-                      <TableCell className="max-w-md truncate">{addendum.description}</TableCell>
-                      <TableCell>
-                        {addendum.value_change
-                          ? new Intl.NumberFormat('pt-BR', {
-                              style: 'currency',
-                              currency: 'BRL',
-                            }).format(addendum.value_change)
-                          : '-'}
-                      </TableCell>
-                      <TableCell>
-                        {addendum.term_extension_days
-                          ? `${addendum.term_extension_days} dias`
+                        {addendum.start_date || addendum.end_date
+                          ? `${formatDate(addendum.start_date)} - ${formatDate(addendum.end_date)}`
                           : '-'}
                       </TableCell>
                     </TableRow>
