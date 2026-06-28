@@ -2829,6 +2829,7 @@ export type Database = {
           mfa_code_expires_at: string | null
           mfa_enabled: boolean | null
           mfa_type: string | null
+          mfa_verified: boolean | null
           name: string | null
           nationality: string | null
           naturalness: string | null
@@ -2864,6 +2865,7 @@ export type Database = {
           mfa_code_expires_at?: string | null
           mfa_enabled?: boolean | null
           mfa_type?: string | null
+          mfa_verified?: boolean | null
           name?: string | null
           nationality?: string | null
           naturalness?: string | null
@@ -2899,6 +2901,7 @@ export type Database = {
           mfa_code_expires_at?: string | null
           mfa_enabled?: boolean | null
           mfa_type?: string | null
+          mfa_verified?: boolean | null
           name?: string | null
           nationality?: string | null
           naturalness?: string | null
