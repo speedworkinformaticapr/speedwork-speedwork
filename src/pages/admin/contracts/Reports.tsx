@@ -62,9 +62,13 @@ export default function AdminContractReports() {
     try {
       const { count: addendumsCount, error } = await supabase
         .from('contract_additives')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact' })
 
-      if (error) throw error
+      if (error) {
+        console.error('Error fetching report data:', error)
+        setStats((prev) => ({ ...prev, totalAddendums: 0 }))
+        return
+      }
 
       setStats((prev) => ({
         ...prev,

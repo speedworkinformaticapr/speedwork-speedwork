@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, lazy } from 'react'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -7,8 +7,6 @@ import Layout from './components/Layout'
 import AuthLayout from './components/AuthLayout'
 import Index from './pages/Index'
 import BlogPost from './pages/blog/BlogPost'
-import AdminBlogList from './pages/admin/blog/AdminBlogList'
-import AdminBlogForm from './pages/admin/blog/AdminBlogForm'
 import Profile from './pages/Profile'
 import AthleteProfile from './pages/athlete/AthleteProfile'
 import NotFound from './pages/NotFound'
@@ -23,69 +21,9 @@ import Forbidden from './pages/Forbidden'
 import Cart from './pages/store/Cart'
 import Checkout from './pages/store/Checkout'
 import Orders from './pages/store/Orders'
-import AdminGallery from './pages/admin/gallery/AdminGallery'
-import AdminDashboard from './pages/admin/dashboard/AdminDashboard'
-import AdminPageList from './pages/admin/pages/AdminPageList'
-import AdminPageForm from './pages/admin/pages/AdminPageForm'
 import PublicPage from './pages/PublicPage'
 import ClubDashboard from './pages/club/dashboard/ClubDashboard'
 import AdminLayout from './components/admin/AdminLayout'
-import AdminMaintenance from './pages/admin/settings/AdminMaintenance'
-import AdminUsers from './pages/admin/business/AdminUsers'
-import AdminProfileForm from './pages/admin/business/AdminProfileForm'
-import AdminChartOfAccounts from './pages/admin/financial/AdminChartOfAccounts'
-import AdminFinancialCategories from './pages/admin/financial/AdminFinancialCategories'
-import AdminFinancialPayments from './pages/admin/financial/AdminFinancialPayments'
-import AdminFinancialPaymentForm from './pages/admin/financial/AdminFinancialPaymentForm'
-import AdminFinancialPartners from './pages/admin/financial/AdminFinancialPartners'
-import AdminFinancialSettings from './pages/admin/financial/AdminFinancialSettings'
-import AdminBillingLogs from './pages/admin/financial/AdminBillingLogs'
-import AdminRegistrationPayments from './pages/admin/financial/AdminRegistrationPayments'
-import AdminFinancialDashboard from './pages/admin/financial/AdminFinancialDashboard'
-import AdminStripeConfig from './pages/admin/financial/AdminStripeConfig'
-import AdminStripePayments from './pages/admin/financial/AdminStripePayments'
-import AdminEcommerceGroups from './pages/admin/ecommerce/AdminEcommerceGroups'
-import AdminEcommerceProducts from './pages/admin/ecommerce/AdminEcommerceProducts'
-import AdminStoreEditor from './pages/admin/ecommerce/AdminStoreEditor'
-import AdminAbandonedCarts from './pages/admin/ecommerce/AdminAbandonedCarts'
-import AdminCheckoutConfig from './pages/admin/ecommerce/AdminCheckoutConfig'
-import AdminOrders from './pages/admin/ecommerce/AdminOrders'
-import AdminLogistics from './pages/admin/ecommerce/AdminLogistics'
-import AdminPlanServices from './pages/admin/settings/AdminPlanServices'
-import CustomerFeedbackDashboard from './pages/admin/feedback/CustomerFeedbackDashboard'
-import AdminSlaTypes from './pages/admin/settings/AdminSlaTypes'
-import AdminSystemData from './pages/admin/settings/AdminSystemData'
-import AdminMenuConfig from './pages/admin/settings/AdminMenuConfig'
-import AdminMedia from './pages/admin/settings/AdminMedia'
-import SupportTickets from './pages/admin/support/SupportTickets'
-import SupportSlaConfig from './pages/admin/support/SupportSlaConfig'
-import AdminAnalytics from './pages/admin/settings/AdminAnalytics'
-import AdminPublishLogs from './pages/admin/settings/AdminPublishLogs'
-import AdminWhatsApp from './pages/admin/whatsapp/AdminWhatsApp'
-import AdminEmail from './pages/admin/email/AdminEmail'
-import AdminQuotes from './pages/admin/quotes/AdminQuotes'
-import AdminServices from './pages/admin/services/AdminServices'
-import AdminAppointments from './pages/admin/commercial/appointments/AdminAppointments'
-import AdminPedidosList from './pages/admin/commercial/AdminPedidosList'
-import AdminPedidoForm from './pages/admin/commercial/AdminPedidoForm'
-import AdminPedidoView from './pages/admin/commercial/AdminPedidoView'
-import AdminContratosList from './pages/admin/commercial/AdminContratosList'
-import AdminContratoForm from './pages/admin/commercial/AdminContratoForm'
-import AdminContratoView from './pages/admin/commercial/AdminContratoView'
-import AdminCommercialDashboard from './pages/admin/commercial/AdminCommercialDashboard'
-import AdminContractsDashboard from './pages/admin/contracts/ContractsDashboard'
-import AdminContractWizard from './pages/admin/contracts/ContractWizard'
-import AdminTemplateList from './pages/admin/contracts/TemplateList'
-import AdminTemplateForm from './pages/admin/contracts/TemplateForm'
-import AdminClausesList from './pages/admin/contracts/ClausesList'
-import AdminClauseForm from './pages/admin/contracts/ClauseForm'
-import AdminEntitiesList from './pages/admin/contracts/EntitiesList'
-import AdminContractReports from './pages/admin/contracts/Reports'
-import AdminContractView from './pages/admin/contracts/ContractView'
-import AdminAddendumsList from './pages/admin/contracts/AddendumsList'
-import AdminAddendumForm from './pages/admin/contracts/AddendumForm'
-import QuoteForm from './pages/admin/quotes/QuoteForm'
-import QuoteView from './pages/admin/quotes/QuoteView'
 import StaffDashboard from './pages/staff/dashboard/StaffDashboard'
 import ClientQuotes from './pages/client/quotes/ClientQuotes'
 import ClientDashboard from './pages/client/dashboard/ClientDashboard'
@@ -104,6 +42,83 @@ import { CookieConsent } from './components/CookieConsent'
 import { RoleGuard } from './components/RoleGuard'
 import { Analytics } from './components/Analytics'
 import { SidebarProvider } from '@/components/ui/sidebar'
+
+const AdminBlogList = lazy(() => import('./pages/admin/blog/AdminBlogList'))
+const AdminBlogForm = lazy(() => import('./pages/admin/blog/AdminBlogForm'))
+const AdminGallery = lazy(() => import('./pages/admin/gallery/AdminGallery'))
+const AdminDashboard = lazy(() => import('./pages/admin/dashboard/AdminDashboard'))
+const AdminPageList = lazy(() => import('./pages/admin/pages/AdminPageList'))
+const AdminPageForm = lazy(() => import('./pages/admin/pages/AdminPageForm'))
+const AdminMaintenance = lazy(() => import('./pages/admin/settings/AdminMaintenance'))
+const AdminUsers = lazy(() => import('./pages/admin/business/AdminUsers'))
+const AdminProfileForm = lazy(() => import('./pages/admin/business/AdminProfileForm'))
+const AdminChartOfAccounts = lazy(() => import('./pages/admin/financial/AdminChartOfAccounts'))
+const AdminFinancialCategories = lazy(
+  () => import('./pages/admin/financial/AdminFinancialCategories'),
+)
+const AdminFinancialPayments = lazy(() => import('./pages/admin/financial/AdminFinancialPayments'))
+const AdminFinancialPaymentForm = lazy(
+  () => import('./pages/admin/financial/AdminFinancialPaymentForm'),
+)
+const AdminFinancialPartners = lazy(() => import('./pages/admin/financial/AdminFinancialPartners'))
+const AdminFinancialSettings = lazy(() => import('./pages/admin/financial/AdminFinancialSettings'))
+const AdminBillingLogs = lazy(() => import('./pages/admin/financial/AdminBillingLogs'))
+const AdminRegistrationPayments = lazy(
+  () => import('./pages/admin/financial/AdminRegistrationPayments'),
+)
+const AdminFinancialDashboard = lazy(
+  () => import('./pages/admin/financial/AdminFinancialDashboard'),
+)
+const AdminStripeConfig = lazy(() => import('./pages/admin/financial/AdminStripeConfig'))
+const AdminStripePayments = lazy(() => import('./pages/admin/financial/AdminStripePayments'))
+const AdminEcommerceGroups = lazy(() => import('./pages/admin/ecommerce/AdminEcommerceGroups'))
+const AdminEcommerceProducts = lazy(() => import('./pages/admin/ecommerce/AdminEcommerceProducts'))
+const AdminStoreEditor = lazy(() => import('./pages/admin/ecommerce/AdminStoreEditor'))
+const AdminAbandonedCarts = lazy(() => import('./pages/admin/ecommerce/AdminAbandonedCarts'))
+const AdminCheckoutConfig = lazy(() => import('./pages/admin/ecommerce/AdminCheckoutConfig'))
+const AdminOrders = lazy(() => import('./pages/admin/ecommerce/AdminOrders'))
+const AdminLogistics = lazy(() => import('./pages/admin/ecommerce/AdminLogistics'))
+const AdminPlanServices = lazy(() => import('./pages/admin/settings/AdminPlanServices'))
+const CustomerFeedbackDashboard = lazy(
+  () => import('./pages/admin/feedback/CustomerFeedbackDashboard'),
+)
+const AdminSlaTypes = lazy(() => import('./pages/admin/settings/AdminSlaTypes'))
+const AdminSystemData = lazy(() => import('./pages/admin/settings/AdminSystemData'))
+const AdminMenuConfig = lazy(() => import('./pages/admin/settings/AdminMenuConfig'))
+const AdminMedia = lazy(() => import('./pages/admin/settings/AdminMedia'))
+const SupportTickets = lazy(() => import('./pages/admin/support/SupportTickets'))
+const SupportSlaConfig = lazy(() => import('./pages/admin/support/SupportSlaConfig'))
+const AdminAnalytics = lazy(() => import('./pages/admin/settings/AdminAnalytics'))
+const AdminPublishLogs = lazy(() => import('./pages/admin/settings/AdminPublishLogs'))
+const AdminWhatsApp = lazy(() => import('./pages/admin/whatsapp/AdminWhatsApp'))
+const AdminEmail = lazy(() => import('./pages/admin/email/AdminEmail'))
+const AdminQuotes = lazy(() => import('./pages/admin/quotes/AdminQuotes'))
+const AdminServices = lazy(() => import('./pages/admin/services/AdminServices'))
+const AdminAppointments = lazy(
+  () => import('./pages/admin/commercial/appointments/AdminAppointments'),
+)
+const AdminPedidosList = lazy(() => import('./pages/admin/commercial/AdminPedidosList'))
+const AdminPedidoForm = lazy(() => import('./pages/admin/commercial/AdminPedidoForm'))
+const AdminPedidoView = lazy(() => import('./pages/admin/commercial/AdminPedidoView'))
+const AdminContratosList = lazy(() => import('./pages/admin/commercial/AdminContratosList'))
+const AdminContratoForm = lazy(() => import('./pages/admin/commercial/AdminContratoForm'))
+const AdminContratoView = lazy(() => import('./pages/admin/commercial/AdminContratoView'))
+const AdminCommercialDashboard = lazy(
+  () => import('./pages/admin/commercial/AdminCommercialDashboard'),
+)
+const AdminContractsDashboard = lazy(() => import('./pages/admin/contracts/ContractsDashboard'))
+const AdminContractWizard = lazy(() => import('./pages/admin/contracts/ContractWizard'))
+const AdminTemplateList = lazy(() => import('./pages/admin/contracts/TemplateList'))
+const AdminTemplateForm = lazy(() => import('./pages/admin/contracts/TemplateForm'))
+const AdminClausesList = lazy(() => import('./pages/admin/contracts/ClausesList'))
+const AdminClauseForm = lazy(() => import('./pages/admin/contracts/ClauseForm'))
+const AdminEntitiesList = lazy(() => import('./pages/admin/contracts/EntitiesList'))
+const AdminContractReports = lazy(() => import('./pages/admin/contracts/Reports'))
+const AdminContractView = lazy(() => import('./pages/admin/contracts/ContractView'))
+const AdminAddendumsList = lazy(() => import('./pages/admin/contracts/AddendumsList'))
+const AdminAddendumForm = lazy(() => import('./pages/admin/contracts/AddendumForm'))
+const QuoteForm = lazy(() => import('./pages/admin/quotes/QuoteForm'))
+const QuoteView = lazy(() => import('./pages/admin/quotes/QuoteView'))
 
 function ScrollToHash() {
   const location = useLocation()
