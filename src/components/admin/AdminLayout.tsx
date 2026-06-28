@@ -17,6 +17,7 @@ import {
   SidebarMenuSubItem,
   SidebarMenuSubButton,
   SidebarFooter,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Button } from '@/components/ui/button'
@@ -37,6 +38,11 @@ export default function AdminLayout() {
   const { data: systemData } = useSystemData()
   const [profile, setProfile] = useState<any>(null)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
+  const { open: sidebarOpen } = useSidebar()
+
+  useEffect(() => {
+    localStorage.setItem('sidebar_open', String(sidebarOpen))
+  }, [sidebarOpen])
 
   const rawMenuConfig = systemData?.admin_menu_config as MenuConfig[] | undefined
   const menuConfig = rawMenuConfig?.length ? rawMenuConfig : DEFAULT_MENU_CONFIG
@@ -87,16 +93,22 @@ export default function AdminLayout() {
 
   return (
     <div className="flex w-full min-h-screen bg-background">
-      <Sidebar variant="sidebar" collapsible="offcanvas">
+      <Sidebar variant="sidebar" collapsible="icon">
         <SidebarHeader className="flex h-16 items-center justify-center border-b px-4">
           <Link
             to="/admin/dashboard"
             className="flex items-center gap-2 font-bold text-lg overflow-hidden"
           >
             {systemData?.logo_url ? (
-              <img src={systemData.logo_url} alt="Logo" className="h-8 object-contain" />
+              <img
+                src={systemData.logo_url}
+                alt="Logo"
+                className="h-8 w-8 object-contain shrink-0"
+              />
             ) : (
-              <span className="truncate">{systemData?.platform_name || 'Admin'}</span>
+              <span className="truncate group-data-[collapsible=icon]:hidden">
+                {systemData?.platform_name || 'Admin'}
+              </span>
             )}
           </Link>
         </SidebarHeader>

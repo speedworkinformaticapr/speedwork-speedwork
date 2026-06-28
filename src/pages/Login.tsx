@@ -122,19 +122,23 @@ export default function Login() {
             }
             toast({
               title: 'Erro ao enviar código de verificação',
-              description: errorDescription,
+              description:
+                'Não foi possível enviar o código. Você pode reenviá-lo na página de verificação.',
               variant: 'destructive',
             })
             setLoading(false)
+            navigate('/mfa-verify', { replace: true })
             return
           }
         } catch (err) {
           toast({
             title: 'Erro ao enviar código de verificação',
-            description: 'Ocorreu um erro inesperado ao enviar o e-mail. Contate o suporte.',
+            description:
+              'Ocorreu um erro inesperado. Você pode reenviar o código na página de verificação.',
             variant: 'destructive',
           })
           setLoading(false)
+          navigate('/mfa-verify', { replace: true })
           return
         }
 

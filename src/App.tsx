@@ -180,7 +180,9 @@ const App = () => (
                     path="admin"
                     element={
                       <RoleGuard allowedRoles={['admin', 'master']}>
-                        <SidebarProvider>
+                        <SidebarProvider
+                          defaultOpen={localStorage.getItem('sidebar_open') !== 'false'}
+                        >
                           <AdminLayout />
                         </SidebarProvider>
                       </RoleGuard>
