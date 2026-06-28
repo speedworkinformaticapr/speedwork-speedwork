@@ -8,8 +8,8 @@ const corsHeaders = {
     'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
 }
 
-const BRAND_COLOR = '#1B7D3A'
-const BRAND_COLOR_DARK = '#145A2C'
+const BRAND_COLOR = '#2563EB'
+const BRAND_COLOR_DARK = '#1D4ED8'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
