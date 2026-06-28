@@ -13,6 +13,25 @@ export type MenuConfig = {
   submenus?: MenuSubmenu[]
 }
 
+export function normalizeMenuConfig(config: any[]): MenuConfig[] {
+  if (!Array.isArray(config)) return []
+  return config.map((group) => {
+    const submenus: MenuSubmenu[] = (group.submenus || group.items || []).map((sub: any) => ({
+      id: sub.id,
+      label: sub.label,
+      url: sub.url || sub.path || '',
+      icon: sub.icon,
+    }))
+    return {
+      id: group.id,
+      label: group.label,
+      url: group.url,
+      icon: group.icon,
+      submenus,
+    }
+  })
+}
+
 export const DEFAULT_MENU_CONFIG: MenuConfig[] = [
   { id: 'dashboard', label: 'Dashboard', url: '/admin/dashboard', icon: 'LayoutDashboard' },
   {

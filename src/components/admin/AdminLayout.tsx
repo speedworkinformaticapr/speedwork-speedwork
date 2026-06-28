@@ -2,7 +2,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 import { useSystemData } from '@/hooks/use-system-data'
-import { DEFAULT_MENU_CONFIG, type MenuConfig } from '@/lib/menu-constants'
+import { DEFAULT_MENU_CONFIG, normalizeMenuConfig, type MenuConfig } from '@/lib/menu-constants'
 import { cn } from '@/lib/utils'
 import {
   Sidebar,
@@ -44,8 +44,10 @@ export default function AdminLayout() {
     localStorage.setItem('sidebar_open', String(sidebarOpen))
   }, [sidebarOpen])
 
-  const rawMenuConfig = systemData?.admin_menu_config as MenuConfig[] | undefined
-  const menuConfig = rawMenuConfig?.length ? rawMenuConfig : DEFAULT_MENU_CONFIG
+  const rawMenuConfig = systemData?.admin_menu_config as any[] | undefined
+  const menuConfig = rawMenuConfig?.length
+    ? normalizeMenuConfig(rawMenuConfig)
+    : DEFAULT_MENU_CONFIG
 
   useEffect(() => {
     if (user?.id) {

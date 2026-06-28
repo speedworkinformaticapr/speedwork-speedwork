@@ -16,71 +16,79 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Save, ArrowUp, ArrowDown, Trash2, Plus, GripVertical } from 'lucide-react'
-import { DEFAULT_MENU_CONFIG } from '@/lib/menu-constants'
+import { Save, ArrowUp, ArrowDown, Plus, GripVertical } from 'lucide-react'
+import {
+  DEFAULT_MENU_CONFIG,
+  normalizeMenuConfig,
+  type MenuConfig,
+  type MenuSubmenu,
+} from '@/lib/menu-constants'
 
 export default function AdminMenuConfig() {
   const { data, updateData } = useSystemData()
-  const [config, setConfig] = useState<any[]>([])
+  const [config, setConfig] = useState<MenuConfig[]>([])
 
   useEffect(() => {
-    const activeConfig = (data?.admin_menu_config as any[])?.length
-      ? data.admin_menu_config
-      : DEFAULT_MENU_CONFIG
+    const raw = data?.admin_menu_config as any[] | undefined
+    const activeConfig = raw?.length ? normalizeMenuConfig(raw) : DEFAULT_MENU_CONFIG
     setConfig(JSON.parse(JSON.stringify(activeConfig)))
   }, [data])
 
-  const move = (arr: any[], idx: number, dir: 'up' | 'down') => {
-    if (dir === 'up' && idx > 0) [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]]
-    if (dir === 'down' && idx < arr.length - 1) [arr[idx + 1], arr[idx]] = [arr[idx], arr[idx + 1]]
-    return [...arr]
+  const move = <T,>(arr: T[], idx: number, dir: 'up' | 'down'): T[] => {
+    const next = [...arr]
+    if (dir === 'up' && idx > 0) [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]]
+    if (dir === 'down' && idx < next.length - 1)
+      [next[idx + 1], next[idx]] = [next[idx], next[idx + 1]]
+    return next
   }
 
-  const updateGroup = (gIdx: number, field: string, val: any) => {
-    const newConfig = [...config]
-    newConfig[gIdx][field] = val
-    setConfig(newConfig)
+  const updateGroup = (gIdx: number, field: keyof MenuConfig, val: any) => {
+    setConfig((prev) => {
+      const next = [...prev]
+      ;(next[gIdx] as any)[field] = val
+      return next
+    })
   }
 
-  const updateItem = (gIdx: number, iIdx: number, field: string, val: any) => {
-    const newConfig = [...config]
-    newConfig[gIdx].items[iIdx][field] = val
-    setConfig(newConfig)
+  const updateItem = (gIdx: number, iIdx: number, field: keyof MenuSubmenu, val: any) => {
+    setConfig((prev) => {
+      const next = [...prev]
+      ;(next[gIdx].submenus![iIdx] as any)[field] = val
+      return next
+    })
   }
 
   const assignGroup = (gIdx: number, iIdx: number, newGroupId: string) => {
     if (config[gIdx].id === newGroupId) return
-    const newConfig = [...config]
-    const item = newConfig[gIdx].items.splice(iIdx, 1)[0]
-    const targetGroup = newConfig.find((g) => g.id === newGroupId)
-    if (targetGroup) targetGroup.items.push(item)
-    setConfig(newConfig)
+    setConfig((prev) => {
+      const next: MenuConfig[] = JSON.parse(JSON.stringify(prev))
+      const item = next[gIdx].submenus!.splice(iIdx, 1)[0]
+      const target = next.find((g) => g.id === newGroupId)
+      if (target) {
+        target.submenus = target.submenus || []
+        target.submenus.push(item)
+      }
+      return next
+    })
   }
 
   const addGroup = () => {
-    setConfig([
-      ...config,
-      { id: `grp-${Date.now()}`, label: 'Novo Grupo', description: '', icon: 'Folder', items: [] },
+    setConfig((prev) => [
+      ...prev,
+      { id: `grp-${Date.now()}`, label: 'Novo Grupo', icon: 'Folder', submenus: [] },
     ])
   }
 
   const addItem = (gIdx: number) => {
-    const newConfig = [...config]
-    newConfig[gIdx].items.push({
-      id: `itm-${Date.now()}`,
-      label: 'Novo Item',
-      description: '',
-      path: '/admin/novo',
+    setConfig((prev) => {
+      const next = [...prev]
+      next[gIdx].submenus = next[gIdx].submenus || []
+      next[gIdx].submenus!.push({ id: `itm-${Date.now()}`, label: 'Novo Item', url: '/admin/novo' })
+      return next
     })
-    setConfig(newConfig)
   }
 
-  const removeGroup = (gIdx: number) => setConfig(config.filter((_, i) => i !== gIdx))
-  const removeItem = (gIdx: number, iIdx: number) => {
-    const newConfig = [...config]
-    newConfig[gIdx].items.splice(iIdx, 1)
-    setConfig(newConfig)
-  }
+  const handleSave = () => updateData({ admin_menu_config: config })
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -91,7 +99,7 @@ export default function AdminMenuConfig() {
             Organize o menu lateral do painel administrativo.
           </p>
         </div>
-        <Button onClick={() => updateData({ admin_menu_config: config })} className="gap-2">
+        <Button onClick={handleSave} className="gap-2">
           <Save className="w-4 h-4" /> Salvar Alterações
         </Button>
       </div>
@@ -100,7 +108,7 @@ export default function AdminMenuConfig() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Grupos de Navegação</CardTitle>
-            <CardDescription>Crie e ordene os grupos principais.</CardDescription>
+            <CardDescription>Edite e ordene os grupos principais.</CardDescription>
           </div>
           <Button variant="outline" size="sm" onClick={addGroup}>
             <Plus className="w-4 h-4 mr-2" /> Grupo
@@ -114,7 +122,7 @@ export default function AdminMenuConfig() {
                 value={group.id}
                 className="border rounded-lg px-4 bg-muted/20"
               >
-                <div className="flex items-center gap-4 py-2 border-b">
+                <div className="flex items-center gap-3 py-2 border-b flex-wrap">
                   <div className="flex flex-col gap-1">
                     <Button
                       variant="ghost"
@@ -136,47 +144,35 @@ export default function AdminMenuConfig() {
                   <Input
                     value={group.label}
                     onChange={(e) => updateGroup(gIdx, 'label', e.target.value)}
-                    className="w-48 font-medium"
+                    className="w-44 font-medium"
                     placeholder="Nome do Grupo"
                   />
                   <Input
-                    value={group.description || ''}
-                    onChange={(e) => updateGroup(gIdx, 'description', e.target.value)}
-                    className="w-48"
-                    placeholder="Descrição do Grupo"
-                  />
-                  <Input
-                    value={group.icon}
+                    value={group.icon || ''}
                     onChange={(e) => updateGroup(gIdx, 'icon', e.target.value)}
-                    className="w-40"
-                    placeholder="Lucide Icon (ex: Trophy)"
+                    className="w-36"
+                    placeholder="Ícone (ex: Trophy)"
                   />
-                  <AccordionTrigger className="flex-1 justify-end hover:no-underline py-2" />
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="h-8 w-8 ml-2"
-                    onClick={() => removeGroup(gIdx)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <AccordionTrigger className="flex-1 justify-end hover:no-underline py-2 min-w-[40px]" />
                 </div>
                 <AccordionContent className="pt-4 space-y-3 pl-10">
-                  {group.items?.map((item: any, iIdx: number) => (
+                  {group.submenus?.map((item: MenuSubmenu, iIdx: number) => (
                     <div
                       key={item.id}
-                      className="flex items-center gap-3 bg-background p-2 rounded-md border shadow-sm"
+                      className="flex items-center gap-2 bg-background p-2 rounded-md border shadow-sm flex-wrap"
                     >
                       <div className="flex flex-col gap-0.5">
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-5 w-5"
-                          onClick={() => {
-                            const nc = [...config]
-                            nc[gIdx].items = move(nc[gIdx].items, iIdx, 'up')
-                            setConfig(nc)
-                          }}
+                          onClick={() =>
+                            setConfig((prev) => {
+                              const next = [...prev]
+                              next[gIdx].submenus = move(next[gIdx].submenus!, iIdx, 'up')
+                              return next
+                            })
+                          }
                         >
                           <ArrowUp className="h-3 w-3" />
                         </Button>
@@ -184,11 +180,13 @@ export default function AdminMenuConfig() {
                           variant="ghost"
                           size="icon"
                           className="h-5 w-5"
-                          onClick={() => {
-                            const nc = [...config]
-                            nc[gIdx].items = move(nc[gIdx].items, iIdx, 'down')
-                            setConfig(nc)
-                          }}
+                          onClick={() =>
+                            setConfig((prev) => {
+                              const next = [...prev]
+                              next[gIdx].submenus = move(next[gIdx].submenus!, iIdx, 'down')
+                              return next
+                            })
+                          }
                         >
                           <ArrowDown className="h-3 w-3" />
                         </Button>
@@ -197,20 +195,14 @@ export default function AdminMenuConfig() {
                       <Input
                         value={item.label}
                         onChange={(e) => updateItem(gIdx, iIdx, 'label', e.target.value)}
-                        className="w-40 h-8"
+                        className="w-36 h-8"
                         placeholder="Nome"
                       />
                       <Input
-                        value={item.description || ''}
-                        onChange={(e) => updateItem(gIdx, iIdx, 'description', e.target.value)}
-                        className="w-48 h-8"
-                        placeholder="Descrição"
-                      />
-                      <Input
-                        value={item.path}
-                        onChange={(e) => updateItem(gIdx, iIdx, 'path', e.target.value)}
-                        className="flex-1 h-8"
-                        placeholder="Caminho (/admin/...)"
+                        value={item.url}
+                        onChange={(e) => updateItem(gIdx, iIdx, 'url', e.target.value)}
+                        className="flex-1 min-w-[180px] h-8"
+                        placeholder="URL (/admin/...)"
                       />
                       <Select
                         value={group.id}
@@ -227,14 +219,6 @@ export default function AdminMenuConfig() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive"
-                        onClick={() => removeItem(gIdx, iIdx)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
                   ))}
                   <Button
