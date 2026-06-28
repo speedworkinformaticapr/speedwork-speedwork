@@ -3369,6 +3369,7 @@ export type Database = {
           language: string | null
           libras_enabled: boolean | null
           login_bg_image_url: string | null
+          login_impact_text: string | null
           login_subtitle: string | null
           login_title: string | null
           logo_url: string | null
@@ -3420,6 +3421,7 @@ export type Database = {
           language?: string | null
           libras_enabled?: boolean | null
           login_bg_image_url?: string | null
+          login_impact_text?: string | null
           login_subtitle?: string | null
           login_title?: string | null
           logo_url?: string | null
@@ -3471,6 +3473,7 @@ export type Database = {
           language?: string | null
           libras_enabled?: boolean | null
           login_bg_image_url?: string | null
+          login_impact_text?: string | null
           login_subtitle?: string | null
           login_title?: string | null
           logo_url?: string | null

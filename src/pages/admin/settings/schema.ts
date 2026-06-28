@@ -3,6 +3,10 @@ import * as z from 'zod'
 export const systemDataSchema = z.object({
   platform_name: z.string().optional(),
   slogan: z.string().optional(),
+  login_bg_image_url: z.string().optional(),
+  login_title: z.string().optional(),
+  login_subtitle: z.string().optional(),
+  login_impact_text: z.string().optional(),
   logo_url: z.string().optional(),
   browser_icon_url: z.string().optional(),
   menu_logo_size: z.coerce.number().optional(),
