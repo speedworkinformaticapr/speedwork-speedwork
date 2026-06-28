@@ -13,102 +13,161 @@ import {
 
 export function SystemBrandingTab({ form }: { form: UseFormReturn<SystemDataFormValues> }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Identidade e Branding</CardTitle>
-        <CardDescription>Configure o nome e os recursos visuais da plataforma.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="platform_name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nome da Plataforma</FormLabel>
-                <FormControl>
-                  <Input {...field} value={field.value || ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="slogan"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Slogan</FormLabel>
-                <FormControl>
-                  <Input {...field} value={field.value || ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="logo_url"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>URL da Logo</FormLabel>
-                <FormControl>
-                  <Input {...field} value={field.value || ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="browser_icon_url"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>URL do Ícone do Navegador (Favicon)</FormLabel>
-                <FormControl>
-                  <Input {...field} value={field.value || ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="menu_logo_size"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tamanho da Logo no Menu (px)</FormLabel>
-                <FormControl>
-                  <Input type="number" {...field} value={field.value || ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="active_theme"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tema Ativo</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || 'system'}>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Identidade e Branding</CardTitle>
+          <CardDescription>Configure o nome e os recursos visuais da plataforma.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {' '}
+            <FormField
+              control={form.control}
+              name="platform_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nome da Plataforma</FormLabel>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o tema" />
-                    </SelectTrigger>
+                    <Input {...field} value={field.value || ''} />
                   </FormControl>
-                  <SelectContent>
-                    <SelectItem value="system">Sistema</SelectItem>
-                    <SelectItem value="light">Claro</SelectItem>
-                    <SelectItem value="dark">Escuro</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-      </CardContent>
-    </Card>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="slogan"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Slogan</FormLabel>
+                  <FormControl>
+                    <Input {...field} value={field.value || ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="logo_url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>URL da Logo</FormLabel>
+                  <FormControl>
+                    <Input {...field} value={field.value || ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="browser_icon_url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>URL do Ícone do Navegador (Favicon)</FormLabel>
+                  <FormControl>
+                    <Input {...field} value={field.value || ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="menu_logo_size"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tamanho da Logo no Menu (px)</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} value={field.value || ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="active_theme"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tema Ativo</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || 'system'}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o tema" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="system">Sistema</SelectItem>
+                      <SelectItem value="light">Claro</SelectItem>
+                      <SelectItem value="dark">Escuro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Tela de Login</CardTitle>
+          <CardDescription>
+            Customize a aparência da tela de login com imagem de fundo, título e subtítulo.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="login_bg_image_url"
+              render={({ field }) => (
+                <FormItem className="md:col-span-2">
+                  <FormLabel>URL da Imagem de Fundo do Login</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={field.value || ''}
+                      placeholder="https://exemplo.com/imagem-fundo.jpg"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="login_title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Título do Login</FormLabel>
+                  <FormControl>
+                    <Input {...field} value={field.value || ''} placeholder="Speedwork" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="login_subtitle"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Subtítulo do Login</FormLabel>
+                  <FormControl>
+                    <Input {...field} value={field.value || ''} placeholder="Soluções em TI" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   )
 }

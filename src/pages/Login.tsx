@@ -256,7 +256,7 @@ export default function Login() {
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage: `url('https://img.usecurling.com/p/1920/1080?q=technology%20network%20infrastructure&color=blue&dpr=2')`,
+            backgroundImage: `url('${systemData?.login_bg_image_url || 'https://img.usecurling.com/p/1920/1080?q=technology%20network%20infrastructure&color=blue&dpr=2'}')`,
           }}
         />
         <div className="absolute inset-0 bg-gradient-to-br from-zinc-950/90 via-zinc-950/80 to-blue-600/40" />
@@ -277,8 +277,8 @@ export default function Login() {
             )}
           </Link>
           <h1 className="text-5xl font-bold text-white tracking-tight leading-tight">
-            {systemData?.platform_name || 'Speedwork'} <br />
-            <span className="text-blue-400">Soluções em TI</span>
+            {systemData?.login_title || systemData?.platform_name || 'Speedwork'} <br />
+            <span className="text-blue-400">{systemData?.login_subtitle || 'Soluções em TI'}</span>
           </h1>
           <p className="text-zinc-400 text-lg max-w-md mt-4">
             {systemData?.slogan ||

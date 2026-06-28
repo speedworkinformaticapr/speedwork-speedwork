@@ -48,6 +48,9 @@ export interface SystemData {
   business_hours?: Record<string, any>
   scheduling_interval_minutes?: number
   admin_menu_config?: any
+  login_bg_image_url?: string
+  login_title?: string
+  login_subtitle?: string
 }
 
 interface SystemDataContextType {
