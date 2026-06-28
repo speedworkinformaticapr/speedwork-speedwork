@@ -50,6 +50,16 @@ export default function AdminLayout() {
     }
   }, [sidebarState])
 
+  useEffect(() => {
+    const handleTransition = () => {
+      if (sidebarState === 'collapsed') {
+        setOpenMenu(null)
+      }
+    }
+    window.addEventListener('transitionend', handleTransition)
+    return () => window.removeEventListener('transitionend', handleTransition)
+  }, [sidebarState])
+
   const rawMenuConfig = systemData?.admin_menu_config as any[] | undefined
   const menuConfig = rawMenuConfig?.length
     ? normalizeMenuConfig(rawMenuConfig)
@@ -94,28 +104,21 @@ export default function AdminLayout() {
   const isPathActive = (url: string) =>
     location.pathname === url || location.pathname.startsWith(`${url}/`)
 
-  const logoSize = systemData?.menu_logo_size || 56
-  const effectiveLogoSize = sidebarState === 'collapsed' ? 32 : logoSize
-
   return (
     <div className="flex w-full min-h-screen bg-background">
       <Sidebar variant="sidebar" collapsible="icon">
         <SidebarHeader className="flex min-h-16 items-center justify-center border-b px-4 py-3">
-          <Link
-            to="/admin/dashboard"
-            className="flex items-center gap-2 font-bold text-lg overflow-hidden"
-          >
-            {systemData?.logo_url ? (
+          <Link to="/admin/dashboard" className="flex items-center justify-center">
+            {systemData?.browser_icon_url || systemData?.logo_url ? (
               <img
-                src={systemData.logo_url}
+                src={systemData.browser_icon_url || systemData.logo_url}
                 alt="Logo"
-                style={{ width: `${effectiveLogoSize}px`, height: `${effectiveLogoSize}px` }}
-                className="object-contain shrink-0 transition-all duration-300 ease-in-out"
+                className="size-10 object-contain shrink-0"
               />
             ) : (
-              <span className="truncate group-data-[collapsible=icon]:hidden">
-                {systemData?.platform_name || 'Admin'}
-              </span>
+              <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg shrink-0">
+                {(systemData?.platform_name || 'A').charAt(0).toUpperCase()}
+              </div>
             )}
           </Link>
         </SidebarHeader>
@@ -221,8 +224,7 @@ export default function AdminLayout() {
       <SidebarInset className="flex flex-col flex-1 w-full min-w-0">
         <header className="flex h-16 shrink-0 items-center justify-between border-b bg-card px-4 md:px-6 z-10 sticky top-0">
           <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-2 md:hidden" />
-            <SidebarTrigger className="hidden md:flex -ml-2" />
+            <SidebarTrigger className="-ml-2" />
           </div>
 
           <div className="flex items-center gap-4">
