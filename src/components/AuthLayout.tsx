@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { Loader2 } from 'lucide-react'
 
 const AuthLayout = () => {
-  const { user, loading } = useAuth()
+  const { user, loading, mfaVerified } = useAuth()
 
   if (loading) {
     return (
@@ -16,7 +16,7 @@ const AuthLayout = () => {
   const mfaPending = sessionStorage.getItem('mfa_pending') === 'true'
 
   if (user && !mfaPending) {
-    return <Navigate to="/" replace />
+    return <Navigate to={mfaVerified ? '/' : '/mfa-verify'} replace />
   }
 
   return <Outlet />

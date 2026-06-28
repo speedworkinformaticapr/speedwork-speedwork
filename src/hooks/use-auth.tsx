@@ -6,6 +6,8 @@ interface Profile {
   id: string
   name?: string | null
   role?: string | null
+  mfa_enabled?: boolean | null
+  mfa_verified?: boolean | null
   [key: string]: any
 }
 
@@ -16,6 +18,7 @@ interface AuthContextType {
   roles: string[]
   activeRole: string | null
   setActiveRole: (role: string) => void
+  mfaVerified: boolean
   signUp: (email: string, password: string) => Promise<{ error: any }>
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signOut: () => Promise<{ error: any }>
@@ -37,6 +40,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [roles, setRoles] = useState<string[]>([])
   const [activeRoleState, setActiveRoleState] = useState<string | null>(null)
+  const [mfaVerified, setMfaVerified] = useState<boolean>(false)
   const [loading, setLoading] = useState(true)
 
   const fetchProfileAndRoles = async (currentUser: User | null) => {
@@ -44,6 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setProfile(null)
       setRoles([])
       setActiveRoleState(null)
+      setMfaVerified(false)
       return
     }
 
@@ -76,6 +81,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setActiveRoleState(null)
       }
+
+      const isMfaEnabled = fetchedProfile?.mfa_enabled ?? false
+      const dbMfaVerified = fetchedProfile?.mfa_verified ?? false
+      setMfaVerified(!isMfaEnabled || dbMfaVerified)
     } catch (err) {
       console.error('Error fetching roles:', err)
     }
@@ -95,6 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setProfile(null)
         setRoles([])
         setActiveRoleState(null)
+        setMfaVerified(false)
       }
     } finally {
       setLoading(false)
@@ -109,7 +119,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true
 
-    // Only let getSession handle the initial load completion to avoid race conditions
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return
       setSession(session)
@@ -140,6 +149,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setProfile(null)
         setRoles([])
         setActiveRoleState(null)
+        setMfaVerified(false)
         if (mounted) setLoading(false)
       }
     })
@@ -163,6 +173,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error }
   }
   const signOut = async () => {
+    if (user) {
+      await supabase.from('profiles').update({ mfa_verified: false }).eq('id', user.id)
+    }
+    setMfaVerified(false)
     const { error } = await supabase.auth.signOut()
     return { error }
   }
@@ -176,6 +190,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         roles,
         activeRole: activeRoleState,
         setActiveRole,
+        mfaVerified,
         signUp,
         signIn,
         signOut,

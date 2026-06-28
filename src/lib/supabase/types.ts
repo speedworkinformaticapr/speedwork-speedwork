@@ -3365,6 +3365,9 @@ export type Database = {
           integrations: Json | null
           language: string | null
           libras_enabled: boolean | null
+          login_bg_image_url: string | null
+          login_subtitle: string | null
+          login_title: string | null
           logo_url: string | null
           menu_logo_size: number | null
           mobile: string | null
@@ -3413,6 +3416,9 @@ export type Database = {
           integrations?: Json | null
           language?: string | null
           libras_enabled?: boolean | null
+          login_bg_image_url?: string | null
+          login_subtitle?: string | null
+          login_title?: string | null
           logo_url?: string | null
           menu_logo_size?: number | null
           mobile?: string | null
@@ -3461,6 +3467,9 @@ export type Database = {
           integrations?: Json | null
           language?: string | null
           libras_enabled?: boolean | null
+          login_bg_image_url?: string | null
+          login_subtitle?: string | null
+          login_title?: string | null
           logo_url?: string | null
           menu_logo_size?: number | null
           mobile?: string | null

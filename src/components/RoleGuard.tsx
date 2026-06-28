@@ -8,7 +8,7 @@ interface RoleGuardProps {
 }
 
 export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
-  const { user, roles, loading } = useAuth()
+  const { user, roles, loading, mfaVerified } = useAuth()
   const location = useLocation()
 
   if (loading) {
@@ -21,6 +21,10 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
 
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />
+  }
+
+  if (!mfaVerified) {
+    return <Navigate to="/mfa-verify" replace />
   }
 
   const normalizedAllowedRoles = allowedRoles.map((r) => r.toLowerCase())

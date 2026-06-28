@@ -18,6 +18,7 @@ import RegisterClub from './pages/RegisterClub'
 import EmailConfirmation from './pages/EmailConfirmation'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
+import MfaVerify from './pages/MfaVerify'
 import Forbidden from './pages/Forbidden'
 import Cart from './pages/store/Cart'
 import Checkout from './pages/store/Checkout'
@@ -170,6 +171,9 @@ const App = () => (
                     <Route path="forgot-password" element={<ForgotPassword />} />
                     <Route path="reset-password" element={<ResetPassword />} />
                   </Route>
+
+                  {/* MFA Verification Route */}
+                  <Route path="mfa-verify" element={<MfaVerify />} />
 
                   {/* Admin Routes - Evaluated second to guarantee static paths precedence */}
                   <Route

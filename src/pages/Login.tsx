@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { useSystemData } from '@/hooks/use-system-data'
-import { Loader2, Key, ShieldCheck } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
@@ -42,11 +42,6 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [showMfa, setShowMfa] = useState(false)
-  const [mfaCode, setMfaCode] = useState('')
-  const [mfaType, setMfaType] = useState('email')
-  const [profileData, setProfileData] = useState<any>(null)
-  const [verifying, setVerifying] = useState(false)
 
   const navigate = useNavigate()
   const location = useLocation()
@@ -54,12 +49,6 @@ export default function Login() {
   const { data: systemData, loading: systemLoading } = useSystemData()
 
   const from = location.state?.from?.pathname
-
-  useEffect(() => {
-    if (sessionStorage.getItem('mfa_pending') === 'true') {
-      setShowMfa(true)
-    }
-  }, [])
 
   const handleRedirect = (role?: string) => {
     sessionStorage.removeItem('mfa_pending')
@@ -94,11 +83,15 @@ export default function Login() {
     }
 
     if (authData?.user) {
+      sessionStorage.setItem('mfa_pending', 'true')
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', authData.user.id)
         .single()
+
+      await supabase.from('profiles').update({ mfa_verified: false }).eq('id', authData.user.id)
 
       if (profile?.mfa_enabled) {
         try {
@@ -145,90 +138,20 @@ export default function Login() {
           return
         }
 
-        sessionStorage.setItem('mfa_pending', 'true')
-        setProfileData(profile)
-        setMfaType(profile.mfa_type || 'email')
-        setShowMfa(true)
         toast({
           title: 'Verificação em Duas Etapas',
           description: 'Um código de acesso foi enviado para seu e-mail.',
         })
         setLoading(false)
+        navigate('/mfa-verify', { replace: true })
         return
       }
+
+      await supabase.from('profiles').update({ mfa_verified: true }).eq('id', authData.user.id)
 
       toast({ title: 'Login realizado com sucesso!' })
+      setLoading(false)
       handleRedirect(profile?.role)
-    }
-  }
-
-  const handleVerifyMfa = async () => {
-    if (mfaCode.length < 6) {
-      toast({ title: 'Código inválido', variant: 'destructive' })
-      return
-    }
-
-    if (!profileData?.id) {
-      toast({
-        title: 'Erro ao verificar código',
-        description: 'Dados de sessão não encontrados. Faça login novamente.',
-        variant: 'destructive',
-      })
-      setVerifying(false)
-      setShowMfa(false)
-      return
-    }
-
-    setVerifying(true)
-
-    try {
-      const { data: profile, error: fetchError } = await supabase
-        .from('profiles')
-        .select('mfa_code, mfa_code_expires_at')
-        .eq('id', profileData.id)
-        .single()
-
-      if (fetchError || !profile) {
-        toast({
-          title: 'Erro ao verificar código',
-          description: 'Não foi possível validar o código. Tente novamente.',
-          variant: 'destructive',
-        })
-        setVerifying(false)
-        return
-      }
-
-      if (!profile.mfa_code || profile.mfa_code !== mfaCode) {
-        toast({ title: 'Código incorreto', variant: 'destructive' })
-        setVerifying(false)
-        return
-      }
-
-      if (profile.mfa_code_expires_at && new Date(profile.mfa_code_expires_at) < new Date()) {
-        toast({
-          title: 'Código expirado',
-          description: 'Solicite um novo código.',
-          variant: 'destructive',
-        })
-        setVerifying(false)
-        return
-      }
-
-      await supabase
-        .from('profiles')
-        .update({ mfa_code: null, mfa_code_expires_at: null })
-        .eq('id', profileData.id)
-
-      toast({ title: 'MFA verificado com sucesso!' })
-      handleRedirect(profileData?.role)
-    } catch (err) {
-      toast({
-        title: 'Erro ao verificar código',
-        description: 'Ocorreu um erro inesperado. Tente novamente.',
-        variant: 'destructive',
-      })
-    } finally {
-      setVerifying(false)
     }
   }
 
@@ -240,14 +163,6 @@ export default function Login() {
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' })
     }
-  }
-
-  const handleCancelMfa = () => {
-    setShowMfa(false)
-    sessionStorage.removeItem('mfa_pending')
-    setMfaCode('')
-    setProfileData(null)
-    supabase.auth.signOut()
   }
 
   return (
@@ -307,140 +222,94 @@ export default function Login() {
             )}
           </div>
 
-          {!showMfa ? (
-            <div className="animate-fade-in-up">
-              <div className="space-y-2 text-center lg:text-left mb-8">
-                <h2 className="text-3xl font-bold tracking-tight">Bem-vindo de volta</h2>
-                <p className="text-muted-foreground">Acesse sua conta para continuar</p>
-              </div>
-
-              <form onSubmit={handleLogin} className="space-y-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">E-mail</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="h-12"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="password">Senha</Label>
-                      <Link to="/forgot-password" className="text-sm text-primary hover:underline">
-                        Esqueceu a senha?
-                      </Link>
-                    </div>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="h-12"
-                    />
-                  </div>
-                </div>
-
-                <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Entrando...
-                    </>
-                  ) : (
-                    'Entrar na Plataforma'
-                  )}
-                </Button>
-              </form>
-
-              <div className="relative my-8">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">Ou continue com</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  className="h-12 w-full"
-                  type="button"
-                  onClick={() => handleSocialLogin('google')}
-                >
-                  <GoogleIcon />
-                  <span className="ml-2">Entrar com Google</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-12 w-full"
-                  type="button"
-                  onClick={() => handleSocialLogin('azure')}
-                >
-                  <MicrosoftIcon />
-                  <span className="ml-2">Entrar com Microsoft</span>
-                </Button>
-              </div>
-
-              <div className="text-center text-sm mt-8">
-                <p className="text-muted-foreground">
-                  Não tem uma conta?{' '}
-                  <Link to="/register" className="text-primary hover:underline font-medium">
-                    Cadastre-se
-                  </Link>
-                </p>
-              </div>
+          <div className="animate-fade-in-up">
+            <div className="space-y-2 text-center lg:text-left mb-8">
+              <h2 className="text-3xl font-bold tracking-tight">Bem-vindo de volta</h2>
+              <p className="text-muted-foreground">Acesse sua conta para continuar</p>
             </div>
-          ) : (
-            <div className="space-y-6 animate-fade-in">
-              <div className="space-y-2 text-center lg:text-left">
-                <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
-                  <ShieldCheck className="h-6 w-6" />
-                </div>
-                <h2 className="text-3xl font-bold tracking-tight">Verificação em Duas Etapas</h2>
-                <p className="text-muted-foreground">
-                  Insira o código de 6 dígitos enviado para seu{' '}
-                  {mfaType === 'whatsapp' ? 'WhatsApp' : 'E-mail'}.
-                </p>
-              </div>
 
-              <div className="space-y-4 pt-4">
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Código de Verificação</Label>
+                  <Label htmlFor="email">E-mail</Label>
                   <Input
-                    value={mfaCode}
-                    onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
-                    placeholder="000000"
-                    maxLength={6}
-                    className="h-14 text-center text-2xl tracking-widest font-mono"
+                    id="email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="h-12"
                   />
                 </div>
-                <Button
-                  onClick={handleVerifyMfa}
-                  disabled={verifying}
-                  className="w-full h-12 text-base mt-2"
-                >
-                  {verifying ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Verificando...
-                    </>
-                  ) : (
-                    <>
-                      <Key className="mr-2 h-5 w-5" /> Verificar e Entrar
-                    </>
-                  )}
-                </Button>
-                <Button variant="ghost" className="w-full h-12" onClick={handleCancelMfa}>
-                  Voltar ao Login
-                </Button>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Senha</Label>
+                    <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                      Esqueceu a senha?
+                    </Link>
+                  </div>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="h-12"
+                  />
+                </div>
+              </div>
+
+              <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Entrando...
+                  </>
+                ) : (
+                  'Entrar na Plataforma'
+                )}
+              </Button>
+            </form>
+
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Ou continue com</span>
               </div>
             </div>
-          )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                variant="outline"
+                className="h-12 w-full"
+                type="button"
+                onClick={() => handleSocialLogin('google')}
+              >
+                <GoogleIcon />
+                <span className="ml-2">Entrar com Google</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-12 w-full"
+                type="button"
+                onClick={() => handleSocialLogin('azure')}
+              >
+                <MicrosoftIcon />
+                <span className="ml-2">Entrar com Microsoft</span>
+              </Button>
+            </div>
+
+            <div className="text-center text-sm mt-8">
+              <p className="text-muted-foreground">
+                Não tem uma conta?{' '}
+                <Link to="/register" className="text-primary hover:underline font-medium">
+                  Cadastre-se
+                </Link>
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
