@@ -244,6 +244,9 @@ const App = () => (
                     <Route path="settings/pages" element={<AdminPageList />} />
                     <Route path="settings/pages/new" element={<AdminPageForm />} />
                     <Route path="settings/pages/:id/edit" element={<AdminPageForm />} />
+                    <Route path="pages" element={<AdminPageList />} />
+                    <Route path="pages/new" element={<AdminPageForm />} />
+                    <Route path="pages/:id/edit" element={<AdminPageForm />} />
                     <Route path="settings/blog" element={<AdminBlogList />} />
                     <Route path="settings/blog/new" element={<AdminBlogForm />} />
                     <Route path="settings/blog/:id/edit" element={<AdminBlogForm />} />
