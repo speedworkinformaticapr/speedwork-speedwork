@@ -94,13 +94,13 @@ export default function AdminLayout() {
   const isPathActive = (url: string) =>
     location.pathname === url || location.pathname.startsWith(`${url}/`)
 
-  const logoSize = Math.min(systemData?.menu_logo_size || 40, 48)
-  const effectiveLogoSize = sidebarState === 'collapsed' ? 28 : logoSize
+  const logoSize = systemData?.menu_logo_size || 56
+  const effectiveLogoSize = sidebarState === 'collapsed' ? 32 : logoSize
 
   return (
     <div className="flex w-full min-h-screen bg-background">
       <Sidebar variant="sidebar" collapsible="icon">
-        <SidebarHeader className="flex h-16 items-center justify-center border-b px-4">
+        <SidebarHeader className="flex min-h-16 items-center justify-center border-b px-4 py-3">
           <Link
             to="/admin/dashboard"
             className="flex items-center gap-2 font-bold text-lg overflow-hidden"
@@ -110,7 +110,7 @@ export default function AdminLayout() {
                 src={systemData.logo_url}
                 alt="Logo"
                 style={{ width: `${effectiveLogoSize}px`, height: `${effectiveLogoSize}px` }}
-                className="object-contain shrink-0 transition-all duration-200"
+                className="object-contain shrink-0 transition-all duration-300 ease-in-out"
               />
             ) : (
               <span className="truncate group-data-[collapsible=icon]:hidden">
@@ -135,7 +135,9 @@ export default function AdminLayout() {
                     >
                       <Link to={group.url}>
                         {group.icon && renderIcon(group.icon)}
-                        <span className="group-data-[collapsible=icon]:hidden">{group.label}</span>
+                        <span className="group-data-[collapsible=icon]:hidden transition-opacity duration-200">
+                          {group.label}
+                        </span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -155,21 +157,23 @@ export default function AdminLayout() {
                         tooltip={group.label}
                         isActive={isOpen || isActiveGroup}
                         className={cn(
-                          'w-full transition-all',
+                          'w-full transition-all duration-300',
                           (isOpen || isActiveGroup) && 'font-medium text-primary',
                         )}
                       >
                         {group.icon && renderIcon(group.icon)}
-                        <span className="group-data-[collapsible=icon]:hidden">{group.label}</span>
+                        <span className="group-data-[collapsible=icon]:hidden transition-opacity duration-200">
+                          {group.label}
+                        </span>
                         <ChevronRight
                           className={cn(
-                            'ml-auto size-4 transition-transform duration-200 group-data-[collapsible=icon]:hidden',
+                            'ml-auto size-4 transition-transform duration-300 group-data-[collapsible=icon]:hidden',
                             isOpen && 'rotate-90',
                           )}
                         />
                       </SidebarMenuButton>
                     </CollapsibleTrigger>
-                    <CollapsibleContent>
+                    <CollapsibleContent className="group-data-[collapsible=icon]:hidden">
                       <SidebarMenuSub>
                         {group.submenus?.map((sub) => {
                           const isItemActive = isPathActive(sub.url)
@@ -202,10 +206,12 @@ export default function AdminLayout() {
               <SidebarMenuButton
                 onClick={handleSignOut}
                 tooltip="Sair"
-                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors"
+                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors duration-300"
               >
                 <LogOut className="size-4" />
-                <span className="group-data-[collapsible=icon]:hidden">Sair do Sistema</span>
+                <span className="group-data-[collapsible=icon]:hidden transition-opacity duration-200">
+                  Sair do Sistema
+                </span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
