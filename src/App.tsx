@@ -41,6 +41,7 @@ import { FloatingWidgets } from './components/FloatingWidgets'
 import { CookieConsent } from './components/CookieConsent'
 import { RoleGuard } from './components/RoleGuard'
 import { Analytics } from './components/Analytics'
+import { ScrollToTop } from './components/ScrollToTop'
 import { SidebarProvider } from '@/components/ui/sidebar'
 
 const AdminBlogList = lazy(() => import('./pages/admin/blog/AdminBlogList'))
@@ -170,6 +171,7 @@ const App = () => (
         <ThemeProvider>
           <BrowserRouter>
             <ScrollToHash />
+            <ScrollToTop />
             <TooltipProvider>
               <Toaster />
               <Sonner />
