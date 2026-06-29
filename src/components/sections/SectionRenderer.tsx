@@ -51,9 +51,10 @@ function AnimatedWrapper({
 }
 
 export function SectionRenderer({ section }: { section: any }) {
-  const { type, data: rawData, id: sectionId } = section
+  const { type, data: rawData, id: rawSectionId } = section
   const data = rawData || {}
   const animation = data.animation
+  const sectionId = data.anchorId || rawSectionId
 
   // Resolve links gracefully - se iniciar com # ou http usamos um <a/> comum, caso contrário <Link/>
   const renderLink = (url: string, children: React.ReactNode, className?: string) => {

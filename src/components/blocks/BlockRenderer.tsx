@@ -26,7 +26,7 @@ export function BlockRenderer({ block }: { block: any }) {
   if (!block || !block.type || !block.data) return null
 
   const blockType = String(block.type).trim().toLowerCase()
-  const blockId = block.name ? block.name.trim() : undefined
+  const blockId = (block.data?.anchorId || block.name || '').trim() || undefined
 
   switch (blockType) {
     case 'map':

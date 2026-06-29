@@ -108,7 +108,7 @@ export default function Index() {
   return (
     <main className="w-full min-h-screen bg-background flex flex-col animate-fade-in">
       {sections.map((s, idx) => (
-        <SectionRenderer key={s.id || idx} section={{ type: s.type, data: s.data }} />
+        <SectionRenderer key={s.id || idx} section={{ type: s.type, data: s.data, id: s.id }} />
       ))}
     </main>
   )

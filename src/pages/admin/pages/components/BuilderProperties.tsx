@@ -269,6 +269,20 @@ function FieldRenderer({
           </SelectContent>
         </Select>
       )}
+      {field.type === 'anchor_id' && (
+        <Input
+          value={value || ''}
+          onChange={(e) => {
+            const slugified = e.target.value
+              .toLowerCase()
+              .replace(/\s+/g, '-')
+              .replace(/[^a-z0-9-]/g, '')
+            onChange(slugified)
+          }}
+          className="h-8 text-xs font-mono"
+          placeholder="ex: nossos-servicos"
+        />
+      )}
       {field.type === 'sla_select' && <SlaSelect value={value} onChange={onChange} />}
       {field.type === 'services_multiselect' && (
         <ServicesMultiselect value={value} onChange={onChange} />

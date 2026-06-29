@@ -11,6 +11,7 @@ export type FieldType =
   | 'date'
   | 'sla_select'
   | 'services_multiselect'
+  | 'anchor_id'
 
 export interface FieldDef {
   name: string
@@ -525,5 +526,22 @@ const ANIMATION_SECTION = {
 Object.values(ELEMENT_CONFIGS).forEach((config) => {
   if (!config.sections.some((s) => s.title === 'Animação')) {
     config.sections.push(ANIMATION_SECTION)
+  }
+})
+
+const IDENTIFICATION_SECTION = {
+  title: 'Identificação',
+  fields: [
+    {
+      name: 'anchorId',
+      label: 'ID da Âncora',
+      type: 'anchor_id' as FieldType,
+    },
+  ],
+}
+
+Object.values(ELEMENT_CONFIGS).forEach((config) => {
+  if (!config.sections.some((s) => s.title === 'Identificação')) {
+    config.sections.unshift(IDENTIFICATION_SECTION)
   }
 })
