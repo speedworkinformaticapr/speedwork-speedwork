@@ -187,11 +187,11 @@ export default function ContractWizard() {
                     }}
                   >
                     <CardHeader>
-                      <CardTitle>{t.title}</CardTitle>
+                      <CardTitle>{t.name}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-sm text-muted-foreground truncate">
-                        Usar modelo pré-definido.
+                        {t.description || 'Usar modelo pré-definido.'}
                       </p>
                     </CardContent>
                   </Card>

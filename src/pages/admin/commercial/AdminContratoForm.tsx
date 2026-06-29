@@ -60,6 +60,7 @@ export default function AdminContratoForm() {
 
   const [services, setServices] = useState<any[]>([])
   const [selectedServices, setSelectedServices] = useState<string[]>([])
+  const [templates, setTemplates] = useState<any[]>([])
 
   useEffect(() => {
     supabase
@@ -84,6 +85,12 @@ export default function AdminContratoForm() {
       .select('id, title, monthly_value, semiannual_value, annual_value, avulso_value')
       .order('title')
       .then(({ data }) => setServices(data || []))
+    supabase
+      .from('contract_templates')
+      .select('id, name, description, content')
+      .eq('is_active', true)
+      .order('name')
+      .then(({ data }) => setTemplates(data || []))
 
     if (id) {
       const isUuidValid =
@@ -210,6 +217,14 @@ export default function AdminContratoForm() {
     }
   }
 
+  const handleTemplateSelect = (templateId: string) => {
+    const template = templates.find((t) => t.id === templateId)
+    if (template?.content) {
+      setForm((prev) => ({ ...prev, observacoes: template.content }))
+      toast({ title: 'Modelo carregado', description: template.name })
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="flex items-center gap-4 mb-6">
@@ -272,6 +287,24 @@ export default function AdminContratoForm() {
                 <SelectItem value="consultoria">Consultoria</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Modelo de Contrato (Template)</Label>
+            <Select onValueChange={(v) => handleTemplateSelect(v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um modelo para preencher automaticamente" />
+              </SelectTrigger>
+              <SelectContent>
+                {templates.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Ao selecionar um modelo, o conteúdo será carregado na aba SLA e Termos.
+            </p>
           </div>
         </TabsContent>
 

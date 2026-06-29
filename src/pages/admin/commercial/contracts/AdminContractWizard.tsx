@@ -168,7 +168,7 @@ export default function AdminContractWizard() {
                     <SelectItem value="none">Começar do zero</SelectItem>
                     {templates.map((t) => (
                       <SelectItem key={t.id} value={t.id}>
-                        {t.title}
+                        {t.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
