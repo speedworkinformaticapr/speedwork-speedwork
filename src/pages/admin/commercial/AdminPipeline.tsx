@@ -2,13 +2,12 @@ import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { fetchLeads, updateLeadStatus, LEAD_STATUSES, type Lead } from '@/services/leads'
 import { getScoreLabel } from '@/lib/lead-scoring'
 import { toast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { GripVertical, Users, Building2, Calendar } from 'lucide-react'
+import { GripVertical, Building2, Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const COLUMN_COLORS: Record<string, string> = {
@@ -81,33 +80,75 @@ export default function AdminPipeline() {
     }
   }
 
+  const handleDragEnd = () => {
+    setDraggedId(null)
+    setDragOverCol(null)
+  }
+
   return (
-    <div className="space-y-6 animate-fade-in p-6">
+    <div className="space-y-6 animate-fade-in p-6" onDragOver={(e) => e.preventDefault()}>
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-primary">Pipeline Comercial</h1>
         <p className="text-muted-foreground mt-1">
-          Arraste e solte os cards para mover leads entre as etapas.
+          Arraste e solte os cards para mover leads entre as etapas. Colunas vazias são minimizadas
+          automaticamente.
         </p>
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-4 items-start min-h-[600px]">
+      <div
+        className="flex gap-2 items-start min-h-[600px] overflow-x-auto pb-4"
+        onDragEnd={handleDragEnd}
+      >
         {LEAD_STATUSES.map((col) => {
-          const colLeads = leads.filter((l) => l.status === col)
+          const colLeads = loading ? [] : leads.filter((l) => l.status === col)
+          const isEmpty = colLeads.length === 0
           const isDragOver = dragOverCol === col
+          const isExpanded = !isEmpty || isDragOver
+          const colorClass = COLUMN_COLORS[col] || 'border-t-gray-400'
+
+          if (!isExpanded) {
+            return (
+              <div
+                key={col}
+                className={cn(
+                  'shrink-0 rounded-lg transition-all duration-300 ease-in-out flex flex-col items-center',
+                  'w-12 min-w-[48px] h-[200px] py-3 cursor-pointer',
+                  isDragOver
+                    ? 'bg-primary/15 ring-2 ring-primary/40 scale-105'
+                    : 'bg-muted/40 hover:bg-muted/60',
+                )}
+                onDragOver={(e) => handleDragOver(e, col)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, col)}
+              >
+                <div className={cn('w-full border-t-4 rounded-t-lg mb-2', colorClass)} />
+                <div className="flex-1 flex items-center justify-center">
+                  <span
+                    className="text-[11px] font-semibold text-muted-foreground whitespace-nowrap"
+                    style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+                  >
+                    {col}
+                  </span>
+                </div>
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                  0
+                </Badge>
+              </div>
+            )
+          }
+
           return (
             <div
               key={col}
               className={cn(
-                'w-80 min-w-[320px] rounded-lg p-3 shrink-0 flex flex-col gap-3 transition-colors duration-200',
+                'w-80 min-w-[320px] rounded-lg p-3 shrink-0 flex flex-col gap-3 transition-all duration-300 ease-in-out',
                 isDragOver ? 'bg-primary/10 ring-2 ring-primary/30' : 'bg-muted/30',
               )}
               onDragOver={(e) => handleDragOver(e, col)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, col)}
             >
-              <div
-                className={cn('border-t-4 rounded-t-lg -mx-3 -mt-3 px-3 pt-3', COLUMN_COLORS[col])}
-              >
+              <div className={cn('border-t-4 rounded-t-lg -mx-3 -mt-3 px-3 pt-3', colorClass)}>
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="font-semibold text-sm">{col}</h3>
                   <Badge variant="secondary">{colLeads.length}</Badge>
@@ -120,7 +161,7 @@ export default function AdminPipeline() {
 
               {!loading && colLeads.length === 0 && (
                 <div className="text-center p-4 text-muted-foreground text-xs border border-dashed rounded-lg">
-                  Nenhum lead nesta etapa
+                  Solte um lead aqui
                 </div>
               )}
 
