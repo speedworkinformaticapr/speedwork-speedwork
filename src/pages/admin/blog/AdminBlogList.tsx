@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -14,12 +15,37 @@ import { useDataTable } from '@/hooks/use-data-table'
 import { DataTableToolbar } from '@/components/ui/data-table/data-table-toolbar'
 import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Edit, Trash2, Settings, Eye } from 'lucide-react'
 import { BlogAiModelSettings } from '@/components/blog/BlogAiModelSettings'
+import { InlineCellSelect } from '@/components/blog/InlineCellSelect'
+import { blogService } from '@/services/blog'
+
+const STATUS_OPTIONS = [
+  { label: 'Publicado', value: 'published' },
+  { label: 'Rascunho', value: 'draft' },
+  { label: 'Revisão', value: 'review' },
+  { label: 'Arquivado', value: 'archived' },
+]
+
+const STATUS_LABELS: Record<string, string> = {
+  published: 'Publicado',
+  draft: 'Rascunho',
+  review: 'Revisão',
+  archived: 'Arquivado',
+}
+
+const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  published: 'default',
+  draft: 'secondary',
+  review: 'outline',
+  archived: 'destructive',
+}
 
 export default function AdminBlogList() {
   const [data, setData] = useState<any[]>([])
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [categoryOptions, setCategoryOptions] = useState<{ label: string; value: string }[]>([])
   const {
     search,
     setSearch,
@@ -32,7 +58,7 @@ export default function AdminBlogList() {
     handleSort,
   } = useDataTable()
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     let q = supabase.from('blog_posts').select('*')
 
     if (debouncedSearch) {
@@ -55,11 +81,24 @@ export default function AdminBlogList() {
 
     const { data: result } = await q
     if (result) setData(result)
-  }
+  }, [debouncedSearch, status, dateRange, sortConfig])
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const cats = await blogService.getCategories()
+      setCategoryOptions(cats.map((c) => ({ label: c, value: c })))
+    } catch {
+      setCategoryOptions([])
+    }
+  }, [])
 
   useEffect(() => {
     fetchData()
-  }, [debouncedSearch, status, dateRange, sortConfig])
+  }, [fetchData])
+
+  useEffect(() => {
+    fetchCategories()
+  }, [fetchCategories])
 
   const handleDelete = async (id: string) => {
     if (confirm('Tem certeza que deseja excluir?')) {
@@ -68,12 +107,21 @@ export default function AdminBlogList() {
     }
   }
 
-  const statusOptions = [
-    { label: 'Publicado', value: 'published' },
-    { label: 'Rascunho', value: 'draft' },
-    { label: 'Revisão', value: 'review' },
-    { label: 'Arquivado', value: 'archived' },
-  ]
+  const handleInlineUpdate = async (
+    id: string,
+    field: 'category' | 'status',
+    value: string,
+    label: string,
+  ) => {
+    try {
+      await blogService.updatePostField(id, field, value)
+      setData((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)))
+      toast.success(`${label} atualizado com sucesso!`)
+    } catch {
+      toast.error(`Erro ao atualizar ${label.toLowerCase()}.`)
+      throw new Error('update failed')
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -96,7 +144,7 @@ export default function AdminBlogList() {
             setSearch={setSearch}
             status={status}
             setStatus={setStatus}
-            statusOptions={statusOptions}
+            statusOptions={STATUS_OPTIONS}
             dateRange={dateRange}
             setDateRange={setDateRange}
             searchPlaceholder="Buscar por título ou categoria..."
@@ -146,8 +194,30 @@ export default function AdminBlogList() {
                   {data.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.title}</TableCell>
-                      <TableCell>{item.category}</TableCell>
-                      <TableCell>{item.status}</TableCell>
+                      <TableCell>
+                        <InlineCellSelect
+                          value={item.category || ''}
+                          options={categoryOptions}
+                          placeholder="Sem categoria"
+                          onUpdate={(val) =>
+                            handleInlineUpdate(item.id, 'category', val, 'Categoria')
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <InlineCellSelect
+                          value={item.status || 'draft'}
+                          options={STATUS_OPTIONS}
+                          onUpdate={(val) => handleInlineUpdate(item.id, 'status', val, 'Status')}
+                          className="border-transparent"
+                        />
+                        <Badge
+                          variant={STATUS_VARIANT[item.status] || 'secondary'}
+                          className="ml-2 hidden"
+                        >
+                          {STATUS_LABELS[item.status] || item.status}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="text-center">
                         <span className="inline-flex items-center gap-1 text-muted-foreground">
                           <Eye className="w-3 h-3" />

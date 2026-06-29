@@ -105,6 +105,24 @@ export const blogService = {
     return Array.from(tagSet)
   },
 
+  async getCategories(): Promise<string[]> {
+    const { data, error } = await supabase.from('blog_posts').select('category')
+    if (error || !data) return []
+    const catSet = new Set<string>()
+    data.forEach((row: any) => {
+      if (row.category) catSet.add(row.category)
+    })
+    return Array.from(catSet)
+  },
+
+  async updatePostField(id: string, field: 'category' | 'status', value: string) {
+    const { error } = await supabase
+      .from('blog_posts')
+      .update({ [field]: value })
+      .eq('id', id)
+    if (error) throw error
+  },
+
   async generateImage(prompt: string, aspectRatio: '16:9' | '1:1' | '4:5' = '16:9') {
     const { data, error } = await supabase.functions.invoke('generate-ai-text', {
       body: { type: 'image', field_context: prompt, aspect_ratio: aspectRatio },
