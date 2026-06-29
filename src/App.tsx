@@ -30,6 +30,7 @@ import ClientDashboard from './pages/client/dashboard/ClientDashboard'
 import Scheduling from './pages/Scheduling'
 import PublicScheduling from './pages/PublicScheduling'
 import PublicSchedulingCancel from './pages/PublicSchedulingCancel'
+import PublicEvaluation from './pages/evaluation/PublicEvaluation'
 import QuoteApprovalPortal from './pages/client/quotes/QuoteApprovalPortal'
 import { AuthProvider } from './hooks/use-auth'
 import { TranslationProvider } from './hooks/use-translation'
@@ -125,6 +126,8 @@ const AdminPipeline = lazy(() => import('./pages/admin/commercial/AdminPipeline'
 const AdminActivities = lazy(() => import('./pages/admin/commercial/AdminActivities'))
 const AdminDiagnosticForm = lazy(() => import('./pages/admin/commercial/AdminDiagnosticForm'))
 const AdminLeadDetail = lazy(() => import('./pages/admin/commercial/AdminLeadDetail'))
+const AdminEvaluations = lazy(() => import('./pages/admin/commercial/AdminEvaluations'))
+const AdminEvaluationDetail = lazy(() => import('./pages/admin/commercial/AdminEvaluationDetail'))
 
 function ScrollToHash() {
   const location = useLocation()
@@ -252,6 +255,8 @@ const App = () => (
                     <Route path="commercial/pipeline" element={<AdminPipeline />} />
                     <Route path="commercial/activities" element={<AdminActivities />} />
                     <Route path="commercial/diagnostic-form" element={<AdminDiagnosticForm />} />
+                    <Route path="commercial/evaluations" element={<AdminEvaluations />} />
+                    <Route path="commercial/evaluations/:id" element={<AdminEvaluationDetail />} />
                     <Route path="dashboard" element={<AdminDashboard />} />
                     <Route path="settings/pages" element={<AdminPageList />} />
                     <Route path="settings/pages/new" element={<AdminPageForm />} />
@@ -354,6 +359,8 @@ const App = () => (
                     <Route path="agendar/cancelar/:id" element={<PublicSchedulingCancel />} />
 
                     <Route path="quote/approval/:id" element={<QuoteApprovalPortal />} />
+                    <Route path="avaliar" element={<PublicEvaluation />} />
+                    <Route path="avaliar/:serviceSlug" element={<PublicEvaluation />} />
 
                     {/* Catch-all dynamic routing evaluated only if everything above fails */}
                     <Route path=":slug" element={<PublicPage />} />

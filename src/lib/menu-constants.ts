@@ -48,6 +48,7 @@ export const DEFAULT_MENU_CONFIG: MenuConfig[] = [
       { id: 'pipeline', label: 'Pipeline (Kanban)', url: '/admin/commercial/pipeline' },
       { id: 'activities', label: 'Atividades', url: '/admin/commercial/activities' },
       { id: 'diagnostic-form', label: 'Diagnóstico', url: '/admin/commercial/diagnostic-form' },
+      { id: 'evaluations', label: 'Avaliações', url: '/admin/commercial/evaluations' },
       { id: 'quotes', label: 'Orçamentos', url: '/admin/commercial/quotes' },
       { id: 'pedidos', label: 'Pedidos', url: '/admin/commercial/orders' },
       { id: 'appointments', label: 'Agendamentos', url: '/admin/commercial/appointments' },
