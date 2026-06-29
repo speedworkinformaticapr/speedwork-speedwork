@@ -14,10 +14,12 @@ import { useDataTable } from '@/hooks/use-data-table'
 import { DataTableToolbar } from '@/components/ui/data-table/data-table-toolbar'
 import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header'
 import { Button } from '@/components/ui/button'
-import { Edit, Trash2 } from 'lucide-react'
+import { Edit, Trash2, Settings, Eye } from 'lucide-react'
+import { BlogAiModelSettings } from '@/components/blog/BlogAiModelSettings'
 
 export default function AdminBlogList() {
   const [data, setData] = useState<any[]>([])
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const {
     search,
     setSearch,
@@ -69,17 +71,24 @@ export default function AdminBlogList() {
   const statusOptions = [
     { label: 'Publicado', value: 'published' },
     { label: 'Rascunho', value: 'draft' },
+    { label: 'Revisão', value: 'review' },
     { label: 'Arquivado', value: 'archived' },
   ]
 
   return (
     <div className="space-y-6">
+      <BlogAiModelSettings open={settingsOpen} onOpenChange={setSettingsOpen} />
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Postagens do Blog</CardTitle>
-          <Button asChild>
-            <Link to="new">Novo Post</Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setSettingsOpen(true)}>
+              <Settings className="w-4 h-4 mr-2" /> IA
+            </Button>
+            <Button asChild>
+              <Link to="new">Novo Post</Link>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <DataTableToolbar
@@ -121,6 +130,7 @@ export default function AdminBlogList() {
                         onSort={handleSort}
                       />
                     </TableHead>
+                    <TableHead className="text-center">Views</TableHead>
                     <TableHead>
                       <DataTableColumnHeader
                         title="Data"
@@ -138,6 +148,12 @@ export default function AdminBlogList() {
                       <TableCell className="font-medium">{item.title}</TableCell>
                       <TableCell>{item.category}</TableCell>
                       <TableCell>{item.status}</TableCell>
+                      <TableCell className="text-center">
+                        <span className="inline-flex items-center gap-1 text-muted-foreground">
+                          <Eye className="w-3 h-3" />
+                          {item.view_count || 0}
+                        </span>
+                      </TableCell>
                       <TableCell>
                         {item.created_at
                           ? new Date(item.created_at).toLocaleDateString('pt-BR')

@@ -16,7 +16,7 @@
     "sync-google-ads": 1,
     "validar_whatsapp_config": 5,
     "cron-commercial-contracts": 2,
-    "generate-ai-text": 2,
+    "generate-ai-text": 3,
     "verify-recaptcha": 2,
     "translate-text": 1,
     "webhook-asaas": 2,
