@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase/client'
 
 export async function getOrcamentosMetrics() {
-  const { data } = await supabase.from('orcamentos').select('*, clientes(nome)')
+  const { data } = await supabase.from('orcamentos').select('*, profiles!cliente_id(name)')
   if (!data) return { orcamentos: [], total: 0, valor: 0, taxa: 0, vencidos: 0 }
 
   const total = data.length
@@ -19,7 +19,7 @@ export async function getOrcamentosMetrics() {
 }
 
 export async function getPedidosMetrics() {
-  const { data } = await supabase.from('pedidos').select('*, clientes(nome)')
+  const { data } = await supabase.from('pedidos').select('*, profiles!cliente_id(name)')
   if (!data) return { pedidos: [], total: 0, valor: 0, taxaEntrega: 0, atrasados: 0 }
 
   const total = data.length
@@ -40,7 +40,7 @@ export async function getPedidosMetrics() {
 }
 
 export async function getContratosMetrics() {
-  const { data } = await supabase.from('contratos').select('*, clientes(nome)')
+  const { data } = await supabase.from('contratos').select('*, profiles!cliente_id(name)')
   if (!data) return { contratos: [], ativos: 0, mrr: 0, retencao: 0, proximosVencer: 0 }
 
   const ativosList = data.filter((d) => d.status === 'ativo')

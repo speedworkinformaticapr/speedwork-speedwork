@@ -151,7 +151,7 @@ export default function OrcamentosDashboard() {
                 {metrics.orcamentos.slice(0, 5).map((o: any) => (
                   <TableRow key={o.id}>
                     <TableCell>{o.numero_orcamento}</TableCell>
-                    <TableCell>{o.profiles?.name || o.clientes?.nome}</TableCell>
+                    <TableCell>{o.profiles?.name}</TableCell>
                     <TableCell>R$ {(o.total || 0).toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
