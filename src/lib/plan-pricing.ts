@@ -25,6 +25,7 @@ export interface PriceBreakdown {
   promotionalPrice: number | null
   hasActivePromo: boolean
   isPermanentDiscount: boolean
+  promoExpiresAt: string | null
 }
 
 const cycleKeys: Record<
@@ -90,6 +91,7 @@ export function calculatePrice(service: PlanServicePricing, cycle: BillingCycle)
     promotionalPrice,
     hasActivePromo,
     isPermanentDiscount: permanentDiscount > 0,
+    promoExpiresAt: hasActivePromo ? promoExpiresAt : null,
   }
 }
 

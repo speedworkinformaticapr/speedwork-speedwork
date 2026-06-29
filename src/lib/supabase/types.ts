@@ -2724,8 +2724,12 @@ export type Database = {
       plan_services: {
         Row: {
           annual_discount: number | null
+          annual_promo_discount: number | null
+          annual_promo_expires_at: string | null
           annual_value: number
           avulso_discount: number | null
+          avulso_promo_discount: number | null
+          avulso_promo_expires_at: string | null
           avulso_value: number
           category_id: string | null
           contract_template_id: string | null
@@ -2733,17 +2737,25 @@ export type Database = {
           description: string
           id: string
           monthly_discount: number | null
+          monthly_promo_discount: number | null
+          monthly_promo_expires_at: string | null
           monthly_value: number
           observation: string | null
           semiannual_discount: number | null
+          semiannual_promo_discount: number | null
+          semiannual_promo_expires_at: string | null
           semiannual_value: number
           title: string
           updated_at: string
         }
         Insert: {
           annual_discount?: number | null
+          annual_promo_discount?: number | null
+          annual_promo_expires_at?: string | null
           annual_value?: number
           avulso_discount?: number | null
+          avulso_promo_discount?: number | null
+          avulso_promo_expires_at?: string | null
           avulso_value?: number
           category_id?: string | null
           contract_template_id?: string | null
@@ -2751,17 +2763,25 @@ export type Database = {
           description: string
           id?: string
           monthly_discount?: number | null
+          monthly_promo_discount?: number | null
+          monthly_promo_expires_at?: string | null
           monthly_value?: number
           observation?: string | null
           semiannual_discount?: number | null
+          semiannual_promo_discount?: number | null
+          semiannual_promo_expires_at?: string | null
           semiannual_value?: number
           title: string
           updated_at?: string
         }
         Update: {
           annual_discount?: number | null
+          annual_promo_discount?: number | null
+          annual_promo_expires_at?: string | null
           annual_value?: number
           avulso_discount?: number | null
+          avulso_promo_discount?: number | null
+          avulso_promo_expires_at?: string | null
           avulso_value?: number
           category_id?: string | null
           contract_template_id?: string | null
@@ -2769,9 +2789,13 @@ export type Database = {
           description?: string
           id?: string
           monthly_discount?: number | null
+          monthly_promo_discount?: number | null
+          monthly_promo_expires_at?: string | null
           monthly_value?: number
           observation?: string | null
           semiannual_discount?: number | null
+          semiannual_promo_discount?: number | null
+          semiannual_promo_expires_at?: string | null
           semiannual_value?: number
           title?: string
           updated_at?: string

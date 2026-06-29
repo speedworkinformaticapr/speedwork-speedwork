@@ -13,6 +13,13 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { calculatePrice, formatCurrency, type BillingCycle } from '@/lib/plan-pricing'
 
+const formatDateBR = (isoDate: string | null): string => {
+  if (!isoDate) return ''
+  const d = new Date(isoDate)
+  if (isNaN(d.getTime())) return ''
+  return d.toLocaleDateString('pt-BR')
+}
+
 export function DynamicPricingTableBlock({ data }: { data: any }) {
   const [servicesData, setServicesData] = useState<any[]>([])
   const [slasData, setSlasData] = useState<any[]>([])
@@ -71,26 +78,22 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
     )
   }
 
+  const cycleMap: Record<string, BillingCycle> = {
+    monthly: 'monthly',
+    semiannual: 'semiannual',
+    annual: 'annual',
+  }
+  const currentCycle = cycleMap[billingCycle]
+
   const getServiceCost = (srv: any) => {
-    const cycleMap: Record<string, BillingCycle> = {
-      monthly: 'monthly',
-      semiannual: 'semiannual',
-      annual: 'annual',
-    }
-    const breakdown = calculatePrice(srv, cycleMap[billingCycle])
+    const breakdown = calculatePrice(srv, currentCycle)
     return breakdown.promotionalPrice !== null
       ? breakdown.promotionalPrice
       : breakdown.standardDiscountedPrice
   }
 
   const hasServicePromo = (srv: any): boolean => {
-    const cycleMap: Record<string, BillingCycle> = {
-      monthly: 'monthly',
-      semiannual: 'semiannual',
-      annual: 'annual',
-    }
-    const breakdown = calculatePrice(srv, cycleMap[billingCycle])
-    return breakdown.hasActivePromo
+    return calculatePrice(srv, currentCycle).hasActivePromo
   }
 
   return (
@@ -152,16 +155,25 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
 
           const totalCost = planServices.reduce((acc, srv) => acc + getServiceCost(srv), 0)
           const totalStandard = planServices.reduce((acc, srv) => {
-            const cycleMap: Record<string, BillingCycle> = {
-              monthly: 'monthly',
-              semiannual: 'semiannual',
-              annual: 'annual',
-            }
-            const breakdown = calculatePrice(srv, cycleMap[billingCycle])
+            const breakdown = calculatePrice(srv, currentCycle)
             return acc + breakdown.standardDiscountedPrice
+          }, 0)
+          const totalBase = planServices.reduce((acc, srv) => {
+            const breakdown = calculatePrice(srv, currentCycle)
+            return acc + breakdown.baseValue
           }, 0)
 
           const hasPromo = planServices.some(hasServicePromo)
+          const hasPermanentDiscount = totalStandard < totalBase
+          const promoExpiryDates = planServices
+            .map((srv) => calculatePrice(srv, currentCycle).promoExpiresAt)
+            .filter((d): d is string => d !== null)
+          const earliestExpiry =
+            promoExpiryDates.length > 0
+              ? promoExpiryDates.reduce((earliest, d) =>
+                  new Date(d) < new Date(earliest) ? d : earliest,
+                )
+              : null
 
           return (
             <Card
@@ -286,8 +298,13 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
                 <div className="mb-6 flex flex-col items-center">
                   {hasPromo ? (
                     <div className="flex flex-col items-center">
-                      <span className="text-lg font-medium text-muted-foreground line-through mb-1">
-                        {formatCurrency(totalStandard)}
+                      {hasPermanentDiscount && (
+                        <span className="text-base font-medium text-muted-foreground line-through mb-1">
+                          {formatCurrency(totalBase)}
+                        </span>
+                      )}
+                      <span className="text-sm font-medium text-muted-foreground mb-1">
+                        Por: {formatCurrency(totalStandard)}
                       </span>
                       <div className="flex items-baseline gap-1">
                         <span className="text-4xl md:text-5xl font-black tracking-tight text-green-600">
@@ -299,8 +316,25 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
                         className="mt-2 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 gap-1"
                       >
                         <Flame className="w-3 h-3" />
-                        Preço Promocional
+                        Em Promoção
                       </Badge>
+                      {earliestExpiry && (
+                        <span className="text-xs text-muted-foreground mt-2">
+                          Oferta válida até {formatDateBR(earliestExpiry)}
+                        </span>
+                      )}
+                    </div>
+                  ) : hasPermanentDiscount ? (
+                    <div className="flex flex-col items-center">
+                      <span className="text-lg font-medium text-muted-foreground line-through mb-1">
+                        {formatCurrency(totalBase)}
+                      </span>
+                      <span className="text-sm font-medium text-muted-foreground mb-1">Por:</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-4xl md:text-5xl font-black tracking-tight text-foreground">
+                          {formatCurrency(totalStandard)}
+                        </span>
+                      </div>
                     </div>
                   ) : (
                     <div className="flex items-baseline gap-1">
@@ -310,14 +344,14 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
                     </div>
                   )}
                   <span className="text-sm font-medium text-muted-foreground mt-2 bg-muted/50 px-3 py-1 rounded-full">
-                    Cobrado{' '}
+                    Cobrada{' '}
                     {billingCycle === 'monthly'
                       ? 'mensalmente'
                       : billingCycle === 'semiannual'
                         ? 'semestralmente'
                         : 'anualmente'}
                   </span>
-                </div>
+                </div>{' '}
                 <Button
                   className="w-full font-bold h-12 text-base transition-all shadow-md hover:shadow-lg"
                   variant={isHighlighted ? 'default' : 'outline'}
