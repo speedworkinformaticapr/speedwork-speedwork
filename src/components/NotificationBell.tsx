@@ -9,6 +9,7 @@ import {
   FileText,
   Info,
   CheckCheck,
+  UserPlus,
 } from 'lucide-react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
@@ -81,6 +82,8 @@ export function NotificationBell({ mobile }: NotificationBellProps) {
         return <ShieldAlert className="w-5 h-5 text-destructive" />
       case 'blog':
         return <FileText className="w-5 h-5 text-orange-500" />
+      case 'lead':
+        return <UserPlus className="w-5 h-5 text-[#1B7D3A]" />
       default:
         return <Info className="w-5 h-5 text-muted-foreground" />
     }

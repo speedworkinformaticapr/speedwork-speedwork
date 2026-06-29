@@ -120,6 +120,11 @@ const AdminAddendumsList = lazy(() => import('./pages/admin/contracts/AddendumsL
 const AdminAddendumForm = lazy(() => import('./pages/admin/contracts/AddendumForm'))
 const QuoteForm = lazy(() => import('./pages/admin/quotes/QuoteForm'))
 const QuoteView = lazy(() => import('./pages/admin/quotes/QuoteView'))
+const AdminLeads = lazy(() => import('./pages/admin/commercial/AdminLeads'))
+const AdminPipeline = lazy(() => import('./pages/admin/commercial/AdminPipeline'))
+const AdminActivities = lazy(() => import('./pages/admin/commercial/AdminActivities'))
+const AdminDiagnosticForm = lazy(() => import('./pages/admin/commercial/AdminDiagnosticForm'))
+const AdminLeadDetail = lazy(() => import('./pages/admin/commercial/AdminLeadDetail'))
 
 function ScrollToHash() {
   const location = useLocation()
@@ -242,6 +247,11 @@ const App = () => (
                     <Route path="whatsapp" element={<AdminWhatsApp />} />
                     <Route path="email" element={<AdminEmail />} />
                     <Route path="commercial/appointments" element={<AdminAppointments />} />
+                    <Route path="commercial/leads" element={<AdminLeads />} />
+                    <Route path="commercial/leads/:id" element={<AdminLeadDetail />} />
+                    <Route path="commercial/pipeline" element={<AdminPipeline />} />
+                    <Route path="commercial/activities" element={<AdminActivities />} />
+                    <Route path="commercial/diagnostic-form" element={<AdminDiagnosticForm />} />
                     <Route path="dashboard" element={<AdminDashboard />} />
                     <Route path="settings/pages" element={<AdminPageList />} />
                     <Route path="settings/pages/new" element={<AdminPageForm />} />
