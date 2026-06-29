@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -62,6 +62,41 @@ export default function Login() {
       navigate('/client/dashboard', { replace: true })
     }
   }
+
+  useEffect(() => {
+    let cancelled = false
+    const checkExistingSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (cancelled) return
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role, mfa_enabled, mfa_verified')
+          .eq('id', session.user.id)
+          .maybeSingle()
+
+        if (cancelled) return
+
+        const isMfaEnabled = profile?.mfa_enabled ?? false
+        const isMfaVerified = profile?.mfa_verified ?? false
+
+        if (isMfaEnabled && !isMfaVerified) {
+          sessionStorage.setItem('mfa_pending', 'true')
+          navigate('/mfa-verify', { replace: true })
+          return
+        }
+
+        handleRedirect(profile?.role)
+      }
+    }
+    checkExistingSession()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
