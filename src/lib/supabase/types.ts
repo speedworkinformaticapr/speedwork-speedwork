@@ -2031,6 +2031,116 @@ export type Database = {
           },
         ]
       }
+      lead_activities: {
+        Row: {
+          completed: boolean
+          content: string | null
+          created_at: string
+          created_by: string | null
+          follow_up_date: string | null
+          id: string
+          lead_id: string
+          type: string
+        }
+        Insert: {
+          completed?: boolean
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          follow_up_date?: string | null
+          id?: string
+          lead_id: string
+          type?: string
+        }
+        Update: {
+          completed?: boolean
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          follow_up_date?: string | null
+          id?: string
+          lead_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'lead_activities_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'lead_activities_lead_id_fkey'
+            columns: ['lead_id']
+            isOneToOne: false
+            referencedRelation: 'leads'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          assigned_to: string | null
+          company: string | null
+          created_at: string
+          diagnostic_data: Json
+          email: string | null
+          id: string
+          last_activity_at: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          position: string | null
+          score: number
+          source: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          company?: string | null
+          created_at?: string
+          diagnostic_data?: Json
+          email?: string | null
+          id?: string
+          last_activity_at?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          position?: string | null
+          score?: number
+          source?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          company?: string | null
+          created_at?: string
+          diagnostic_data?: Json
+          email?: string | null
+          id?: string
+          last_activity_at?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          position?: string | null
+          score?: number
+          source?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'leads_assigned_to_fkey'
+            columns: ['assigned_to']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       maintenance_config: {
         Row: {
           bg_color: string
@@ -3975,6 +4085,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_lead_score: { Args: { diagnostic: Json }; Returns: number }
       increment_blog_view: { Args: { post_id: string }; Returns: undefined }
       is_master_user: { Args: never; Returns: boolean }
       save_quote_transaction: {
