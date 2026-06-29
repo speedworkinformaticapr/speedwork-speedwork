@@ -277,6 +277,13 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
           },
         ],
       },
+      {
+        title: 'Ação',
+        fields: [
+          { name: 'buttonText', label: 'Título do Botão', type: 'text', maxLength: 40 },
+          { name: 'link', label: 'Link Interno', type: 'text' },
+        ],
+      },
     ],
   },
   stats_counter: {

@@ -480,6 +480,18 @@ export function SectionRenderer({ section }: { section: any }) {
                 className="prose prose-lg text-muted-foreground"
                 dangerouslySetInnerHTML={{ __html: content }}
               />
+              {data.buttonText && data.link && (
+                <div className="pt-2">
+                  <Button asChild>
+                    {renderLink(
+                      data.link,
+                      <>
+                        {data.buttonText} <ArrowRight className="w-4 h-4 ml-2" />
+                      </>,
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
             <div className="flex-1 w-full">
               <img
