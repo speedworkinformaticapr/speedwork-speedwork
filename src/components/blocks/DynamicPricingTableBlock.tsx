@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Check, Info } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Check, Info, Flame } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import {
   Accordion,
@@ -10,6 +11,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { calculatePrice, formatCurrency, type BillingCycle } from '@/lib/plan-pricing'
 
 export function DynamicPricingTableBlock({ data }: { data: any }) {
   const [servicesData, setServicesData] = useState<any[]>([])
@@ -21,11 +23,10 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
     async function loadData() {
       setIsLoading(true)
       try {
-        console.log('[DynamicPricingTableBlock] Loading services and slas...')
         const { data: srvs, error: srvsError } = await supabase
           .from('plan_services')
           .select(
-            'id, title, description, monthly_value, semiannual_value, annual_value, monthly_discount, semiannual_discount, annual_discount',
+            'id, title, description, monthly_value, semiannual_value, annual_value, monthly_discount, semiannual_discount, annual_discount, monthly_promo_discount, semiannual_promo_discount, annual_promo_discount, monthly_promo_expires_at, semiannual_promo_expires_at, annual_promo_expires_at',
           )
         if (srvsError)
           console.error('[DynamicPricingTableBlock] Error fetching plan_services:', srvsError)
@@ -37,9 +38,6 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
         if (slasError)
           console.error('[DynamicPricingTableBlock] Error fetching sla_types:', slasError)
         if (slas) setSlasData(slas)
-        console.log(
-          `[DynamicPricingTableBlock] Loaded ${srvs?.length || 0} services and ${slas?.length || 0} slas.`,
-        )
       } catch (error) {
         console.error('[DynamicPricingTableBlock] Error loading pricing data:', error)
       } finally {
@@ -74,21 +72,25 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
   }
 
   const getServiceCost = (srv: any) => {
-    switch (billingCycle) {
-      case 'annual':
-        return Math.max(0, (Number(srv.annual_value) || 0) - (Number(srv.annual_discount) || 0))
-      case 'semiannual':
-        return Math.max(
-          0,
-          (Number(srv.semiannual_value) || 0) - (Number(srv.semiannual_discount) || 0),
-        )
-      default:
-        return Math.max(0, (Number(srv.monthly_value) || 0) - (Number(srv.monthly_discount) || 0))
+    const cycleMap: Record<string, BillingCycle> = {
+      monthly: 'monthly',
+      semiannual: 'semiannual',
+      annual: 'annual',
     }
+    const breakdown = calculatePrice(srv, cycleMap[billingCycle])
+    return breakdown.promotionalPrice !== null
+      ? breakdown.promotionalPrice
+      : breakdown.standardDiscountedPrice
   }
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+  const hasServicePromo = (srv: any): boolean => {
+    const cycleMap: Record<string, BillingCycle> = {
+      monthly: 'monthly',
+      semiannual: 'semiannual',
+      annual: 'annual',
+    }
+    const breakdown = calculatePrice(srv, cycleMap[billingCycle])
+    return breakdown.hasActivePromo
   }
 
   return (
@@ -149,6 +151,17 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
           const planSla = slasData.find((s) => s.id === plan.sla_id)
 
           const totalCost = planServices.reduce((acc, srv) => acc + getServiceCost(srv), 0)
+          const totalStandard = planServices.reduce((acc, srv) => {
+            const cycleMap: Record<string, BillingCycle> = {
+              monthly: 'monthly',
+              semiannual: 'semiannual',
+              annual: 'annual',
+            }
+            const breakdown = calculatePrice(srv, cycleMap[billingCycle])
+            return acc + breakdown.standardDiscountedPrice
+          }, 0)
+
+          const hasPromo = planServices.some(hasServicePromo)
 
           return (
             <Card
@@ -184,25 +197,39 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
                         Serviços Inclusos ({planServices.length})
                       </AccordionTrigger>
                       <AccordionContent className="pt-4 space-y-4">
-                        {planServices.map((srv) => (
-                          <div key={srv.id} className="flex items-start gap-3">
-                            <div className="mt-0.5 bg-green-100 dark:bg-green-900/30 p-1 rounded-full shrink-0">
-                              <Check className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                        {planServices.map((srv) => {
+                          const srvHasPromo = hasServicePromo(srv)
+                          return (
+                            <div key={srv.id} className="flex items-start gap-3">
+                              <div className="mt-0.5 bg-green-100 dark:bg-green-900/30 p-1 rounded-full shrink-0">
+                                <Check className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="text-sm font-semibold text-foreground [&_p]:mb-1 [&_p:last-child]:mb-0"
+                                    dangerouslySetInnerHTML={{ __html: srv.title }}
+                                  />
+                                  {srvHasPromo && (
+                                    <Badge
+                                      variant="secondary"
+                                      className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 gap-1 text-[10px] px-1.5 py-0"
+                                    >
+                                      <Flame className="w-2.5 h-2.5" />
+                                      Promo
+                                    </Badge>
+                                  )}
+                                </div>
+                                {srv.description && (
+                                  <div
+                                    className="text-xs text-muted-foreground mt-0.5 leading-relaxed [&_p]:mb-1 [&_p:last-child]:mb-0"
+                                    dangerouslySetInnerHTML={{ __html: srv.description }}
+                                  />
+                                )}
+                              </div>
                             </div>
-                            <div>
-                              <div
-                                className="text-sm font-semibold text-foreground [&_p]:mb-1 [&_p:last-child]:mb-0"
-                                dangerouslySetInnerHTML={{ __html: srv.title }}
-                              />
-                              {srv.description && (
-                                <div
-                                  className="text-xs text-muted-foreground mt-0.5 leading-relaxed [&_p]:mb-1 [&_p:last-child]:mb-0"
-                                  dangerouslySetInnerHTML={{ __html: srv.description }}
-                                />
-                              )}
-                            </div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </AccordionContent>
                     </AccordionItem>
                   ) : (
@@ -257,11 +284,31 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
 
               <div className="mt-8 pt-8 border-t border-border/50 text-center">
                 <div className="mb-6 flex flex-col items-center">
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-4xl md:text-5xl font-black tracking-tight text-foreground">
-                      {formatCurrency(totalCost)}
-                    </span>
-                  </div>
+                  {hasPromo ? (
+                    <div className="flex flex-col items-center">
+                      <span className="text-lg font-medium text-muted-foreground line-through mb-1">
+                        {formatCurrency(totalStandard)}
+                      </span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-4xl md:text-5xl font-black tracking-tight text-green-600">
+                          {formatCurrency(totalCost)}
+                        </span>
+                      </div>
+                      <Badge
+                        variant="secondary"
+                        className="mt-2 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 gap-1"
+                      >
+                        <Flame className="w-3 h-3" />
+                        Preço Promocional
+                      </Badge>
+                    </div>
+                  ) : (
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-4xl md:text-5xl font-black tracking-tight text-foreground">
+                        {formatCurrency(totalCost)}
+                      </span>
+                    </div>
+                  )}
                   <span className="text-sm font-medium text-muted-foreground mt-2 bg-muted/50 px-3 py-1 rounded-full">
                     Cobrado{' '}
                     {billingCycle === 'monthly'

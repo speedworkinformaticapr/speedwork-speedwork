@@ -1,10 +1,17 @@
 import { useEffect, useState } from 'react'
-import { Plus, Edit, Trash2, LayoutTemplate, AlertCircle } from 'lucide-react'
+import { Plus, Edit, Trash2, LayoutTemplate, AlertCircle, BadgePercent } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase/client'
 import { PlanServiceFormDialog, PlanServiceData } from './components/PlanServiceFormDialog'
+import {
+  calculatePrice,
+  formatCurrency,
+  isPromotionActive,
+  type BillingCycle,
+} from '@/lib/plan-pricing'
 
 export default function AdminPlanServices() {
   const [data, setData] = useState<any[]>([])
@@ -69,20 +76,32 @@ export default function AdminPlanServices() {
     }
   }
 
-  const formatCurrency = (val: number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
-
-  const renderPrice = (val: number, disc: number) => {
-    const descPrice = val - (val * (disc || 0)) / 100
-    if (disc > 0) {
+  const renderPrice = (item: any, cycle: BillingCycle) => {
+    const breakdown = calculatePrice(item, cycle)
+    if (breakdown.hasActivePromo && breakdown.promotionalPrice !== null) {
       return (
         <div className="flex flex-col">
-          <span className="line-through text-xs text-muted-foreground">{formatCurrency(val)}</span>
-          <span className="text-green-600 font-semibold">{formatCurrency(descPrice)}</span>
+          <span className="line-through text-xs text-muted-foreground">
+            {formatCurrency(breakdown.standardDiscountedPrice)}
+          </span>
+          <span className="text-green-600 font-semibold">
+            {formatCurrency(breakdown.promotionalPrice)}
+          </span>
         </div>
       )
     }
-    return <span className="font-semibold">{formatCurrency(val)}</span>
+    return (
+      <span className="font-semibold">{formatCurrency(breakdown.standardDiscountedPrice)}</span>
+    )
+  }
+
+  const hasAnyPromo = (item: any): boolean => {
+    return (
+      isPromotionActive(item.avulso_promo_discount, item.avulso_promo_expires_at) ||
+      isPromotionActive(item.monthly_promo_discount, item.monthly_promo_expires_at) ||
+      isPromotionActive(item.semiannual_promo_discount, item.semiannual_promo_expires_at) ||
+      isPromotionActive(item.annual_promo_discount, item.annual_promo_expires_at)
+    )
   }
 
   return (
@@ -151,21 +170,30 @@ export default function AdminPlanServices() {
               <tbody className="divide-y">
                 {data.map((item) => (
                   <tr key={item.id} className="hover:bg-muted/50 transition-colors">
-                    <td className="p-4 font-medium">{item.title}</td>
+                    <td className="p-4 font-medium">
+                      <div className="flex items-center gap-2">
+                        {item.title}
+                        {hasAnyPromo(item) && (
+                          <Badge
+                            variant="secondary"
+                            className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 gap-1"
+                          >
+                            <BadgePercent className="w-3 h-3" />
+                            Promo
+                          </Badge>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-4">{item.plan_categories?.title || '-'}</td>
                     <td className="p-4 text-muted-foreground">
                       {item.description.length > 50
                         ? `${item.description.substring(0, 50)}...`
                         : item.description}
                     </td>
-                    <td className="p-4">{renderPrice(item.avulso_value, item.avulso_discount)}</td>
-                    <td className="p-4">
-                      {renderPrice(item.monthly_value, item.monthly_discount)}
-                    </td>
-                    <td className="p-4">
-                      {renderPrice(item.semiannual_value, item.semiannual_discount)}
-                    </td>
-                    <td className="p-4">{renderPrice(item.annual_value, item.annual_discount)}</td>
+                    <td className="p-4">{renderPrice(item, 'avulso')}</td>
+                    <td className="p-4">{renderPrice(item, 'monthly')}</td>
+                    <td className="p-4">{renderPrice(item, 'semiannual')}</td>
+                    <td className="p-4">{renderPrice(item, 'annual')}</td>
                     <td className="p-4 text-right">
                       <div className="flex justify-end gap-2">
                         <Button

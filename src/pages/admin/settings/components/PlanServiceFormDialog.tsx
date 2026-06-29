@@ -33,6 +33,12 @@ import {
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 
+const promoField = (label: string) =>
+  z.object({
+    [`${label}_promo_discount`]: z.coerce.number().min(0).max(100).optional().default(0),
+    [`${label}_promo_expires_at`]: z.string().optional().nullable(),
+  })
+
 const schema = z.object({
   title: z.string().min(1, 'Obrigatório'),
   category_id: z.string().optional().nullable(),
@@ -46,6 +52,14 @@ const schema = z.object({
   semiannual_discount: z.coerce.number().min(0).max(100).optional().default(0),
   annual_discount: z.coerce.number().min(0).max(100).optional().default(0),
   observation: z.string().optional().default(''),
+  avulso_promo_discount: z.coerce.number().min(0).max(100).optional().default(0),
+  avulso_promo_expires_at: z.string().optional().nullable(),
+  monthly_promo_discount: z.coerce.number().min(0).max(100).optional().default(0),
+  monthly_promo_expires_at: z.string().optional().nullable(),
+  semiannual_promo_discount: z.coerce.number().min(0).max(100).optional().default(0),
+  semiannual_promo_expires_at: z.string().optional().nullable(),
+  annual_promo_discount: z.coerce.number().min(0).max(100).optional().default(0),
+  annual_promo_expires_at: z.string().optional().nullable(),
 })
 
 export type PlanServiceData = z.infer<typeof schema> & { id?: string }
@@ -55,6 +69,24 @@ interface Props {
   onOpenChange: (open: boolean) => void
   initialData: PlanServiceData | null
   onSave: (data: PlanServiceData) => Promise<void>
+}
+
+const toDateInputValue = (val: any): string => {
+  if (!val) return ''
+  try {
+    const d = new Date(val)
+    if (isNaN(d.getTime())) return ''
+    return d.toISOString().slice(0, 16)
+  } catch {
+    return ''
+  }
+}
+
+const toISOOrNull = (val: string | null | undefined): string | null => {
+  if (!val) return null
+  const d = new Date(val)
+  if (isNaN(d.getTime())) return null
+  return d.toISOString()
 }
 
 export function PlanServiceFormDialog({ open, onOpenChange, initialData, onSave }: Props) {
@@ -78,6 +110,14 @@ export function PlanServiceFormDialog({ open, onOpenChange, initialData, onSave 
       semiannual_discount: 0,
       annual_discount: 0,
       observation: '',
+      avulso_promo_discount: 0,
+      avulso_promo_expires_at: '',
+      monthly_promo_discount: 0,
+      monthly_promo_expires_at: '',
+      semiannual_promo_discount: 0,
+      semiannual_promo_expires_at: '',
+      annual_promo_discount: 0,
+      annual_promo_expires_at: '',
     },
   })
 
@@ -99,6 +139,16 @@ export function PlanServiceFormDialog({ open, onOpenChange, initialData, onSave 
           observation: initialData.observation || '',
           avulso_value: initialData.avulso_value || 0,
           avulso_discount: initialData.avulso_discount || 0,
+          avulso_promo_discount: (initialData as any).avulso_promo_discount || 0,
+          avulso_promo_expires_at: toDateInputValue((initialData as any).avulso_promo_expires_at),
+          monthly_promo_discount: (initialData as any).monthly_promo_discount || 0,
+          monthly_promo_expires_at: toDateInputValue((initialData as any).monthly_promo_expires_at),
+          semiannual_promo_discount: (initialData as any).semiannual_promo_discount || 0,
+          semiannual_promo_expires_at: toDateInputValue(
+            (initialData as any).semiannual_promo_expires_at,
+          ),
+          annual_promo_discount: (initialData as any).annual_promo_discount || 0,
+          annual_promo_expires_at: toDateInputValue((initialData as any).annual_promo_expires_at),
         })
       } else {
         form.reset({
@@ -114,16 +164,29 @@ export function PlanServiceFormDialog({ open, onOpenChange, initialData, onSave 
           semiannual_discount: 0,
           annual_discount: 0,
           observation: '',
+          avulso_promo_discount: 0,
+          avulso_promo_expires_at: '',
+          monthly_promo_discount: 0,
+          monthly_promo_expires_at: '',
+          semiannual_promo_discount: 0,
+          semiannual_promo_expires_at: '',
+          annual_promo_discount: 0,
+          annual_promo_expires_at: '',
         })
       }
     }
   }, [open, initialData, form])
 
   const onSubmit = async (values: PlanServiceData) => {
-    await onSave({
+    const payload = {
       ...values,
       category_id: values.category_id || null,
-    })
+      avulso_promo_expires_at: toISOOrNull(values.avulso_promo_expires_at),
+      monthly_promo_expires_at: toISOOrNull(values.monthly_promo_expires_at),
+      semiannual_promo_expires_at: toISOOrNull(values.semiannual_promo_expires_at),
+      annual_promo_expires_at: toISOOrNull(values.annual_promo_expires_at),
+    } as any
+    await onSave(payload)
   }
 
   const handleCreateCategory = async () => {
@@ -146,6 +209,21 @@ export function PlanServiceFormDialog({ open, onOpenChange, initialData, onSave 
       toast({ variant: 'destructive', title: 'Erro', description: err.message })
     }
   }
+
+  const promoFields: {
+    discount: keyof PlanServiceData
+    expires: keyof PlanServiceData
+    label: string
+  }[] = [
+    { discount: 'avulso_promo_discount', expires: 'avulso_promo_expires_at', label: 'Avulso' },
+    { discount: 'monthly_promo_discount', expires: 'monthly_promo_expires_at', label: 'Mensal' },
+    {
+      discount: 'semiannual_promo_discount',
+      expires: 'semiannual_promo_expires_at',
+      label: 'Semestral',
+    },
+    { discount: 'annual_promo_discount', expires: 'annual_promo_expires_at', label: 'Anual' },
+  ]
 
   return (
     <>
@@ -332,6 +410,53 @@ export function PlanServiceFormDialog({ open, onOpenChange, initialData, onSave 
                     </FormItem>
                   )}
                 />
+              </div>
+
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+                <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  Descontos Promocionais (cumulativos)
+                </h4>
+                <p className="text-xs text-muted-foreground">
+                  A promoção é aplicada sobre o preço já descontado. Expira automaticamente na data
+                  definida.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {promoFields.map((pf) => (
+                    <div key={pf.label} className="grid grid-cols-2 gap-3">
+                      <FormField
+                        control={form.control}
+                        name={pf.discount}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">% Promo {pf.label}</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="0.01" min="0" max="100" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={pf.expires}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Expira {pf.label}</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="datetime-local"
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <FormField
