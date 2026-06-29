@@ -1,35 +1,37 @@
 import { useState } from 'react'
-import { MessageCircle, Linkedin, Mail, Link2, Check } from 'lucide-react'
+import { Instagram, Twitter, Facebook, Link2, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface ShareButtonsProps {
   title: string
   url: string
+  tags?: string[]
 }
 
-export function ShareButtons({ title, url }: ShareButtonsProps) {
+export function ShareButtons({ title, url, tags = [] }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false)
   const encodedUrl = encodeURIComponent(url)
   const encodedTitle = encodeURIComponent(title)
+  const hashtags = tags.length > 0 ? tags.slice(0, 3).join(',') : 'footgolf,speedwork'
 
   const links = [
     {
-      label: 'WhatsApp',
-      icon: MessageCircle,
-      href: `https://wa.me/?text=${encodedTitle}%20${encodedUrl}`,
-      color: 'hover:bg-green-500/10 hover:text-green-600',
+      label: 'Instagram',
+      icon: Instagram,
+      href: 'https://www.instagram.com/',
+      color: 'hover:bg-pink-500/10 hover:text-pink-600',
     },
     {
-      label: 'LinkedIn',
-      icon: Linkedin,
-      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
-      color: 'hover:bg-blue-500/10 hover:text-blue-600',
+      label: 'X (Twitter)',
+      icon: Twitter,
+      href: `https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}&hashtags=${hashtags}`,
+      color: 'hover:bg-slate-500/10 hover:text-slate-700 dark:hover:text-slate-300',
     },
     {
-      label: 'Email',
-      icon: Mail,
-      href: `mailto:?subject=${encodedTitle}&body=${encodedUrl}`,
-      color: 'hover:bg-orange-500/10 hover:text-orange-600',
+      label: 'Facebook',
+      icon: Facebook,
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+      color: 'hover:bg-blue-600/10 hover:text-blue-600',
     },
   ]
 

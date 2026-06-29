@@ -29,6 +29,8 @@ export default function BlogList() {
   const [page, setPage] = useState(1)
   const postsPerPage = 6
 
+  const { t, tf } = useTranslation()
+
   useEffect(() => {
     loadPosts()
   }, [])
@@ -49,8 +51,6 @@ export default function BlogList() {
     t('blog.allCategories'),
     ...Array.from(new Set(posts.map((p) => p.category).filter(Boolean))),
   ]
-
-  const { t, tf } = useTranslation()
   const filteredPosts = posts.filter((post) => {
     const title = tf(post, 'title') || ''
     const summary = tf(post, 'summary') || ''

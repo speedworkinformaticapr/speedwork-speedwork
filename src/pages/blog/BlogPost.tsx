@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { blogService, BlogPost as BlogPostType, StepImage } from '@/services/blog'
 import { parseMarkdown, calculateReadTime } from '@/lib/markdown'
+import { distributeImagesInContent } from '@/lib/blog-content'
 import { useTranslation } from '@/hooks/use-translation'
 import { useSeo } from '@/hooks/use-seo'
 import { ReactionBar } from '@/components/blog/ReactionBar'
@@ -26,6 +27,16 @@ export default function BlogPost() {
     () => (Array.isArray(post?.step_images) ? post.step_images : []),
     [post],
   )
+  const firstImage = useMemo(() => stepImages[0] || null, [stepImages])
+  const lastImage = useMemo(
+    () => (stepImages.length >= 2 ? stepImages[stepImages.length - 1] : null),
+    [stepImages],
+  )
+  const middleImages = useMemo(
+    () => (stepImages.length > 2 ? stepImages.slice(1, -1) : []),
+    [stepImages],
+  )
+  const postTags = useMemo(() => (Array.isArray(post?.tags) ? (post.tags as string[]) : []), [post])
 
   useEffect(() => {
     if (!id) return
@@ -67,10 +78,15 @@ export default function BlogPost() {
           datePublished: post.published_at || post.created_at,
           author: { '@type': 'Organization', name: post.author_source || 'Speedwork' },
           articleSection: post.category || undefined,
-          keywords: Array.isArray(post.tags) ? post.tags.join(', ') : undefined,
+          keywords: postTags.join(', ') || undefined,
         }
       : undefined,
   })
+
+  const contentNodes = useMemo(() => {
+    if (!post) return []
+    return distributeImagesInContent(parseMarkdown(tf(post, 'content')).__html, middleImages)
+  }, [post, middleImages, tf])
 
   if (loading) {
     return (
@@ -130,7 +146,7 @@ export default function BlogPost() {
             {(post.view_count || 0) + 1} views
           </span>
         </div>
-        <ShareButtons title={pageTitle} url={window.location.href} />
+        <ShareButtons title={pageTitle} url={window.location.href} tags={postTags} />
       </div>
 
       {post.image_url && (
@@ -144,38 +160,31 @@ export default function BlogPost() {
       )}
 
       {post.introduction && (
-        <div
-          className="prose prose-lg dark:prose-invert max-w-none mb-8 text-lg font-medium text-foreground/80 border-l-4 border-primary pl-6"
-          dangerouslySetInnerHTML={parseMarkdown(tf(post, 'introduction'))}
-        />
-      )}
-
-      <div
-        className="prose prose-lg dark:prose-invert prose-headings:text-primary prose-a:text-primary hover:prose-a:text-primary/80 prose-img:rounded-xl max-w-none mb-12 text-foreground"
-        dangerouslySetInnerHTML={parseMarkdown(tf(post, 'content'))}
-      />
-
-      {stepImages.length > 0 && (
-        <div className="space-y-8 mb-12">
-          {stepImages.map(
-            (img, i) =>
-              img.url && (
-                <figure key={i} className="rounded-xl overflow-hidden">
-                  <img
-                    src={img.url}
-                    alt={img.description || `Imagem ${i + 1}`}
-                    className="w-full rounded-xl"
-                  />
-                  {img.description && (
-                    <figcaption className="text-sm text-muted-foreground mt-2 text-center italic">
-                      {img.description}
-                    </figcaption>
-                  )}
-                </figure>
-              ),
+        <div className="mb-8">
+          <div
+            className="prose prose-lg dark:prose-invert max-w-none text-lg font-medium text-foreground/80 border-l-4 border-primary pl-6"
+            dangerouslySetInnerHTML={parseMarkdown(tf(post, 'introduction'))}
+          />
+          {firstImage?.url && (
+            <figure className="mt-6 rounded-xl overflow-hidden">
+              <img
+                src={firstImage.url}
+                alt={firstImage.description || 'Imagem ilustrativa'}
+                className="w-full rounded-xl"
+              />
+              {firstImage.description && (
+                <figcaption className="text-sm text-muted-foreground mt-2 text-center italic">
+                  {firstImage.description}
+                </figcaption>
+              )}
+            </figure>
           )}
         </div>
       )}
+
+      <div className="prose prose-lg dark:prose-invert prose-headings:text-primary prose-a:text-primary hover:prose-a:text-primary/80 prose-img:rounded-xl max-w-none mb-12 text-foreground">
+        {contentNodes}
+      </div>
 
       {post.takeaways && (
         <div className="bg-primary/5 p-6 rounded-xl border border-primary/20 mb-12">
@@ -184,6 +193,20 @@ export default function BlogPost() {
             className="prose prose-sm dark:prose-invert max-w-none"
             dangerouslySetInnerHTML={parseMarkdown(post.takeaways)}
           />
+          {lastImage?.url && (
+            <figure className="mt-6 rounded-xl overflow-hidden">
+              <img
+                src={lastImage.url}
+                alt={lastImage.description || 'Imagem ilustrativa'}
+                className="w-full rounded-xl"
+              />
+              {lastImage.description && (
+                <figcaption className="text-sm text-muted-foreground mt-2 text-center italic">
+                  {lastImage.description}
+                </figcaption>
+              )}
+            </figure>
+          )}
         </div>
       )}
 
@@ -200,12 +223,12 @@ export default function BlogPost() {
         </div>
       )}
 
-      {Array.isArray(post.tags) && post.tags.length > 0 && (
+      {postTags.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-12">
           <span className="text-muted-foreground font-medium mr-2 self-center">
             {t('blog.tags')}
           </span>
-          {post.tags.map((tag, i) => (
+          {postTags.map((tag, i) => (
             <Badge key={i} variant="secondary">
               #{tag}
             </Badge>

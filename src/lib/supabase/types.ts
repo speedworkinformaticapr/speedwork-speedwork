@@ -568,6 +568,7 @@ export type Database = {
           author_name: string
           content: string
           created_at: string
+          email: string | null
           id: string
           post_id: string | null
           status: string | null
@@ -576,6 +577,7 @@ export type Database = {
           author_name: string
           content: string
           created_at?: string
+          email?: string | null
           id?: string
           post_id?: string | null
           status?: string | null
@@ -584,6 +586,7 @@ export type Database = {
           author_name?: string
           content?: string
           created_at?: string
+          email?: string | null
           id?: string
           post_id?: string | null
           status?: string | null
@@ -601,6 +604,7 @@ export type Database = {
       blog_posts: {
         Row: {
           author_id: string | null
+          author_source: string | null
           category: string | null
           conclusion: string | null
           conclusion_en: string | null
@@ -608,7 +612,9 @@ export type Database = {
           content: string | null
           content_en: string | null
           content_es: string | null
+          cover_alt_text: string | null
           created_at: string
+          cta_final: string | null
           id: string
           image_url: string | null
           introduction: string | null
@@ -616,17 +622,22 @@ export type Database = {
           introduction_es: string | null
           is_active: boolean | null
           published_at: string | null
+          seo_description: string | null
           status: string | null
+          step_images: Json | null
           summary: string | null
           summary_en: string | null
           summary_es: string | null
           tags: Json | null
+          takeaways: string | null
           title: string
           title_en: string | null
           title_es: string | null
+          view_count: number | null
         }
         Insert: {
           author_id?: string | null
+          author_source?: string | null
           category?: string | null
           conclusion?: string | null
           conclusion_en?: string | null
@@ -634,7 +645,9 @@ export type Database = {
           content?: string | null
           content_en?: string | null
           content_es?: string | null
+          cover_alt_text?: string | null
           created_at?: string
+          cta_final?: string | null
           id?: string
           image_url?: string | null
           introduction?: string | null
@@ -642,17 +655,22 @@ export type Database = {
           introduction_es?: string | null
           is_active?: boolean | null
           published_at?: string | null
+          seo_description?: string | null
           status?: string | null
+          step_images?: Json | null
           summary?: string | null
           summary_en?: string | null
           summary_es?: string | null
           tags?: Json | null
+          takeaways?: string | null
           title: string
           title_en?: string | null
           title_es?: string | null
+          view_count?: number | null
         }
         Update: {
           author_id?: string | null
+          author_source?: string | null
           category?: string | null
           conclusion?: string | null
           conclusion_en?: string | null
@@ -660,7 +678,9 @@ export type Database = {
           content?: string | null
           content_en?: string | null
           content_es?: string | null
+          cover_alt_text?: string | null
           created_at?: string
+          cta_final?: string | null
           id?: string
           image_url?: string | null
           introduction?: string | null
@@ -668,16 +688,78 @@ export type Database = {
           introduction_es?: string | null
           is_active?: boolean | null
           published_at?: string | null
+          seo_description?: string | null
           status?: string | null
+          step_images?: Json | null
           summary?: string | null
           summary_en?: string | null
           summary_es?: string | null
           tags?: Json | null
+          takeaways?: string | null
           title?: string
           title_en?: string | null
           title_es?: string | null
+          view_count?: number | null
         }
         Relationships: []
+      }
+      blog_ratings: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string | null
+          score: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id?: string | null
+          score: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string | null
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'blog_ratings_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'blog_posts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      blog_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id?: string | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'blog_reactions_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'blog_posts'
+            referencedColumns: ['id']
+          },
+        ]
       }
       campos_agendamento: {
         Row: {
@@ -3869,6 +3951,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      increment_blog_view: { Args: { post_id: string }; Returns: undefined }
       is_master_user: { Args: never; Returns: boolean }
       save_quote_transaction: {
         Args: { p_charges: Json; p_items: Json; p_quote: Json }
