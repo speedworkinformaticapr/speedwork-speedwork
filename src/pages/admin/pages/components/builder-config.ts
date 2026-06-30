@@ -12,6 +12,7 @@ export type FieldType =
   | 'sla_select'
   | 'services_multiselect'
   | 'anchor_id'
+  | 'service_select'
 
 export interface FieldDef {
   name: string
@@ -281,7 +282,8 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
         title: 'Ação',
         fields: [
           { name: 'buttonText', label: 'Título do Botão', type: 'text', maxLength: 40 },
-          { name: 'link', label: 'Link Interno', type: 'text' },
+          { name: 'service_slug', label: 'Serviço de Avaliação', type: 'service_select' },
+          { name: 'link', label: 'Link Interno (Manual)', type: 'text' },
         ],
       },
     ],

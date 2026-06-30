@@ -65,6 +65,37 @@ function SlaSelect({ value, onChange }: { value: string; onChange: (v: string) =
   )
 }
 
+function ServiceSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [services, setServices] = useState<any[]>([])
+  useEffect(() => {
+    import('@/lib/supabase/client').then(({ supabase }) => {
+      supabase
+        .from('services')
+        .select('id, title, evaluation_slug')
+        .not('evaluation_slug', 'is', null)
+        .order('title', { ascending: true })
+        .then(({ data }) => {
+          if (data) setServices(data)
+        })
+    })
+  }, [])
+
+  return (
+    <Select value={value || ''} onValueChange={onChange}>
+      <SelectTrigger className="h-8 text-xs">
+        <SelectValue placeholder="Selecione um serviço..." />
+      </SelectTrigger>
+      <SelectContent>
+        {services.map((srv) => (
+          <SelectItem key={srv.id} value={srv.evaluation_slug} className="text-xs">
+            {srv.title}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
 function ServicesMultiselect({
   value,
   onChange,
@@ -284,6 +315,7 @@ function FieldRenderer({
         />
       )}
       {field.type === 'sla_select' && <SlaSelect value={value} onChange={onChange} />}
+      {field.type === 'service_select' && <ServiceSelect value={value} onChange={onChange} />}
       {field.type === 'services_multiselect' && (
         <ServicesMultiselect value={value} onChange={onChange} />
       )}

@@ -2093,6 +2093,7 @@ export type Database = {
           phone: string | null
           position: string | null
           score: number
+          service_id: string | null
           source: string | null
           status: string
           updated_at: string
@@ -2110,6 +2111,7 @@ export type Database = {
           phone?: string | null
           position?: string | null
           score?: number
+          service_id?: string | null
           source?: string | null
           status?: string
           updated_at?: string
@@ -2127,6 +2129,7 @@ export type Database = {
           phone?: string | null
           position?: string | null
           score?: number
+          service_id?: string | null
           source?: string | null
           status?: string
           updated_at?: string
@@ -2137,6 +2140,13 @@ export type Database = {
             columns: ['assigned_to']
             isOneToOne: false
             referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'leads_service_id_fkey'
+            columns: ['service_id']
+            isOneToOne: false
+            referencedRelation: 'services'
             referencedColumns: ['id']
           },
         ]
@@ -3328,6 +3338,7 @@ export type Database = {
           cost_value: number | null
           created_at: string | null
           description: string | null
+          evaluation_slug: string | null
           exec_time: string | null
           id: string
           margin_time: number | null
@@ -3340,6 +3351,7 @@ export type Database = {
           cost_value?: number | null
           created_at?: string | null
           description?: string | null
+          evaluation_slug?: string | null
           exec_time?: string | null
           id?: string
           margin_time?: number | null
@@ -3352,6 +3364,7 @@ export type Database = {
           cost_value?: number | null
           created_at?: string | null
           description?: string | null
+          evaluation_slug?: string | null
           exec_time?: string | null
           id?: string
           margin_time?: number | null

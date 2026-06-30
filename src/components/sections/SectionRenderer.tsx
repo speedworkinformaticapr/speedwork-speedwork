@@ -463,6 +463,7 @@ export function SectionRenderer({ section }: { section: any }) {
       data.content ||
       '<p>Adicione um texto explicativo acompanhado de uma imagem representativa para ilustrar melhor a ideia.</p>'
     const imageUrl = data.imageUrl || 'https://img.usecurling.com/p/800/600?seed=text-image'
+    const effectiveLink = data.service_slug ? `/avaliar/${data.service_slug}` : data.link
     return (
       <section id={sectionId} className="py-24 w-full bg-background">
         <AnimatedWrapper animation={animation} className="container mx-auto px-4">
@@ -480,11 +481,11 @@ export function SectionRenderer({ section }: { section: any }) {
                 className="prose prose-lg text-muted-foreground"
                 dangerouslySetInnerHTML={{ __html: content }}
               />
-              {data.buttonText && data.link && (
+              {data.buttonText && effectiveLink && (
                 <div className="pt-2">
                   <Button asChild>
                     {renderLink(
-                      data.link,
+                      effectiveLink,
                       <>
                         {data.buttonText} <ArrowRight className="w-4 h-4 ml-2" />
                       </>,
