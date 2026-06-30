@@ -23,7 +23,7 @@ export default function AdminPlanServices() {
   const loadData = async () => {
     setStatus('loading')
     const { data: records, error } = await supabase
-      .from('plan_services' as any)
+      .from('services' as any)
       .select('*, plan_categories(title)')
       .order('created_at', { ascending: false })
 
@@ -45,12 +45,12 @@ export default function AdminPlanServices() {
     try {
       if (editingItem?.id) {
         const { error } = await supabase
-          .from('plan_services' as any)
+          .from('services' as any)
           .update(values)
           .eq('id', editingItem.id)
         if (error) throw error
       } else {
-        const { error } = await supabase.from('plan_services' as any).insert(values)
+        const { error } = await supabase.from('services' as any).insert(values)
         if (error) throw error
       }
       toast({ title: 'Sucesso', description: 'Serviço salvo com sucesso' })
@@ -65,7 +65,7 @@ export default function AdminPlanServices() {
     if (!window.confirm('Tem certeza que deseja remover este serviço?')) return
     try {
       const { error } = await supabase
-        .from('plan_services' as any)
+        .from('services' as any)
         .delete()
         .eq('id', id)
       if (error) throw error

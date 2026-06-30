@@ -81,7 +81,7 @@ export default function AdminContratoForm() {
       .select('id, name')
       .then(({ data }) => setSlas(data || []))
     supabase
-      .from('plan_services')
+      .from('services')
       .select('id, title, monthly_value, semiannual_value, annual_value, avulso_value')
       .order('title')
       .then(({ data }) => setServices(data || []))
