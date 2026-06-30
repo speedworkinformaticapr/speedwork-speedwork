@@ -4086,8 +4086,30 @@ export type Database = {
     }
     Functions: {
       calculate_lead_score: { Args: { diagnostic: Json }; Returns: number }
+      check_active_evaluation: {
+        Args: { p_email: string; p_service_slug: string }
+        Returns: {
+          created_at: string
+          diagnostic_data: Json
+          id: string
+          score: number
+          status: string
+        }[]
+      }
       increment_blog_view: { Args: { post_id: string }; Returns: undefined }
       is_master_user: { Args: never; Returns: boolean }
+      lookup_profile_by_cnpj: {
+        Args: { p_cnpj: string }
+        Returns: {
+          cpf_cnpj: string
+          email: string
+          id: string
+          name: string
+          phone: string
+          status: string
+          tipo_usuario: string
+        }[]
+      }
       save_quote_transaction: {
         Args: { p_charges: Json; p_items: Json; p_quote: Json }
         Returns: Json

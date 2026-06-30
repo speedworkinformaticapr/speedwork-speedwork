@@ -14,9 +14,8 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { fetchEvaluationLeads } from '@/services/evaluation'
 import { getClassificationInfo } from '@/lib/evaluation-scoring'
-import { EVALUATION_SERVICES } from '@/lib/evaluation-services'
 import type { Lead } from '@/services/leads'
-import { Eye, Copy, ExternalLink, ListChecks } from 'lucide-react'
+import { Eye, ListChecks } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -50,11 +49,6 @@ export default function AdminEvaluations() {
       l.email?.toLowerCase().includes(search.toLowerCase()),
   )
 
-  const copyLink = (slug: string) => {
-    navigator.clipboard.writeText(`${window.location.origin}/avaliar/${slug}`)
-    toast({ title: 'Link copiado!' })
-  }
-
   return (
     <div className="space-y-6 animate-fade-in p-6">
       <div>
@@ -65,39 +59,6 @@ export default function AdminEvaluations() {
           Avaliações públicas recebidas via formulário de diagnóstico.
         </p>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Links Públicos de Avaliação</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-            {EVALUATION_SERVICES.map((s) => (
-              <div
-                key={s.slug}
-                className="flex items-center justify-between border rounded-lg p-2 gap-2"
-              >
-                <span className="text-sm font-medium truncate">{s.name}</span>
-                <div className="flex items-center gap-1 shrink-0">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
-                    <a href={`/avaliar/${s.slug}`} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => copyLink(s.slug)}
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>
@@ -140,9 +101,7 @@ export default function AdminEvaluations() {
                     filtered.map((lead) => {
                       const scoreInfo = getClassificationInfo(lead.score)
                       const serviceName =
-                        lead.diagnostic_data?.serviceName ||
-                        lead.diagnostic_data?.service_slug ||
-                        '—'
+                        lead.service?.title || (lead.diagnostic_data as any)?.serviceName || '—'
                       return (
                         <TableRow key={lead.id}>
                           <TableCell className="font-medium">{lead.company || '—'}</TableCell>

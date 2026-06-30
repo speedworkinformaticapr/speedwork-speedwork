@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -13,9 +13,15 @@ import {
 import { IdentificationStep } from '@/components/evaluation/IdentificationStep'
 import { PainsStep } from '@/components/evaluation/PainsStep'
 import { ReviewStep } from '@/components/evaluation/ReviewStep'
-import { EVALUATION_SERVICES, getServiceBySlug } from '@/lib/evaluation-services'
+import { getServiceBySlug } from '@/lib/evaluation-services'
 import type { EvaluationFormData } from '@/lib/evaluation-scoring'
-import { lookupProfileByCnpj, checkActiveEvaluation, submitEvaluation } from '@/services/evaluation'
+import {
+  lookupProfileByCnpj,
+  checkActiveEvaluation,
+  submitEvaluation,
+  fetchServicesWithEvaluation,
+  fetchServiceByEvaluationSlug,
+} from '@/services/evaluation'
 import { toast } from '@/hooks/use-toast'
 import { CheckCircle2, Clock, ArrowRight } from 'lucide-react'
 import { format } from 'date-fns'
@@ -46,17 +52,54 @@ const emptyForm: EvaluationFormData = {
 export default function PublicEvaluation() {
   const { serviceSlug } = useParams()
   const navigate = useNavigate()
-  const initialService = serviceSlug ? getServiceBySlug(serviceSlug) : null
 
-  const [step, setStep] = useState<number>(initialService ? 0 : -1)
+  const [step, setStep] = useState<number>(serviceSlug ? 0 : -1)
   const [formData, setFormData] = useState<EvaluationFormData>({
     ...emptyForm,
-    serviceSlug: initialService?.slug || '',
-    serviceName: initialService?.name || '',
+    serviceSlug: serviceSlug || '',
   })
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
   const [duplicate, setDuplicate] = useState<any>(null)
+  const [dbServices, setDbServices] = useState<any[]>([])
+  const [loadingService, setLoadingService] = useState(!!serviceSlug)
+  const [serviceNotFound, setServiceNotFound] = useState(false)
+
+  useEffect(() => {
+    fetchServicesWithEvaluation()
+      .then(setDbServices)
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (!serviceSlug) {
+      setStep(-1)
+      setLoadingService(false)
+      return
+    }
+
+    setLoadingService(true)
+    setServiceNotFound(false)
+    fetchServiceByEvaluationSlug(serviceSlug)
+      .then((service) => {
+        if (service) {
+          setFormData((prev) => ({
+            ...prev,
+            serviceSlug: serviceSlug,
+            serviceName: service.title,
+            service_id: service.id,
+          }))
+          setStep(0)
+        } else {
+          setServiceNotFound(true)
+        }
+        setLoadingService(false)
+      })
+      .catch(() => {
+        setServiceNotFound(true)
+        setLoadingService(false)
+      })
+  }, [serviceSlug])
 
   const updateField = (field: keyof EvaluationFormData, value: any) =>
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -112,6 +155,36 @@ export default function PublicEvaluation() {
     }
   }
 
+  const selectService = (service: any) => {
+    updateField('serviceSlug', service.evaluation_slug)
+    updateField('serviceName', service.title)
+    updateField('service_id', service.id)
+    navigate(`/avaliar/${service.evaluation_slug}`, { replace: true })
+    setStep(0)
+  }
+
+  if (loadingService) {
+    return (
+      <div className="container max-w-2xl mx-auto py-16 px-4 text-center">
+        <p className="text-muted-foreground">Carregando...</p>
+      </div>
+    )
+  }
+
+  if (serviceNotFound) {
+    return (
+      <div className="container max-w-lg mx-auto py-16 px-4 text-center">
+        <h1 className="text-2xl font-bold mb-2">Serviço não encontrado</h1>
+        <p className="text-muted-foreground mb-6">
+          O serviço de avaliação solicitado não está disponível.
+        </p>
+        <Button onClick={() => navigate('/')} variant="outline">
+          Voltar ao Início
+        </Button>
+      </div>
+    )
+  }
+
   if (done) {
     return (
       <div className="container max-w-lg mx-auto py-12 px-4">
@@ -145,27 +218,32 @@ export default function PublicEvaluation() {
           <h1 className="text-3xl font-bold text-primary">Avaliação Gratuita de TI</h1>
           <p className="text-muted-foreground mt-2">Selecione a área que deseja avaliar</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {EVALUATION_SERVICES.map((s) => (
-            <Card key={s.slug} className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardContent
-                className="p-5 space-y-2"
-                onClick={() => {
-                  updateField('serviceSlug', s.slug)
-                  updateField('serviceName', s.name)
-                  navigate(`/avaliar/${s.slug}`, { replace: true })
-                  setStep(0)
-                }}
-              >
-                <h3 className="font-semibold text-primary">{s.name}</h3>
-                <p className="text-sm text-muted-foreground">{s.description}</p>
-                <div className="flex items-center text-sm text-primary font-medium pt-1">
-                  Iniciar <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {dbServices.length === 0 ? (
+          <p className="text-center text-muted-foreground py-8">
+            Nenhum serviço com formulário de avaliação disponível no momento.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {dbServices.map((s) => {
+              const evalConfig = s.evaluation_slug ? getServiceBySlug(s.evaluation_slug) : null
+              return (
+                <Card key={s.id} className="hover:shadow-md transition-shadow cursor-pointer">
+                  <CardContent className="p-5 space-y-2" onClick={() => selectService(s)}>
+                    <h3 className="font-semibold text-primary">{s.title}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {evalConfig?.description ||
+                        s.description ||
+                        'Avaliação técnica especializada'}
+                    </p>
+                    <div className="flex items-center text-sm text-primary font-medium pt-1">
+                      Iniciar <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        )}
       </div>
     )
   }
@@ -251,7 +329,7 @@ export default function PublicEvaluation() {
             >
               Começar nova
             </Button>
-            <Button onClick={loadDuplicateData}>Continar avaliação</Button>
+            <Button onClick={loadDuplicateData}>Continuar avaliação</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

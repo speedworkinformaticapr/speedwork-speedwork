@@ -17,7 +17,9 @@ export interface Lead {
   diagnostic_data: Record<string, any>
   last_activity_at: string | null
   notes: string | null
+  service_id: string | null
   assignee?: { id: string; name: string | null; photo_url: string | null } | null
+  service?: { id: string; title: string } | null
 }
 
 export interface LeadActivity {

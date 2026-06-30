@@ -13,7 +13,7 @@ import { useDataTable } from '@/hooks/use-data-table'
 import { DataTableToolbar } from '@/components/ui/data-table/data-table-toolbar'
 import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header'
 import { Button } from '@/components/ui/button'
-import { Trash2 } from 'lucide-react'
+import { Trash2, ExternalLink } from 'lucide-react'
 
 export default function AdminServices() {
   const [data, setData] = useState<any[]>([])
@@ -129,9 +129,22 @@ export default function AdminServices() {
                           : 'N/A'}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          {item.evaluation_slug && (
+                            <Button variant="ghost" size="icon" asChild title="Avaliação Pública">
+                              <a
+                                href={`/avaliar/${item.evaluation_slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </a>
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

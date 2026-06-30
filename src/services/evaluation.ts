@@ -78,6 +78,7 @@ export async function submitEvaluation(formData: EvaluationFormData) {
     source: 'Avaliação Pública',
     diagnostic_data: diagnosticData,
     last_activity_at: new Date().toISOString(),
+    service_id: formData.service_id || null,
   })
 
   if (error) throw error
@@ -87,9 +88,31 @@ export async function submitEvaluation(formData: EvaluationFormData) {
 export async function fetchEvaluationLeads(): Promise<Lead[]> {
   const { data, error } = await supabase
     .from('leads')
-    .select('*, assignee:profiles!leads_assigned_to_fkey(id, name, photo_url)')
+    .select(
+      '*, assignee:profiles!leads_assigned_to_fkey(id, name, photo_url), service:services(id, title)',
+    )
     .eq('source', 'Avaliação Pública')
     .order('created_at', { ascending: false })
   if (error) throw error
   return (data || []) as Lead[]
+}
+
+export async function fetchServicesWithEvaluation() {
+  const { data, error } = await supabase
+    .from('services')
+    .select('id, title, description, evaluation_slug')
+    .not('evaluation_slug', 'is', null)
+    .order('title', { ascending: true })
+  if (error) throw error
+  return data || []
+}
+
+export async function fetchServiceByEvaluationSlug(slug: string) {
+  const { data, error } = await supabase
+    .from('services')
+    .select('id, title, description, evaluation_slug')
+    .eq('evaluation_slug', slug)
+    .maybeSingle()
+  if (error) throw error
+  return data
 }
