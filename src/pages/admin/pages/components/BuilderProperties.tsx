@@ -72,7 +72,6 @@ function ServiceSelect({ value, onChange }: { value: string; onChange: (v: strin
       supabase
         .from('services')
         .select('id, title, evaluation_slug')
-        .not('evaluation_slug', 'is', null)
         .order('title', { ascending: true })
         .then(({ data }) => {
           if (data) setServices(data)
@@ -87,7 +86,7 @@ function ServiceSelect({ value, onChange }: { value: string; onChange: (v: strin
       </SelectTrigger>
       <SelectContent>
         {services.map((srv) => (
-          <SelectItem key={srv.id} value={srv.evaluation_slug} className="text-xs">
+          <SelectItem key={srv.id} value={srv.evaluation_slug || srv.id} className="text-xs">
             {srv.title}
           </SelectItem>
         ))}
@@ -107,7 +106,7 @@ function ServicesMultiselect({
   useEffect(() => {
     import('@/lib/supabase/client').then(({ supabase }) => {
       supabase
-        .from('plan_services')
+        .from('services')
         .select('id, title, category_id, plan_categories(title)')
         .then(({ data }) => {
           if (data) setServices(data)

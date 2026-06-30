@@ -1109,7 +1109,7 @@ export type Database = {
             foreignKeyName: 'contract_services_service_id_fkey'
             columns: ['service_id']
             isOneToOne: false
-            referencedRelation: 'plan_services'
+            referencedRelation: 'services'
             referencedColumns: ['id']
           },
         ]
@@ -2841,102 +2841,6 @@ export type Database = {
         }
         Relationships: []
       }
-      plan_services: {
-        Row: {
-          annual_discount: number | null
-          annual_promo_discount: number | null
-          annual_promo_expires_at: string | null
-          annual_value: number
-          avulso_discount: number | null
-          avulso_promo_discount: number | null
-          avulso_promo_expires_at: string | null
-          avulso_value: number
-          category_id: string | null
-          contract_template_id: string | null
-          created_at: string
-          description: string
-          id: string
-          monthly_discount: number | null
-          monthly_promo_discount: number | null
-          monthly_promo_expires_at: string | null
-          monthly_value: number
-          observation: string | null
-          semiannual_discount: number | null
-          semiannual_promo_discount: number | null
-          semiannual_promo_expires_at: string | null
-          semiannual_value: number
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          annual_discount?: number | null
-          annual_promo_discount?: number | null
-          annual_promo_expires_at?: string | null
-          annual_value?: number
-          avulso_discount?: number | null
-          avulso_promo_discount?: number | null
-          avulso_promo_expires_at?: string | null
-          avulso_value?: number
-          category_id?: string | null
-          contract_template_id?: string | null
-          created_at?: string
-          description: string
-          id?: string
-          monthly_discount?: number | null
-          monthly_promo_discount?: number | null
-          monthly_promo_expires_at?: string | null
-          monthly_value?: number
-          observation?: string | null
-          semiannual_discount?: number | null
-          semiannual_promo_discount?: number | null
-          semiannual_promo_expires_at?: string | null
-          semiannual_value?: number
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          annual_discount?: number | null
-          annual_promo_discount?: number | null
-          annual_promo_expires_at?: string | null
-          annual_value?: number
-          avulso_discount?: number | null
-          avulso_promo_discount?: number | null
-          avulso_promo_expires_at?: string | null
-          avulso_value?: number
-          category_id?: string | null
-          contract_template_id?: string | null
-          created_at?: string
-          description?: string
-          id?: string
-          monthly_discount?: number | null
-          monthly_promo_discount?: number | null
-          monthly_promo_expires_at?: string | null
-          monthly_value?: number
-          observation?: string | null
-          semiannual_discount?: number | null
-          semiannual_promo_discount?: number | null
-          semiannual_promo_expires_at?: string | null
-          semiannual_value?: number
-          title?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'plan_services_category_id_fkey'
-            columns: ['category_id']
-            isOneToOne: false
-            referencedRelation: 'plan_categories'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'plan_services_contract_template_id_fkey'
-            columns: ['contract_template_id']
-            isOneToOne: false
-            referencedRelation: 'contract_templates'
-            referencedColumns: ['id']
-          },
-        ]
-      }
       plano_contas: {
         Row: {
           codigo_estrutural: string
@@ -3335,6 +3239,16 @@ export type Database = {
       services: {
         Row: {
           add_time: string | null
+          annual_discount: number | null
+          annual_promo_discount: number | null
+          annual_promo_expires_at: string | null
+          annual_value: number
+          avulso_discount: number | null
+          avulso_promo_discount: number | null
+          avulso_promo_expires_at: string | null
+          avulso_value: number
+          category_id: string | null
+          contract_template_id: string | null
           cost_value: number | null
           created_at: string | null
           description: string | null
@@ -3342,12 +3256,31 @@ export type Database = {
           exec_time: string | null
           id: string
           margin_time: number | null
+          monthly_discount: number | null
+          monthly_promo_discount: number | null
+          monthly_promo_expires_at: string | null
+          monthly_value: number
+          observation: string | null
           sale_value: number | null
+          semiannual_discount: number | null
+          semiannual_promo_discount: number | null
+          semiannual_promo_expires_at: string | null
+          semiannual_value: number
           title: string
           updated_at: string | null
         }
         Insert: {
           add_time?: string | null
+          annual_discount?: number | null
+          annual_promo_discount?: number | null
+          annual_promo_expires_at?: string | null
+          annual_value?: number
+          avulso_discount?: number | null
+          avulso_promo_discount?: number | null
+          avulso_promo_expires_at?: string | null
+          avulso_value?: number
+          category_id?: string | null
+          contract_template_id?: string | null
           cost_value?: number | null
           created_at?: string | null
           description?: string | null
@@ -3355,12 +3288,31 @@ export type Database = {
           exec_time?: string | null
           id?: string
           margin_time?: number | null
+          monthly_discount?: number | null
+          monthly_promo_discount?: number | null
+          monthly_promo_expires_at?: string | null
+          monthly_value?: number
+          observation?: string | null
           sale_value?: number | null
+          semiannual_discount?: number | null
+          semiannual_promo_discount?: number | null
+          semiannual_promo_expires_at?: string | null
+          semiannual_value?: number
           title: string
           updated_at?: string | null
         }
         Update: {
           add_time?: string | null
+          annual_discount?: number | null
+          annual_promo_discount?: number | null
+          annual_promo_expires_at?: string | null
+          annual_value?: number
+          avulso_discount?: number | null
+          avulso_promo_discount?: number | null
+          avulso_promo_expires_at?: string | null
+          avulso_value?: number
+          category_id?: string | null
+          contract_template_id?: string | null
           cost_value?: number | null
           created_at?: string | null
           description?: string | null
@@ -3368,11 +3320,35 @@ export type Database = {
           exec_time?: string | null
           id?: string
           margin_time?: number | null
+          monthly_discount?: number | null
+          monthly_promo_discount?: number | null
+          monthly_promo_expires_at?: string | null
+          monthly_value?: number
+          observation?: string | null
           sale_value?: number | null
+          semiannual_discount?: number | null
+          semiannual_promo_discount?: number | null
+          semiannual_promo_expires_at?: string | null
+          semiannual_value?: number
           title?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'services_category_id_fkey'
+            columns: ['category_id']
+            isOneToOne: false
+            referencedRelation: 'plan_categories'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'services_contract_template_id_fkey'
+            columns: ['contract_template_id']
+            isOneToOne: false
+            referencedRelation: 'contract_templates'
+            referencedColumns: ['id']
+          },
+        ]
       }
       sla_types: {
         Row: {

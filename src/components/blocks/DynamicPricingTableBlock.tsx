@@ -31,7 +31,7 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
       setIsLoading(true)
       try {
         const { data: srvs, error: srvsError } = await supabase
-          .from('plan_services')
+          .from('services')
           .select(
             'id, title, description, monthly_value, semiannual_value, annual_value, monthly_discount, semiannual_discount, annual_discount, monthly_promo_discount, semiannual_promo_discount, annual_promo_discount, monthly_promo_expires_at, semiannual_promo_expires_at, annual_promo_expires_at',
           )
