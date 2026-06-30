@@ -102,6 +102,7 @@ export async function fetchServicesWithEvaluation() {
     .from('services')
     .select('id, title, description, evaluation_slug')
     .not('evaluation_slug', 'is', null)
+    .neq('evaluation_slug', 'automacao-comercial')
     .order('title', { ascending: true })
   if (error) throw error
   return data || []
