@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { useDataTable } from '@/hooks/use-data-table'
 import { DataTableToolbar } from '@/components/ui/data-table/data-table-toolbar'
 import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header'
-import { Trash2, ExternalLink, Plus, Edit } from 'lucide-react'
+import { Trash2, Plus, Edit } from 'lucide-react'
 import {
   calculatePrice,
   formatCurrency,
@@ -177,17 +177,6 @@ export default function AdminServices() {
                       <TableCell>{renderPrice(item, 'annual')}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          {item.evaluation_slug && (
-                            <Button variant="ghost" size="icon" asChild title="Avaliação Pública">
-                              <a
-                                href={`/avaliar/${item.evaluation_slug}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                              </a>
-                            </Button>
-                          )}
                           <Button
                             variant="ghost"
                             size="icon"

@@ -51,7 +51,7 @@ const NotFound = () => {
             size="lg"
             className="border-[#0052CC] text-[#0052CC] hover:bg-[#0052CC] hover:text-white font-bold rounded-full"
           >
-            <Link to="/tournaments">
+            <Link to="/eventos">
               <Search className="w-5 h-5 mr-2" />
               Ver Eventos
             </Link>
