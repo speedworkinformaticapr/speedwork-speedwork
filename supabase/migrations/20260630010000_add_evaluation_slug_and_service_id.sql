@@ -23,15 +23,17 @@ BEGIN
 END $$;
 
 -- Deduplicate evaluation_slugs: append short hash suffix to duplicates
+-- Use ctid (system column of type tid) for tiebreaker since min(uuid) doesn't exist
 DO $$
 BEGIN
   UPDATE public.services s1
   SET evaluation_slug = s1.evaluation_slug || '-' || substr(md5(s1.id::text), 1, 6)
   WHERE s1.evaluation_slug IS NOT NULL
-    AND s1.id NOT IN (
-      SELECT MIN(id) FROM public.services
-      WHERE evaluation_slug IS NOT NULL
-      GROUP BY evaluation_slug
+    AND s1.ctid NOT IN (
+      SELECT MIN(keep.ctid)
+      FROM public.services keep
+      WHERE keep.evaluation_slug IS NOT NULL
+      GROUP BY keep.evaluation_slug
     );
 END $$;
 
