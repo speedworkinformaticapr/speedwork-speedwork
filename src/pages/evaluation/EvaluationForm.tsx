@@ -12,6 +12,7 @@ import {
   lookupProfileByCnpj,
   checkActiveEvaluation,
 } from '@/services/evaluation'
+import { getServiceBySlug } from '@/lib/evaluation-services'
 import type { EvaluationFormData } from '@/lib/evaluation-scoring'
 import { useSeo } from '@/hooks/use-seo'
 import { useToast } from '@/hooks/use-toast'
@@ -64,9 +65,7 @@ export default function EvaluationForm() {
     }
     fetchServiceByEvaluationSlug(slug)
       .then((data) => {
-        if (!data) {
-          setNotFound(true)
-        } else {
+        if (data) {
           setService(data)
           setFormData((prev) => ({
             ...prev,
@@ -74,9 +73,45 @@ export default function EvaluationForm() {
             serviceName: data.title || '',
             service_id: data.id || '',
           }))
+        } else {
+          const localService = getServiceBySlug(slug)
+          if (localService) {
+            setService({
+              id: '',
+              title: localService.name,
+              description: localService.description,
+              evaluation_slug: localService.slug,
+            })
+            setFormData((prev) => ({
+              ...prev,
+              serviceSlug: slug,
+              serviceName: localService.name,
+              service_id: '',
+            }))
+          } else {
+            setNotFound(true)
+          }
         }
       })
-      .catch(() => setNotFound(true))
+      .catch(() => {
+        const localService = getServiceBySlug(slug || '')
+        if (localService) {
+          setService({
+            id: '',
+            title: localService.name,
+            description: localService.description,
+            evaluation_slug: localService.slug,
+          })
+          setFormData((prev) => ({
+            ...prev,
+            serviceSlug: slug || '',
+            serviceName: localService.name,
+            service_id: '',
+          }))
+        } else {
+          setNotFound(true)
+        }
+      })
       .finally(() => setLoading(false))
   }, [slug])
 

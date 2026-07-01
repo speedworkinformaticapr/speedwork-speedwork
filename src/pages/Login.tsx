@@ -206,7 +206,7 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <div className="hidden lg:flex w-1/2 relative overflow-hidden flex-col justify-center p-16">
+      <div className="hidden lg:flex w-1/2 relative overflow-hidden flex-col justify-center p-16 min-h-screen">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
