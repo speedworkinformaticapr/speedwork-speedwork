@@ -117,3 +117,8 @@ export async function fetchServiceByEvaluationSlug(slug: string) {
   if (error) throw error
   return data
 }
+
+export function buildEvaluationUrl(service: { evaluation_slug: string | null }): string | null {
+  if (!service.evaluation_slug) return null
+  return `/avaliar/${service.evaluation_slug}`
+}
