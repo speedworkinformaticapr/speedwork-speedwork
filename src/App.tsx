@@ -361,7 +361,7 @@ const App = () => (
 
                     <Route path="quote/approval/:id" element={<QuoteApprovalPortal />} />
 
-                    {/* Public Evaluation Form — accessible without authentication */}
+                    {/* Public Evaluation Form — accessible without authentication (no login required) */}
                     <Route path="avaliar/:slug" element={<EvaluationForm />} />
 
                     {/* Evaluation Success Page — accessible without authentication */}

@@ -85,6 +85,7 @@ export function PainsStep({ formData, updateField, onNext, onBack }: Props) {
       <div className="space-y-2">
         <Label>Descreva sua principal dor *</Label>
         <Textarea
+          showAIGenerator={false}
           value={formData.principal_dor}
           onChange={(e) => updateField('principal_dor', e.target.value)}
           placeholder="Descreva em detalhes o maior problema que sua empresa enfrenta..."
@@ -134,6 +135,7 @@ export function PainsStep({ formData, updateField, onNext, onBack }: Props) {
       <div className="space-y-2">
         <Label>Solução Atual (como lidam hoje)</Label>
         <Textarea
+          showAIGenerator={false}
           value={formData.solucao_atual}
           onChange={(e) => updateField('solucao_atual', e.target.value)}
           placeholder="Descreva como vocês tentam resolver hoje..."

@@ -41,6 +41,7 @@ export function IdentificationStep({ formData, updateField, onNext, onBack, onCn
         <div className="space-y-2 md:col-span-2">
           <Label>Nome da Empresa *</Label>
           <Input
+            showAIGenerator={false}
             value={formData.nome_empresa}
             onChange={(e) => updateField('nome_empresa', e.target.value)}
             placeholder="Empresa Ltda"
@@ -49,6 +50,7 @@ export function IdentificationStep({ formData, updateField, onNext, onBack, onCn
         <div className="space-y-2">
           <Label>CNPJ *</Label>
           <Input
+            showAIGenerator={false}
             value={formData.cnpj}
             onChange={(e) => updateField('cnpj', formatCnpj(e.target.value))}
             onBlur={onCnpjBlur}
@@ -58,6 +60,7 @@ export function IdentificationStep({ formData, updateField, onNext, onBack, onCn
         <div className="space-y-2">
           <Label>Email Corporativo *</Label>
           <Input
+            showAIGenerator={false}
             type="email"
             value={formData.email_corporativo}
             onChange={(e) => updateField('email_corporativo', e.target.value)}
@@ -67,6 +70,7 @@ export function IdentificationStep({ formData, updateField, onNext, onBack, onCn
         <div className="space-y-2">
           <Label>Telefone / WhatsApp *</Label>
           <Input
+            showAIGenerator={false}
             value={formData.telefone_whatsapp}
             onChange={(e) => updateField('telefone_whatsapp', formatPhone(e.target.value))}
             placeholder="(11) 99999-9999"
@@ -75,6 +79,7 @@ export function IdentificationStep({ formData, updateField, onNext, onBack, onCn
         <div className="space-y-2">
           <Label>Nome do Contato *</Label>
           <Input
+            showAIGenerator={false}
             value={formData.nome_contato}
             onChange={(e) => updateField('nome_contato', e.target.value)}
             placeholder="João Silva"
@@ -83,6 +88,7 @@ export function IdentificationStep({ formData, updateField, onNext, onBack, onCn
         <div className="space-y-2">
           <Label>Cargo *</Label>
           <Input
+            showAIGenerator={false}
             value={formData.cargo_contato}
             onChange={(e) => updateField('cargo_contato', e.target.value)}
             placeholder="Diretor de TI"
@@ -108,6 +114,7 @@ export function IdentificationStep({ formData, updateField, onNext, onBack, onCn
         <div className="space-y-2">
           <Label>Segmento de Atuação</Label>
           <Input
+            showAIGenerator={false}
             value={formData.segmento_atuacao}
             onChange={(e) => updateField('segmento_atuacao', e.target.value)}
             placeholder="Ex: Varejo, Indústria, Serviços"
@@ -116,6 +123,7 @@ export function IdentificationStep({ formData, updateField, onNext, onBack, onCn
         <div className="space-y-2">
           <Label>Funcionários de TI</Label>
           <Input
+            showAIGenerator={false}
             type="number"
             value={formData.funcionarios_ti}
             onChange={(e) => updateField('funcionarios_ti', e.target.value)}
