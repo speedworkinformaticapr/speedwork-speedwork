@@ -30,6 +30,7 @@ import ClientDashboard from './pages/client/dashboard/ClientDashboard'
 import Scheduling from './pages/Scheduling'
 import PublicScheduling from './pages/PublicScheduling'
 import PublicSchedulingCancel from './pages/PublicSchedulingCancel'
+import EvaluationForm from './pages/evaluation/EvaluationForm'
 import QuoteApprovalPortal from './pages/client/quotes/QuoteApprovalPortal'
 import { AuthProvider } from './hooks/use-auth'
 import { TranslationProvider } from './hooks/use-translation'
@@ -358,6 +359,9 @@ const App = () => (
                     <Route path="agendar/cancelar/:id" element={<PublicSchedulingCancel />} />
 
                     <Route path="quote/approval/:id" element={<QuoteApprovalPortal />} />
+
+                    {/* Public Evaluation Form — accessible without authentication */}
+                    <Route path="avaliar/:slug" element={<EvaluationForm />} />
 
                     {/* Catch-all dynamic routing evaluated only if everything above fails */}
                     <Route path=":slug" element={<PublicPage />} />

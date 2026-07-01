@@ -46,8 +46,13 @@ export function BlockRenderer({ block }: { block: any }) {
       )
     case 'hero':
       return <SectionRenderer section={{ type: 'hero', data: block.data, id: blockId }} />
-    case 'text_image':
-      return <SectionRenderer section={{ type: 'text_image', data: block.data, id: blockId }} />
+    case 'text_image': {
+      const textImageData = { ...block.data }
+      if (textImageData.service_slug && !textImageData.link) {
+        textImageData.link = `/avaliar/${textImageData.service_slug}`
+      }
+      return <SectionRenderer section={{ type: 'text_image', data: textImageData, id: blockId }} />
+    }
     case 'features':
     case 'feature_cards':
       return <SectionRenderer section={{ type: 'feature_cards', data: block.data, id: blockId }} />
