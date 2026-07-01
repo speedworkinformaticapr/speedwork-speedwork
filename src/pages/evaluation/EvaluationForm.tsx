@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Loader2, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react'
@@ -41,6 +41,7 @@ const STEP_LABELS = ['Identificação', 'Dores', 'Revisão']
 
 export default function EvaluationForm() {
   const { slug } = useParams()
+  const navigate = useNavigate()
   const [service, setService] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [step, setStep] = useState(0)
@@ -125,6 +126,7 @@ export default function EvaluationForm() {
       await submitEvaluation(formData)
       setSubmitted(true)
       toast({ title: 'Avaliação enviada!', description: 'Em breve entraremos em contato.' })
+      navigate('/sucesso-avaliacao')
     } catch (err: any) {
       toast({
         title: 'Erro ao enviar',
