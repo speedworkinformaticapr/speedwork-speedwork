@@ -129,6 +129,7 @@ const AdminDiagnosticForm = lazy(() => import('./pages/admin/commercial/AdminDia
 const AdminLeadDetail = lazy(() => import('./pages/admin/commercial/AdminLeadDetail'))
 const AdminEvaluations = lazy(() => import('./pages/admin/commercial/AdminEvaluations'))
 const AdminEvaluationDetail = lazy(() => import('./pages/admin/commercial/AdminEvaluationDetail'))
+const AdminAthletes = lazy(() => import('./pages/admin/business/AdminAthletes'))
 
 function ScrollToHash() {
   const location = useLocation()
@@ -310,6 +311,7 @@ const App = () => (
                     <Route path="ecommerce/checkout-config" element={<AdminCheckoutConfig />} />
                     <Route path="ecommerce/orders" element={<AdminOrders />} />
                     <Route path="ecommerce/logistics" element={<AdminLogistics />} />
+                    <Route path="sports/athletes" element={<AdminAthletes />} />
                   </Route>
 
                   {/* Public and Dynamic Routes - Placed last so the catch-all dynamic route does not intercept static ones */}

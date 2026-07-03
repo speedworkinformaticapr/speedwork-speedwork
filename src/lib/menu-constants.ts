@@ -113,6 +113,12 @@ export const DEFAULT_MENU_CONFIG: MenuConfig[] = [
     ],
   },
   {
+    id: 'esportes',
+    label: 'Esportes',
+    icon: 'Trophy',
+    submenus: [{ id: 'athletes', label: 'Atletas', url: '/admin/sports/athletes' }],
+  },
+  {
     id: 'configuracoes',
     label: 'Configurações',
     icon: 'Settings',
