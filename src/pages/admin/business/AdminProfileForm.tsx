@@ -126,14 +126,21 @@ export default function AdminProfileForm() {
       return
     }
 
+    const sanitizedValues = {
+      ...values,
+      birth_date: values.birth_date ? values.birth_date : null,
+    }
+
     try {
       if (isEditing) {
-        const { error } = await supabase.from('profiles').update(values).eq('id', id)
+        const { error } = await supabase.from('profiles').update(sanitizedValues).eq('id', id)
         if (error) throw error
         toast({ title: 'Perfil atualizado com sucesso' })
       } else {
         const newId = crypto.randomUUID()
-        const { error } = await supabase.from('profiles').insert([{ ...values, id: newId }])
+        const { error } = await supabase
+          .from('profiles')
+          .insert([{ ...sanitizedValues, id: newId }])
         if (error) throw error
         toast({ title: 'Perfil criado com sucesso' })
       }
