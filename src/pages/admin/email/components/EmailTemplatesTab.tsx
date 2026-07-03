@@ -86,9 +86,23 @@ export default function EmailTemplatesTab() {
 
   const generatePreview = (bodyContent: string) => {
     const sn = data?.razao_social || data?.platform_name || 'Speedwork'
-    const logo = data?.logo_url
-      ? `<img src="${data.logo_url}" alt="Logo" style="max-height: 80px; max-width: 250px; display: block; margin: 0 auto;" />`
-      : `<h1 style="color: ${BRAND_COLOR}; margin: 0; font-size: 24px;">${sn}</h1>`
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, '') || ''
+    const publicBaseUrl = 'https://www.speedworkinformatica.com'
+    let resolvedLogoUrl = data?.logo_url || ''
+    if (resolvedLogoUrl) {
+      if (!resolvedLogoUrl.startsWith('http://') && !resolvedLogoUrl.startsWith('https://')) {
+        if (resolvedLogoUrl.startsWith('/storage/')) {
+          resolvedLogoUrl = `${supabaseUrl}${resolvedLogoUrl}`
+        } else if (resolvedLogoUrl.startsWith('/')) {
+          resolvedLogoUrl = `${publicBaseUrl}${resolvedLogoUrl}`
+        } else {
+          resolvedLogoUrl = `${publicBaseUrl}/${resolvedLogoUrl}`
+        }
+      }
+    }
+    const logo = resolvedLogoUrl
+      ? `<img src="${resolvedLogoUrl}" alt="${sn}" width="250" height="80" style="max-height: 80px; max-width: 250px; width: auto; height: auto; display: block; margin: 0 auto; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic;" />`
+      : `<h1 style="color: ${BRAND_COLOR}; margin: 0; font-size: 24px; font-family: Arial, Helvetica, sans-serif;">${sn}</h1>`
     const addr =
       [data?.address_street, data?.address_city].filter(Boolean).join(' - ') ||
       'Endereço da Empresa'
@@ -97,24 +111,47 @@ export default function EmailTemplatesTab() {
     const responsibleName = data?.responsible_name || 'Administrador'
     const responsibleRole = data?.responsible_role || 'Administrador'
     const email = data?.email || 'contato@speedwork.com.br'
-    return `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-        <div style="background-color: #f5f5f5; padding: 25px 20px; text-align: center; border-bottom: 4px solid ${BRAND_COLOR};">
-          ${logo}
-        </div>
-        <div style="padding: 40px 30px; color: #333333; line-height: 1.6; font-size: 16px;">
-          ${bodyContent}
-        </div>
-        <div style="background-color: #f9f9f9; padding: 30px 20px; text-align: center; border-top: 1px solid #e0e0e0; font-size: 13px; color: #666666; line-height: 1.6;">
-          <p style="margin: 0 0 15px 0; font-size: 15px; color: #1D4ED8;"><strong>${responsibleName}</strong><br><span style="font-size: 13px; color: #666;">${responsibleRole}</span></p>
-          <hr style="border: none; border-top: 1px solid #ddd; margin: 15px auto; width: 50%;" />
-          <p style="margin: 5px 0; color: #444;"><strong>${sn}</strong></p>
-          <p style="margin: 5px 0;">CNPJ: ${cnpj}</p>
-          <p style="margin: 5px 0;">${addr}</p>
-          <p style="margin: 5px 0;">Telefone: ${phone} | E-mail: ${email}</p>
-        </div>
-      </div>
-    `
+    return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="x-apple-disable-message-reformatting" />
+</head>
+<body style="margin: 0; padding: 0; background-color: #f0f0f0; font-family: Arial, Helvetica, sans-serif; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; line-height: 1.6;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f0f0f0;">
+    <tr>
+      <td align="center" style="padding: 20px 10px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; width: 100%; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+          <tr>
+            <td align="center" style="background-color: #f5f5f5; padding: 25px 20px; border-bottom: 4px solid ${BRAND_COLOR};">
+              ${logo}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px 30px; color: #333333; line-height: 1.6; font-size: 16px;">
+              ${bodyContent}
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #f9f9f9; padding: 30px 20px; text-align: center; border-top: 1px solid #e0e0e0; font-size: 13px; color: #666666; line-height: 1.6;">
+              <p style="margin: 0 0 15px 0; font-size: 15px; color: #1D4ED8;"><strong>${responsibleName}</strong><br /><span style="font-size: 13px; color: #666666;">${responsibleRole}</span></p>
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 15px auto;">
+                <tr><td style="border-top: 1px solid #dddddd; line-height: 0; font-size: 0; height: 1px; width: 200px;">&nbsp;</td></tr>
+              </table>
+              <p style="margin: 5px 0; color: #444444;"><strong>${sn}</strong></p>
+              <p style="margin: 5px 0;">CNPJ: ${cnpj}</p>
+              <p style="margin: 5px 0;">${addr}</p>
+              <p style="margin: 5px 0;">Telefone: ${phone} | E-mail: ${email}</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
   }
 
   const handleTestEmail = async () => {
