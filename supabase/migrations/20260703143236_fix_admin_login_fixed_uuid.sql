@@ -1,18 +1,23 @@
 -- ============================================================
 -- Fix invalid_credentials error for ias2371@gmail.com
--- Uses a FIXED UUID to maintain consistent FK relationships
--- Ensures all auth.users token columns are '' (never NULL)
+-- Resolves the FK violation by NOT changing auth.users.id
+-- Captures the existing user's real UUID for downstream inserts
 -- Password: Sp23Wk71@1994
 -- ============================================================
 
 DO $$
 DECLARE
-  v_user_id uuid := 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+  v_user_id uuid;
   v_email text := 'ias2371@gmail.com';
   v_password text := 'Sp23Wk71@1994';
 BEGIN
-  -- Create the auth user if it does not exist (idempotent)
-  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = v_email) THEN
+  -- Check if the auth user already exists and capture its real id
+  SELECT id INTO v_user_id FROM auth.users WHERE email = v_email LIMIT 1;
+
+  IF v_user_id IS NULL THEN
+    -- User does not exist: create with a fixed UUID
+    v_user_id := 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+
     INSERT INTO auth.users (
       id,
       instance_id,
@@ -61,11 +66,9 @@ BEGIN
       ''
     );
   ELSE
-    -- User exists: force-update password, confirm email, clear blocks,
-    -- and sync the UUID so FK relationships are consistent
+    -- User exists: update password and fields WITHOUT changing id
     UPDATE auth.users
     SET
-      id = v_user_id,
       encrypted_password = crypt(v_password, gen_salt('bf')),
       email_confirmed_at = NOW(),
       email = v_email,
