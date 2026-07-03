@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -65,9 +65,42 @@ export default function AdminFinancialPaymentForm() {
     realized_date: new Date().toISOString().split('T')[0],
   })
 
+  const { id } = useParams()
+  const isEditMode = !!id
+
   useEffect(() => {
     fetchPlanoContas()
-  }, [])
+    if (isEditMode) fetchRecordForEdit()
+  }, [id])
+
+  const fetchRecordForEdit = async () => {
+    const { data: master, error } = await supabase
+      .from('financial_master_records')
+      .select('*')
+      .eq('id', id)
+      .single()
+    if (error || !master) return
+
+    const { data: charges } = await supabase
+      .from('financial_charges')
+      .select('*')
+      .eq('master_record_id', id)
+      .order('parcela_numero', { ascending: true })
+
+    setFormData((prev) => ({
+      ...prev,
+      type: master.type || 'receivable',
+      category: master.category || 'Geral',
+      client_id: master.client_id || '',
+      client_name: master.client_name || '',
+      description: master.description || '',
+      total_amount: master.total_amount || 0,
+      status: master.status || 'pendente',
+      is_avulso: !master.client_id,
+      conta_id: charges?.[0]?.conta_id || '',
+      installments: charges?.length || 1,
+    }))
+  }
 
   const fetchPlanoContas = async () => {
     const { data } = await supabase
@@ -170,9 +203,29 @@ export default function AdminFinancialPaymentForm() {
   const handleSave = async () => {
     try {
       if (!formData.client_name) throw new Error('Nome do Cliente/Fornecedor é obrigatório')
-      if (!formData.conta_id) throw new Error('Plano de Contas é obrigatório')
       if (!formData.description) throw new Error('Descrição é obrigatória')
       if (formData.total_amount <= 0) throw new Error('Valor deve ser maior que zero')
+
+      if (isEditMode) {
+        const { error: updateError } = await supabase
+          .from('financial_master_records')
+          .update({
+            description: formData.description,
+            client_name: formData.client_name,
+            client_id: formData.client_id || null,
+            total_amount: formData.total_amount,
+            status: formData.status,
+            type: formData.type,
+            category: formData.category,
+          })
+          .eq('id', id)
+        if (updateError) throw updateError
+        toast({ title: 'Sucesso', description: 'Registro atualizado com sucesso.' })
+        navigate('/admin/financial/payments')
+        return
+      }
+
+      if (!formData.conta_id) throw new Error('Plano de Contas é obrigatório')
 
       let paidAmount = 0
       if (formData.status === 'pago') paidAmount = formData.total_amount
@@ -242,7 +295,9 @@ export default function AdminFinancialPaymentForm() {
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div className="flex items-center space-x-3">
         <CreditCard className="w-8 h-8 text-primary" />
-        <h1 className="text-3xl font-bold tracking-tight">Novo Lançamento Financeiro</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {isEditMode ? 'Editar Lançamento Financeiro' : 'Novo Lançamento Financeiro'}
+        </h1>
       </div>
 
       <Card className="border-t-4 border-t-primary shadow-sm">
