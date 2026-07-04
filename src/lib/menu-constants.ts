@@ -85,6 +85,7 @@ export const DEFAULT_MENU_CONFIG: MenuConfig[] = [
         icon: 'Wallet',
       },
       { id: 'chart-of-accounts', label: 'Plano de Contas', url: '/admin/financial/accounts' },
+      { id: 'bank-accounts', label: 'Contas Bancárias', url: '/admin/financial/bank-accounts' },
       { id: 'categories', label: 'Categorias', url: '/admin/financial/categories' },
       { id: 'partners', label: 'Parceiros', url: '/admin/financial/partners' },
       { id: 'billing-logs', label: 'Logs de Faturamento', url: '/admin/financial/billing-logs' },

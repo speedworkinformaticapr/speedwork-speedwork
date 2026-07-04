@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -25,15 +25,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
+import { Badge } from '@/components/ui/badge'
 import { Plus, Edit2, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
-import { Badge } from '@/components/ui/badge'
 
 export default function AdminChartOfAccounts() {
   const [accounts, setAccounts] = useState<any[]>([])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [formData, setFormData] = useState<any>({ natureza: 'receita' })
+  const [formData, setFormData] = useState<any>({ natureza: 'C', is_active: true })
   const [isSaving, setIsSaving] = useState(false)
   const { toast } = useToast()
 
@@ -46,13 +47,21 @@ export default function AdminChartOfAccounts() {
     loadData()
   }, [])
 
+  const parentIds = useMemo(
+    () => new Set(accounts.filter((a) => a.conta_pai_id).map((a) => a.conta_pai_id)),
+    [accounts],
+  )
+
+  const isAnalytical = (acct: any) => !parentIds.has(acct.id)
+
   const handleOpen = (item?: any) => {
     setFormData(
       item || {
         codigo_estrutural: '',
         nome: '',
-        natureza: 'receita',
+        natureza: 'C',
         conta_pai_id: 'none',
+        is_active: true,
       },
     )
     setIsDialogOpen(true)
@@ -62,15 +71,14 @@ export default function AdminChartOfAccounts() {
     if (!formData.codigo_estrutural || !formData.nome) {
       return toast({ title: 'Preencha os campos obrigatórios', variant: 'destructive' })
     }
-
     setIsSaving(true)
     const payload = {
       codigo_estrutural: formData.codigo_estrutural,
       nome: formData.nome,
       natureza: formData.natureza,
       conta_pai_id: formData.conta_pai_id === 'none' ? null : formData.conta_pai_id,
+      is_active: formData.is_active ?? true,
     }
-
     try {
       if (formData.id) {
         await supabase.from('plano_contas').update(payload).eq('id', formData.id)
@@ -98,12 +106,26 @@ export default function AdminChartOfAccounts() {
     }
   }
 
+  const toggleActive = async (id: string, current: boolean) => {
+    await supabase.from('plano_contas').update({ is_active: !current }).eq('id', id)
+    loadData()
+  }
+
+  const getNaturezaBadge = (natureza: string) => {
+    if (natureza === 'C') return <Badge variant="default">Crédito (C)</Badge>
+    if (natureza === 'D') return <Badge variant="destructive">Débito (D)</Badge>
+    if (natureza === 'conta_bancaria') return <Badge variant="secondary">Conta Bancária</Badge>
+    return <Badge variant="outline">{natureza}</Badge>
+  }
+
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto w-full">
       <div className="flex justify-between items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-primary">Plano de Contas</h1>
-          <p className="text-muted-foreground mt-1">Gerencie a estrutura contábil (DRE).</p>
+          <p className="text-muted-foreground mt-1">
+            Gerencie a estrutura contábil com natureza D/C e contas analíticas/sintéticas.
+          </p>
         </div>
         <Button onClick={() => handleOpen()}>
           <Plus className="w-4 h-4 mr-2" /> Nova Conta
@@ -111,13 +133,15 @@ export default function AdminChartOfAccounts() {
       </div>
 
       <Card>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Código</TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Natureza</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Ativa</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -132,10 +156,17 @@ export default function AdminChartOfAccounts() {
                       <span className="font-semibold">{c.nome}</span>
                     )}
                   </TableCell>
+                  <TableCell>{getNaturezaBadge(c.natureza)}</TableCell>
                   <TableCell>
-                    <Badge variant={c.natureza === 'receita' ? 'default' : 'destructive'}>
-                      {c.natureza.toUpperCase()}
+                    <Badge variant={isAnalytical(c) ? 'outline' : 'secondary'}>
+                      {isAnalytical(c) ? 'Analítica' : 'Sintética'}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={c.is_active}
+                      onCheckedChange={() => toggleActive(c.id, c.is_active)}
+                    />
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" onClick={() => handleOpen(c)}>
@@ -154,7 +185,7 @@ export default function AdminChartOfAccounts() {
               ))}
               {accounts.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
                     Nenhuma conta cadastrada.
                   </TableCell>
                 </TableRow>
@@ -195,8 +226,9 @@ export default function AdminChartOfAccounts() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="receita">Receita</SelectItem>
-                  <SelectItem value="despesa">Despesa</SelectItem>
+                  <SelectItem value="C">Crédito (Receita)</SelectItem>
+                  <SelectItem value="D">Débito (Despesa)</SelectItem>
+                  <SelectItem value="conta_bancaria">Conta Bancária</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -220,6 +252,14 @@ export default function AdminChartOfAccounts() {
                     ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={formData.is_active}
+                onCheckedChange={(v) => setFormData({ ...formData, is_active: v })}
+                id="ca-active"
+              />
+              <Label htmlFor="ca-active">Conta Ativa</Label>
             </div>
           </div>
           <DialogFooter>

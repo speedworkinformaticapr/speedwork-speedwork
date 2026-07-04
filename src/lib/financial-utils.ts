@@ -43,3 +43,12 @@ export function formatCurrency(val: number): string {
 export function getTypeLabel(type?: string): string {
   return type === 'payable' ? 'Pagar' : 'Receber'
 }
+
+export function getNaturezaLabel(natureza: string): string {
+  if (natureza === 'D') return 'Débito (Despesa)'
+  if (natureza === 'C') return 'Crédito (Receita)'
+  if (natureza === 'conta_bancaria') return 'Conta Bancária'
+  if (natureza === 'receita') return 'Crédito (Receita)'
+  if (natureza === 'despesa') return 'Débito (Despesa)'
+  return natureza
+}

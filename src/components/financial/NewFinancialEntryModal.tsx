@@ -48,9 +48,9 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
   const [totalAmount, setTotalAmount] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [installments, setInstallments] = useState('1')
-  const [accountId, setAccountId] = useState('')
+  const [contaOrigemId, setContaOrigemId] = useState('')
+  const [contaDestinoId, setContaDestinoId] = useState('')
   const [accounts, setAccounts] = useState<any[]>([])
-
   const isEdit = !!editId
 
   useEffect(() => {
@@ -63,13 +63,12 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
     } else {
       resetForm()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editId])
 
   async function fetchAccounts() {
     const { data } = await supabase
       .from('plano_contas')
-      .select('id, codigo_estrutural, nome, natureza')
+      .select('id, codigo_estrutural, nome, natureza, conta_pai_id, is_active')
       .eq('is_active', true)
       .order('codigo_estrutural')
     setAccounts(data || [])
@@ -94,6 +93,8 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
     setDescription(master.description || '')
     setTotalAmount(String(master.total_amount || ''))
     setIsAvulso(!master.client_id)
+    setContaOrigemId(master.conta_origem_id || '')
+    setContaDestinoId(master.conta_destino_id || '')
     if (charges && charges.length > 0) {
       const first = safeDate(charges[0].due_date)
       setDueDate(first ? first.toISOString().split('T')[0] : '')
@@ -111,23 +112,38 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
     setDescription('')
     setTotalAmount('')
     setInstallments('1')
-    setAccountId('')
+    setContaOrigemId('')
+    setContaDestinoId('')
   }
+
+  const analyticalAccounts = useMemo(() => {
+    const parentIds = new Set(accounts.filter((a) => a.conta_pai_id).map((a) => a.conta_pai_id))
+    return accounts.filter((a) => !parentIds.has(a.id))
+  }, [accounts])
+
+  const categoryAccounts = useMemo(
+    () => analyticalAccounts.filter((a) => a.natureza === 'C' || a.natureza === 'D'),
+    [analyticalAccounts],
+  )
 
   const installmentPreview = useMemo(
     () => computeInstallments(totalAmount, installments, dueDate),
     [totalAmount, installments, dueDate],
   )
 
-  const categoryAccounts = useMemo(
-    () => accounts.filter((a) => a.natureza === 'receita' || a.natureza === 'despesa'),
-    [accounts],
-  )
+  const handleOrigemChange = (id: string) => {
+    setContaOrigemId(id)
+    const acc = accounts.find((a) => a.id === id)
+    if (acc?.natureza === 'D') setType('payable')
+    else if (acc?.natureza === 'C') setType('receivable')
+  }
 
-  const bankAccounts = useMemo(
-    () => accounts.filter((a) => a.natureza === 'conta_bancaria'),
-    [accounts],
-  )
+  const handleDestinoChange = (id: string) => {
+    setContaDestinoId(id)
+    const acc = accounts.find((a) => a.id === id)
+    if (acc?.natureza === 'D') setType('payable')
+    else if (acc?.natureza === 'C') setType('receivable')
+  }
 
   const canProceed = () => {
     if (step === 0) return !!type && (isAvulso || !!entityId)
@@ -149,6 +165,8 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
         total_amount: total,
         type,
         category: categoryId || 'general',
+        conta_origem_id: contaOrigemId || null,
+        conta_destino_id: contaDestinoId || null,
       }
       let masterId = editId
       if (isEdit && masterId) {
@@ -179,7 +197,8 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
         type,
         category: categoryId || 'general',
         profile_id: isAvulso ? null : entityId,
-        conta_id: accountId || null,
+        conta_origem_id: contaOrigemId || null,
+        conta_destino_id: contaDestinoId || null,
         parcela_numero: p.num,
         parcela_total: p.total,
       }))
@@ -209,6 +228,8 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
 
   const categoryName = categoryAccounts.find((a) => a.id === categoryId)?.nome || ''
   const numInstallments = parseInt(installments) || 1
+  const contaOrigemName = analyticalAccounts.find((a) => a.id === contaOrigemId)?.nome || ''
+  const contaDestinoName = analyticalAccounts.find((a) => a.id === contaDestinoId)?.nome || ''
 
   return (
     <Dialog
@@ -274,8 +295,8 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="receivable">Receita</SelectItem>
-                      <SelectItem value="payable">Despesa</SelectItem>
+                      <SelectItem value="receivable">Receita (C)</SelectItem>
+                      <SelectItem value="payable">Despesa (D)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -293,7 +314,7 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
                     type={type}
                     entityId={entityId}
                     entityName={entityName}
-                    onSelect={(id, name) => {
+                    onSelect={(id: string, name: string) => {
                       setEntityId(id)
                       setEntityName(name)
                     }}
@@ -314,7 +335,7 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
                   <SelectContent>
                     {categoryAccounts.map((a) => (
                       <SelectItem key={a.id} value={a.id}>
-                        {a.codigo_estrutural} - {a.nome}
+                        {a.codigo_estrutural} - {a.nome} ({a.natureza})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -351,29 +372,44 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Nº de Parcelas</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={installments}
-                    onChange={(e) => setInstallments(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Conta Bancária</Label>
-                  <Select value={accountId} onValueChange={setAccountId}>
+                  <Label>Conta de Origem</Label>
+                  <Select value={contaOrigemId} onValueChange={handleOrigemChange}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
-                      {bankAccounts.map((a) => (
+                      {analyticalAccounts.map((a) => (
                         <SelectItem key={a.id} value={a.id}>
-                          {a.codigo_estrutural} - {a.nome}
+                          {a.codigo_estrutural} - {a.nome} ({a.natureza})
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label>Conta de Destino</Label>
+                  <Select value={contaDestinoId} onValueChange={handleDestinoChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {analyticalAccounts.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.codigo_estrutural} - {a.nome} ({a.natureza})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Nº de Parcelas</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={installments}
+                  onChange={(e) => setInstallments(e.target.value)}
+                />
               </div>
               {installmentPreview.length > 0 && parseFloat(totalAmount) > 0 && (
                 <div className="text-sm text-muted-foreground">
@@ -392,6 +428,8 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
               description={description}
               totalAmount={totalAmount}
               installments={installmentPreview}
+              contaOrigemName={contaOrigemName}
+              contaDestinoName={contaDestinoName}
             />
           )}
         </div>

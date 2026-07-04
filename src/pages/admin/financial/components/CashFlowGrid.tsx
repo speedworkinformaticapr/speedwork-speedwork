@@ -36,14 +36,20 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [profiles, setProfiles] = useState<Record<string, any>>({})
   const [partners, setPartners] = useState<Record<string, any>>({})
+  const [accounts, setAccounts] = useState<Record<string, any>>({})
   const [paymentCharge, setPaymentCharge] = useState<any>(null)
 
   useEffect(() => {
     const idSet = new Set<string>()
+    const acctIdSet = new Set<string>()
     records.forEach((r) => {
       if (r.client_id) idSet.add(r.client_id)
+      if (r.conta_origem_id) acctIdSet.add(r.conta_origem_id)
+      if (r.conta_destino_id) acctIdSet.add(r.conta_destino_id)
       ;(r.financial_charges || []).forEach((c: any) => {
         if (c.profile_id) idSet.add(c.profile_id)
+        if (c.conta_origem_id) acctIdSet.add(c.conta_origem_id)
+        if (c.conta_destino_id) acctIdSet.add(c.conta_destino_id)
       })
     })
     const uniqueIds = [...idSet]
@@ -61,6 +67,23 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
         })
     } else {
       setProfiles({})
+    }
+
+    const uniqueAcctIds = [...acctIdSet]
+    if (uniqueAcctIds.length > 0) {
+      supabase
+        .from('plano_contas')
+        .select('id, codigo_estrutural, nome, natureza')
+        .in('id', uniqueAcctIds)
+        .then(({ data }) => {
+          const map: Record<string, any> = {}
+          data?.forEach((p) => {
+            map[p.id] = p
+          })
+          setAccounts(map)
+        })
+    } else {
+      setAccounts({})
     }
 
     const names = records.map((r) => r.client_name).filter(Boolean) as string[]
@@ -111,10 +134,16 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
     }
   }
 
+  const getAcctLabel = (id: string | null | undefined) => {
+    if (!id) return '-'
+    const a = accounts[id]
+    return a ? `${a.codigo_estrutural} - ${a.nome}` : '-'
+  }
+
   return (
     <>
       <Card>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -122,9 +151,10 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
                 <TableHead>CPF/CNPJ</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Descrição</TableHead>
-                <TableHead className="text-right">Valor Previsto</TableHead>
-                <TableHead>Data Lançamento</TableHead>
-                <TableHead className="text-right">Valor Realizado</TableHead>
+                <TableHead>Origem</TableHead>
+                <TableHead>Destino</TableHead>
+                <TableHead className="text-right">Previsto</TableHead>
+                <TableHead className="text-right">Realizado</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -134,7 +164,7 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
                 const charges = r.financial_charges || []
                 const status = getMasterStatus(charges)
                 const isExpanded = expandedId === r.id
-                const chargeWithProfile = (r.financial_charges || []).find((c: any) => c.profile_id)
+                const chargeWithProfile = charges.find((c: any) => c.profile_id)
                 const profileId = r.client_id || chargeWithProfile?.profile_id
                 const profile = profileId ? profiles[profileId] : null
                 const partner = r.client_name ? partners[r.client_name] : null
@@ -143,7 +173,6 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
                 const realized = Number(r.paid_amount) || getTotalRealized(charges)
                 const typeLetter = r.type === 'payable' ? 'D' : 'C'
                 const typeLabel = getTypeLabel(r.type)
-                const created = safeDate(r.created_at)
                 return (
                   <Fragment key={r.id}>
                     <TableRow
@@ -168,11 +197,14 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
                         <div className="text-xs text-muted-foreground">{typeLabel}</div>
                       </TableCell>
                       <TableCell className="font-medium">{r.description}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {getAcctLabel(r.conta_origem_id)}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {getAcctLabel(r.conta_destino_id)}
+                      </TableCell>
                       <TableCell className="text-right font-medium">
                         {formatCurrency(r.total_amount)}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {created ? format(created, 'dd/MM/yyyy') : '-'}
                       </TableCell>
                       <TableCell className="text-right text-sm">
                         {formatCurrency(realized)}
@@ -215,17 +247,17 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
                     </TableRow>
                     {isExpanded && (
                       <TableRow className="bg-muted/20">
-                        <TableCell colSpan={9} className="p-4">
-                          <div className="rounded-lg border">
+                        <TableCell colSpan={10} className="p-4">
+                          <div className="rounded-lg border overflow-x-auto">
                             <Table>
                               <TableHeader>
                                 <TableRow>
                                   <TableHead>Descrição</TableHead>
                                   <TableHead>Parcela</TableHead>
-                                  <TableHead className="text-right">Valor Previsto</TableHead>
-                                  <TableHead>Data Previsão</TableHead>
-                                  <TableHead className="text-right">Valor Realizado</TableHead>
-                                  <TableHead>Data Realizado</TableHead>
+                                  <TableHead>Origem</TableHead>
+                                  <TableHead>Destino</TableHead>
+                                  <TableHead className="text-right">Previsto</TableHead>
+                                  <TableHead className="text-right">Realizado</TableHead>
                                   <TableHead>Status</TableHead>
                                   <TableHead className="text-right">Baixa</TableHead>
                                 </TableRow>
@@ -233,8 +265,6 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
                               <TableBody>
                                 {charges.map((c: any) => {
                                   const cs = getChargeStatus(c)
-                                  const due = safeDate(c.due_date)
-                                  const paid = c.payment_date ? safeDate(c.payment_date) : null
                                   return (
                                     <TableRow key={c.id}>
                                       <TableCell className="text-sm">
@@ -245,17 +275,17 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
                                           ? `${c.parcela_numero}/${c.parcela_total}`
                                           : '-'}
                                       </TableCell>
+                                      <TableCell className="text-xs text-muted-foreground">
+                                        {getAcctLabel(c.conta_origem_id)}
+                                      </TableCell>
+                                      <TableCell className="text-xs text-muted-foreground">
+                                        {getAcctLabel(c.conta_destino_id)}
+                                      </TableCell>
                                       <TableCell className="text-right text-sm">
                                         {formatCurrency(c.amount)}
                                       </TableCell>
-                                      <TableCell className="text-sm text-muted-foreground">
-                                        {due ? format(due, 'dd/MM/yyyy') : '-'}
-                                      </TableCell>
                                       <TableCell className="text-right text-sm">
                                         {formatCurrency(Number(c.realized_amount) || 0)}
-                                      </TableCell>
-                                      <TableCell className="text-sm text-muted-foreground">
-                                        {paid ? format(paid, 'dd/MM/yyyy') : '-'}
                                       </TableCell>
                                       <TableCell>
                                         <Badge

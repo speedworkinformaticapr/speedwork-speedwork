@@ -56,6 +56,7 @@ const AdminMaintenance = lazy(() => import('./pages/admin/settings/AdminMaintena
 const AdminUsers = lazy(() => import('./pages/admin/business/AdminUsers'))
 const AdminProfileForm = lazy(() => import('./pages/admin/business/AdminProfileForm'))
 const AdminChartOfAccounts = lazy(() => import('./pages/admin/financial/AdminChartOfAccounts'))
+const AdminBankAccounts = lazy(() => import('./pages/admin/financial/AdminBankAccounts'))
 const AdminFinancialCategories = lazy(
   () => import('./pages/admin/financial/AdminFinancialCategories'),
 )
@@ -289,6 +290,7 @@ const App = () => (
                     <Route path="financial" element={<AdminFinancialDashboard />} />
                     <Route path="financial/categories" element={<AdminFinancialCategories />} />
                     <Route path="financial/accounts" element={<AdminChartOfAccounts />} />
+                    <Route path="financial/bank-accounts" element={<AdminBankAccounts />} />
                     <Route
                       path="financial/payments"
                       element={<Navigate to="/admin/financial" replace />}
