@@ -319,9 +319,9 @@ export default function Login() {
 
               <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
                 {loading ? (
-                  <>
+                  <span className="inline-flex items-center">
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Entrando...
-                  </>
+                  </span>
                 ) : (
                   'Entrar na Plataforma'
                 )}
