@@ -286,9 +286,13 @@ const App = () => (
                     <Route path="business/profiles/new" element={<AdminProfileForm />} />
                     <Route path="business/profiles/:id/edit" element={<AdminProfileForm />} />
                     <Route path="feedback/dashboard" element={<CustomerFeedbackDashboard />} />
+                    <Route path="financial" element={<AdminFinancialDashboard />} />
                     <Route path="financial/categories" element={<AdminFinancialCategories />} />
                     <Route path="financial/accounts" element={<AdminChartOfAccounts />} />
-                    <Route path="financial/payments" element={<AdminFinancialPayments />} />
+                    <Route
+                      path="financial/payments"
+                      element={<Navigate to="/admin/financial" replace />}
+                    />
                     <Route path="financial/payments/new" element={<AdminFinancialPaymentForm />} />
                     <Route
                       path="financial/payments/:id/edit"
@@ -302,7 +306,10 @@ const App = () => (
                       path="financial/registration-payments"
                       element={<AdminRegistrationPayments />}
                     />
-                    <Route path="financial/dashboard" element={<AdminFinancialDashboard />} />
+                    <Route
+                      path="financial/dashboard"
+                      element={<Navigate to="/admin/financial" replace />}
+                    />
                     <Route path="financial/stripe-payments" element={<AdminStripePayments />} />
                     <Route path="ecommerce/groups" element={<AdminEcommerceGroups />} />
                     <Route path="ecommerce/products" element={<AdminEcommerceProducts />} />

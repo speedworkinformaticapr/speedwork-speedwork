@@ -80,12 +80,11 @@ export const DEFAULT_MENU_CONFIG: MenuConfig[] = [
     submenus: [
       {
         id: 'financial-dashboard',
-        label: 'Dashboard Financeiro',
-        url: '/admin/financial/dashboard',
+        label: 'Fluxo de Caixa',
+        url: '/admin/financial',
       },
       { id: 'chart-of-accounts', label: 'Plano de Contas', url: '/admin/financial/accounts' },
       { id: 'categories', label: 'Categorias', url: '/admin/financial/categories' },
-      { id: 'payments', label: 'Pagamentos', url: '/admin/financial/payments' },
       { id: 'partners', label: 'Parceiros', url: '/admin/financial/partners' },
       { id: 'billing-logs', label: 'Logs de Faturamento', url: '/admin/financial/billing-logs' },
       {
