@@ -9,10 +9,22 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
-import { ChevronDown, ChevronRight, Edit, CheckCircle2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, Edit, CheckCircle2, Trash2 } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { supabase } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { toast } from 'sonner'
 import { PaymentRegistrationModal } from '@/components/financial/PaymentRegistrationModal'
 import {
   getChargeStatus,
@@ -31,6 +43,28 @@ export function CashFlowGrid({ records, loading, onRefresh }: CashFlowGridProps)
   const navigate = useNavigate()
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [baixaCharge, setBaixaCharge] = useState<any>(null)
+  const [deleteTarget, setDeleteTarget] = useState<any>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      await supabase.from('financial_charges').delete().eq('master_record_id', deleteTarget.id)
+      const { error } = await supabase
+        .from('financial_master_records')
+        .delete()
+        .eq('id', deleteTarget.id)
+      if (error) throw error
+      toast.success('Lançamento excluído com sucesso!')
+      setDeleteTarget(null)
+      onRefresh()
+    } catch (err: any) {
+      toast.error('Erro ao excluir: ' + err.message)
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) => {
@@ -129,17 +163,30 @@ export function CashFlowGrid({ records, loading, onRefresh }: CashFlowGridProps)
                       <div className="text-sm font-medium">{formatCurrency(totalRealized)}</div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          navigate(`/admin/financial/payments/${record.id}/edit`)
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            navigate(`/admin/financial/payments/${record.id}/edit`)
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setDeleteTarget(record)
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>,
                 ]
@@ -199,6 +246,27 @@ export function CashFlowGrid({ records, loading, onRefresh }: CashFlowGridProps)
         charge={baixaCharge}
         onSuccess={onRefresh}
       />
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Lançamento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este lançamento? Esta ação removerá todas as parcelas
+              vinculadas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? 'Excluindo...' : 'Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

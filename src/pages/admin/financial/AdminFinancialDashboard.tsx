@@ -11,8 +11,10 @@ import {
 } from '@/components/ui/select'
 import { CashFlowGrid } from './components/CashFlowGrid'
 import { getMasterStatus, formatCurrency } from '@/lib/financial-utils'
-import { Search } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Search, Plus } from 'lucide-react'
 import { toast } from 'sonner'
+import { NewFinancialEntryModal } from '@/components/financial/NewFinancialEntryModal'
 
 export default function AdminFinancialDashboard() {
   const [records, setRecords] = useState<any[]>([])
@@ -20,6 +22,7 @@ export default function AdminFinancialDashboard() {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [showNewModal, setShowNewModal] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -72,11 +75,17 @@ export default function AdminFinancialDashboard() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Fluxo de Caixa</h1>
-        <p className="text-muted-foreground">
-          Acompanhe valores previstos vs realizados e gerencie parcelas.
-        </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Fluxo de Caixa</h1>
+          <p className="text-muted-foreground">
+            Acompanhe valores previstos vs realizados e gerencie parcelas.
+          </p>
+        </div>
+        <Button onClick={() => setShowNewModal(true)} className="shrink-0">
+          <Plus className="h-4 w-4 mr-2" />
+          Novo Lançamento
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -152,6 +161,11 @@ export default function AdminFinancialDashboard() {
       </div>
 
       <CashFlowGrid records={filteredRecords} loading={loading} onRefresh={fetchData} />
+      <NewFinancialEntryModal
+        open={showNewModal}
+        onOpenChange={setShowNewModal}
+        onSuccess={fetchData}
+      />
     </div>
   )
 }
