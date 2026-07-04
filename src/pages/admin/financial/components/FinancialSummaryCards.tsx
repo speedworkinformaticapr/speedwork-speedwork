@@ -1,12 +1,18 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
-import { ArrowDownCircle, ArrowUpCircle, DollarSign } from 'lucide-react'
+import { TrendingUp, TrendingDown } from 'lucide-react'
 import { useTranslation } from '@/hooks/use-translation'
+import { formatCurrency } from '@/lib/financial-utils'
 
 export function FinancialSummaryCards() {
   const { t } = useTranslation()
-  const [summary, setSummary] = useState({ income: 0, expense: 0, balance: 0 })
+  const [summary, setSummary] = useState({
+    receivablePrevisto: 0,
+    receivableRealizado: 0,
+    payablePrevisto: 0,
+    payableRealizado: 0,
+  })
 
   useEffect(() => {
     fetchSummary()
@@ -15,62 +21,83 @@ export function FinancialSummaryCards() {
   async function fetchSummary() {
     const { data, error } = await supabase
       .from('financial_charges')
-      .select('amount, type, status')
-      .in('status', ['pago', 'recebido', 'realizado'])
+      .select('amount, type, realized_amount')
 
     if (error) {
       console.error(error)
       return
     }
 
-    let income = 0
-    let expense = 0
+    let receivablePrevisto = 0
+    let receivableRealizado = 0
+    let payablePrevisto = 0
+    let payableRealizado = 0
 
     data?.forEach((charge) => {
-      if (charge.type === 'receita' || charge.type === 'receivable') income += Number(charge.amount)
-      else if (charge.type === 'despesa' || charge.type === 'payable')
-        expense += Number(charge.amount)
+      const amount = Number(charge.amount) || 0
+      const realized = Number(charge.realized_amount) || 0
+      if (charge.type === 'receivable') {
+        receivablePrevisto += amount
+        receivableRealizado += realized
+      } else if (charge.type === 'payable') {
+        payablePrevisto += amount
+        payableRealizado += realized
+      }
     })
 
-    setSummary({ income, expense, balance: income - expense })
+    setSummary({ receivablePrevisto, receivableRealizado, payablePrevisto, payableRealizado })
   }
 
-  const formatCurrency = (val: number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Card className="bg-muted/30 border-border/50">
-        <CardContent className="p-3 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground">{t('Receitas')}</p>
-            <p className="text-lg font-bold text-emerald-500 mt-0.5">
-              {formatCurrency(summary.income)}
-            </p>
+    <div className="grid gap-4 md:grid-cols-2">
+      <Card className="overflow-hidden border-emerald-200 dark:border-emerald-900">
+        <CardContent className="p-0">
+          <div className="flex items-center gap-2 px-5 py-3 bg-emerald-50 dark:bg-emerald-950/40">
+            <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-emerald-500/15">
+              <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <span className="font-semibold text-emerald-700 dark:text-emerald-300">
+              {t('A Receber')}
+            </span>
           </div>
-          <ArrowUpCircle className="w-6 h-6 text-emerald-500/50" />
+          <div className="grid grid-cols-2 divide-x divide-border">
+            <div className="px-5 py-4">
+              <p className="text-xs font-medium text-muted-foreground mb-1">{t('Previsto')}</p>
+              <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                {formatCurrency(summary.receivablePrevisto)}
+              </p>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-xs font-medium text-muted-foreground mb-1">{t('Realizado')}</p>
+              <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                {formatCurrency(summary.receivableRealizado)}
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
-      <Card className="bg-muted/30 border-border/50">
-        <CardContent className="p-3 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground">{t('Despesas')}</p>
-            <p className="text-lg font-bold text-rose-500 mt-0.5">
-              {formatCurrency(summary.expense)}
-            </p>
+      <Card className="overflow-hidden border-rose-200 dark:border-rose-900">
+        <CardContent className="p-0">
+          <div className="flex items-center gap-2 px-5 py-3 bg-rose-50 dark:bg-rose-950/40">
+            <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-rose-500/15">
+              <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+            </div>
+            <span className="font-semibold text-rose-700 dark:text-rose-300">{t('A Pagar')}</span>
           </div>
-          <ArrowDownCircle className="w-6 h-6 text-rose-500/50" />
-        </CardContent>
-      </Card>
-      <Card className="bg-muted/30 border-border/50">
-        <CardContent className="p-3 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground">{t('Saldo')}</p>
-            <p className="text-lg font-bold text-blue-500 mt-0.5">
-              {formatCurrency(summary.balance)}
-            </p>
+          <div className="grid grid-cols-2 divide-x divide-border">
+            <div className="px-5 py-4">
+              <p className="text-xs font-medium text-muted-foreground mb-1">{t('Previsto')}</p>
+              <p className="text-xl font-bold text-rose-600 dark:text-rose-400">
+                {formatCurrency(summary.payablePrevisto)}
+              </p>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-xs font-medium text-muted-foreground mb-1">{t('Realizado')}</p>
+              <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                {formatCurrency(summary.payableRealizado)}
+              </p>
+            </div>
           </div>
-          <DollarSign className="w-6 h-6 text-blue-500/50" />
         </CardContent>
       </Card>
     </div>

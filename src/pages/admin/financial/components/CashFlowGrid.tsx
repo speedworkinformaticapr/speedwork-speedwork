@@ -39,8 +39,14 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
   const [paymentCharge, setPaymentCharge] = useState<any>(null)
 
   useEffect(() => {
-    const ids = records.map((r) => r.client_id).filter(Boolean) as string[]
-    const uniqueIds = [...new Set(ids)]
+    const idSet = new Set<string>()
+    records.forEach((r) => {
+      if (r.client_id) idSet.add(r.client_id)
+      ;(r.financial_charges || []).forEach((c: any) => {
+        if (c.profile_id) idSet.add(c.profile_id)
+      })
+    })
+    const uniqueIds = [...idSet]
     if (uniqueIds.length > 0) {
       supabase
         .from('profiles')
@@ -128,7 +134,9 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
                 const charges = r.financial_charges || []
                 const status = getMasterStatus(charges)
                 const isExpanded = expandedId === r.id
-                const profile = r.client_id ? profiles[r.client_id] : null
+                const chargeWithProfile = (r.financial_charges || []).find((c: any) => c.profile_id)
+                const profileId = r.client_id || chargeWithProfile?.profile_id
+                const profile = profileId ? profiles[profileId] : null
                 const partner = r.client_name ? partners[r.client_name] : null
                 const doc = profile?.cpf_cnpj || profile?.document || partner?.document || '-'
                 const name = r.client_name || profile?.name || partner?.name || '-'

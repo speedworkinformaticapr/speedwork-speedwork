@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -12,7 +12,7 @@ import {
 import { CashFlowGrid } from './components/CashFlowGrid'
 import { getMasterStatus, formatCurrency } from '@/lib/financial-utils'
 import { Button } from '@/components/ui/button'
-import { Search, Plus } from 'lucide-react'
+import { Search, Plus, Calendar, TrendingUp, TrendingDown, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { NewFinancialEntryModal } from '@/components/financial/NewFinancialEntryModal'
 
@@ -24,6 +24,8 @@ export default function AdminFinancialDashboard() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [showNewModal, setShowNewModal] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
 
   useEffect(() => {
     fetchData()
@@ -44,35 +46,62 @@ export default function AdminFinancialDashboard() {
   }
 
   const filteredRecords = useMemo(() => {
-    return records.filter((r) => {
-      if (search) {
-        const q = search.toLowerCase()
-        if (!r.client_name?.toLowerCase().includes(q) && !r.description?.toLowerCase().includes(q))
-          return false
-      }
-      if (typeFilter !== 'all' && r.type !== typeFilter) return false
-      if (statusFilter !== 'all') {
-        const status = getMasterStatus(r.financial_charges || [])
-        if (status.label.toLowerCase() !== statusFilter) return false
-      }
-      return true
-    })
-  }, [records, search, typeFilter, statusFilter])
+    return records
+      .map((r) => {
+        const charges = (r.financial_charges || []).filter((c: any) => {
+          if (!dateFrom && !dateTo) return true
+          const due = c.due_date
+          if (!due) return false
+          if (dateFrom && due < dateFrom) return false
+          if (dateTo && due > dateTo) return false
+          return true
+        })
+        return { ...r, financial_charges: charges }
+      })
+      .filter((r) => {
+        if ((dateFrom || dateTo) && (r.financial_charges || []).length === 0) return false
+        if (search) {
+          const q = search.toLowerCase()
+          if (
+            !r.client_name?.toLowerCase().includes(q) &&
+            !r.description?.toLowerCase().includes(q)
+          )
+            return false
+        }
+        if (typeFilter !== 'all' && r.type !== typeFilter) return false
+        if (statusFilter !== 'all') {
+          const status = getMasterStatus(r.financial_charges || [])
+          if (status.label.toLowerCase() !== statusFilter) return false
+        }
+        return true
+      })
+  }, [records, search, typeFilter, statusFilter, dateFrom, dateTo])
 
   const stats = useMemo(() => {
-    let income = 0
-    let expense = 0
-    let realized = 0
-    records.forEach((r) => {
+    let receivablePrevisto = 0
+    let receivableRealizado = 0
+    let payablePrevisto = 0
+    let payableRealizado = 0
+
+    filteredRecords.forEach((r) => {
       const charges = r.financial_charges || []
-      const total = charges.reduce((s, c) => s + (Number(c.amount) || 0), 0)
-      const real = charges.reduce((s, c) => s + (Number(c.realized_amount) || 0), 0)
-      if (r.type === 'receivable') income += total
-      else expense += total
-      realized += real
+      charges.forEach((c: any) => {
+        const amount = Number(c.amount) || 0
+        const realized = Number(c.realized_amount) || 0
+        if (r.type === 'receivable') {
+          receivablePrevisto += amount
+          receivableRealizado += realized
+        } else {
+          payablePrevisto += amount
+          payableRealizado += realized
+        }
+      })
     })
-    return { income, expense, balance: income - expense, realized }
-  }, [records])
+
+    return { receivablePrevisto, receivableRealizado, payablePrevisto, payableRealizado }
+  }, [filteredRecords])
+
+  const hasPeriodFilter = !!(dateFrom || dateTo)
 
   return (
     <div className="p-6 space-y-6">
@@ -95,43 +124,97 @@ export default function AdminFinancialDashboard() {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="py-2">
-          <CardHeader className="py-2 px-4 pb-1">
-            <CardTitle className="text-sm font-medium">A Receber</CardTitle>
-          </CardHeader>
-          <CardContent className="py-1 px-4">
-            <div className="text-xl font-bold text-green-600">{formatCurrency(stats.income)}</div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="overflow-hidden border-emerald-200 dark:border-emerald-900">
+          <CardContent className="p-0">
+            <div className="flex items-center gap-2 px-5 py-3 bg-emerald-50 dark:bg-emerald-950/40">
+              <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-emerald-500/15">
+                <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <span className="font-semibold text-emerald-700 dark:text-emerald-300">
+                A Receber
+              </span>
+            </div>
+            <div className="grid grid-cols-2 divide-x divide-border">
+              <div className="px-5 py-4">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Previsto</p>
+                <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                  {formatCurrency(stats.receivablePrevisto)}
+                </p>
+              </div>
+              <div className="px-5 py-4">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Realizado</p>
+                <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                  {formatCurrency(stats.receivableRealizado)}
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card className="py-2">
-          <CardHeader className="py-2 px-4 pb-1">
-            <CardTitle className="text-sm font-medium">A Pagar</CardTitle>
-          </CardHeader>
-          <CardContent className="py-1 px-4">
-            <div className="text-xl font-bold text-red-600">{formatCurrency(stats.expense)}</div>
-          </CardContent>
-        </Card>
-        <Card className="py-2">
-          <CardHeader className="py-2 px-4 pb-1">
-            <CardTitle className="text-sm font-medium">Realizado</CardTitle>
-          </CardHeader>
-          <CardContent className="py-1 px-4">
-            <div className="text-xl font-bold text-blue-600">{formatCurrency(stats.realized)}</div>
-          </CardContent>
-        </Card>
-        <Card className="py-2">
-          <CardHeader className="py-2 px-4 pb-1">
-            <CardTitle className="text-sm font-medium">Saldo Previsto</CardTitle>
-          </CardHeader>
-          <CardContent className="py-1 px-4">
-            <div className="text-xl font-bold text-amber-600">{formatCurrency(stats.balance)}</div>
+
+        <Card className="overflow-hidden border-rose-200 dark:border-rose-900">
+          <CardContent className="p-0">
+            <div className="flex items-center gap-2 px-5 py-3 bg-rose-50 dark:bg-rose-950/40">
+              <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-rose-500/15">
+                <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+              </div>
+              <span className="font-semibold text-rose-700 dark:text-rose-300">A Pagar</span>
+            </div>
+            <div className="grid grid-cols-2 divide-x divide-border">
+              <div className="px-5 py-4">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Previsto</p>
+                <p className="text-xl font-bold text-rose-600 dark:text-rose-400">
+                  {formatCurrency(stats.payablePrevisto)}
+                </p>
+              </div>
+              <div className="px-5 py-4">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Realizado</p>
+                <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                  {formatCurrency(stats.payableRealizado)}
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 items-center">
-        <div className="relative w-full sm:flex-1">
+      <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground shrink-0">
+            <Calendar className="h-4 w-4" />
+            <span className="hidden sm:inline">Período:</span>
+          </div>
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="w-[150px]"
+            aria-label="Data inicial"
+          />
+          <span className="text-muted-foreground text-sm shrink-0">—</span>
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="w-[150px]"
+            aria-label="Data final"
+          />
+          {hasPeriodFilter && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => {
+                setDateFrom('')
+                setDateTo('')
+              }}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
+        <div className="relative w-full lg:flex-1">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar por cliente ou descrição..."
@@ -140,7 +223,8 @@ export default function AdminFinancialDashboard() {
             className="pl-8"
           />
         </div>
-        <div className="w-full sm:w-[180px]">
+
+        <div className="w-full lg:w-[180px]">
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger>
               <SelectValue placeholder="Tipo" />
@@ -152,7 +236,8 @@ export default function AdminFinancialDashboard() {
             </SelectContent>
           </Select>
         </div>
-        <div className="w-full sm:w-[180px]">
+
+        <div className="w-full lg:w-[180px]">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger>
               <SelectValue placeholder="Status" />
