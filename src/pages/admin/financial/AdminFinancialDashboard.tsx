@@ -11,8 +11,9 @@ import {
 } from '@/components/ui/select'
 import { CashFlowGrid } from './components/CashFlowGrid'
 import { getMasterStatus, formatCurrency } from '@/lib/financial-utils'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Search, Plus, Calendar, TrendingUp, TrendingDown, X } from 'lucide-react'
+import { Search, Plus, Calendar, TrendingUp, TrendingDown, X, Wallet } from 'lucide-react'
 import { toast } from 'sonner'
 import { NewFinancialEntryModal } from '@/components/financial/NewFinancialEntryModal'
 
@@ -98,7 +99,14 @@ export default function AdminFinancialDashboard() {
       })
     })
 
-    return { receivablePrevisto, receivableRealizado, payablePrevisto, payableRealizado }
+    const saldoAtual = receivableRealizado - payableRealizado
+    return {
+      receivablePrevisto,
+      receivableRealizado,
+      payablePrevisto,
+      payableRealizado,
+      saldoAtual,
+    }
   }, [filteredRecords])
 
   const hasPeriodFilter = !!(dateFrom || dateTo)
@@ -124,7 +132,7 @@ export default function AdminFinancialDashboard() {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card className="overflow-hidden border-emerald-200 dark:border-emerald-900">
           <CardContent className="p-0">
             <div className="flex items-center gap-2 px-5 py-3 bg-emerald-50 dark:bg-emerald-950/40">
@@ -173,6 +181,30 @@ export default function AdminFinancialDashboard() {
                   {formatCurrency(stats.payableRealizado)}
                 </p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="overflow-hidden border-slate-200 dark:border-slate-800">
+          <CardContent className="p-0">
+            <div className="flex items-center gap-2 px-5 py-3 bg-slate-50 dark:bg-slate-950/40">
+              <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-slate-500/15">
+                <Wallet className="h-4 w-4 text-slate-600 dark:text-slate-300" />
+              </div>
+              <span className="font-semibold text-slate-700 dark:text-slate-300">Saldo Atual</span>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-xs font-medium text-muted-foreground mb-1">Valor Atual</p>
+              <p
+                className={cn(
+                  'text-xl font-bold',
+                  stats.saldoAtual >= 0
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-rose-600 dark:text-rose-400',
+                )}
+              >
+                {formatCurrency(stats.saldoAtual)}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -244,9 +276,10 @@ export default function AdminFinancialDashboard() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os Status</SelectItem>
-              <SelectItem value="em dia">Em dia</SelectItem>
+              <SelectItem value="finalizado">Finalizado</SelectItem>
               <SelectItem value="atrasado">Atrasado</SelectItem>
               <SelectItem value="parcial">Parcial</SelectItem>
+              <SelectItem value="a vencer">A Vencer</SelectItem>
             </SelectContent>
           </Select>
         </div>

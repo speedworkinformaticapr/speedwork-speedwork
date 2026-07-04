@@ -7,29 +7,28 @@ export interface ChargeData {
 }
 
 export function getChargeStatus(charge: ChargeData): { label: string; color: string } {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const dueDate = new Date(charge.due_date)
-  dueDate.setHours(0, 0, 0, 0)
   const amount = Number(charge.amount) || 0
   const realized = Number(charge.realized_amount) || 0
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const dueDate = charge.due_date ? new Date(charge.due_date) : null
+  if (dueDate) dueDate.setHours(0, 0, 0, 0)
 
-  if (charge.status === 'pago' || (amount > 0 && realized >= amount))
-    return { label: 'Em dia', color: 'bg-emerald-100 text-emerald-800' }
-  if (charge.status === 'parcial' || (realized > 0 && realized < amount))
-    return { label: 'Parcial', color: 'bg-blue-100 text-blue-800' }
-  if (today > dueDate) return { label: 'Atrasado', color: 'bg-rose-100 text-rose-800' }
-  return { label: 'Em dia', color: 'bg-emerald-100 text-emerald-800' }
+  if (realized >= amount) return { label: 'Pago', color: 'bg-emerald-100 text-emerald-800' }
+  if (dueDate && today > dueDate) return { label: 'Atrasado', color: 'bg-rose-100 text-rose-800' }
+  return { label: 'A Vencer', color: 'bg-amber-100 text-amber-800' }
 }
 
 export function getMasterStatus(charges: ChargeData[]): { label: string; color: string } {
-  if (!charges?.length) return { label: 'Em dia', color: 'bg-emerald-100 text-emerald-800' }
+  if (!charges?.length) return { label: 'A Vencer', color: 'bg-amber-100 text-amber-800' }
   const statuses = charges.map(getChargeStatus)
+  if (statuses.every((s) => s.label === 'Pago'))
+    return { label: 'Finalizado', color: 'bg-emerald-100 text-emerald-800' }
   if (statuses.some((s) => s.label === 'Atrasado'))
     return { label: 'Atrasado', color: 'bg-rose-100 text-rose-800' }
-  if (statuses.some((s) => s.label === 'Parcial'))
+  if (statuses.some((s) => s.label === 'Pago') && statuses.some((s) => s.label === 'A Vencer'))
     return { label: 'Parcial', color: 'bg-blue-100 text-blue-800' }
-  return { label: 'Em dia', color: 'bg-emerald-100 text-emerald-800' }
+  return { label: 'A Vencer', color: 'bg-amber-100 text-amber-800' }
 }
 
 export function getTotalRealized(charges: ChargeData[]): number {
