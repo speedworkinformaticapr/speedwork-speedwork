@@ -969,6 +969,53 @@ export type Database = {
         }
         Relationships: []
       }
+      contas_bancarias: {
+        Row: {
+          agencia: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          nome: string
+          numero_conta: string | null
+          plano_contas_id: string | null
+          saldo_inicial: number
+          titular: string | null
+          updated_at: string
+        }
+        Insert: {
+          agencia?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          nome: string
+          numero_conta?: string | null
+          plano_contas_id?: string | null
+          saldo_inicial?: number
+          titular?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agencia?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          nome?: string
+          numero_conta?: string | null
+          plano_contas_id?: string | null
+          saldo_inicial?: number
+          titular?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'contas_bancarias_plano_contas_id_fkey'
+            columns: ['plano_contas_id']
+            isOneToOne: false
+            referencedRelation: 'plano_contas'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       contract_additives: {
         Row: {
           content: string
@@ -1674,7 +1721,9 @@ export type Database = {
           athlete_id: string | null
           category: string | null
           client_name: string
+          conta_destino_id: string | null
           conta_id: string | null
+          conta_origem_id: string | null
           created_at: string
           description: string | null
           document: string | null
@@ -1696,7 +1745,9 @@ export type Database = {
           athlete_id?: string | null
           category?: string | null
           client_name: string
+          conta_destino_id?: string | null
           conta_id?: string | null
+          conta_origem_id?: string | null
           created_at?: string
           description?: string | null
           document?: string | null
@@ -1718,7 +1769,9 @@ export type Database = {
           athlete_id?: string | null
           category?: string | null
           client_name?: string
+          conta_destino_id?: string | null
           conta_id?: string | null
+          conta_origem_id?: string | null
           created_at?: string
           description?: string | null
           document?: string | null
@@ -1743,8 +1796,22 @@ export type Database = {
             referencedColumns: ['id']
           },
           {
+            foreignKeyName: 'financial_charges_conta_destino_id_fkey'
+            columns: ['conta_destino_id']
+            isOneToOne: false
+            referencedRelation: 'plano_contas'
+            referencedColumns: ['id']
+          },
+          {
             foreignKeyName: 'financial_charges_conta_id_fkey'
             columns: ['conta_id']
+            isOneToOne: false
+            referencedRelation: 'plano_contas'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'financial_charges_conta_origem_id_fkey'
+            columns: ['conta_origem_id']
             isOneToOne: false
             referencedRelation: 'plano_contas'
             referencedColumns: ['id']
@@ -1777,6 +1844,8 @@ export type Database = {
           category: string | null
           client_id: string | null
           client_name: string
+          conta_destino_id: string | null
+          conta_origem_id: string | null
           created_at: string
           description: string
           id: string
@@ -1791,6 +1860,8 @@ export type Database = {
           category?: string | null
           client_id?: string | null
           client_name: string
+          conta_destino_id?: string | null
+          conta_origem_id?: string | null
           created_at?: string
           description: string
           id?: string
@@ -1805,6 +1876,8 @@ export type Database = {
           category?: string | null
           client_id?: string | null
           client_name?: string
+          conta_destino_id?: string | null
+          conta_origem_id?: string | null
           created_at?: string
           description?: string
           id?: string
@@ -1821,6 +1894,20 @@ export type Database = {
             columns: ['client_id']
             isOneToOne: false
             referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'financial_master_records_conta_destino_id_fkey'
+            columns: ['conta_destino_id']
+            isOneToOne: false
+            referencedRelation: 'plano_contas'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'financial_master_records_conta_origem_id_fkey'
+            columns: ['conta_origem_id']
+            isOneToOne: false
+            referencedRelation: 'plano_contas'
             referencedColumns: ['id']
           },
         ]
@@ -1981,7 +2068,9 @@ export type Database = {
       lancamentos_financeiros: {
         Row: {
           categoria: string | null
+          conta_destino_id: string | null
           conta_id: string | null
+          conta_origem_id: string | null
           created_at: string | null
           data_lancamento: string | null
           descricao: string | null
@@ -1995,7 +2084,9 @@ export type Database = {
         }
         Insert: {
           categoria?: string | null
+          conta_destino_id?: string | null
           conta_id?: string | null
+          conta_origem_id?: string | null
           created_at?: string | null
           data_lancamento?: string | null
           descricao?: string | null
@@ -2009,7 +2100,9 @@ export type Database = {
         }
         Update: {
           categoria?: string | null
+          conta_destino_id?: string | null
           conta_id?: string | null
+          conta_origem_id?: string | null
           created_at?: string | null
           data_lancamento?: string | null
           descricao?: string | null
@@ -2023,8 +2116,22 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: 'lancamentos_financeiros_conta_destino_id_fkey'
+            columns: ['conta_destino_id']
+            isOneToOne: false
+            referencedRelation: 'plano_contas'
+            referencedColumns: ['id']
+          },
+          {
             foreignKeyName: 'lancamentos_financeiros_conta_id_fkey'
             columns: ['conta_id']
+            isOneToOne: false
+            referencedRelation: 'plano_contas'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'lancamentos_financeiros_conta_origem_id_fkey'
+            columns: ['conta_origem_id']
             isOneToOne: false
             referencedRelation: 'plano_contas'
             referencedColumns: ['id']
