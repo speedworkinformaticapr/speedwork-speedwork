@@ -119,6 +119,16 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
     [totalAmount, installments, dueDate],
   )
 
+  const categoryAccounts = useMemo(
+    () => accounts.filter((a) => a.natureza === 'receita' || a.natureza === 'despesa'),
+    [accounts],
+  )
+
+  const bankAccounts = useMemo(
+    () => accounts.filter((a) => a.natureza === 'conta_bancaria'),
+    [accounts],
+  )
+
   const canProceed = () => {
     if (step === 0) return !!type && (isAvulso || !!entityId)
     if (step === 1) return !!description.trim()
@@ -197,7 +207,7 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
     else handleSubmit()
   }
 
-  const categoryName = accounts.find((a) => a.id === categoryId)?.nome || ''
+  const categoryName = categoryAccounts.find((a) => a.id === categoryId)?.nome || ''
   const numInstallments = parseInt(installments) || 1
 
   return (
@@ -302,7 +312,7 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    {accounts.map((a) => (
+                    {categoryAccounts.map((a) => (
                       <SelectItem key={a.id} value={a.id}>
                         {a.codigo_estrutural} - {a.nome}
                       </SelectItem>
@@ -350,13 +360,13 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Conta</Label>
+                  <Label>Conta Bancária</Label>
                   <Select value={accountId} onValueChange={setAccountId}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
-                      {accounts.map((a) => (
+                      {bankAccounts.map((a) => (
                         <SelectItem key={a.id} value={a.id}>
                           {a.codigo_estrutural} - {a.nome}
                         </SelectItem>
