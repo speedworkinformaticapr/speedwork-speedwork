@@ -82,6 +82,7 @@ export const DEFAULT_MENU_CONFIG: MenuConfig[] = [
         id: 'financial-dashboard',
         label: 'Fluxo de Caixa',
         url: '/admin/financial',
+        icon: 'Wallet',
       },
       { id: 'chart-of-accounts', label: 'Plano de Contas', url: '/admin/financial/accounts' },
       { id: 'categories', label: 'Categorias', url: '/admin/financial/categories' },
