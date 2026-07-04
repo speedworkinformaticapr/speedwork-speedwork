@@ -1,8 +1,8 @@
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 import { useSystemData } from '@/hooks/use-system-data'
-import { DEFAULT_MENU_CONFIG, normalizeMenuConfig } from '@/lib/menu-constants'
+import { DEFAULT_MENU_CONFIG, normalizeMenuConfig, type MenuConfig } from '@/lib/menu-constants'
 import { cn } from '@/lib/utils'
 import {
   Sidebar,
@@ -40,6 +40,36 @@ export default function AdminLayout() {
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const { open: sidebarOpen, state: sidebarState } = useSidebar()
 
+  const rawMenuConfig = systemData?.admin_menu_config as any[] | undefined
+  const menuConfig: MenuConfig[] = useMemo(
+    () => (rawMenuConfig?.length ? normalizeMenuConfig(rawMenuConfig) : DEFAULT_MENU_CONFIG),
+    [rawMenuConfig],
+  )
+
+  const allTerminalUrls = useMemo(() => {
+    const urls: string[] = []
+    for (const group of menuConfig) {
+      if (group.submenus) {
+        for (const sub of group.submenus) {
+          if (sub.url) urls.push(sub.url)
+        }
+      } else if (group.url) {
+        urls.push(group.url)
+      }
+    }
+    return urls
+  }, [menuConfig])
+
+  const activeUrl = useMemo(() => {
+    let best = ''
+    for (const url of allTerminalUrls) {
+      if (location.pathname === url || location.pathname.startsWith(`${url}/`)) {
+        if (url.length > best.length) best = url
+      }
+    }
+    return best
+  }, [location.pathname, allTerminalUrls])
+
   useEffect(() => {
     localStorage.setItem('sidebar_open', String(sidebarOpen))
   }, [sidebarOpen])
@@ -51,19 +81,14 @@ export default function AdminLayout() {
   }, [sidebarState])
 
   useEffect(() => {
-    const handleTransition = () => {
-      if (sidebarState === 'collapsed') {
-        setOpenMenu(null)
+    if (sidebarState === 'collapsed') return
+    for (const group of menuConfig) {
+      if (group.submenus?.some((sub) => sub.url === activeUrl)) {
+        setOpenMenu(group.id)
+        break
       }
     }
-    window.addEventListener('transitionend', handleTransition)
-    return () => window.removeEventListener('transitionend', handleTransition)
-  }, [sidebarState])
-
-  const rawMenuConfig = systemData?.admin_menu_config as any[] | undefined
-  const menuConfig = rawMenuConfig?.length
-    ? normalizeMenuConfig(rawMenuConfig)
-    : DEFAULT_MENU_CONFIG
+  }, [activeUrl, menuConfig, sidebarState])
 
   useEffect(() => {
     if (user?.id) {
@@ -78,31 +103,10 @@ export default function AdminLayout() {
     }
   }, [user?.id])
 
-  useEffect(() => {
-    if (sidebarState === 'collapsed') return
-    let matchedMenu: string | null = null
-    for (const group of menuConfig) {
-      if (
-        group.submenus?.some(
-          (sub) => location.pathname === sub.url || location.pathname.startsWith(`${sub.url}/`),
-        )
-      ) {
-        matchedMenu = group.id
-        break
-      }
-    }
-    if (matchedMenu) {
-      setOpenMenu(matchedMenu)
-    }
-  }, [location.pathname, menuConfig, sidebarState])
-
   const handleSignOut = async () => {
     await signOut()
     navigate('/login')
   }
-
-  const isPathActive = (url: string) =>
-    location.pathname === url || location.pathname.startsWith(`${url}/`)
 
   return (
     <div className="flex w-full min-h-screen bg-background">
@@ -126,14 +130,14 @@ export default function AdminLayout() {
           <SidebarMenu>
             {menuConfig.map((group) => {
               const isOpen = openMenu === group.id
-              const isActiveGroup = group.submenus?.some((sub) => isPathActive(sub.url))
+              const isActiveGroup = group.submenus?.some((sub) => sub.url === activeUrl) ?? false
 
               if (!group.submenus && group.url) {
                 return (
                   <SidebarMenuItem key={group.id}>
                     <SidebarMenuButton
                       tooltip={group.label}
-                      isActive={isPathActive(group.url)}
+                      isActive={activeUrl === group.url}
                       asChild
                     >
                       <Link to={group.url}>
@@ -158,10 +162,9 @@ export default function AdminLayout() {
                     <CollapsibleTrigger asChild>
                       <SidebarMenuButton
                         tooltip={group.label}
-                        isActive={isOpen || isActiveGroup}
                         className={cn(
                           'w-full transition-all duration-300',
-                          (isOpen || isActiveGroup) && 'font-medium text-primary',
+                          isActiveGroup && 'font-medium text-primary',
                         )}
                       >
                         {group.icon && renderIcon(group.icon)}
@@ -179,7 +182,7 @@ export default function AdminLayout() {
                     <CollapsibleContent className="group-data-[collapsible=icon]:hidden">
                       <SidebarMenuSub>
                         {group.submenus?.map((sub) => {
-                          const isItemActive = isPathActive(sub.url)
+                          const isItemActive = activeUrl === sub.url
                           return (
                             <SidebarMenuSubItem key={sub.id}>
                               <SidebarMenuSubButton
