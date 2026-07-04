@@ -144,19 +144,51 @@ Deno.serve(async (req: Request) => {
     if (fullLogoUrl) {
       const supabaseBaseUrl = Deno.env.get('SUPABASE_URL')?.replace(/\/$/, '') || ''
       const publicBaseUrl = 'https://www.speedworkinformatica.com'
+      const cleanPath = (p: string) => p.split('?')[0]
+
       if (fullLogoUrl.startsWith('http://') || fullLogoUrl.startsWith('https://')) {
+        if (
+          fullLogoUrl.includes('/storage/v1/object/sign/media/') ||
+          fullLogoUrl.includes('/storage/v1/render/image/media/')
+        ) {
+          const match = fullLogoUrl.match(
+            /\/storage\/v1\/(?:object\/sign|render\/image)\/media\/(.+)/,
+          )
+          if (match) {
+            fullLogoUrl = `${supabaseBaseUrl}/storage/v1/object/public/media/${cleanPath(match[1])}`
+          }
+        }
         // Already an absolute URL — use as-is
+      } else if (fullLogoUrl.startsWith('/storage/v1/object/public/media/')) {
+        fullLogoUrl = `${supabaseBaseUrl}${cleanPath(fullLogoUrl)}`
+      } else if (
+        fullLogoUrl.startsWith('/storage/v1/object/sign/media/') ||
+        fullLogoUrl.startsWith('/storage/v1/render/image/media/')
+      ) {
+        const match = fullLogoUrl.match(
+          /\/storage\/v1\/(?:object\/sign|render\/image)\/media\/(.+)/,
+        )
+        if (match) {
+          fullLogoUrl = `${supabaseBaseUrl}/storage/v1/object/public/media/${cleanPath(match[1])}`
+        }
       } else if (fullLogoUrl.startsWith('/storage/')) {
-        fullLogoUrl = `${supabaseBaseUrl}${fullLogoUrl}`
+        const mediaMatch = fullLogoUrl.match(/media\/(.+)/)
+        if (mediaMatch) {
+          fullLogoUrl = `${supabaseBaseUrl}/storage/v1/object/public/media/${cleanPath(mediaMatch[1])}`
+        } else {
+          fullLogoUrl = `${supabaseBaseUrl}${cleanPath(fullLogoUrl)}`
+        }
+      } else if (fullLogoUrl.startsWith('media/')) {
+        fullLogoUrl = `${supabaseBaseUrl}/storage/v1/object/public/${cleanPath(fullLogoUrl)}`
       } else if (fullLogoUrl.startsWith('/')) {
-        fullLogoUrl = `${publicBaseUrl}${fullLogoUrl}`
+        fullLogoUrl = `${publicBaseUrl}${cleanPath(fullLogoUrl)}`
       } else {
-        fullLogoUrl = `${publicBaseUrl}/${fullLogoUrl}`
+        fullLogoUrl = `${supabaseBaseUrl}/storage/v1/object/public/media/${cleanPath(fullLogoUrl)}`
       }
     }
 
     const logoUrl = fullLogoUrl
-      ? `<img src="${fullLogoUrl}" alt="${senderName}" width="250" height="80" style="max-height: 80px; max-width: 250px; width: auto; height: auto; display: block; margin: 0 auto; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic;" />`
+      ? `<img src="${fullLogoUrl}" alt="${senderName}" width="250" height="80" style="max-height: 80px; max-width: 250px; width: auto; height: auto; display: block; margin: 0 auto; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; font-family: Arial, Helvetica, sans-serif; font-size: 20px; font-weight: bold; color: ${BRAND_COLOR}; line-height: 80px; text-align: center;" />`
       : `<h1 style="color: ${BRAND_COLOR}; margin: 0; font-size: 24px; font-family: Arial, Helvetica, sans-serif;">${senderName}</h1>`
 
     let finalHtml = bodyContent
