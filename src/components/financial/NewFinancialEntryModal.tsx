@@ -115,9 +115,12 @@ export function NewFinancialEntryModal({
     const total = parseFloat(totalAmount) || 0
     const num = Math.max(1, parseInt(installments) || 1)
     const parcelValue = Math.round((total / num) * 100) / 100
+    if (!dueDate) return []
     const base = new Date(dueDate + 'T00:00:00')
+    if (isNaN(base.getTime())) return []
     return Array.from({ length: num }, (_, i) => {
       const d = new Date(base.getFullYear(), base.getMonth() + i, base.getDate())
+      if (isNaN(d.getTime())) return null
       const isLast = i === num - 1
       return {
         num: i + 1,
@@ -128,7 +131,7 @@ export function NewFinancialEntryModal({
             : parcelValue,
         due: d.toISOString().split('T')[0],
       }
-    })
+    }).filter(Boolean) as { num: number; total: number; amount: number; due: string }[]
   }, [totalAmount, installments, dueDate])
 
   const canProceed = () => {
