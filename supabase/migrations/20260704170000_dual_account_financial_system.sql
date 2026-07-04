@@ -64,7 +64,7 @@ WHERE conta_id IS NOT NULL AND conta_origem_id IS NULL;
 UPDATE public.financial_master_records m
 SET conta_origem_id = sub.conta_id
 FROM (
-    SELECT master_record_id, MIN(conta_id) AS conta_id
+    SELECT master_record_id, MIN(conta_id::text)::uuid AS conta_id
     FROM public.financial_charges
     WHERE conta_id IS NOT NULL AND master_record_id IS NOT NULL
     GROUP BY master_record_id
