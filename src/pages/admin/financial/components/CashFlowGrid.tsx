@@ -35,23 +35,45 @@ interface CashFlowGridProps {
 export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGridProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [profiles, setProfiles] = useState<Record<string, any>>({})
+  const [partners, setPartners] = useState<Record<string, any>>({})
   const [paymentCharge, setPaymentCharge] = useState<any>(null)
 
   useEffect(() => {
     const ids = records.map((r) => r.client_id).filter(Boolean) as string[]
-    if (ids.length === 0) return
     const uniqueIds = [...new Set(ids)]
-    supabase
-      .from('profiles')
-      .select('id, name, cpf_cnpj')
-      .in('id', uniqueIds)
-      .then(({ data }) => {
-        const map: Record<string, any> = {}
-        data?.forEach((p) => {
-          map[p.id] = p
+    if (uniqueIds.length > 0) {
+      supabase
+        .from('profiles')
+        .select('id, name, cpf_cnpj, document')
+        .in('id', uniqueIds)
+        .then(({ data }) => {
+          const map: Record<string, any> = {}
+          data?.forEach((p) => {
+            map[p.id] = p
+          })
+          setProfiles(map)
         })
-        setProfiles(map)
-      })
+    } else {
+      setProfiles({})
+    }
+
+    const names = records.map((r) => r.client_name).filter(Boolean) as string[]
+    const uniqueNames = [...new Set(names)]
+    if (uniqueNames.length > 0) {
+      supabase
+        .from('financial_partners')
+        .select('name, document, type')
+        .in('name', uniqueNames)
+        .then(({ data }) => {
+          const map: Record<string, any> = {}
+          data?.forEach((p) => {
+            map[p.name] = p
+          })
+          setPartners(map)
+        })
+    } else {
+      setPartners({})
+    }
   }, [records])
 
   if (loading) {
@@ -107,9 +129,10 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
                 const status = getMasterStatus(charges)
                 const isExpanded = expandedId === r.id
                 const profile = r.client_id ? profiles[r.client_id] : null
-                const doc = profile?.cpf_cnpj || '-'
-                const name = r.client_name || '-'
-                const realized = getTotalRealized(charges)
+                const partner = r.client_name ? partners[r.client_name] : null
+                const doc = profile?.cpf_cnpj || profile?.document || partner?.document || '-'
+                const name = r.client_name || profile?.name || partner?.name || '-'
+                const realized = Number(r.paid_amount) || getTotalRealized(charges)
                 const typeLetter = r.type === 'payable' ? 'D' : 'C'
                 const typeLabel = getTypeLabel(r.type)
                 const created = safeDate(r.created_at)
@@ -207,7 +230,7 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
                                   return (
                                     <TableRow key={c.id}>
                                       <TableCell className="text-sm">
-                                        {c.description || '-'}
+                                        {r.description || c.description || '-'}
                                       </TableCell>
                                       <TableCell className="text-sm text-muted-foreground">
                                         {c.parcela_numero
