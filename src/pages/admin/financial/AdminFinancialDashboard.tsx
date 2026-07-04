@@ -23,6 +23,7 @@ export default function AdminFinancialDashboard() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [showNewModal, setShowNewModal] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchData()
@@ -82,7 +83,13 @@ export default function AdminFinancialDashboard() {
             Acompanhe valores previstos vs realizados e gerencie parcelas.
           </p>
         </div>
-        <Button onClick={() => setShowNewModal(true)} className="shrink-0">
+        <Button
+          onClick={() => {
+            setEditId(null)
+            setShowNewModal(true)
+          }}
+          className="shrink-0"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Novo Lançamento
         </Button>
@@ -160,11 +167,23 @@ export default function AdminFinancialDashboard() {
         </div>
       </div>
 
-      <CashFlowGrid records={filteredRecords} loading={loading} onRefresh={fetchData} />
+      <CashFlowGrid
+        records={filteredRecords}
+        loading={loading}
+        onRefresh={fetchData}
+        onEdit={(id) => {
+          setEditId(id)
+          setShowNewModal(true)
+        }}
+      />
       <NewFinancialEntryModal
         open={showNewModal}
-        onOpenChange={setShowNewModal}
+        onOpenChange={(v) => {
+          setShowNewModal(v)
+          if (!v) setEditId(null)
+        }}
         onSuccess={fetchData}
+        editId={editId}
       />
     </div>
   )

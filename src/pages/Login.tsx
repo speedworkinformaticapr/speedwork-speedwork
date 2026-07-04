@@ -42,6 +42,7 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [checkingSession, setCheckingSession] = useState(true)
 
   const navigate = useNavigate()
   const location = useLocation()
@@ -57,7 +58,7 @@ export default function Login() {
       return
     }
     if (role === 'admin' || role === 'master') {
-      navigate('/admin/dashboard', { replace: true })
+      navigate('/admin/financial', { replace: true })
     } else {
       navigate('/client/dashboard', { replace: true })
     }
@@ -91,7 +92,9 @@ export default function Login() {
         handleRedirect(profile?.role)
       }
     }
-    checkExistingSession()
+    checkExistingSession().finally(() => {
+      if (!cancelled) setCheckingSession(false)
+    })
     return () => {
       cancelled = true
     }
@@ -202,6 +205,14 @@ export default function Login() {
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' })
     }
+  }
+
+  if (checkingSession) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   return (

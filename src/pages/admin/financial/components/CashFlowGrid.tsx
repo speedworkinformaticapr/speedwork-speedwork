@@ -1,5 +1,4 @@
 import { useState, Fragment } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
   Table,
   TableBody,
@@ -9,117 +8,86 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
-import { ChevronDown, ChevronRight, Edit, CheckCircle2, Trash2 } from 'lucide-react'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { supabase } from '@/lib/supabase/client'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
+import { Edit, ChevronDown, ChevronRight, Loader2, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { toast } from 'sonner'
-import { PaymentRegistrationModal } from '@/components/financial/PaymentRegistrationModal'
 import {
-  getChargeStatus,
   getMasterStatus,
+  getChargeStatus,
   formatCurrency,
   getTypeLabel,
 } from '@/lib/financial-utils'
+import { supabase } from '@/lib/supabase/client'
+import { toast } from 'sonner'
+import { safeDate } from '@/components/financial/wizard/types'
 
 interface CashFlowGridProps {
   records: any[]
   loading: boolean
   onRefresh: () => void
+  onEdit?: (id: string) => void
 }
 
-export function CashFlowGrid({ records, loading, onRefresh }: CashFlowGridProps) {
-  const navigate = useNavigate()
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
-  const [baixaCharge, setBaixaCharge] = useState<any>(null)
-  const [deleteTarget, setDeleteTarget] = useState<any>(null)
-  const [deleting, setDeleting] = useState(false)
+export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGridProps) {
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  const handleDelete = async () => {
-    if (!deleteTarget) return
-    setDeleting(true)
-    try {
-      await supabase.from('financial_charges').delete().eq('master_record_id', deleteTarget.id)
-      const { error } = await supabase
-        .from('financial_master_records')
-        .delete()
-        .eq('id', deleteTarget.id)
-      if (error) throw error
-      toast.success('Lançamento excluído com sucesso!')
-      setDeleteTarget(null)
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (records.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-muted-foreground">
+          Nenhum registro encontrado.
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Excluir este lançamento e todas as parcelas?')) return
+    const { error } = await supabase.from('financial_master_records').delete().eq('id', id)
+    if (error) {
+      toast.error('Erro ao excluir')
+    } else {
+      toast.success('Lançamento excluído')
       onRefresh()
-    } catch (err: any) {
-      toast.error('Erro ao excluir: ' + err.message)
-    } finally {
-      setDeleting(false)
     }
   }
 
-  const toggleExpand = (id: string) => {
-    setExpandedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
-  const fmtDate = (d: string | null) =>
-    d ? format(new Date(d), 'dd/MM/yyyy', { locale: ptBR }) : '—'
-
   return (
-    <>
-      <div className="border rounded-md overflow-auto bg-background max-h-[55vh]">
+    <Card>
+      <CardContent className="p-0">
         <Table>
-          <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur z-10">
+          <TableHeader>
             <TableRow>
-              <TableHead className="w-10" />
-              <TableHead>Cliente/Fornecedor</TableHead>
-              <TableHead>Tipo: Pagar/Receber</TableHead>
-              <TableHead>Status: Em dia/Atrasado/Parcial</TableHead>
-              <TableHead>Previsto</TableHead>
-              <TableHead>Realizado</TableHead>
+              <TableHead className="w-8" />
+              <TableHead>Descrição</TableHead>
+              <TableHead>Entidade</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead className="text-right">Valor</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Criado</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center h-24">
-                  Carregando...
-                </TableCell>
-              </TableRow>
-            ) : records.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
-                  Nenhum registro encontrado.
-                </TableCell>
-              </TableRow>
-            ) : (
-              records.flatMap((record) => {
-                const charges = record.financial_charges || []
-                const isExpanded = expandedIds.has(record.id)
-                const status = getMasterStatus(charges)
-                const totalRealized = charges.reduce(
-                  (s, c) => s + (Number(c.realized_amount) || 0),
-                  0,
-                )
-                const rows: React.ReactNode[] = [
+            {records.map((r) => {
+              const charges = r.financial_charges || []
+              const status = getMasterStatus(charges)
+              const isExpanded = expandedId === r.id
+              return (
+                <Fragment key={r.id}>
                   <TableRow
-                    key={record.id}
                     className="cursor-pointer hover:bg-muted/40"
-                    onClick={() => toggleExpand(record.id)}
+                    onClick={() => setExpandedId(isExpanded ? null : r.id)}
                   >
                     <TableCell>
                       <Button variant="ghost" size="icon" className="h-6 w-6">
@@ -130,143 +98,90 @@ export function CashFlowGrid({ records, loading, onRefresh }: CashFlowGridProps)
                         )}
                       </Button>
                     </TableCell>
+                    <TableCell className="font-medium">{r.description}</TableCell>
+                    <TableCell>{r.client_name}</TableCell>
                     <TableCell>
-                      <div className="font-medium">{record.client_name}</div>
-                      <div className="text-xs text-muted-foreground">{record.description}</div>
+                      <Badge variant="outline">{getTypeLabel(r.type)}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {formatCurrency(r.total_amount)}
                     </TableCell>
                     <TableCell>
-                      <span
-                        className={cn(
-                          'font-medium',
-                          record.type === 'payable' ? 'text-red-600' : 'text-green-600',
-                        )}
-                      >
-                        {getTypeLabel(record.type)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span
-                        className={cn('px-2 py-1 rounded-full text-xs font-medium', status.color)}
+                      <Badge
+                        className={cn('rounded-md px-2 py-0.5 text-xs border-none', status.color)}
                       >
                         {status.label}
-                      </span>
+                      </Badge>
                     </TableCell>
-                    <TableCell>
-                      <div className="text-sm font-medium">
-                        {formatCurrency(record.total_amount)}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {charges.length} parcela(s)
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm font-medium">{formatCurrency(totalRealized)}</div>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {format(new Date(r.created_at), 'dd/MM/yyyy')}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
+                      <div className="flex justify-end gap-1">
+                        {onEdit && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-blue-500 hover:bg-blue-500/10"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onEdit(r.id)
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-8 w-8 text-rose-500 hover:bg-rose-500/10"
                           onClick={(e) => {
                             e.stopPropagation()
-                            navigate(`/admin/financial/payments/${record.id}/edit`)
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setDeleteTarget(record)
+                            handleDelete(r.id)
                           }}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
-                  </TableRow>,
-                ]
-                if (isExpanded) {
-                  charges.forEach((charge) => {
-                    const cs = getChargeStatus(charge)
-                    rows.push(
-                      <TableRow key={charge.id} className="bg-muted/20 hover:bg-muted/30">
-                        <TableCell />
-                        <TableCell className="pl-8 text-sm text-muted-foreground">
-                          {charge.description || `Parcela ${charge.parcela_numero || ''}`}
-                        </TableCell>
-                        <TableCell />
-                        <TableCell>
-                          <span className={cn('px-2 py-0.5 rounded-full text-xs', cs.color)}>
-                            {cs.label}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">{fmtDate(charge.due_date)}</div>
-                          <div className="text-xs font-medium">
-                            {formatCurrency(Number(charge.amount))}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">{fmtDate(charge.payment_date)}</div>
-                          <div className="text-xs font-medium">
-                            {charge.realized_amount
-                              ? formatCurrency(Number(charge.realized_amount))
-                              : '—'}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8"
-                            onClick={() => setBaixaCharge(charge)}
-                          >
-                            <CheckCircle2 className="h-4 w-4 mr-1" />
-                            Baixa
-                          </Button>
-                        </TableCell>
-                      </TableRow>,
-                    )
-                  })
-                }
-                return rows
-              })
-            )}
+                  </TableRow>
+                  {isExpanded &&
+                    charges.map((c: any) => {
+                      const cs = getChargeStatus(c)
+                      const due = safeDate(c.due_date)
+                      return (
+                        <TableRow key={c.id} className="bg-muted/20">
+                          <TableCell />
+                          <TableCell className="text-sm text-muted-foreground pl-8">
+                            {c.description || '-'}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {c.parcela_numero ? `${c.parcela_numero}/${c.parcela_total}` : '-'}
+                          </TableCell>
+                          <TableCell />
+                          <TableCell className="text-right text-sm">
+                            {formatCurrency(c.amount)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              className={cn('rounded-md px-2 py-0.5 text-xs border-none', cs.color)}
+                            >
+                              {cs.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {due ? format(due, 'dd/MM/yyyy') : '-'}
+                          </TableCell>
+                          <TableCell />
+                        </TableRow>
+                      )
+                    })}
+                </Fragment>
+              )
+            })}
           </TableBody>
         </Table>
-      </div>
-      <PaymentRegistrationModal
-        open={!!baixaCharge}
-        onOpenChange={(open) => !open && setBaixaCharge(null)}
-        charge={baixaCharge}
-        onSuccess={onRefresh}
-      />
-      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Lançamento</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este lançamento? Esta ação removerá todas as parcelas
-              vinculadas.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleting ? 'Excluindo...' : 'Excluir'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+      </CardContent>
+    </Card>
   )
 }

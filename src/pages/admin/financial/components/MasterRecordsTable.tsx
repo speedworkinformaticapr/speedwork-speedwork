@@ -19,9 +19,11 @@ import { toast } from 'sonner'
 export function MasterRecordsTable({
   selectedId,
   onSelect,
+  onEdit,
 }: {
   selectedId: string | null
   onSelect: (id: string) => void
+  onEdit?: (id: string) => void
 }) {
   const { t } = useTranslation()
   const [records, setRecords] = useState<any[]>([])
@@ -151,6 +153,10 @@ export function MasterRecordsTable({
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onEdit?.(record.id)
+                      }}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>

@@ -17,90 +17,54 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
-import {
-  Command,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-} from '@/components/ui/command'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Switch } from '@/components/ui/switch'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { Loader2, Check, ChevronsUpDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2, Check, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatCurrency } from '@/lib/financial-utils'
+import { EntityCombobox } from './wizard/EntityCombobox'
+import { ConferenceView } from './wizard/ConferenceView'
+import { computeInstallments, safeDate } from './wizard/types'
 
-interface NewFinancialEntryModalProps {
+const STEPS = ['Identificação', 'Lançamento', 'Valores', 'Conferência']
+
+interface Props {
   open: boolean
-  onOpenChange: (open: boolean) => void
+  onOpenChange: (v: boolean) => void
   onSuccess: () => void
+  editId?: string | null
 }
 
-const STEPS = ['Informações Básicas', 'Entidade', 'Condições Financeiras', 'Parcelamento']
-
-export function NewFinancialEntryModal({
-  open,
-  onOpenChange,
-  onSuccess,
-}: NewFinancialEntryModalProps) {
+export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }: Props) {
   const [step, setStep] = useState(0)
+  const [loading, setLoading] = useState(false)
   const [type, setType] = useState<'receivable' | 'payable'>('receivable')
-  const [categoryId, setCategoryId] = useState('')
-  const [description, setDescription] = useState('')
+  const [isAvulso, setIsAvulso] = useState(false)
   const [entityId, setEntityId] = useState('')
   const [entityName, setEntityName] = useState('')
-  const [entityOpen, setEntityOpen] = useState(false)
-  const [entities, setEntities] = useState<any[]>([])
-  const [accounts, setAccounts] = useState<any[]>([])
-  const [accountId, setAccountId] = useState('')
+  const [categoryId, setCategoryId] = useState('')
+  const [description, setDescription] = useState('')
   const [totalAmount, setTotalAmount] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [installments, setInstallments] = useState('1')
-  const [loading, setLoading] = useState(false)
+  const [accountId, setAccountId] = useState('')
+  const [accounts, setAccounts] = useState<any[]>([])
+
+  const isEdit = !!editId
 
   useEffect(() => {
-    if (open) {
-      fetchAccounts()
-      setDueDate(new Date().toISOString().split('T')[0])
-      fetchEntities()
+    if (!open) return
+    fetchAccounts()
+    const today = new Date()
+    setDueDate(isNaN(today.getTime()) ? '' : today.toISOString().split('T')[0])
+    if (editId) {
+      fetchEditData(editId)
+    } else {
+      resetForm()
     }
-  }, [open])
-
-  useEffect(() => {
-    if (open) {
-      fetchEntities()
-      setEntityId('')
-      setEntityName('')
-    }
-  }, [type, open])
-
-  async function fetchEntities() {
-    const filterField = type === 'receivable' ? 'is_client' : 'is_supplier'
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, name, email')
-      .eq(filterField, true)
-      .order('name')
-    if (data && data.length > 0) {
-      setEntities(data)
-      return
-    }
-    const { data: fallback } = await supabase
-      .from('profiles')
-      .select('id, name, email')
-      .order('name')
-    setEntities(fallback || [])
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editId])
 
   async function fetchAccounts() {
     const { data } = await supabase
@@ -111,105 +75,114 @@ export function NewFinancialEntryModal({
     setAccounts(data || [])
   }
 
-  const installmentPreview = useMemo(() => {
-    const total = parseFloat(totalAmount) || 0
-    const num = Math.max(1, parseInt(installments) || 1)
-    const parcelValue = Math.round((total / num) * 100) / 100
-    if (!dueDate) return []
-    const base = new Date(dueDate + 'T00:00:00')
-    if (isNaN(base.getTime())) return []
-    return Array.from({ length: num }, (_, i) => {
-      const d = new Date(base.getFullYear(), base.getMonth() + i, base.getDate())
-      if (isNaN(d.getTime())) return null
-      const isLast = i === num - 1
-      return {
-        num: i + 1,
-        total: num,
-        amount:
-          isLast && num > 1
-            ? Math.round((total - parcelValue * (num - 1)) * 100) / 100
-            : parcelValue,
-        due: d.toISOString().split('T')[0],
-      }
-    }).filter(Boolean) as { num: number; total: number; amount: number; due: string }[]
-  }, [totalAmount, installments, dueDate])
-
-  const canProceed = () => {
-    switch (step) {
-      case 0:
-        return !!type && !!description.trim() && (!!categoryId || true)
-      case 1:
-        return !!entityId
-      case 2:
-        return parseFloat(totalAmount) > 0 && !!dueDate
-      case 3:
-        return parseInt(installments) >= 1
-      default:
-        return false
+  async function fetchEditData(id: string) {
+    const { data: master } = await supabase
+      .from('financial_master_records')
+      .select('*')
+      .eq('id', id)
+      .single()
+    if (!master) return
+    const { data: charges } = await supabase
+      .from('financial_charges')
+      .select('*')
+      .eq('master_record_id', id)
+      .order('due_date')
+    setType((master.type as any) || 'receivable')
+    setEntityId(master.client_id || '')
+    setEntityName(master.client_name || '')
+    setCategoryId(master.category || '')
+    setDescription(master.description || '')
+    setTotalAmount(String(master.total_amount || ''))
+    setIsAvulso(!master.client_id)
+    if (charges && charges.length > 0) {
+      const first = safeDate(charges[0].due_date)
+      setDueDate(first ? first.toISOString().split('T')[0] : '')
+      setInstallments(String(charges.length))
     }
   }
 
-  const resetForm = () => {
+  function resetForm() {
     setStep(0)
     setType('receivable')
-    setCategoryId('')
-    setDescription('')
+    setIsAvulso(false)
     setEntityId('')
     setEntityName('')
-    setAccountId('')
+    setCategoryId('')
+    setDescription('')
     setTotalAmount('')
     setInstallments('1')
+    setAccountId('')
+  }
+
+  const installmentPreview = useMemo(
+    () => computeInstallments(totalAmount, installments, dueDate),
+    [totalAmount, installments, dueDate],
+  )
+
+  const canProceed = () => {
+    if (step === 0) return !!type && (isAvulso || !!entityId)
+    if (step === 1) return !!description.trim()
+    if (step === 2) return parseFloat(totalAmount) > 0 && !!dueDate
+    return true
   }
 
   const handleSubmit = async () => {
-    if (!entityId) return toast.error('Selecione uma entidade')
     if (!description.trim()) return toast.error('Descrição é obrigatória')
     const total = parseFloat(totalAmount)
     if (!total || total <= 0) return toast.error('Valor total inválido')
-    const numInstallments = Math.max(1, parseInt(installments) || 1)
-    if (!dueDate) return toast.error('Data de vencimento é obrigatória')
-
     setLoading(true)
     try {
-      const { data: master, error: masterError } = await supabase
-        .from('financial_master_records')
-        .insert({
-          description: description.trim(),
-          client_id: entityId,
-          client_name: entityName,
-          total_amount: total,
-          status: 'pendente',
-          type,
-          category: categoryId || 'general',
-        })
-        .select()
-        .single()
-      if (masterError) throw masterError
-
+      const masterPayload: any = {
+        description: description.trim(),
+        client_id: isAvulso ? null : entityId,
+        client_name: isAvulso ? 'Lançamento Avulso' : entityName,
+        total_amount: total,
+        type,
+        category: categoryId || 'general',
+      }
+      let masterId = editId
+      if (isEdit && masterId) {
+        const { error } = await supabase
+          .from('financial_master_records')
+          .update(masterPayload)
+          .eq('id', masterId)
+        if (error) throw error
+        await supabase.from('financial_charges').delete().eq('master_record_id', masterId)
+      } else {
+        masterPayload.status = 'pendente'
+        const { data: master, error } = await supabase
+          .from('financial_master_records')
+          .insert(masterPayload)
+          .select()
+          .single()
+        if (error) throw error
+        masterId = master.id
+      }
       const charges = installmentPreview.map((p) => ({
-        master_record_id: master.id,
-        client_name: entityName,
+        master_record_id: masterId,
+        client_name: masterPayload.client_name,
         amount: p.amount,
         due_date: p.due,
-        description: numInstallments > 1 ? `Parcela ${p.num}/${p.total}` : description.trim(),
+        description:
+          parseInt(installments) > 1 ? `Parcela ${p.num}/${p.total}` : description.trim(),
         status: 'pendente',
         type,
         category: categoryId || 'general',
-        profile_id: entityId,
+        profile_id: isAvulso ? null : entityId,
         conta_id: accountId || null,
         parcela_numero: p.num,
         parcela_total: p.total,
       }))
-
-      const { error: chargesError } = await supabase.from('financial_charges').insert(charges)
-      if (chargesError) throw chargesError
-
-      toast.success('Lançamento criado com sucesso!')
+      if (charges.length > 0) {
+        const { error: ce } = await supabase.from('financial_charges').insert(charges)
+        if (ce) throw ce
+      }
+      toast.success(isEdit ? 'Lançamento atualizado!' : 'Lançamento criado!')
       resetForm()
       onSuccess()
       onOpenChange(false)
     } catch (err: any) {
-      toast.error('Erro ao criar lançamento: ' + err.message)
+      toast.error('Erro: ' + err.message)
     } finally {
       setLoading(false)
     }
@@ -224,21 +197,24 @@ export function NewFinancialEntryModal({
     else handleSubmit()
   }
 
+  const categoryName = accounts.find((a) => a.id === categoryId)?.nome || ''
+  const numInstallments = parseInt(installments) || 1
+
   return (
     <Dialog
       open={open}
       onOpenChange={(v) => {
         onOpenChange(v)
-        if (!v) {
-          resetForm()
-        }
+        if (!v) resetForm()
       }}
     >
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Novo Lançamento</DialogTitle>
+          <DialogTitle>{isEdit ? 'Editar Lançamento' : 'Novo Lançamento'}</DialogTitle>
           <DialogDescription>
-            Crie uma nova receita ou despesa com geração automática de parcelas.
+            {isEdit
+              ? 'Edite os dados do lançamento financeiro.'
+              : 'Crie uma nova receita ou despesa com parcelas.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -293,21 +269,46 @@ export function NewFinancialEntryModal({
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>Categoria</Label>
-                  <Select value={categoryId} onValueChange={setCategoryId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {accounts.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.codigo_estrutural} - {a.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-2 flex items-end">
+                  <div className="flex items-center gap-2 pb-2">
+                    <Switch checked={isAvulso} onCheckedChange={setIsAvulso} id="avulso" />
+                    <Label htmlFor="avulso">Lançamento Avulso</Label>
+                  </div>
                 </div>
+              </div>
+              {!isAvulso && (
+                <div className="space-y-2">
+                  <Label>Entidade *</Label>
+                  <EntityCombobox
+                    type={type}
+                    entityId={entityId}
+                    entityName={entityName}
+                    onSelect={(id, name) => {
+                      setEntityId(id)
+                      setEntityName(name)
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === 1 && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="space-y-2">
+                <Label>Categoria</Label>
+                <Select value={categoryId} onValueChange={setCategoryId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.codigo_estrutural} - {a.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Descrição *</Label>
@@ -317,59 +318,6 @@ export function NewFinancialEntryModal({
                   placeholder="Descrição do lançamento"
                 />
               </div>
-            </div>
-          )}
-
-          {step === 1 && (
-            <div className="space-y-2 animate-fade-in">
-              <Label>Entidade *</Label>
-              <Popover open={entityOpen} onOpenChange={setEntityOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" role="combobox" className="w-full justify-between">
-                    {entityName || 'Buscar cliente/fornecedor...'}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Buscar entidade..." />
-                    <CommandList>
-                      <CommandEmpty>Nenhuma entidade encontrada.</CommandEmpty>
-                      <CommandGroup>
-                        {entities.map((e) => (
-                          <CommandItem
-                            key={e.id}
-                            value={`${e.name || ''} ${e.email || ''}`}
-                            onSelect={() => {
-                              setEntityId(e.id)
-                              setEntityName(e.name || e.email || 'Entidade')
-                              setEntityOpen(false)
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                'mr-2 h-4 w-4',
-                                entityId === e.id ? 'opacity-100' : 'opacity-0',
-                              )}
-                            />
-                            <div className="flex flex-col">
-                              <span>{e.name || 'Sem nome'}</span>
-                              {e.email && (
-                                <span className="text-xs text-muted-foreground">{e.email}</span>
-                              )}
-                            </div>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-              {entityName && (
-                <p className="text-sm text-muted-foreground">
-                  Selecionado: <span className="font-medium text-foreground">{entityName}</span>
-                </p>
-              )}
             </div>
           )}
 
@@ -391,70 +339,50 @@ export function NewFinancialEntryModal({
                   <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label>Conta</Label>
-                <Select value={accountId} onValueChange={setAccountId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a conta" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {accounts.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.codigo_estrutural} - {a.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Nº de Parcelas</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={installments}
+                    onChange={(e) => setInstallments(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Conta</Label>
+                  <Select value={accountId} onValueChange={setAccountId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.codigo_estrutural} - {a.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+              {installmentPreview.length > 0 && parseFloat(totalAmount) > 0 && (
+                <div className="text-sm text-muted-foreground">
+                  {numInstallments}x de {formatCurrency(installmentPreview[0]?.amount || 0)}
+                </div>
+              )}
             </div>
           )}
 
           {step === 3 && (
-            <div className="space-y-4 animate-fade-in">
-              <div className="space-y-2">
-                <Label>Número de Parcelas</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={installments}
-                  onChange={(e) => setInstallments(e.target.value)}
-                />
-              </div>
-              {installmentPreview.length > 0 && parseFloat(totalAmount) > 0 && (
-                <div className="border rounded-md overflow-auto max-h-[200px]">
-                  <Table>
-                    <TableHeader className="sticky top-0 bg-muted/95">
-                      <TableRow>
-                        <TableHead className="text-xs">Parcela</TableHead>
-                        <TableHead className="text-xs">Vencimento</TableHead>
-                        <TableHead className="text-xs text-right">Valor</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {installmentPreview.map((p) => (
-                        <TableRow key={p.num}>
-                          <TableCell className="text-xs font-medium">
-                            {p.num}/{p.total}
-                          </TableCell>
-                          <TableCell className="text-xs">
-                            {new Date(p.due + 'T00:00:00').toLocaleDateString('pt-BR')}
-                          </TableCell>
-                          <TableCell className="text-xs text-right font-medium">
-                            {formatCurrency(p.amount)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-              <div className="flex justify-between items-center rounded-md bg-muted/50 px-4 py-2">
-                <span className="text-sm text-muted-foreground">Total Geral</span>
-                <span className="text-lg font-bold">
-                  {formatCurrency(parseFloat(totalAmount) || 0)}
-                </span>
-              </div>
-            </div>
+            <ConferenceView
+              type={type}
+              entityName={entityName}
+              isAvulso={isAvulso}
+              categoryName={categoryName}
+              description={description}
+              totalAmount={totalAmount}
+              installments={installmentPreview}
+            />
           )}
         </div>
 
@@ -477,7 +405,7 @@ export function NewFinancialEntryModal({
           </div>
           <Button onClick={handleNext} disabled={loading}>
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            {step === 3 ? 'Criar Lançamento' : 'Próximo'}
+            {step === 3 ? (isEdit ? 'Salvar Alterações' : 'Criar Lançamento') : 'Próximo'}
             {step < 3 && <ChevronRight className="w-4 h-4 ml-1" />}
           </Button>
         </DialogFooter>
