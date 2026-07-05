@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from 'react'
+import { useState, Fragment } from 'react'
 import {
   Table,
   TableBody,
@@ -13,17 +13,15 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Edit, ChevronDown, ChevronRight, Loader2, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
-import {
-  getMasterStatus,
-  getChargeStatus,
-  formatCurrency,
-  getTypeLabel,
-  getTotalRealized,
-} from '@/lib/financial-utils'
+import { formatCurrency, getTypeLabel } from '@/lib/financial-utils'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { safeDate } from '@/components/financial/wizard/types'
+import { useSystemData } from '@/hooks/use-system-data'
 import { PaymentRegistrationModal } from '@/components/financial/PaymentRegistrationModal'
+import { SortableTableHead } from './SortableTableHead'
+import { GridPagination } from './GridPagination'
+import { InstallmentSubGrid } from './InstallmentSubGrid'
+import { useCashFlowGrid } from './use-cash-flow-grid'
 
 interface CashFlowGridProps {
   records: any[]
@@ -33,77 +31,14 @@ interface CashFlowGridProps {
 }
 
 export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGridProps) {
+  const { data: systemData } = useSystemData()
+  const pageSize = systemData?.records_per_page || 10
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [profiles, setProfiles] = useState<Record<string, any>>({})
-  const [partners, setPartners] = useState<Record<string, any>>({})
-  const [accounts, setAccounts] = useState<Record<string, any>>({})
   const [paymentCharge, setPaymentCharge] = useState<any>(null)
-
-  useEffect(() => {
-    const idSet = new Set<string>()
-    const acctIdSet = new Set<string>()
-    records.forEach((r) => {
-      if (r.client_id) idSet.add(r.client_id)
-      if (r.conta_origem_id) acctIdSet.add(r.conta_origem_id)
-      if (r.conta_destino_id) acctIdSet.add(r.conta_destino_id)
-      ;(r.financial_charges || []).forEach((c: any) => {
-        if (c.profile_id) idSet.add(c.profile_id)
-        if (c.conta_origem_id) acctIdSet.add(c.conta_origem_id)
-        if (c.conta_destino_id) acctIdSet.add(c.conta_destino_id)
-      })
-    })
-    const uniqueIds = [...idSet]
-    if (uniqueIds.length > 0) {
-      supabase
-        .from('profiles')
-        .select('id, name, cpf_cnpj, document')
-        .in('id', uniqueIds)
-        .then(({ data }) => {
-          const map: Record<string, any> = {}
-          data?.forEach((p) => {
-            map[p.id] = p
-          })
-          setProfiles(map)
-        })
-    } else {
-      setProfiles({})
-    }
-
-    const uniqueAcctIds = [...acctIdSet]
-    if (uniqueAcctIds.length > 0) {
-      supabase
-        .from('plano_contas')
-        .select('id, codigo_estrutural, nome, natureza')
-        .in('id', uniqueAcctIds)
-        .then(({ data }) => {
-          const map: Record<string, any> = {}
-          data?.forEach((p) => {
-            map[p.id] = p
-          })
-          setAccounts(map)
-        })
-    } else {
-      setAccounts({})
-    }
-
-    const names = records.map((r) => r.client_name).filter(Boolean) as string[]
-    const uniqueNames = [...new Set(names)]
-    if (uniqueNames.length > 0) {
-      supabase
-        .from('financial_partners')
-        .select('name, document, type')
-        .in('name', uniqueNames)
-        .then(({ data }) => {
-          const map: Record<string, any> = {}
-          data?.forEach((p) => {
-            map[p.name] = p
-          })
-          setPartners(map)
-        })
-    } else {
-      setPartners({})
-    }
-  }, [records])
+  const { enriched, total, sortConfig, handleSort, page, setPage, accounts } = useCashFlowGrid(
+    records,
+    pageSize,
+  )
 
   if (loading) {
     return (
@@ -142,37 +77,65 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
 
   return (
     <>
-      <Card>
-        <CardContent className="p-0 overflow-x-auto">
+      <Card className="flex flex-col overflow-hidden">
+        <div className="overflow-auto" style={{ maxHeight: 'calc(100vh - 380px)' }}>
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-10 bg-card shadow-sm">
               <TableRow>
                 <TableHead className="w-8" />
-                <TableHead>CPF/CNPJ</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Descrição</TableHead>
+                <SortableTableHead
+                  label="Data do Lançamento"
+                  column="created_at"
+                  sortConfig={sortConfig}
+                  onSort={handleSort}
+                />
+                <SortableTableHead
+                  label="CPF/CNPJ"
+                  column="doc"
+                  sortConfig={sortConfig}
+                  onSort={handleSort}
+                />
+                <SortableTableHead
+                  label="Tipo"
+                  column="type"
+                  sortConfig={sortConfig}
+                  onSort={handleSort}
+                />
+                <SortableTableHead
+                  label="Descrição"
+                  column="description"
+                  sortConfig={sortConfig}
+                  onSort={handleSort}
+                />
                 <TableHead>Origem</TableHead>
                 <TableHead>Destino</TableHead>
-                <TableHead className="text-right">Previsto</TableHead>
-                <TableHead className="text-right">Realizado</TableHead>
-                <TableHead>Status</TableHead>
+                <SortableTableHead
+                  label="Previsto"
+                  column="total_amount"
+                  sortConfig={sortConfig}
+                  onSort={handleSort}
+                  className="text-right"
+                />
+                <SortableTableHead
+                  label="Realizado"
+                  column="realized"
+                  sortConfig={sortConfig}
+                  onSort={handleSort}
+                  className="text-right"
+                />
+                <SortableTableHead
+                  label="Status"
+                  column="status"
+                  sortConfig={sortConfig}
+                  onSort={handleSort}
+                />
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {records.map((r) => {
-                const charges = r.financial_charges || []
-                const status = getMasterStatus(charges)
+              {enriched.map((r) => {
                 const isExpanded = expandedId === r.id
-                const chargeWithProfile = charges.find((c: any) => c.profile_id)
-                const profileId = r.client_id || chargeWithProfile?.profile_id
-                const profile = profileId ? profiles[profileId] : null
-                const partner = r.client_name ? partners[r.client_name] : null
-                const doc = profile?.cpf_cnpj || profile?.document || partner?.document || '-'
-                const name = r.client_name || profile?.name || partner?.name || '-'
-                const realized = Number(r.paid_amount) || getTotalRealized(charges)
                 const typeLetter = r.type === 'payable' ? 'D' : 'C'
-                const typeLabel = getTypeLabel(r.type)
                 return (
                   <Fragment key={r.id}>
                     <TableRow
@@ -188,32 +151,38 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
                           )}
                         </Button>
                       </TableCell>
+                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                        {format(new Date(r.created_at), 'dd/MM/yyyy')}
+                      </TableCell>
                       <TableCell>
-                        <div className="font-medium">{doc}</div>
-                        <div className="text-xs text-muted-foreground">{name}</div>
+                        <div className="font-medium">{r._doc}</div>
+                        <div className="text-xs text-muted-foreground">{r._name}</div>
                       </TableCell>
                       <TableCell>
                         <div className="font-bold">{typeLetter}</div>
-                        <div className="text-xs text-muted-foreground">{typeLabel}</div>
+                        <div className="text-xs text-muted-foreground">{getTypeLabel(r.type)}</div>
                       </TableCell>
                       <TableCell className="font-medium">{r.description}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                         {getAcctLabel(r.conta_origem_id)}
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                         {getAcctLabel(r.conta_destino_id)}
                       </TableCell>
                       <TableCell className="text-right font-medium">
                         {formatCurrency(r.total_amount)}
                       </TableCell>
                       <TableCell className="text-right text-sm">
-                        {formatCurrency(realized)}
+                        {formatCurrency(r._realized)}
                       </TableCell>
                       <TableCell>
                         <Badge
-                          className={cn('rounded-md px-2 py-0.5 text-xs border-none', status.color)}
+                          className={cn(
+                            'rounded-md px-2 py-0.5 text-xs border-none',
+                            r._statusColor,
+                          )}
                         >
-                          {status.label}
+                          {r._statusLabel}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
@@ -247,71 +216,13 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
                     </TableRow>
                     {isExpanded && (
                       <TableRow className="bg-muted/20">
-                        <TableCell colSpan={10} className="p-4">
-                          <div className="rounded-lg border overflow-x-auto">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Descrição</TableHead>
-                                  <TableHead>Parcela</TableHead>
-                                  <TableHead>Origem</TableHead>
-                                  <TableHead>Destino</TableHead>
-                                  <TableHead className="text-right">Previsto</TableHead>
-                                  <TableHead className="text-right">Realizado</TableHead>
-                                  <TableHead>Status</TableHead>
-                                  <TableHead className="text-right">Baixa</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {charges.map((c: any) => {
-                                  const cs = getChargeStatus(c)
-                                  return (
-                                    <TableRow key={c.id}>
-                                      <TableCell className="text-sm">
-                                        {r.description || c.description || '-'}
-                                      </TableCell>
-                                      <TableCell className="text-sm text-muted-foreground">
-                                        {c.parcela_numero
-                                          ? `${c.parcela_numero}/${c.parcela_total}`
-                                          : '-'}
-                                      </TableCell>
-                                      <TableCell className="text-xs text-muted-foreground">
-                                        {getAcctLabel(c.conta_origem_id)}
-                                      </TableCell>
-                                      <TableCell className="text-xs text-muted-foreground">
-                                        {getAcctLabel(c.conta_destino_id)}
-                                      </TableCell>
-                                      <TableCell className="text-right text-sm">
-                                        {formatCurrency(c.amount)}
-                                      </TableCell>
-                                      <TableCell className="text-right text-sm">
-                                        {formatCurrency(Number(c.realized_amount) || 0)}
-                                      </TableCell>
-                                      <TableCell>
-                                        <Badge
-                                          className={cn(
-                                            'rounded-md px-2 py-0.5 text-xs border-none',
-                                            cs.color,
-                                          )}
-                                        >
-                                          {cs.label}
-                                        </Badge>
-                                      </TableCell>
-                                      <TableCell className="text-right">
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          onClick={() => setPaymentCharge(c)}
-                                        >
-                                          Baixa
-                                        </Button>
-                                      </TableCell>
-                                    </TableRow>
-                                  )
-                                })}
-                              </TableBody>
-                            </Table>
-                          </div>
+                        <TableCell colSpan={11} className="p-4">
+                          <InstallmentSubGrid
+                            charges={r.financial_charges || []}
+                            masterDescription={r.description}
+                            accounts={accounts}
+                            onPayment={setPaymentCharge}
+                          />
                         </TableCell>
                       </TableRow>
                     )}
@@ -320,7 +231,8 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
               })}
             </TableBody>
           </Table>
-        </CardContent>
+        </div>
+        <GridPagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
       </Card>
       <PaymentRegistrationModal
         open={!!paymentCharge}

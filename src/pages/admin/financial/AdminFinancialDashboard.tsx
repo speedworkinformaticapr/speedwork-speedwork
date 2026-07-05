@@ -10,12 +10,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { CashFlowGrid } from './components/CashFlowGrid'
+import { DateRangeFilter } from './components/DateRangeFilter'
 import { getMasterStatus, formatCurrency } from '@/lib/financial-utils'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Search, Plus, Calendar, TrendingUp, TrendingDown, X, Wallet } from 'lucide-react'
 import { toast } from 'sonner'
 import { NewFinancialEntryModal } from '@/components/financial/NewFinancialEntryModal'
+import { DateRange } from 'react-day-picker'
+import { format } from 'date-fns'
 
 export default function AdminFinancialDashboard() {
   const [records, setRecords] = useState<any[]>([])
@@ -25,8 +28,7 @@ export default function AdminFinancialDashboard() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [showNewModal, setShowNewModal] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
+  const [dateRange, setDateRange] = useState<DateRange | undefined>()
 
   useEffect(() => {
     fetchData()
@@ -47,6 +49,8 @@ export default function AdminFinancialDashboard() {
   }
 
   const filteredRecords = useMemo(() => {
+    const dateFrom = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : ''
+    const dateTo = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : ''
     return records
       .map((r) => {
         const charges = (r.financial_charges || []).filter((c: any) => {
@@ -76,7 +80,7 @@ export default function AdminFinancialDashboard() {
         }
         return true
       })
-  }, [records, search, typeFilter, statusFilter, dateFrom, dateTo])
+  }, [records, search, typeFilter, statusFilter, dateRange])
 
   const stats = useMemo(() => {
     let receivablePrevisto = 0
@@ -108,8 +112,6 @@ export default function AdminFinancialDashboard() {
       saldoAtual,
     }
   }, [filteredRecords])
-
-  const hasPeriodFilter = !!(dateFrom || dateTo)
 
   return (
     <div className="p-6 space-y-6">
@@ -216,34 +218,7 @@ export default function AdminFinancialDashboard() {
             <Calendar className="h-4 w-4" />
             <span className="hidden sm:inline">Período:</span>
           </div>
-          <Input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="w-[150px]"
-            aria-label="Data inicial"
-          />
-          <span className="text-muted-foreground text-sm shrink-0">—</span>
-          <Input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="w-[150px]"
-            aria-label="Data final"
-          />
-          {hasPeriodFilter && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 shrink-0"
-              onClick={() => {
-                setDateFrom('')
-                setDateTo('')
-              }}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
+          <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
         </div>
 
         <div className="relative w-full lg:flex-1">
