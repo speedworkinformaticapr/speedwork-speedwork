@@ -16,5 +16,5 @@ console.warn = (...args: unknown[]) => {
   ) {
     return
   }
-  originalWarn(...(args as Parameters<typeof console.warn>)
+  originalWarn(...(args as Parameters<typeof console.warn>))
 }
