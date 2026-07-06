@@ -56,7 +56,7 @@ export default function AdminQuotes() {
     setLoading(true)
     let q = supabase
       .from('orcamentos')
-      .select('*, clientes(nome)')
+      .select('*, profiles:cliente_id(nome)')
       .order('created_at', { ascending: false })
     if (search) {
       q = q.ilike('numero_orcamento', `%${search}%`)
@@ -154,7 +154,7 @@ export default function AdminQuotes() {
                   quotes.map((q) => (
                     <TableRow key={q.id}>
                       <TableCell className="font-medium">{q.numero_orcamento}</TableCell>
-                      <TableCell>{q.clientes?.nome}</TableCell>
+                      <TableCell>{q.profiles?.nome}</TableCell>
                       <TableCell>{new Date(q.data_emissao).toLocaleDateString('pt-BR')}</TableCell>
                       <TableCell>
                         {Number(q.total || 0).toLocaleString('pt-BR', {
