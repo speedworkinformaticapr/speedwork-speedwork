@@ -222,6 +222,22 @@ const App = () => (
                     <Route path="commercial/quotes/new" element={<QuoteForm />} />
                     <Route path="commercial/quotes/:id/edit" element={<QuoteForm />} />
                     <Route path="commercial/quotes/:id" element={<QuoteView />} />
+                    <Route
+                      path="quotes"
+                      element={<Navigate to="/admin/commercial/quotes" replace />}
+                    />
+                    <Route
+                      path="quotes/new"
+                      element={<Navigate to="/admin/commercial/quotes/new" replace />}
+                    />
+                    <Route
+                      path="quotes/:id/edit"
+                      element={<Navigate to="/admin/commercial/quotes/:id/edit" replace />}
+                    />
+                    <Route
+                      path="quotes/:id"
+                      element={<Navigate to="/admin/commercial/quotes/:id" replace />}
+                    />
                     <Route path="support/tickets" element={<SupportTickets />} />
                     <Route path="support/sla" element={<SupportSlaConfig />} />
                     <Route path="commercial/dashboard" element={<AdminCommercialDashboard />} />

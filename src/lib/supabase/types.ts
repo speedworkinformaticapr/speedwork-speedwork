@@ -1536,6 +1536,50 @@ export type Database = {
         }
         Relationships: []
       }
+      evaluation_questions: {
+        Row: {
+          created_at: string
+          field_type: string
+          id: string
+          is_required: boolean
+          label: string
+          options: Json
+          order_index: number
+          placeholder: string | null
+          service_id: string
+        }
+        Insert: {
+          created_at?: string
+          field_type?: string
+          id?: string
+          is_required?: boolean
+          label: string
+          options?: Json
+          order_index?: number
+          placeholder?: string | null
+          service_id: string
+        }
+        Update: {
+          created_at?: string
+          field_type?: string
+          id?: string
+          is_required?: boolean
+          label?: string
+          options?: Json
+          order_index?: number
+          placeholder?: string | null
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'evaluation_questions_service_id_fkey'
+            columns: ['service_id']
+            isOneToOne: false
+            referencedRelation: 'services'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       event_photos: {
         Row: {
           event_id: string | null

@@ -538,7 +538,7 @@ export default function QuoteForm() {
       if (!quoteId && orcId) {
         setQuoteId(orcId)
         setData((prev) => ({ ...prev, numero_orcamento: numOrc, status: statusToSave }))
-        window.history.replaceState(null, '', `/admin/quotes/${orcId}/edit`)
+        window.history.replaceState(null, '', `/admin/commercial/quotes/${orcId}/edit`)
       } else {
         setData((prev) => ({ ...prev, status: statusToSave }))
       }
@@ -557,7 +557,7 @@ export default function QuoteForm() {
       }
 
       if (!preventNavigation) {
-        navigate('/admin/quotes')
+        navigate('/admin/commercial/quotes')
       }
       return { id: orcId, numero_orcamento: numOrc }
     } catch (e: any) {
@@ -757,7 +757,7 @@ export default function QuoteForm() {
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate('/admin/quotes')}>
+          <Button variant="ghost" onClick={() => navigate('/admin/commercial/quotes')}>
             <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
           </Button>
           <h1 className="text-3xl font-bold tracking-tight">
@@ -1476,9 +1476,10 @@ export default function QuoteForm() {
         <Button
           variant="outline"
           size="lg"
-          onClick={() => navigate('/admin/quotes')}
+          onClick={() => navigate('/admin/commercial/quotes')}
           disabled={isSaving}
         >
+          {' '}
           {originalStatus === 'fechado' ? 'Voltar' : 'Cancelar'}
         </Button>
 
