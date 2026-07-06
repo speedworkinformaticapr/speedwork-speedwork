@@ -8,10 +8,13 @@ import {
   getClassificationInfo,
 } from '@/lib/evaluation-scoring'
 import { getServiceBySlug } from '@/lib/evaluation-services'
+import type { EvaluationQuestion } from '@/services/evaluation-questions'
 import { ArrowLeft, Send, CheckCircle2, Sparkles } from 'lucide-react'
 
 interface Props {
   formData: EvaluationFormData
+  questions?: EvaluationQuestion[]
+  dynamicAnswers?: Record<string, any>
   onSubmit: () => void
   onBack: () => void
   submitting: boolean
@@ -26,8 +29,18 @@ function ReviewField({ label, value }: { label: string; value: string }) {
   )
 }
 
-export function ReviewStep({ formData, onSubmit, onBack, submitting }: Props) {
-  const score = calculateEvaluationScore(formData)
+export function ReviewStep({
+  formData,
+  questions = [],
+  dynamicAnswers = {},
+  onSubmit,
+  onBack,
+  submitting,
+}: Props) {
+  const score = calculateEvaluationScore({
+    ...formData,
+    ...(formData.dynamic_answers || {}),
+  })
   const classification = classifyLead(score)
   const scoreInfo = getClassificationInfo(score)
   const service = getServiceBySlug(formData.serviceSlug)
@@ -103,6 +116,29 @@ export function ReviewStep({ formData, onSubmit, onBack, submitting }: Props) {
           )}
         </CardContent>
       </Card>
+
+      {questions.length > 0 && (
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <h3 className="font-semibold text-sm uppercase text-muted-foreground">
+              Respostas do Questionário
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {questions.map((q) => {
+                const val = dynamicAnswers[q.id]
+                const display = Array.isArray(val)
+                  ? val.join(', ')
+                  : val === true
+                    ? 'Sim'
+                    : val === false
+                      ? 'Não'
+                      : val || '—'
+                return <ReviewField key={q.id} label={q.label} value={String(display)} />
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex justify-between pt-2">
         <Button variant="outline" onClick={onBack} disabled={submitting}>

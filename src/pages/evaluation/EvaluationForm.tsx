@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Loader2, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react'
 import { IdentificationStep } from '@/components/evaluation/IdentificationStep'
-import { PainsStep } from '@/components/evaluation/PainsStep'
+import { DynamicQuestionsStep } from '@/components/evaluation/DynamicQuestionsStep'
 import { ReviewStep } from '@/components/evaluation/ReviewStep'
+import { fetchQuestionsBySlug, type EvaluationQuestion } from '@/services/evaluation-questions'
 import {
   fetchServiceByEvaluationSlug,
   submitEvaluation,
@@ -38,7 +39,7 @@ const INITIAL_FORM: EvaluationFormData = {
   orcamento_estimado: '',
 }
 
-const STEP_LABELS = ['Identificação', 'Dores', 'Revisão']
+const STEP_LABELS = ['Identificação', 'Questionário', 'Revisão']
 
 export default function EvaluationForm() {
   const { slug } = useParams()
@@ -50,6 +51,8 @@ export default function EvaluationForm() {
   const [submitted, setSubmitted] = useState(false)
   const [notFound, setNotFound] = useState(false)
   const [formData, setFormData] = useState<EvaluationFormData>(INITIAL_FORM)
+  const [questions, setQuestions] = useState<EvaluationQuestion[]>([])
+  const [dynamicAnswers, setDynamicAnswers] = useState<Record<string, any>>({})
   const { toast } = useToast()
 
   useSeo({
@@ -115,6 +118,13 @@ export default function EvaluationForm() {
       .finally(() => setLoading(false))
   }, [slug])
 
+  useEffect(() => {
+    if (!slug) return
+    fetchQuestionsBySlug(slug)
+      .then(setQuestions)
+      .catch(() => setQuestions([]))
+  }, [slug])
+
   const updateField = useCallback((field: keyof EvaluationFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }, [])
@@ -158,7 +168,22 @@ export default function EvaluationForm() {
         // non-blocking — proceed even if check fails
       }
 
-      await submitEvaluation(formData)
+      const scoringFields: Record<string, any> = {}
+      for (const q of questions) {
+        const val = dynamicAnswers[q.id]
+        if (val === undefined) continue
+        const ll = q.label.toLowerCase()
+        if (ll.includes('impacto')) scoringFields.impacto_negocio = val
+        if (ll.includes('prazo')) scoringFields.prazo_desejado = val
+        if (ll.includes('orçamento') || ll.includes('orcamento'))
+          scoringFields.orcamento_estimado = val
+        if (ll.includes('principal') && ll.includes('dor')) scoringFields.principal_dor = val
+        if (ll.includes('solução') || ll.includes('solucao')) scoringFields.solucao_atual = val
+        if (q.field_type === 'multiselect' && (ll.includes('dor') || ll.includes('pain')))
+          scoringFields.pains_selected = val
+        scoringFields[q.label] = val
+      }
+      await submitEvaluation({ ...formData, dynamic_answers: scoringFields })
       setSubmitted(true)
       toast({ title: 'Avaliação enviada!', description: 'Em breve entraremos em contato.' })
       navigate('/sucesso-avaliacao')
@@ -265,9 +290,11 @@ export default function EvaluationForm() {
             />
           )}
           {step === 1 && (
-            <PainsStep
-              formData={formData}
-              updateField={updateField}
+            <DynamicQuestionsStep
+              questions={questions}
+              answers={dynamicAnswers}
+              updateAnswer={(qid, val) => setDynamicAnswers((prev) => ({ ...prev, [qid]: val }))}
+              serviceName={service?.title || ''}
               onNext={() => setStep(2)}
               onBack={() => setStep(0)}
             />
@@ -275,6 +302,8 @@ export default function EvaluationForm() {
           {step === 2 && (
             <ReviewStep
               formData={formData}
+              questions={questions}
+              dynamicAnswers={dynamicAnswers}
               onSubmit={handleSubmit}
               onBack={() => setStep(1)}
               submitting={submitting}

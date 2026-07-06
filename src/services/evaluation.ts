@@ -65,6 +65,7 @@ export async function submitEvaluation(formData: EvaluationFormData) {
     service_slug: formData.serviceSlug,
     classification,
     evaluation_type: 'public_form',
+    ...(formData.dynamic_answers || {}),
   }
 
   const { error } = await supabase.from('leads').insert({

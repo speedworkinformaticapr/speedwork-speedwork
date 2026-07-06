@@ -31,6 +31,7 @@ import Scheduling from './pages/Scheduling'
 import PublicScheduling from './pages/PublicScheduling'
 import PublicSchedulingCancel from './pages/PublicSchedulingCancel'
 import EvaluationForm from './pages/evaluation/EvaluationForm'
+import Services from './pages/Services'
 import EvaluationSuccess from './pages/evaluation/EvaluationSuccess'
 import QuoteApprovalPortal from './pages/client/quotes/QuoteApprovalPortal'
 import { AuthProvider } from './hooks/use-auth'
@@ -131,6 +132,7 @@ const AdminLeadDetail = lazy(() => import('./pages/admin/commercial/AdminLeadDet
 const AdminEvaluations = lazy(() => import('./pages/admin/commercial/AdminEvaluations'))
 const AdminEvaluationDetail = lazy(() => import('./pages/admin/commercial/AdminEvaluationDetail'))
 const AdminAthletes = lazy(() => import('./pages/admin/business/AdminAthletes'))
+const AdminQuestionnaires = lazy(() => import('./pages/admin/services/AdminQuestionnaires'))
 
 function ScrollToHash() {
   const location = useLocation()
@@ -321,11 +323,13 @@ const App = () => (
                     <Route path="ecommerce/orders" element={<AdminOrders />} />
                     <Route path="ecommerce/logistics" element={<AdminLogistics />} />
                     <Route path="sports/athletes" element={<AdminAthletes />} />
+                    <Route path="services/questionnaires" element={<AdminQuestionnaires />} />
                   </Route>
 
                   {/* Public and Dynamic Routes - Placed last so the catch-all dynamic route does not intercept static ones */}
                   <Route element={<Layout />}>
                     <Route index element={<Index />} />
+                    <Route path="servicos" element={<Services />} />
                     <Route path="blog/:id" element={<BlogPost />} />
 
                     <Route path="profile" element={<Profile />} />

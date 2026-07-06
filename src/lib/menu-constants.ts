@@ -49,6 +49,7 @@ export const DEFAULT_MENU_CONFIG: MenuConfig[] = [
       { id: 'activities', label: 'Atividades', url: '/admin/commercial/activities' },
       { id: 'diagnostic-form', label: 'Diagnóstico', url: '/admin/commercial/diagnostic-form' },
       { id: 'evaluations', label: 'Avaliações', url: '/admin/commercial/evaluations' },
+      { id: 'questionnaires', label: 'Questionários', url: '/admin/services/questionnaires' },
       { id: 'quotes', label: 'Orçamentos', url: '/admin/commercial/quotes' },
       { id: 'pedidos', label: 'Pedidos', url: '/admin/commercial/orders' },
       { id: 'appointments', label: 'Agendamentos', url: '/admin/commercial/appointments' },

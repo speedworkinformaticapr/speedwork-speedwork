@@ -17,6 +17,7 @@ export interface EvaluationFormData {
   prazo_desejado: string
   solucao_atual: string
   orcamento_estimado: string
+  dynamic_answers?: Record<string, any>
 }
 
 const DECISOR_KEYWORDS = [
