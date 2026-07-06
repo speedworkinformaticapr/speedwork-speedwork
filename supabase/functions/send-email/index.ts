@@ -75,6 +75,8 @@ Deno.serve(async (req: Request) => {
         .from('profiles')
         .select('id, name, email, mfa_enabled')
         .eq('email', email)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle()
 
       if (profileError) {
@@ -82,7 +84,16 @@ Deno.serve(async (req: Request) => {
       }
 
       if (!profile) {
-        throw new Error('Perfil não encontrado para o e-mail informado.')
+        return new Response(
+          JSON.stringify({
+            error: 'Perfil não encontrado para o e-mail informado.',
+            code: 'PROFILE_NOT_FOUND',
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 404,
+          },
+        )
       }
 
       const code = Math.floor(100000 + Math.random() * 900000).toString()
@@ -162,7 +173,6 @@ Deno.serve(async (req: Request) => {
             fullLogoUrl = `${supabaseBaseUrl}/storage/v1/object/public/media/${cleanPath(match[1])}`
           }
         }
-        // Already an absolute URL — use as-is
       } else if (fullLogoUrl.startsWith('/storage/v1/object/public/media/')) {
         fullLogoUrl = `${supabaseBaseUrl}${cleanPath(fullLogoUrl)}`
       } else if (
