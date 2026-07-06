@@ -1,23 +1,26 @@
 const originalWarn = console.warn
 const originalError = console.error
 
-const fragmentPropWarningPattern = /Invalid prop.*supplied to/i
+const fragmentPropWarningPattern =
+  /Invalid prop.*(%s|`[^`]*`).*supplied to.*(%s|`[^`]*`|Fragment|React\.Fragment)|Invalid prop.*supplied to.*Fragment|Invalid prop.*%s.*supplied/i
 
 function shouldSuppress(args: unknown[]): boolean {
   const firstArg = args[0]
-  if (typeof firstArg !== 'string' || !fragmentPropWarningPattern.test(firstArg)) {
+  if (typeof firstArg !== 'string') {
     return false
   }
 
-  const hasDataUid = args.some(
-    (a) =>
-      (typeof a === 'string' && a.includes('data-uid')) ||
-      (typeof a === 'object' && a !== null && 'data-uid' in a),
-  )
+  if (!fragmentPropWarningPattern.test(firstArg)) {
+    return false
+  }
 
-  const hasFragmentRef = args.some(
-    (a) => typeof a === 'string' && (a.includes('React.Fragment') || a.includes('Fragment')),
-  )
+  const combined = args.map((a) => (typeof a === 'string' ? a : '')).join(' ')
+
+  const hasDataUid =
+    combined.includes('data-uid') ||
+    args.some((a) => typeof a === 'object' && a !== null && 'data-uid' in a)
+
+  const hasFragmentRef = combined.includes('Fragment')
 
   return hasDataUid && hasFragmentRef
 }

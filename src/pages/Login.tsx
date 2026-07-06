@@ -323,10 +323,11 @@ export default function Login() {
               <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
                 {loading ? (
                   <span className="inline-flex items-center">
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Entrando...
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    <span>Entrando...</span>
                   </span>
                 ) : (
-                  'Entrar na Plataforma'
+                  <span>Entrar na Plataforma</span>
                 )}
               </Button>
             </form>
@@ -347,8 +348,10 @@ export default function Login() {
                 type="button"
                 onClick={() => handleSocialLogin('google')}
               >
-                <GoogleIcon />
-                <span className="ml-2">Entrar com Google</span>
+                <span className="inline-flex items-center justify-center">
+                  <GoogleIcon />
+                  <span className="ml-2">Entrar com Google</span>
+                </span>
               </Button>
               <Button
                 variant="outline"
@@ -356,8 +359,10 @@ export default function Login() {
                 type="button"
                 onClick={() => handleSocialLogin('azure')}
               >
-                <MicrosoftIcon />
-                <span className="ml-2">Entrar com Microsoft</span>
+                <span className="inline-flex items-center justify-center">
+                  <MicrosoftIcon />
+                  <span className="ml-2">Entrar com Microsoft</span>
+                </span>
               </Button>
             </div>
 
