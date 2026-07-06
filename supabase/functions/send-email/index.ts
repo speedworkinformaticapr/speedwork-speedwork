@@ -71,11 +71,15 @@ Deno.serve(async (req: Request) => {
     let bodyContent = ''
 
     if (type === 'mfa_code') {
-      const { data: profile } = await supabaseAdmin
+      const { data: profile, error: profileError } = await supabaseAdmin
         .from('profiles')
         .select('id, name, email, mfa_enabled')
         .eq('email', email)
-        .single()
+        .maybeSingle()
+
+      if (profileError) {
+        throw new Error(`Erro ao buscar perfil: ${profileError.message}`)
+      }
 
       if (!profile) {
         throw new Error('Perfil não encontrado para o e-mail informado.')
