@@ -22,8 +22,7 @@ BEGIN
     WHERE p.email = dup_record.email
     ORDER BY
       (u.id IS NOT NULL) DESC,
-      p.created_at DESC NULLS LAST,
-      p.updated_at DESC NULLS LAST
+      p.created_at DESC NULLS LAST
     LIMIT 1;
 
     IF keep_id IS NOT NULL THEN
