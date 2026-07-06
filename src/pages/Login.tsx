@@ -8,9 +8,9 @@ import { useToast } from '@/hooks/use-toast'
 import { useSystemData } from '@/hooks/use-system-data'
 import { Loader2 } from 'lucide-react'
 
-function GoogleIcon() {
+function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg" {...props}>
       <path
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
         fill="#4285F4"
@@ -31,9 +31,9 @@ function GoogleIcon() {
   )
 }
 
-function MicrosoftIcon() {
+function MicrosoftIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 21 21" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 21 21" width="20" height="20" xmlns="http://www.w3.org/2000/svg" {...props}>
       <path d="M0 0h10v10H0z" fill="#f25022" />
       <path d="M11 0h10v10H11z" fill="#7fba00" />
       <path d="M0 11h10v10H0z" fill="#00a4ef" />
