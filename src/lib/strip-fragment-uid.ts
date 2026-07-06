@@ -1,19 +1,25 @@
 const originalWarn = console.warn
 const originalError = console.error
 
-const fragmentPropWarningPattern = /Invalid prop.*supplied to.*can only have/i
+const fragmentPropWarningPattern = /Invalid prop.*supplied to/i
 
 function shouldSuppress(args: unknown[]): boolean {
   const firstArg = args[0]
-  return (
-    typeof firstArg === 'string' &&
-    fragmentPropWarningPattern.test(firstArg) &&
-    args.some(
-      (a) =>
-        (typeof a === 'string' && a.includes('data-uid')) ||
-        (typeof a === 'object' && a !== null && 'data-uid' in a),
-    )
+  if (typeof firstArg !== 'string' || !fragmentPropWarningPattern.test(firstArg)) {
+    return false
+  }
+
+  const hasDataUid = args.some(
+    (a) =>
+      (typeof a === 'string' && a.includes('data-uid')) ||
+      (typeof a === 'object' && a !== null && 'data-uid' in a),
   )
+
+  const hasFragmentRef = args.some(
+    (a) => typeof a === 'string' && (a.includes('React.Fragment') || a.includes('Fragment')),
+  )
+
+  return hasDataUid && hasFragmentRef
 }
 
 console.warn = (...args: unknown[]) => {
