@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -58,6 +58,9 @@ export default function AdminProfileForm() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const isEditing = !!id
+  const [searchParams] = useSearchParams()
+  const athleteContext = searchParams.get('context') === 'athletes'
+  const [isAthlete, setIsAthlete] = useState(false)
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -89,6 +92,7 @@ export default function AdminProfileForm() {
   const fetchProfile = async () => {
     const { data, error } = await supabase.from('profiles').select('*').eq('id', id).single()
     if (data) {
+      setIsAthlete(data.is_athlete || false)
       form.reset({
         name: data.name || '',
         email: data.email || '',
@@ -144,7 +148,9 @@ export default function AdminProfileForm() {
         if (error) throw error
         toast({ title: 'Perfil criado com sucesso' })
       }
-      navigate('/admin/sports/athletes') // redirects back to the grid mapping
+      const redirectTo =
+        isAthlete || athleteContext ? '/admin/sports/athletes' : '/admin/business/profiles'
+      navigate(redirectTo)
     } catch (error: any) {
       toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' })
     } finally {
