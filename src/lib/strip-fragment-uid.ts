@@ -1,8 +1,7 @@
 const originalWarn = console.warn
 const originalError = console.error
 
-const fragmentPropWarningPattern =
-  /Invalid prop.*supplied to.*React\.Fragment|React\.Fragment can only have.*key.*children.*props/i
+const fragmentPropWarningPattern = /Invalid prop.*supplied to.*can only have/i
 
 function shouldSuppress(args: unknown[]): boolean {
   const firstArg = args[0]
