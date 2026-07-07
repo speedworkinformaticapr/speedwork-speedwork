@@ -106,7 +106,7 @@ export function InstallmentSubGrid({
                 sortConfig={sortConfig}
                 onSort={handleSort}
               />
-              <TableHead className="text-xs">Data do Lançamento</TableHead>
+              <TableHead className="text-xs">Data de Vencimento</TableHead>
               <SortableTableHead
                 label="Parcela"
                 column="parcela_numero"
@@ -152,8 +152,8 @@ export function InstallmentSubGrid({
                     {masterDescription || c.description || '-'}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                    {entryDate
-                      ? new Date(entryDate + 'T00:00:00').toLocaleDateString('pt-BR')
+                    {c.due_date
+                      ? new Date(c.due_date + 'T00:00:00').toLocaleDateString('pt-BR')
                       : '-'}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
