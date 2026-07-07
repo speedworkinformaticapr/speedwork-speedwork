@@ -1892,6 +1892,7 @@ export type Database = {
           conta_origem_id: string | null
           created_at: string
           description: string
+          entry_date: string | null
           id: string
           paid_amount: number | null
           reference_id: string | null
@@ -1908,6 +1909,7 @@ export type Database = {
           conta_origem_id?: string | null
           created_at?: string
           description: string
+          entry_date?: string | null
           id?: string
           paid_amount?: number | null
           reference_id?: string | null
@@ -1924,6 +1926,7 @@ export type Database = {
           conta_origem_id?: string | null
           created_at?: string
           description?: string
+          entry_date?: string | null
           id?: string
           paid_amount?: number | null
           reference_id?: string | null

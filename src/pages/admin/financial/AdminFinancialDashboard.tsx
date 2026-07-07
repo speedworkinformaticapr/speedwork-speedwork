@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Search, Plus, Calendar, TrendingUp, TrendingDown, X, Wallet } from 'lucide-react'
 import { toast } from 'sonner'
 import { NewFinancialEntryModal } from '@/components/financial/NewFinancialEntryModal'
+import { DateAdjustmentDialog } from '@/components/financial/DateAdjustmentDialog'
 import { DateRange } from 'react-day-picker'
 import { format } from 'date-fns'
 
@@ -122,16 +123,18 @@ export default function AdminFinancialDashboard() {
             Acompanhe valores previstos vs realizados e gerencie parcelas.
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setEditId(null)
-            setShowNewModal(true)
-          }}
-          className="shrink-0"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Lançamento
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <DateAdjustmentDialog onSuccess={fetchData} />
+          <Button
+            onClick={() => {
+              setEditId(null)
+              setShowNewModal(true)
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Lançamento
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
