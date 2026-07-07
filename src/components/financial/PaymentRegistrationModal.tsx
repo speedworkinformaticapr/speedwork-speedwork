@@ -82,6 +82,16 @@ export function PaymentRegistrationModal({
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
+            <Label>Data de Vencimento</Label>
+            <Input
+              type="date"
+              value={charge?.due_date || ''}
+              readOnly
+              disabled
+              className="bg-muted/50"
+            />
+          </div>
+          <div className="space-y-2">
             <Label>Data do Pagamento/Recebimento</Label>
             <Input
               type="date"

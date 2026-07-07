@@ -19,6 +19,7 @@ import type { SortConfig } from './use-cash-flow-grid'
 interface InstallmentSubGridProps {
   charges: any[]
   masterDescription: string
+  entryDate?: string
   accounts: Record<string, any>
   onPayment: (charge: any) => void
 }
@@ -26,6 +27,7 @@ interface InstallmentSubGridProps {
 export function InstallmentSubGrid({
   charges,
   masterDescription,
+  entryDate,
   accounts,
   onPayment,
 }: InstallmentSubGridProps) {
@@ -104,6 +106,7 @@ export function InstallmentSubGrid({
                 sortConfig={sortConfig}
                 onSort={handleSort}
               />
+              <TableHead className="text-xs">Data do Lançamento</TableHead>
               <SortableTableHead
                 label="Parcela"
                 column="parcela_numero"
@@ -147,6 +150,11 @@ export function InstallmentSubGrid({
                 <TableRow key={c.id}>
                   <TableCell className="text-sm">
                     {masterDescription || c.description || '-'}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                    {entryDate
+                      ? new Date(entryDate + 'T00:00:00').toLocaleDateString('pt-BR')
+                      : '-'}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {c.parcela_numero ? `${c.parcela_numero}/${c.parcela_total}` : '-'}

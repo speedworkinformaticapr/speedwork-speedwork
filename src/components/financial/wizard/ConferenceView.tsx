@@ -11,6 +11,7 @@ import { safeDate, type InstallmentItem } from './types'
 
 interface ConferenceViewProps {
   type: string
+  entryDate?: string
   entityName: string
   isAvulso: boolean
   categoryName: string
@@ -21,6 +22,7 @@ interface ConferenceViewProps {
 
 export function ConferenceView({
   type,
+  entryDate,
   entityName,
   isAvulso,
   categoryName,
@@ -39,6 +41,10 @@ export function ConferenceView({
         <div>
           <span className="text-sm text-muted-foreground">Tipo: </span>
           <span className="font-medium">{type === 'receivable' ? 'Receita' : 'Despesa'}</span>
+        </div>
+        <div>
+          <span className="text-sm text-muted-foreground">Data Lançamento: </span>
+          <span className="font-medium">{fmtDate(entryDate || '')}</span>
         </div>
         <div>
           <span className="text-sm text-muted-foreground">Entidade: </span>

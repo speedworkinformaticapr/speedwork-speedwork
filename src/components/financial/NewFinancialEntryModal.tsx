@@ -47,6 +47,7 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
   const [description, setDescription] = useState('')
   const [totalAmount, setTotalAmount] = useState('')
   const [dueDate, setDueDate] = useState('')
+  const [entryDate, setEntryDate] = useState('')
   const [installments, setInstallments] = useState('1')
   const [contaOrigemId, setContaOrigemId] = useState('')
   const [contaDestinoId, setContaDestinoId] = useState('')
@@ -57,7 +58,9 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
     if (!open) return
     fetchAccounts()
     const today = new Date()
-    setDueDate(isNaN(today.getTime()) ? '' : today.toISOString().split('T')[0])
+    const todayStr = isNaN(today.getTime()) ? '' : today.toISOString().split('T')[0]
+    setDueDate(todayStr)
+    setEntryDate(todayStr)
     if (editId) {
       fetchEditData(editId)
     } else {
@@ -95,6 +98,10 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
     setIsAvulso(!master.client_id)
     setContaOrigemId(master.conta_origem_id || '')
     setContaDestinoId(master.conta_destino_id || '')
+    if (master.entry_date) {
+      const ed = safeDate(master.entry_date)
+      setEntryDate(ed ? ed.toISOString().split('T')[0] : '')
+    }
     if (charges && charges.length > 0) {
       const first = safeDate(charges[0].due_date)
       setDueDate(first ? first.toISOString().split('T')[0] : '')
@@ -146,7 +153,7 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
   }
 
   const canProceed = () => {
-    if (step === 0) return !!type && (isAvulso || !!entityId)
+    if (step === 0) return !!type && (isAvulso || !!entityId) && !!entryDate
     if (step === 1) return !!description.trim()
     if (step === 2) return parseFloat(totalAmount) > 0 && !!dueDate
     return true
@@ -167,6 +174,7 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
         category: categoryId || 'general',
         conta_origem_id: contaOrigemId || null,
         conta_destino_id: contaDestinoId || null,
+        entry_date: entryDate || null,
       }
       let masterId = editId
       if (isEdit && masterId) {
@@ -307,6 +315,14 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
                   </div>
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label>Data Lançamento *</Label>
+                <Input
+                  type="date"
+                  value={entryDate}
+                  onChange={(e) => setEntryDate(e.target.value)}
+                />
+              </div>
               {!isAvulso && (
                 <div className="space-y-2">
                   <Label>Entidade *</Label>
@@ -422,6 +438,7 @@ export function NewFinancialEntryModal({ open, onOpenChange, onSuccess, editId }
           {step === 3 && (
             <ConferenceView
               type={type}
+              entryDate={entryDate}
               entityName={entityName}
               isAvulso={isAvulso}
               categoryName={categoryName}

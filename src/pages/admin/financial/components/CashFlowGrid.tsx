@@ -220,6 +220,7 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
                           <InstallmentSubGrid
                             charges={r.financial_charges || []}
                             masterDescription={r.description}
+                            entryDate={r.entry_date}
                             accounts={accounts}
                             onPayment={setPaymentCharge}
                           />
