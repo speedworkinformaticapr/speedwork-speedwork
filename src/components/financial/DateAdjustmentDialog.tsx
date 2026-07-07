@@ -57,6 +57,12 @@ export function DateAdjustmentDialog({ onSuccess }: DateAdjustmentDialogProps) {
   }
 
   const handleExecute = async () => {
+    if (
+      !confirm(
+        'Tem certeza que deseja executar o ajuste de datas? Esta operação irá recalcular todas as datas de vencimento e não pode ser desfeita.',
+      )
+    )
+      return
     setPhase('executing')
     setError(null)
     try {

@@ -4228,6 +4228,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      analyze_financial_date_adjustment: {
+        Args: never
+        Returns: {
+          installment_count: number
+          master_count: number
+        }[]
+      }
       calculate_lead_score: { Args: { diagnostic: Json }; Returns: number }
       check_active_evaluation: {
         Args: { p_email: string; p_service_slug: string }
@@ -4237,6 +4244,13 @@ export type Database = {
           id: string
           score: number
           status: string
+        }[]
+      }
+      execute_financial_date_adjustment: {
+        Args: never
+        Returns: {
+          installments_updated: number
+          master_updated: number
         }[]
       }
       increment_blog_view: { Args: { post_id: string }; Returns: undefined }
