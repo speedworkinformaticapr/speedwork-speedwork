@@ -342,6 +342,12 @@ const App = () => (
                     <Route path="services/questionnaires" element={<AdminQuestionnaires />} />
                   </Route>
 
+                  {/* Redirect legacy financial route to admin */}
+                  <Route
+                    path="financial/bank-accounts"
+                    element={<Navigate to="/admin/financial/bank-accounts" replace />}
+                  />
+
                   {/* Public and Dynamic Routes - Placed last so the catch-all dynamic route does not intercept static ones */}
                   <Route element={<Layout />}>
                     <Route index element={<Index />} />

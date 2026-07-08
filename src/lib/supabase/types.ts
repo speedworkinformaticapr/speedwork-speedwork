@@ -974,11 +974,14 @@ export type Database = {
           agencia: string | null
           created_at: string
           id: string
+          instituicao: string | null
           is_active: boolean
           nome: string
           numero_conta: string | null
           plano_contas_id: string | null
           saldo_inicial: number
+          subtipo: string | null
+          tipo_conta: string
           titular: string | null
           updated_at: string
         }
@@ -986,11 +989,14 @@ export type Database = {
           agencia?: string | null
           created_at?: string
           id?: string
+          instituicao?: string | null
           is_active?: boolean
           nome: string
           numero_conta?: string | null
           plano_contas_id?: string | null
           saldo_inicial?: number
+          subtipo?: string | null
+          tipo_conta?: string
           titular?: string | null
           updated_at?: string
         }
@@ -998,11 +1004,14 @@ export type Database = {
           agencia?: string | null
           created_at?: string
           id?: string
+          instituicao?: string | null
           is_active?: boolean
           nome?: string
           numero_conta?: string | null
           plano_contas_id?: string | null
           saldo_inicial?: number
+          subtipo?: string | null
+          tipo_conta?: string
           titular?: string | null
           updated_at?: string
         }
