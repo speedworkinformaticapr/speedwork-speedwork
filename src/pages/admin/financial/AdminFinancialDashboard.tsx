@@ -14,12 +14,13 @@ import { DateRangeFilter } from './components/DateRangeFilter'
 import { getMasterStatus, formatCurrency } from '@/lib/financial-utils'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Search, Plus, Calendar, TrendingUp, TrendingDown, X, Wallet } from 'lucide-react'
+import { Search, Plus, Calendar, TrendingUp, TrendingDown, Wallet, FileText } from 'lucide-react'
 import { toast } from 'sonner'
 import { NewFinancialEntryModal } from '@/components/financial/NewFinancialEntryModal'
-import { DateAdjustmentDialog } from '@/components/financial/DateAdjustmentDialog'
 import { DateRange } from 'react-day-picker'
 import { format } from 'date-fns'
+import { useSystemData } from '@/hooks/use-system-data'
+import { generateCashFlowReport } from '@/lib/cash-flow-report'
 
 export default function AdminFinancialDashboard() {
   const [records, setRecords] = useState<any[]>([])
@@ -30,6 +31,7 @@ export default function AdminFinancialDashboard() {
   const [showNewModal, setShowNewModal] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
+  const { data: systemData } = useSystemData()
 
   useEffect(() => {
     fetchData()
@@ -124,7 +126,35 @@ export default function AdminFinancialDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <DateAdjustmentDialog onSuccess={fetchData} />
+          <Button
+            variant="outline"
+            onClick={() => {
+              const fromStr = dateRange?.from ? format(dateRange.from, 'dd/MM/yyyy') : 'Início'
+              const toStr = dateRange?.to ? format(dateRange.to, 'dd/MM/yyyy') : 'Hoje'
+              const dateRangeLabel = `${fromStr} — ${toStr}`
+              const typeLabel =
+                typeFilter === 'all'
+                  ? 'Todos'
+                  : typeFilter === 'receivable'
+                    ? 'A Receber'
+                    : 'A Pagar'
+              const statusLabel =
+                statusFilter === 'all'
+                  ? 'Todos'
+                  : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)
+              generateCashFlowReport({
+                records: filteredRecords,
+                stats,
+                systemData,
+                dateRangeLabel,
+                typeLabel,
+                statusLabel,
+              })
+            }}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Relatório de Fluxo de Caixa
+          </Button>
           <Button
             onClick={() => {
               setEditId(null)
