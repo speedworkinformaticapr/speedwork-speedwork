@@ -3,19 +3,8 @@ import useEmblaCarousel from 'embla-carousel-react'
 import Autoplay from 'embla-carousel-autoplay'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import {
-  ChevronLeft,
-  ChevronRight,
-  Volume2,
-  VolumeX,
-  Captions,
-  CaptionsOff,
-  Expand,
-  Shrink,
-} from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-type DisplayFit = 'contain' | 'cover'
 
 export function MediaCarousel({ data }: { data: any }) {
   const {
@@ -30,12 +19,11 @@ export function MediaCarousel({ data }: { data: any }) {
   const parsedDelay = parseInt(String(delay), 10) || 5000
   const isSlide = transition === 'slide'
 
-  const [isMuted, setIsMuted] = useState(true)
-  const [subtitlesOn, setSubtitlesOn] = useState(false)
-  const [displayFit, setDisplayFit] = useState<DisplayFit>('contain')
   const [activeVideoIndex, setActiveVideoIndex] = useState<number | null>(null)
 
   const videoRefs = useRef<Record<number, HTMLVideoElement | null>>({})
+  const hasInteractedRef = useRef(false)
+  const pendingUnmuteRef = useRef(false)
 
   const plugins = useMemo(() => {
     if (!autoplay) return []
@@ -74,45 +62,69 @@ export function MediaCarousel({ data }: { data: any }) {
     emblaApi.on('select', onSelect)
   }, [emblaApi, onInit, onSelect])
 
+  const tryUnmuteVideo = useCallback((video: HTMLVideoElement) => {
+    video.muted = false
+    video.volume = 1
+    const playPromise = video.play()
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          video.muted = false
+          pendingUnmuteRef.current = false
+        })
+        .catch(() => {
+          video.muted = true
+          pendingUnmuteRef.current = true
+        })
+    }
+  }, [])
+
   useEffect(() => {
+    const handleFirstInteraction = () => {
+      if (hasInteractedRef.current) return
+      hasInteractedRef.current = true
+      if (pendingUnmuteRef.current && activeVideoIndex !== null) {
+        const video = videoRefs.current[activeVideoIndex]
+        if (video) {
+          tryUnmuteVideo(video)
+        }
+      }
+      document.removeEventListener('click', handleFirstInteraction)
+      document.removeEventListener('touchstart', handleFirstInteraction)
+      document.removeEventListener('keydown', handleFirstInteraction)
+    }
+
+    document.addEventListener('click', handleFirstInteraction)
+    document.addEventListener('touchstart', handleFirstInteraction)
+    document.addEventListener('keydown', handleFirstInteraction)
+
+    return () => {
+      document.removeEventListener('click', handleFirstInteraction)
+      document.removeEventListener('touchstart', handleFirstInteraction)
+      document.removeEventListener('keydown', handleFirstInteraction)
+    }
+  }, [activeVideoIndex, tryUnmuteVideo])
+
+  useEffect(() => {
+    Object.values(videoRefs.current).forEach((video) => {
+      if (video) {
+        video.muted = true
+        video.pause()
+      }
+    })
+
     const current = items[selectedIndex]
     if (current && current.type === 'video') {
       setActiveVideoIndex(selectedIndex)
+      const video = videoRefs.current[selectedIndex]
+      if (video) {
+        video.currentTime = 0
+        tryUnmuteVideo(video)
+      }
     } else {
       setActiveVideoIndex(null)
     }
-  }, [selectedIndex, items])
-
-  useEffect(() => {
-    if (activeVideoIndex === null) return
-    const video = videoRefs.current[activeVideoIndex]
-    if (video) {
-      video.muted = isMuted
-    }
-  }, [isMuted, activeVideoIndex])
-
-  useEffect(() => {
-    if (activeVideoIndex === null) return
-    const video = videoRefs.current[activeVideoIndex]
-    if (video) {
-      const tracks = video.textTracks
-      for (let i = 0; i < tracks.length; i++) {
-        tracks[i].mode = subtitlesOn ? 'showing' : 'hidden'
-      }
-    }
-  }, [subtitlesOn, activeVideoIndex])
-
-  const toggleMute = useCallback(() => {
-    setIsMuted((prev) => !prev)
-  }, [])
-
-  const toggleSubtitles = useCallback(() => {
-    setSubtitlesOn((prev) => !prev)
-  }, [])
-
-  const toggleDisplayFit = useCallback(() => {
-    setDisplayFit((prev) => (prev === 'contain' ? 'cover' : 'contain'))
-  }, [])
+  }, [selectedIndex, items, tryUnmuteVideo])
 
   if (!items || items.length === 0) return null
 
@@ -164,8 +176,6 @@ export function MediaCarousel({ data }: { data: any }) {
     return base
   }
 
-  const hasActiveVideo = activeVideoIndex !== null
-
   return (
     <div
       className={cn(
@@ -177,14 +187,12 @@ export function MediaCarousel({ data }: { data: any }) {
       <div className="flex w-full h-full">
         {items.map((slide: any, index: number) => {
           const isVideo = slide.type === 'video'
-          const isActiveVideo = isVideo && index === activeVideoIndex
           return (
             <div
               key={index}
               className={cn(
-                'relative flex-[0_0_100%] min-w-0 h-full',
+                'relative flex-[0_0_100%] min-w-0 h-full bg-black',
                 getTransitionStyles(index),
-                isVideo && displayFit === 'contain' && 'bg-black',
               )}
             >
               {isVideo ? (
@@ -197,10 +205,7 @@ export function MediaCarousel({ data }: { data: any }) {
                   loop
                   muted
                   playsInline
-                  className={cn(
-                    'w-full h-full pointer-events-none',
-                    isActiveVideo && displayFit === 'contain' ? 'object-contain' : 'object-cover',
-                  )}
+                  className="w-full h-full object-contain pointer-events-none"
                 >
                   {slide.subtitleUrl && (
                     <track
@@ -265,36 +270,6 @@ export function MediaCarousel({ data }: { data: any }) {
           )
         })}
       </div>
-
-      {hasActiveVideo && (
-        <div className="absolute top-4 right-4 flex items-center gap-2 z-30 pointer-events-auto">
-          <button
-            onClick={toggleMute}
-            aria-label={isMuted ? 'Ativar som' : 'Silenciar'}
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-colors duration-200"
-          >
-            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-          </button>
-          <button
-            onClick={toggleSubtitles}
-            aria-label={subtitlesOn ? 'Desativar legendas' : 'Ativar legendas'}
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-colors duration-200"
-          >
-            {subtitlesOn ? <Captions className="w-5 h-5" /> : <CaptionsOff className="w-5 h-5" />}
-          </button>
-          <button
-            onClick={toggleDisplayFit}
-            aria-label={displayFit === 'contain' ? 'Modo preencher' : 'Modo ajustar'}
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm transition-colors duration-200"
-          >
-            {displayFit === 'contain' ? (
-              <Expand className="w-5 h-5" />
-            ) : (
-              <Shrink className="w-5 h-5" />
-            )}
-          </button>
-        </div>
-      )}
 
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/70 to-transparent pointer-events-none z-20" />
 
