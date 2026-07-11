@@ -8,6 +8,7 @@ import { useSystemData } from '@/hooks/use-system-data'
 import { supabase } from '@/lib/supabase/client'
 import { PlanServiceFormDialog, PlanServiceData } from './components/PlanServiceFormDialog'
 import { GridPagination } from '@/pages/admin/financial/components/GridPagination'
+import { SortableTableHead } from '@/pages/admin/financial/components/SortableTableHead'
 import {
   calculatePrice,
   formatCurrency,
@@ -17,6 +18,11 @@ import {
 
 const DEFAULT_PAGE_SIZE = 10
 
+interface SortConfig {
+  column: string
+  direction: 'asc' | 'desc'
+}
+
 export default function AdminPlanServices() {
   const [data, setData] = useState<any[]>([])
   const [status, setStatus] = useState<'loading' | 'empty' | 'error' | 'success'>('loading')
@@ -24,24 +30,37 @@ export default function AdminPlanServices() {
   const [editingItem, setEditingItem] = useState<PlanServiceData | null>(null)
   const [page, setPage] = useState(0)
   const [total, setTotal] = useState(0)
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null)
   const { toast } = useToast()
   const { data: systemData } = useSystemData()
   const pageSize = systemData?.records_per_page || DEFAULT_PAGE_SIZE
+
+  const handleSort = useCallback((column: string) => {
+    setSortConfig((prev) => {
+      if (prev?.column === column) {
+        return { column, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+      }
+      return { column, direction: 'asc' }
+    })
+    setPage(0)
+  }, [])
 
   const loadData = useCallback(async () => {
     setStatus('loading')
     const from = page * pageSize
     const to = from + pageSize - 1
 
-    const {
-      data: records,
-      error,
-      count,
-    } = await supabase
+    let query = supabase
       .from('services' as any)
       .select('*, plan_categories(title)', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(from, to)
+
+    if (sortConfig) {
+      query = query.order(sortConfig.column, { ascending: sortConfig.direction === 'asc' })
+    } else {
+      query = query.order('created_at', { ascending: false })
+    }
+
+    const { data: records, error, count } = await query.range(from, to)
 
     if (error) {
       setStatus('error')
@@ -57,7 +76,7 @@ export default function AdminPlanServices() {
       setData([])
       setStatus('empty')
     }
-  }, [page, pageSize])
+  }, [page, pageSize, sortConfig])
 
   useEffect(() => {
     loadData()
@@ -181,24 +200,64 @@ export default function AdminPlanServices() {
       {status === 'success' && (
         <div className="border rounded-md overflow-hidden bg-card flex flex-col">
           <div className="overflow-auto" style={{ maxHeight: '70vh' }}>
-            <table className="w-full text-sm text-left">
+            <table className="w-full text-sm text-left table-fixed">
               <thead className="bg-muted text-muted-foreground border-b sticky top-0 z-10">
                 <tr>
-                  <th className="p-4 font-medium max-w-[180px]">Título</th>
-                  <th className="p-4 font-medium max-w-[120px]">Categoria</th>
-                  <th className="p-4 font-medium max-w-[200px]">Descrição</th>
-                  <th className="p-4 font-medium whitespace-nowrap">Valor Avulso</th>
-                  <th className="p-4 font-medium whitespace-nowrap">Valor Mensal</th>
-                  <th className="p-4 font-medium whitespace-nowrap">Valor Semestral</th>
-                  <th className="p-4 font-medium whitespace-nowrap">Valor Anual</th>
-                  <th className="p-4 font-medium text-right whitespace-nowrap">Ações</th>
+                  <SortableTableHead
+                    label="Título"
+                    column="title"
+                    sortConfig={sortConfig}
+                    onSort={handleSort}
+                    className="w-[16%] min-w-[120px]"
+                  />
+                  <SortableTableHead
+                    label="Categoria"
+                    column="category_id"
+                    sortConfig={sortConfig}
+                    onSort={handleSort}
+                    className="w-[12%] min-w-[100px]"
+                  />
+                  <th className="p-3 font-medium text-muted-foreground w-[16%] min-w-[120px]">
+                    Descrição
+                  </th>
+                  <SortableTableHead
+                    label="Avulso"
+                    column="avulso_value"
+                    sortConfig={sortConfig}
+                    onSort={handleSort}
+                    className="w-[11%] min-w-[90px] whitespace-nowrap"
+                  />
+                  <SortableTableHead
+                    label="Mensal"
+                    column="monthly_value"
+                    sortConfig={sortConfig}
+                    onSort={handleSort}
+                    className="w-[11%] min-w-[90px] whitespace-nowrap"
+                  />
+                  <SortableTableHead
+                    label="Semestral"
+                    column="semiannual_value"
+                    sortConfig={sortConfig}
+                    onSort={handleSort}
+                    className="w-[11%] min-w-[90px] whitespace-nowrap"
+                  />
+                  <SortableTableHead
+                    label="Anual"
+                    column="annual_value"
+                    sortConfig={sortConfig}
+                    onSort={handleSort}
+                    className="w-[11%] min-w-[90px] whitespace-nowrap"
+                  />
+                  <th className="p-3 font-medium text-right text-muted-foreground w-[12%] min-w-[90px] whitespace-nowrap">
+                    Ações
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {data.map((item) => (
                   <tr key={item.id} className="hover:bg-muted/50 transition-colors">
-                    <td className="p-4 font-medium max-w-[180px]">
-                      <div className="flex items-center gap-2">
+                    <td className="p-3 font-medium">
+                      <div className="flex items-center gap-1.5">
                         <span className="truncate" title={item.title}>
                           {item.title}
                         </span>
@@ -213,22 +272,22 @@ export default function AdminPlanServices() {
                         )}
                       </div>
                     </td>
-                    <td className="p-4 max-w-[120px]">
+                    <td className="p-3">
                       <span className="truncate block" title={item.plan_categories?.title || ''}>
                         {item.plan_categories?.title || '-'}
                       </span>
                     </td>
-                    <td className="p-4 text-muted-foreground max-w-[200px]">
+                    <td className="p-3 text-muted-foreground">
                       <span className="truncate block" title={item.description || ''}>
                         {item.description || '-'}
                       </span>
                     </td>
-                    <td className="p-4 whitespace-nowrap">{renderPrice(item, 'avulso')}</td>
-                    <td className="p-4 whitespace-nowrap">{renderPrice(item, 'monthly')}</td>
-                    <td className="p-4 whitespace-nowrap">{renderPrice(item, 'semiannual')}</td>
-                    <td className="p-4 whitespace-nowrap">{renderPrice(item, 'annual')}</td>
-                    <td className="p-4 text-right">
-                      <div className="flex justify-end gap-2">
+                    <td className="p-3 whitespace-nowrap">{renderPrice(item, 'avulso')}</td>
+                    <td className="p-3 whitespace-nowrap">{renderPrice(item, 'monthly')}</td>
+                    <td className="p-3 whitespace-nowrap">{renderPrice(item, 'semiannual')}</td>
+                    <td className="p-3 whitespace-nowrap">{renderPrice(item, 'annual')}</td>
+                    <td className="p-3 text-right">
+                      <div className="flex justify-end gap-1">
                         <Button
                           variant="ghost"
                           size="icon"
