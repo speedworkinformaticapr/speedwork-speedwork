@@ -24,6 +24,8 @@ interface Props {
   onOpenChange: (open: boolean) => void
   initialData?: any
   onSave: (data: any) => void
+  services: { id: string; title: string }[]
+  defaultServiceId?: string
 }
 
 const FIELD_TYPES = [
@@ -34,7 +36,14 @@ const FIELD_TYPES = [
   { value: 'boolean', label: 'Sim/Não' },
 ]
 
-export function QuestionEditorDialog({ open, onOpenChange, initialData, onSave }: Props) {
+export function QuestionEditorDialog({
+  open,
+  onOpenChange,
+  initialData,
+  onSave,
+  services,
+  defaultServiceId,
+}: Props) {
   const [label, setLabel] = useState('')
   const [placeholder, setPlaceholder] = useState('')
   const [fieldType, setFieldType] = useState('text')
@@ -42,6 +51,7 @@ export function QuestionEditorDialog({ open, onOpenChange, initialData, onSave }
   const [newOption, setNewOption] = useState('')
   const [isRequired, setIsRequired] = useState(true)
   const [orderIndex, setOrderIndex] = useState(0)
+  const [serviceId, setServiceId] = useState('')
 
   useEffect(() => {
     if (initialData) {
@@ -51,6 +61,7 @@ export function QuestionEditorDialog({ open, onOpenChange, initialData, onSave }
       setOptions(initialData.options || [])
       setIsRequired(initialData.is_required ?? true)
       setOrderIndex(initialData.order_index ?? 0)
+      setServiceId(initialData.service_id || defaultServiceId || '')
     } else {
       setLabel('')
       setPlaceholder('')
@@ -59,8 +70,9 @@ export function QuestionEditorDialog({ open, onOpenChange, initialData, onSave }
       setNewOption('')
       setIsRequired(true)
       setOrderIndex(0)
+      setServiceId(defaultServiceId || '')
     }
-  }, [initialData, open])
+  }, [initialData, open, defaultServiceId])
 
   const addOption = () => {
     if (newOption.trim()) {
@@ -77,6 +89,7 @@ export function QuestionEditorDialog({ open, onOpenChange, initialData, onSave }
       options: fieldType === 'select' || fieldType === 'multiselect' ? options : [],
       is_required: isRequired,
       order_index: orderIndex,
+      service_id: serviceId,
     })
     onOpenChange(false)
   }
@@ -90,6 +103,21 @@ export function QuestionEditorDialog({ open, onOpenChange, initialData, onSave }
           <DialogTitle>{initialData ? 'Editar Pergunta' : 'Nova Pergunta'}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Serviço *</Label>
+            <Select value={serviceId} onValueChange={setServiceId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um serviço..." />
+              </SelectTrigger>
+              <SelectContent>
+                {services.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             <Label>Pergunta *</Label>
             <Input
@@ -179,7 +207,7 @@ export function QuestionEditorDialog({ open, onOpenChange, initialData, onSave }
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={!label.trim()}>
+          <Button onClick={handleSave} disabled={!label.trim() || !serviceId}>
             Salvar
           </Button>
         </DialogFooter>
