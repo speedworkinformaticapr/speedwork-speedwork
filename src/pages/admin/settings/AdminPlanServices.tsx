@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Plus, Edit, Trash2, LayoutTemplate, AlertCircle, BadgePercent } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
+import { useSystemData } from '@/hooks/use-system-data'
 import { supabase } from '@/lib/supabase/client'
 import { PlanServiceFormDialog, PlanServiceData } from './components/PlanServiceFormDialog'
+import { GridPagination } from '@/pages/admin/financial/components/GridPagination'
 import {
   calculatePrice,
   formatCurrency,
@@ -13,33 +15,53 @@ import {
   type BillingCycle,
 } from '@/lib/plan-pricing'
 
+const DEFAULT_PAGE_SIZE = 10
+
 export default function AdminPlanServices() {
   const [data, setData] = useState<any[]>([])
   const [status, setStatus] = useState<'loading' | 'empty' | 'error' | 'success'>('loading')
   const [formOpen, setFormOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<PlanServiceData | null>(null)
+  const [page, setPage] = useState(0)
+  const [total, setTotal] = useState(0)
   const { toast } = useToast()
+  const { data: systemData } = useSystemData()
+  const pageSize = systemData?.records_per_page || DEFAULT_PAGE_SIZE
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setStatus('loading')
-    const { data: records, error } = await supabase
+    const from = page * pageSize
+    const to = from + pageSize - 1
+
+    const {
+      data: records,
+      error,
+      count,
+    } = await supabase
       .from('services' as any)
-      .select('*, plan_categories(title)')
+      .select('*, plan_categories(title)', { count: 'exact' })
       .order('created_at', { ascending: false })
+      .range(from, to)
 
     if (error) {
       setStatus('error')
-    } else if (records && records.length > 0) {
+      return
+    }
+
+    setTotal(count ?? 0)
+
+    if (records && records.length > 0) {
       setData(records)
       setStatus('success')
     } else {
+      setData([])
       setStatus('empty')
     }
-  }
+  }, [page, pageSize])
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [loadData])
 
   const handleSave = async (values: PlanServiceData) => {
     try {
@@ -55,7 +77,9 @@ export default function AdminPlanServices() {
       }
       toast({ title: 'Sucesso', description: 'Serviço salvo com sucesso' })
       setFormOpen(false)
-      loadData()
+      const newTotalPages = Math.max(1, Math.ceil((total + (editingItem ? 0 : 1)) / pageSize))
+      if (page >= newTotalPages) setPage(newTotalPages - 1)
+      else loadData()
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Erro', description: err.message })
     }
@@ -70,7 +94,10 @@ export default function AdminPlanServices() {
         .eq('id', id)
       if (error) throw error
       toast({ title: 'Sucesso', description: 'Serviço removido com sucesso' })
-      loadData()
+      const remaining = total - 1
+      const newTotalPages = Math.max(1, Math.ceil(remaining / pageSize))
+      if (page >= newTotalPages) setPage(newTotalPages - 1)
+      else loadData()
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Erro', description: err.message })
     }
@@ -152,31 +179,33 @@ export default function AdminPlanServices() {
       )}
 
       {status === 'success' && (
-        <div className="border rounded-md overflow-hidden bg-card">
-          <div className="overflow-x-auto">
+        <div className="border rounded-md overflow-hidden bg-card flex flex-col">
+          <div className="overflow-auto" style={{ maxHeight: '70vh' }}>
             <table className="w-full text-sm text-left">
-              <thead className="bg-muted text-muted-foreground border-b">
+              <thead className="bg-muted text-muted-foreground border-b sticky top-0 z-10">
                 <tr>
-                  <th className="p-4 font-medium">Título</th>
-                  <th className="p-4 font-medium">Categoria</th>
-                  <th className="p-4 font-medium min-w-[200px]">Descrição</th>
-                  <th className="p-4 font-medium">Valor Avulso</th>
-                  <th className="p-4 font-medium">Valor Mensal</th>
-                  <th className="p-4 font-medium">Valor Semestral</th>
-                  <th className="p-4 font-medium">Valor Anual</th>
-                  <th className="p-4 font-medium text-right">Ações</th>
+                  <th className="p-4 font-medium max-w-[180px]">Título</th>
+                  <th className="p-4 font-medium max-w-[120px]">Categoria</th>
+                  <th className="p-4 font-medium max-w-[200px]">Descrição</th>
+                  <th className="p-4 font-medium whitespace-nowrap">Valor Avulso</th>
+                  <th className="p-4 font-medium whitespace-nowrap">Valor Mensal</th>
+                  <th className="p-4 font-medium whitespace-nowrap">Valor Semestral</th>
+                  <th className="p-4 font-medium whitespace-nowrap">Valor Anual</th>
+                  <th className="p-4 font-medium text-right whitespace-nowrap">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {data.map((item) => (
                   <tr key={item.id} className="hover:bg-muted/50 transition-colors">
-                    <td className="p-4 font-medium">
+                    <td className="p-4 font-medium max-w-[180px]">
                       <div className="flex items-center gap-2">
-                        {item.title}
+                        <span className="truncate" title={item.title}>
+                          {item.title}
+                        </span>
                         {hasAnyPromo(item) && (
                           <Badge
                             variant="secondary"
-                            className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 gap-1"
+                            className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 gap-1 shrink-0"
                           >
                             <BadgePercent className="w-3 h-3" />
                             Promo
@@ -184,16 +213,20 @@ export default function AdminPlanServices() {
                         )}
                       </div>
                     </td>
-                    <td className="p-4">{item.plan_categories?.title || '-'}</td>
-                    <td className="p-4 text-muted-foreground">
-                      {item.description.length > 50
-                        ? `${item.description.substring(0, 50)}...`
-                        : item.description}
+                    <td className="p-4 max-w-[120px]">
+                      <span className="truncate block" title={item.plan_categories?.title || ''}>
+                        {item.plan_categories?.title || '-'}
+                      </span>
                     </td>
-                    <td className="p-4">{renderPrice(item, 'avulso')}</td>
-                    <td className="p-4">{renderPrice(item, 'monthly')}</td>
-                    <td className="p-4">{renderPrice(item, 'semiannual')}</td>
-                    <td className="p-4">{renderPrice(item, 'annual')}</td>
+                    <td className="p-4 text-muted-foreground max-w-[200px]">
+                      <span className="truncate block" title={item.description || ''}>
+                        {item.description || '-'}
+                      </span>
+                    </td>
+                    <td className="p-4 whitespace-nowrap">{renderPrice(item, 'avulso')}</td>
+                    <td className="p-4 whitespace-nowrap">{renderPrice(item, 'monthly')}</td>
+                    <td className="p-4 whitespace-nowrap">{renderPrice(item, 'semiannual')}</td>
+                    <td className="p-4 whitespace-nowrap">{renderPrice(item, 'annual')}</td>
                     <td className="p-4 text-right">
                       <div className="flex justify-end gap-2">
                         <Button
@@ -221,6 +254,7 @@ export default function AdminPlanServices() {
               </tbody>
             </table>
           </div>
+          <GridPagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} />
         </div>
       )}
 
