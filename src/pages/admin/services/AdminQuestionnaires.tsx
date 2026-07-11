@@ -10,7 +10,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Plus, Edit2, Trash2, FileQuestion, AlertCircle, Filter } from 'lucide-react'
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  FileQuestion,
+  AlertCircle,
+  Filter,
+  FileDown,
+  Loader2,
+} from 'lucide-react'
+import { generateQuestionnaireReport, type QuestionReportItem } from '@/lib/questionnaire-report'
 import { fetchServices } from '@/services/services'
 import {
   createQuestion,
@@ -53,6 +63,7 @@ export default function AdminQuestionnaires() {
   const [page, setPage] = useState(0)
   const [total, setTotal] = useState(0)
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null)
+  const [generatingPdf, setGeneratingPdf] = useState(false)
   const { toast } = useToast()
   const { data: systemData } = useSystemData()
   const pageSize = systemData?.records_per_page || DEFAULT_PAGE_SIZE
@@ -140,6 +151,44 @@ export default function AdminQuestionnaires() {
     }
   }
 
+  const handleGeneratePdf = async () => {
+    setGeneratingPdf(true)
+    try {
+      let query = supabase
+        .from('evaluation_questions')
+        .select(
+          'id, label, field_type, options, is_required, order_index, service_id, services(title)',
+        )
+        .order('order_index', { ascending: true })
+
+      const { data: allRecords, error: fetchError } = await query
+
+      if (fetchError) throw fetchError
+
+      const reportItems: QuestionReportItem[] = (allRecords || []).map((r: any) => ({
+        id: r.id,
+        label: r.label,
+        field_type: r.field_type,
+        options: r.options || [],
+        is_required: r.is_required,
+        order_index: r.order_index,
+        service_title: r.services?.title || null,
+      }))
+
+      if (reportItems.length === 0) {
+        toast({ title: 'Aviso', description: 'Não há perguntas para gerar o relatório.' })
+        return
+      }
+
+      generateQuestionnaireReport(reportItems, systemData)
+      toast({ title: 'Sucesso', description: 'Relatório PDF gerado.' })
+    } catch (err: any) {
+      toast({ title: 'Erro', description: err.message, variant: 'destructive' })
+    } finally {
+      setGeneratingPdf(false)
+    }
+  }
+
   const handleDelete = async (id: string) => {
     if (!window.confirm('Excluir esta pergunta?')) return
     try {
@@ -167,6 +216,17 @@ export default function AdminQuestionnaires() {
           }}
         >
           <Plus className="w-4 h-4 mr-2" /> Nova Pergunta
+        </Button>
+        <Button variant="outline" onClick={handleGeneratePdf} disabled={generatingPdf}>
+          {generatingPdf ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Gerando PDF...
+            </>
+          ) : (
+            <>
+              <FileDown className="w-4 h-4 mr-2" /> Gerar Relatório PDF
+            </>
+          )}
         </Button>
       </div>
 
