@@ -224,6 +224,7 @@ export default function Login() {
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
+            minHeight: '100%',
             backgroundImage: `url('${systemData?.login_bg_image_url || 'https://img.usecurling.com/p/1920/1080?q=technology%20network%20infrastructure&color=blue&dpr=2'}')`,
           }}
         />
