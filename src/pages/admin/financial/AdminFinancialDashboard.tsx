@@ -17,20 +17,26 @@ import { Button } from '@/components/ui/button'
 import { Search, Plus, Calendar, TrendingUp, TrendingDown, Wallet, FileText } from 'lucide-react'
 import { toast } from 'sonner'
 import { NewFinancialEntryModal } from '@/components/financial/NewFinancialEntryModal'
-import { DateRange } from 'react-day-picker'
 import { format } from 'date-fns'
+import { useCashFlowUrlFilters } from './components/use-cash-flow-url-filters'
 import { useSystemData } from '@/hooks/use-system-data'
 import { generateCashFlowReport } from '@/lib/cash-flow-report'
 
 export default function AdminFinancialDashboard() {
   const [records, setRecords] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [typeFilter, setTypeFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const {
+    search,
+    typeFilter,
+    statusFilter,
+    dateRange,
+    setSearch,
+    setTypeFilter,
+    setStatusFilter,
+    setDateRange,
+  } = useCashFlowUrlFilters()
   const [showNewModal, setShowNewModal] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
-  const [dateRange, setDateRange] = useState<DateRange | undefined>()
   const { data: systemData } = useSystemData()
 
   useEffect(() => {
