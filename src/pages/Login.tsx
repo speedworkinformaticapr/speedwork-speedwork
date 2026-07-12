@@ -222,8 +222,9 @@ export default function Login() {
     <div className="flex min-h-screen bg-background">
       <div className="hidden lg:flex w-1/2 relative overflow-hidden flex-col justify-center p-16 min-h-screen">
         <div
-          className="absolute inset-0 bg-cover bg-center min-h-screen"
+          className="absolute inset-0 bg-cover bg-center"
           style={{
+            minHeight: '100vh',
             backgroundImage: `url('${systemData?.login_bg_image_url || 'https://img.usecurling.com/p/1920/1080?q=technology%20network%20infrastructure&color=blue&dpr=2'}')`,
           }}
         />

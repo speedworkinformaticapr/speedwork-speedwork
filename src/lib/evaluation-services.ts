@@ -7,6 +7,23 @@ export interface EvaluationService {
 
 export const EVALUATION_SERVICES: EvaluationService[] = [
   {
+    slug: 'suporte-tecnico',
+    name: 'Suporte Técnico',
+    description: 'Suporte e help desk para sua equipe',
+    pains: [
+      'Equipe de TI sobrecarregada com chamados',
+      'Tempo de resposta longo para problemas críticos',
+      'Sem sistema de tickets para gestão de suporte',
+      'Falta de documentação de procedimentos',
+      'Equipe sem treinamento adequado',
+      'Sem monitoramento proativo dos sistemas',
+      'Chamados recorrentes sem resolução definitiva',
+      'Sem SLA definido para atendimento',
+      'Comunicação ineficiente entre TI e usuários',
+      'Sem base de conhecimento para autoatendimento',
+    ],
+  },
+  {
     slug: 'manutencao-hardware',
     name: 'Manutenção de Hardware',
     description: 'Manutenção preventiva e corretiva de equipamentos',
