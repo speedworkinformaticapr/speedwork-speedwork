@@ -40,6 +40,7 @@ import {
   UserCircle,
   FileText,
   ClipboardCheck,
+  ShieldCheck,
 } from 'lucide-react'
 import { validateCpfCnpj, getDocumentType, maskDocument, maskPhone } from '@/lib/cpf-cnpj'
 import { RegistrationStepper } from '@/components/registration/RegistrationStepper'
@@ -454,6 +455,11 @@ export default function Register() {
           </div>
         </CardFooter>
       </Card>
+
+      <div className="flex items-center justify-center gap-1.5 mt-4 text-center">
+        <ShieldCheck className="h-4 w-4 text-muted-foreground" aria-label="Ícone de segurança" />
+        <span className="text-xs text-muted-foreground">Seus dados estão protegidos</span>
+      </div>
 
       <div className="absolute bottom-4 left-0 right-0 text-center text-sm">
         <span className="text-muted-foreground">Já possui cadastro? </span>

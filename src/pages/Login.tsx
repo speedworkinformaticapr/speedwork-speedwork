@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { useSystemData } from '@/hooks/use-system-data'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Shield } from 'lucide-react'
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -331,6 +331,11 @@ export default function Login() {
                   <span>Entrar na Plataforma</span>
                 )}
               </Button>
+
+              <div className="flex items-center justify-center gap-1.5 mt-1">
+                <Shield className="h-4 w-4 text-muted-foreground" aria-label="Ícone de segurança" />
+                <span className="text-xs text-muted-foreground">Conexão segura SSL</span>
+              </div>
             </form>
 
             <div className="relative my-8">

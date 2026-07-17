@@ -11,7 +11,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Card, CardContent } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
-import { CreditCard, QrCode, Ticket, ShieldCheck, MapPin } from 'lucide-react'
+import { CreditCard, QrCode, Ticket, ShieldCheck, MapPin, Lock } from 'lucide-react'
 
 export default function Checkout() {
   const { t } = useTranslation()
@@ -254,12 +254,30 @@ export default function Checkout() {
                     <div className="pl-12 pr-4 pb-4 animate-fade-in text-sm text-muted-foreground">
                       {t('shop.cardInfo')} (Simulação para testes)
                       <div className="grid grid-cols-2 gap-4 mt-4">
-                        <Input
-                          placeholder="Número do Cartão"
-                          className="col-span-2 bg-secondary/50"
-                        />
+                        <div className="col-span-2 relative">
+                          <Lock
+                            className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                            aria-label="Ícone de segurança"
+                          />
+                          <Input placeholder="Número do Cartão" className="bg-secondary/50 pl-10" />
+                        </div>
                         <Input placeholder="MM/AA" className="bg-secondary/50" />
-                        <Input placeholder="CVC" className="bg-secondary/50" />
+                        <div className="relative">
+                          <Lock
+                            className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                            aria-label="Ícone de segurança"
+                          />
+                          <Input placeholder="CVC" className="bg-secondary/50 pl-10" />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-3">
+                        <Lock
+                          className="h-4 w-4 text-muted-foreground"
+                          aria-label="Ícone de segurança"
+                        />
+                        <span className="text-xs text-muted-foreground">
+                          Pagamento criptografado com SSL 256-bit
+                        </span>
                       </div>
                     </div>
                   )}
