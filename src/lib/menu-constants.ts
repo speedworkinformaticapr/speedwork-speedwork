@@ -139,6 +139,7 @@ export const DEFAULT_MENU_CONFIG: MenuConfig[] = [
       { id: 'sup-tickets', label: 'Tickets de Suporte', url: '/admin/support/tickets' },
       { id: 'sup-sla', label: 'Configurações de SLA', url: '/admin/support/sla' },
       { id: 'email-config', label: 'Configurações de E-mail', url: '/admin/email' },
+      { id: 'whatsapp-config', label: 'Gestão WhatsApp', url: '/admin/whatsapp' },
     ],
   },
 ]
