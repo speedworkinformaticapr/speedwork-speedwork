@@ -1,5 +1,19 @@
 import { supabase } from '@/lib/supabase/client'
 
+export async function checkUserAuthAccount(profileId: string) {
+  const { data, error } = await supabase
+    .from('usuarios')
+    .select('user_id')
+    .eq('id', profileId)
+    .maybeSingle()
+
+  if (error) {
+    return { hasAuthAccount: false, error }
+  }
+
+  return { hasAuthAccount: !!data?.user_id, error: null }
+}
+
 export async function updatePasswordAdmin(profileId: string, newPassword: string) {
   const { data: usuario, error: lookupError } = await supabase
     .from('usuarios')

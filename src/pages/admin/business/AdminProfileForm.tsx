@@ -44,7 +44,7 @@ export default function AdminProfileForm() {
     is_author: false,
   })
 
-  useEffect(() => {
+  const loadProfile = () => {
     if (!id) return
     setLoading(true)
     supabase
@@ -56,6 +56,10 @@ export default function AdminProfileForm() {
         if (data) setForm((prev) => ({ ...prev, ...data }))
         setLoading(false)
       })
+  }
+
+  useEffect(() => {
+    loadProfile()
   }, [id])
 
   const setField = (key: string, value: any) => setForm((prev) => ({ ...prev, [key]: value }))
@@ -256,7 +260,7 @@ export default function AdminProfileForm() {
                   <CardTitle>Acesso e Segurança</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <AdminPasswordUpdate userId={id!} />
+                  <AdminPasswordUpdate userId={id!} email={form.email || ''} />
                 </CardContent>
               </Card>
             </TabsContent>

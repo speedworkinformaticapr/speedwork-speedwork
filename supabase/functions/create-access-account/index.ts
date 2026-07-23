@@ -49,25 +49,51 @@ Deno.serve(async (req) => {
       })
     }
 
-    const { target_user_id, new_password } = await req.json()
+    const { profile_id, email, password } = await req.json()
 
-    if (!target_user_id || !new_password) {
-      throw new Error('Missing parameters: target_user_id and new_password are required')
+    if (!profile_id || !email || !password) {
+      throw new Error('Missing parameters: profile_id, email, and password are required')
     }
 
-    if (new_password.length < 6) {
+    if (password.length < 6) {
       throw new Error('A senha deve ter no mínimo 6 caracteres')
     }
 
-    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(target_user_id, {
-      password: new_password,
-    })
+    const { data: usuario, error: lookupError } = await supabaseAdmin
+      .from('usuarios')
+      .select('id, user_id')
+      .eq('id', profile_id)
+      .maybeSingle()
 
-    if (updateError) {
-      throw new Error(updateError.message)
+    if (lookupError) throw lookupError
+    if (!usuario) {
+      throw new Error('Perfil não encontrado na tabela de usuários')
+    }
+    if (usuario.user_id) {
+      throw new Error('Este perfil já possui uma conta de acesso vinculada')
     }
 
-    return new Response(JSON.stringify({ success: true }), {
+    const { data: authUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    })
+
+    if (createError) {
+      if (createError.message.toLowerCase().includes('already')) {
+        throw new Error('Já existe uma conta com este e-mail')
+      }
+      throw createError
+    }
+
+    const { error: updateError } = await supabaseAdmin
+      .from('usuarios')
+      .update({ user_id: authUser.user.id, email })
+      .eq('id', profile_id)
+
+    if (updateError) throw updateError
+
+    return new Response(JSON.stringify({ success: true, user_id: authUser.user.id }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error: any) {
