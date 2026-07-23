@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Lock, Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { updatePasswordAdmin } from '@/services/admin-update-password'
-import { supabase } from '@/lib/supabase/client'
 
 interface AdminPasswordUpdateProps {
   userId: string
@@ -15,39 +14,9 @@ export function AdminPasswordUpdate({ userId }: AdminPasswordUpdateProps) {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [authUserId, setAuthUserId] = useState<string | null>(null)
-  const [fetchingUser, setFetchingUser] = useState(true)
   const { toast } = useToast()
 
-  useEffect(() => {
-    const fetchAuthUserId = async () => {
-      setFetchingUser(true)
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id')
-        .eq('id', userId)
-        .single()
-
-      if (!error && data) {
-        setAuthUserId(data.user_id ?? null)
-      } else {
-        setAuthUserId(null)
-      }
-      setFetchingUser(false)
-    }
-
-    fetchAuthUserId()
-  }, [userId])
-
   const handleSubmit = async () => {
-    if (!authUserId) {
-      toast({
-        title: 'Este usuário não possui uma conta de acesso vinculada.',
-        variant: 'destructive',
-      })
-      return
-    }
-
     if (!newPassword || !confirmPassword) {
       toast({ title: 'Preencha todos os campos.', variant: 'destructive' })
       return
@@ -65,42 +34,25 @@ export function AdminPasswordUpdate({ userId }: AdminPasswordUpdateProps) {
 
     setLoading(true)
     try {
-      const { error } = await updatePasswordAdmin(authUserId, newPassword)
+      const { error } = await updatePasswordAdmin(userId, newPassword)
       if (error) throw error
       toast({ title: 'Senha atualizada com sucesso' })
       setNewPassword('')
       setConfirmPassword('')
     } catch (error: any) {
+      const message = error?.message || 'Erro desconhecido'
+      const isMissingUser =
+        message.toLowerCase().includes('user not found') ||
+        message.toLowerCase().includes('conta não encontrada')
       toast({
-        title: `Erro ao atualizar senha: ${error.message || 'Erro desconhecido'}`,
+        title: isMissingUser
+          ? 'Este usuário não possui uma conta de acesso vinculada.'
+          : `Erro ao atualizar senha: ${message}`,
         variant: 'destructive',
       })
     } finally {
       setLoading(false)
     }
-  }
-
-  if (fetchingUser) {
-    return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Carregando dados do usuário...
-      </div>
-    )
-  }
-
-  if (!authUserId) {
-    return (
-      <div className="space-y-2 max-w-md">
-        <p className="text-sm text-destructive font-medium">
-          Este usuário não possui uma conta de acesso vinculada.
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Não é possível atualizar a senha pois não há uma conta de autenticação associada a este
-          registro.
-        </p>
-      </div>
-    )
   }
 
   return (
