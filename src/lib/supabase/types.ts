@@ -4203,7 +4203,15 @@ export type Database = {
           telefone?: string | null
           tipo_mensagem?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'whatsapp_logs_cliente_id_fkey'
+            columns: ['cliente_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
       }
       whatsapp_templates: {
         Row: {

@@ -22,6 +22,7 @@
     "webhook-asaas": 2,
     "sync-google-reviews": 1,
     "create-asaas-charge": 2,
-    "webhook-asaas-manual": 2
+    "webhook-asaas-manual": 2,
+    "admin-update-password": 1
   }
 }
