@@ -28,6 +28,33 @@ export async function checkAuthAccount(
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string
 
+function extractResponseError(data: Record<string, unknown> | null, rawText: string): string {
+  if (data && typeof data === 'object') {
+    const errObj = data as Record<string, unknown>
+    const errorVal = errObj.error
+    if (typeof errorVal === 'string' && errorVal.trim() && errorVal.trim() !== '{}') {
+      return errorVal.trim()
+    }
+    if (typeof errObj.message === 'string' && errObj.message.trim()) {
+      return errObj.message.trim()
+    }
+    if (typeof errObj.detail === 'string' && errObj.detail.trim()) {
+      return errObj.detail.trim()
+    }
+  }
+
+  if (
+    rawText &&
+    rawText.trim() &&
+    rawText.trim() !== '{}' &&
+    rawText.trim() !== '[object Object]'
+  ) {
+    return rawText.trim()
+  }
+
+  return ''
+}
+
 export async function createAccessAccount(usuarioId: string, email: string, password: string) {
   const {
     data: { session },
@@ -50,7 +77,11 @@ export async function createAccessAccount(usuarioId: string, email: string, pass
     })
   } catch (fetchError) {
     console.error('[createAccessAccount] Network error:', fetchError)
-    throw new Error('Erro de conexão. Verifique sua internet e tente novamente.')
+    const errMsg =
+      fetchError instanceof Error && fetchError.message
+        ? fetchError.message
+        : 'Erro de conexão desconhecido'
+    throw new Error(`Erro de conexão: ${errMsg}`)
   }
 
   const text = await response.text()
@@ -65,29 +96,7 @@ export async function createAccessAccount(usuarioId: string, email: string, pass
   }
 
   if (!response.ok) {
-    let errorMsg = ''
-
-    if (data && typeof data === 'object') {
-      const errObj = data as Record<string, unknown>
-      const errorVal = errObj.error
-      if (typeof errorVal === 'string' && errorVal.trim() && errorVal.trim() !== '{}') {
-        errorMsg = errorVal.trim()
-      } else if (typeof errObj.message === 'string' && errObj.message.trim()) {
-        errorMsg = errObj.message.trim()
-      } else if (typeof errObj.detail === 'string' && errObj.detail.trim()) {
-        errorMsg = errObj.detail.trim()
-      }
-    }
-
-    if (
-      !errorMsg &&
-      text &&
-      text.trim() &&
-      text.trim() !== '{}' &&
-      text.trim() !== '[object Object]'
-    ) {
-      errorMsg = text.trim()
-    }
+    let errorMsg = extractResponseError(data, text)
 
     if (!errorMsg) {
       const statusMessages: Record<number, string> = {

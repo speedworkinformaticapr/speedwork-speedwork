@@ -61,6 +61,7 @@ export function AdminPasswordUpdate({
   const [createPassword, setCreatePassword] = useState('')
   const [createConfirm, setCreateConfirm] = useState('')
   const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -101,19 +102,32 @@ export function AdminPasswordUpdate({
   }
 
   const handleCreateAccount = async () => {
-    if (!usuarioId)
-      return toast({
-        title: 'Não foi possível encontrar o registro de usuário vinculado a este perfil.',
-        variant: 'destructive',
-      })
-    if (!createEmail || !createPassword || !createConfirm)
-      return toast({ title: 'Preencha todos os campos.', variant: 'destructive' })
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createEmail))
-      return toast({ title: 'E-mail inválido.', variant: 'destructive' })
-    if (createPassword !== createConfirm)
-      return toast({ title: 'As senhas não coincidem', variant: 'destructive' })
-    if (createPassword.length < 6)
-      return toast({ title: 'A senha deve ter no mínimo 6 caracteres.', variant: 'destructive' })
+    setCreateError(null)
+    if (!usuarioId) {
+      const msg = 'Não foi possível encontrar o registro de usuário vinculado a este perfil.'
+      setCreateError(msg)
+      return toast({ title: msg, variant: 'destructive' })
+    }
+    if (!createEmail || !createPassword || !createConfirm) {
+      const msg = 'Preencha todos os campos.'
+      setCreateError(msg)
+      return toast({ title: msg, variant: 'destructive' })
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createEmail)) {
+      const msg = 'E-mail inválido.'
+      setCreateError(msg)
+      return toast({ title: msg, variant: 'destructive' })
+    }
+    if (createPassword !== createConfirm) {
+      const msg = 'As senhas não coincidem'
+      setCreateError(msg)
+      return toast({ title: msg, variant: 'destructive' })
+    }
+    if (createPassword.length < 8) {
+      const msg = 'A senha deve ter no mínimo 8 caracteres.'
+      setCreateError(msg)
+      return toast({ title: msg, variant: 'destructive' })
+    }
     setCreating(true)
     try {
       const { error } = await createAccessAccount(usuarioId, createEmail, createPassword)
@@ -123,10 +137,13 @@ export function AdminPasswordUpdate({
       setShowCreateForm(false)
       setCreatePassword('')
       setCreateConfirm('')
+      setCreateError(null)
       onAccountCreated?.()
     } catch (error: any) {
+      const errorMsg = error?.message || 'Erro desconhecido'
+      setCreateError(errorMsg)
       toast({
-        title: `Erro ao criar conta: ${error?.message || 'Erro desconhecido'}`,
+        title: `Erro ao criar conta: ${errorMsg}`,
         variant: 'destructive',
       })
     } finally {
@@ -194,6 +211,12 @@ export function AdminPasswordUpdate({
           onChange={setCreateConfirm}
           placeholder="Confirme a senha"
         />
+        {createError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{createError}</AlertDescription>
+          </Alert>
+        )}
         <div className="flex gap-2">
           <Button onClick={handleCreateAccount} disabled={creating}>
             {creating ? (
