@@ -9,18 +9,22 @@ export async function createAccessAccount(usuarioId: string, email: string, pass
     let errorMsg = 'Erro ao criar conta de acesso'
 
     if (data && typeof data === 'object' && 'error' in data) {
-      errorMsg = String((data as Record<string, unknown>).error)
+      const errStr = String((data as Record<string, unknown>).error)
+      if (errStr && errStr !== '[object Object]') errorMsg = errStr
     } else {
-      const response = (error as Record<string, unknown>)?.context as
-        | { response?: Response }
-        | undefined
-      if (response?.response instanceof Response) {
+      const context = (error as Record<string, unknown>)?.context
+      if (context instanceof Response) {
         try {
-          const errorBody = await response.response.clone().json()
+          const errorBody = await context.clone().json()
           if (errorBody?.error) errorMsg = String(errorBody.error)
+          else if (errorBody?.message) errorMsg = String(errorBody.message)
         } catch {
-          // ignore json parse errors
+          if (error instanceof Error && error.message) {
+            errorMsg = error.message
+          }
         }
+      } else if (error instanceof Error && error.message) {
+        errorMsg = error.message
       }
     }
 
