@@ -16,20 +16,21 @@ function successResponse(data: Record<string, unknown>) {
 }
 
 function extractErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message || 'Erro desconhecido'
+  if (error instanceof Error) {
+    return error.message || 'Erro desconhecido'
+  }
   if (typeof error === 'string') return error
   if (error && typeof error === 'object') {
     const err = error as Record<string, any>
-    if (typeof err.message === 'string' && err.message.length > 0) return err.message
-    if (typeof err.error_description === 'string' && err.error_description.length > 0)
-      return err.error_description
-    if (typeof err.error === 'string' && err.error.length > 0) return err.error
-    if (typeof err.msg === 'string' && err.msg.length > 0) return err.msg
-    if (typeof err.detail === 'string' && err.detail.length > 0) return err.detail
+    const msgProps = ['message', 'description', 'error_description', 'error', 'msg', 'detail']
+    for (const prop of msgProps) {
+      const val = err[prop]
+      if (typeof val === 'string' && val.length > 0) return val
+    }
     try {
-      const props = Object.getOwnPropertyNames(error)
-      for (const prop of props) {
-        if (['message', 'error_description', 'description'].includes(prop)) {
+      const ownProps = Object.getOwnPropertyNames(error)
+      for (const prop of ownProps) {
+        if (msgProps.includes(prop)) {
           const val = (error as any)[prop]
           if (typeof val === 'string' && val.length > 0) return val
         }
@@ -51,6 +52,52 @@ function extractErrorMessage(error: unknown): string {
     }
   }
   return 'Erro desconhecido'
+}
+
+function serializeCreateUserError(error: unknown): string {
+  const parts: string[] = []
+
+  if (error instanceof Error) {
+    const msg = error.message
+    if (msg && msg.length > 0) parts.push(msg)
+  }
+
+  if (error && typeof error === 'object') {
+    const err = error as Record<string, any>
+    if (typeof err.description === 'string' && err.description.length > 0) {
+      if (!parts.includes(err.description)) parts.push(err.description)
+    }
+    if (parts.length === 0) {
+      const msgProps = ['message', 'error_description', 'error', 'msg', 'detail']
+      for (const prop of msgProps) {
+        const val = err[prop]
+        if (typeof val === 'string' && val.length > 0) {
+          parts.push(val)
+          break
+        }
+      }
+    }
+    if (parts.length === 0) {
+      try {
+        const ownProps = Object.getOwnPropertyNames(error)
+        for (const prop of ownProps) {
+          if (
+            ['message', 'description', 'error_description', 'error', 'msg', 'detail'].includes(prop)
+          ) {
+            const val = (error as any)[prop]
+            if (typeof val === 'string' && val.length > 0) {
+              parts.push(val)
+              break
+            }
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  return parts.length > 0 ? parts.join(': ') : 'Erro desconhecido'
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -203,9 +250,7 @@ Deno.serve(async (req) => {
         return successResponse({ success: true, user_id: existingUser.id, existing: true })
       }
 
-      return errorResponse(
-        'Erro ao criar conta de acesso: Este e-mail já está em uso por outro usuário.',
-      )
+      return errorResponse('E-mail já está em uso', 409)
     }
 
     const { data: authData, error: createError } = await supabaseAdmin.auth.admin.createUser({
@@ -220,7 +265,7 @@ Deno.serve(async (req) => {
         JSON.stringify(createError, Object.getOwnPropertyNames(createError)),
       )
 
-      const msg = extractErrorMessage(createError)
+      const msg = serializeCreateUserError(createError)
       const lowerMsg = msg.toLowerCase()
 
       if (
@@ -229,14 +274,14 @@ Deno.serve(async (req) => {
         lowerMsg.includes('exists') ||
         lowerMsg.includes('duplicate')
       ) {
-        return errorResponse('Erro ao criar conta de acesso: Este e-mail já está em uso')
+        return errorResponse('E-mail já está em uso', 409)
       }
 
       if (
         lowerMsg.includes('password') &&
         (lowerMsg.includes('weak') || lowerMsg.includes('invalid') || lowerMsg.includes('short'))
       ) {
-        return errorResponse('Erro ao criar conta de acesso: Senha deve ter no mínimo 6 caracteres')
+        return errorResponse('Senha deve ter no mínimo 6 caracteres')
       }
 
       if (
@@ -245,23 +290,21 @@ Deno.serve(async (req) => {
         lowerMsg.includes('unauthorized') ||
         lowerMsg.includes('api key')
       ) {
-        return errorResponse(
-          'Erro ao criar conta de acesso: Falha de permissão. Verifique as credenciais de serviço do servidor.',
-        )
+        return errorResponse('Falha de permissão. Verifique as credenciais de serviço do servidor.')
       }
 
       if (lowerMsg.includes('rate') && lowerMsg.includes('limit')) {
         return errorResponse(
-          'Erro ao criar conta de acesso: Limite de criação de usuários excedido. Tente novamente em alguns minutos.',
+          'Limite de criação de usuários excedido. Tente novamente em alguns minutos.',
         )
       }
 
-      return errorResponse('Erro ao criar conta de acesso: ' + msg)
+      return errorResponse(msg)
     }
 
     if (!authData?.user?.id) {
       return errorResponse(
-        'Erro ao criar conta de acesso: Falha ao criar usuário - resposta inválida do servidor de autenticação.',
+        'Falha ao criar usuário - resposta inválida do servidor de autenticação.',
       )
     }
 
@@ -281,6 +324,6 @@ Deno.serve(async (req) => {
       '[create-access-account] Unhandled error:',
       JSON.stringify(error, Object.getOwnPropertyNames(error)),
     )
-    return errorResponse('Erro ao criar conta de acesso: ' + extractErrorMessage(error), 500)
+    return errorResponse(extractErrorMessage(error), 500)
   }
 })

@@ -8,27 +8,34 @@ export async function createAccessAccount(usuarioId: string, email: string, pass
   if (error) {
     let errorMsg = 'Erro ao criar conta de acesso'
 
-    if (data && typeof data === 'object' && 'error' in data) {
-      const errStr = String((data as Record<string, unknown>).error)
-      if (errStr && errStr !== '[object Object]') errorMsg = errStr
-    } else {
-      const context = (error as Record<string, unknown>)?.context
-      if (context instanceof Response) {
-        try {
-          const errorBody = await context.clone().json()
-          if (errorBody?.error) errorMsg = String(errorBody.error)
-          else if (errorBody?.message) errorMsg = String(errorBody.message)
-        } catch {
-          if (error instanceof Error && error.message) {
-            errorMsg = error.message
-          }
+    const context = (error as Record<string, unknown>)?.context
+    if (context instanceof Response) {
+      try {
+        const errorBody = await context.clone().json()
+        if (errorBody?.error && typeof errorBody.error === 'string') {
+          errorMsg = errorBody.error
+        } else if (errorBody?.message && typeof errorBody.message === 'string') {
+          errorMsg = errorBody.message
         }
-      } else if (error instanceof Error && error.message) {
-        errorMsg = error.message
+      } catch {
+        // Response body is not JSON or already consumed
       }
     }
 
-    return { data: null, error: { message: errorMsg } }
+    if (errorMsg === 'Erro ao criar conta de acesso' && data && typeof data === 'object') {
+      const errObj = data as Record<string, unknown>
+      if (typeof errObj.error === 'string' && errObj.error) {
+        errorMsg = errObj.error
+      } else if (typeof errObj.message === 'string' && errObj.message) {
+        errorMsg = errObj.message
+      }
+    }
+
+    if (errorMsg === 'Erro ao criar conta de acesso' && error instanceof Error && error.message) {
+      errorMsg = error.message
+    }
+
+    throw new Error(errorMsg)
   }
 
   return { data, error: null }

@@ -62,8 +62,7 @@ export function CreateAccessAccountDialog({
 
     setLoading(true)
     try {
-      const { error } = await createAccessAccount(usuarioId, email, password)
-      if (error) throw new Error(error.message || 'Erro ao criar conta de acesso')
+      await createAccessAccount(usuarioId, email, password)
       toast({ title: 'Conta de acesso criada com sucesso.' })
       setPassword('')
       setConfirmPassword('')
