@@ -16,72 +16,68 @@ function successResponse(data: Record<string, unknown>) {
 }
 
 function extractErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message || 'Erro desconhecido'
-  }
+  if (!error) return 'Erro desconhecido'
+
   if (typeof error === 'string') return error
-  if (error && typeof error === 'object') {
+
+  if (typeof error === 'object') {
     const err = error as Record<string, any>
-    const msgProps = ['message', 'description', 'error_description', 'error', 'msg', 'detail']
-    for (const prop of msgProps) {
-      const val = err[prop]
-      if (typeof val === 'string' && val.length > 0) {
-        return val
+
+    if (typeof err.message === 'string' && err.message.trim().length > 0) {
+      return err.message
+    }
+
+    if (err.error && typeof err.error === 'object') {
+      const nested = err.error as Record<string, any>
+      if (typeof nested.message === 'string' && nested.message.trim().length > 0) {
+        return nested.message
       }
     }
+
+    if (typeof err.description === 'string' && err.description.trim().length > 0) {
+      return err.description
+    }
+
+    if (typeof err.detail === 'string' && err.detail.trim().length > 0) {
+      return err.detail
+    }
+
+    if (typeof err.error_description === 'string' && err.error_description.trim().length > 0) {
+      return err.error_description
+    }
+
+    if (typeof err.msg === 'string' && err.msg.trim().length > 0) {
+      return err.msg
+    }
+
     try {
       const ownProps = Object.getOwnPropertyNames(error)
       for (const prop of ownProps) {
-        if (msgProps.includes(prop)) {
-          const val = (error as any)[prop]
-          if (typeof val === 'string' && val.length > 0) {
-            return val
-          }
+        const val = (error as any)[prop]
+        if (typeof val === 'string' && val.trim().length > 0 && prop !== 'name') {
+          return val
         }
       }
     } catch {
       /* ignore */
     }
-    try {
-      const str = String(error)
-      if (str && str !== '[object Object]' && str !== '{}') return str
-    } catch {
-      /* ignore */
-    }
-    try {
-      const str = JSON.stringify(error, Object.getOwnPropertyNames(error))
-      if (str && str !== '{}' && str !== '""' && str !== 'null') return str
-    } catch {
-      /* ignore */
-    }
-    try {
-      const str = JSON.stringify(error)
-      if (str && str !== '{}' && str !== '""' && str !== 'null') return str
-    } catch {
-      /* ignore */
-    }
   }
+
+  if (error instanceof Error) {
+    return error.message || 'Erro desconhecido'
+  }
+
+  try {
+    const str = String(error)
+    if (str && str !== '[object Object]' && str !== '{}') return str
+  } catch {
+    /* ignore */
+  }
+
   return 'Erro desconhecido'
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-async function linkAuthUserToUsuario(
-  supabaseAdmin: ReturnType<typeof createClient>,
-  usuarioId: string,
-  authUserId: string,
-  email: string,
-): Promise<string | null> {
-  const { error } = await supabaseAdmin
-    .from('usuarios')
-    .update({ user_id: authUserId, email })
-    .eq('id', usuarioId)
-  if (error) {
-    console.error('[create-access-account] Error linking user:', extractErrorMessage(error))
-    return extractErrorMessage(error)
-  }
-  return null
-}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -168,6 +164,7 @@ Deno.serve(async (req) => {
       .maybeSingle()
 
     if (lookupError) {
+      console.error('[create-access-account] Lookup error:', lookupError)
       return errorResponse('Erro ao buscar usuário: ' + extractErrorMessage(lookupError))
     }
 
@@ -190,6 +187,11 @@ Deno.serve(async (req) => {
 
       if (createError) {
         console.error('[create-access-account] createUser error:', createError)
+        console.error(
+          '[create-access-account] createUser error JSON:',
+          JSON.stringify(createError, null, 2),
+        )
+
         const errorMsg = extractErrorMessage(createError)
         const lowerMsg = errorMsg.toLowerCase()
 
@@ -200,7 +202,7 @@ Deno.serve(async (req) => {
           lowerMsg.includes('duplicate') ||
           lowerMsg.includes('has been taken')
         ) {
-          return errorResponse('E-mail já cadastrado no sistema de autenticação', 409)
+          return errorResponse(errorMsg || 'E-mail já cadastrado no sistema de autenticação', 409)
         }
 
         if (
@@ -224,33 +226,35 @@ Deno.serve(async (req) => {
       authUserId = authData.user.id
     } catch (createException) {
       console.error('[create-access-account] createUser exception:', createException)
+      console.error(
+        '[create-access-account] createUser exception JSON:',
+        JSON.stringify(createException, null, 2),
+      )
 
-      let serialized: string
-      try {
-        serialized = JSON.stringify(createException)
-        if (serialized === '{}' || serialized === '""' || serialized === 'null') {
-          serialized = extractErrorMessage(createException)
-        }
-      } catch {
-        serialized = extractErrorMessage(createException)
-      }
-
-      if (!serialized || serialized === '{}' || serialized === '""' || serialized === 'null') {
-        serialized = 'Erro inesperado ao criar conta de acesso.'
-      }
-
-      return errorResponse(serialized)
+      const errorMsg = extractErrorMessage(createException)
+      return errorResponse(errorMsg || 'Erro inesperado ao criar conta de acesso.')
     }
 
-    const linkError = await linkAuthUserToUsuario(supabaseAdmin, usuario_id, authUserId, email)
+    const { error: linkError } = await supabaseAdmin
+      .from('usuarios')
+      .update({ user_id: authUserId, email })
+      .eq('id', usuario_id)
+
     if (linkError) {
-      return errorResponse('Erro ao vincular conta de acesso ao usuário: ' + linkError)
+      console.error('[create-access-account] Link error:', linkError)
+      return errorResponse(
+        'Erro ao vincular conta de acesso ao usuário: ' + extractErrorMessage(linkError),
+      )
     }
 
     return successResponse({ success: true, user_id: authUserId })
   } catch (error: unknown) {
     console.error('[create-access-account] Unhandled error:', error)
+    console.error('[create-access-account] Unhandled error JSON:', JSON.stringify(error, null, 2))
     const msg = extractErrorMessage(error)
-    return errorResponse(msg && msg !== '{}' ? msg : 'Erro interno do servidor.', 500)
+    return errorResponse(
+      msg && msg !== '{}' && msg !== '[object Object]' ? msg : 'Erro interno do servidor.',
+      500,
+    )
   }
 })
