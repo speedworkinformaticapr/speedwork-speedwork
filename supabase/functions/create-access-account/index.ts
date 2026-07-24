@@ -25,45 +25,6 @@ function extractErrorMessage(error: unknown): string {
     const msgProps = ['message', 'description', 'error_description', 'error', 'msg', 'detail']
     for (const prop of msgProps) {
       const val = err[prop]
-      if (typeof val === 'string' && val.length > 0) return val
-    }
-    try {
-      const ownProps = Object.getOwnPropertyNames(error)
-      for (const prop of ownProps) {
-        if (msgProps.includes(prop)) {
-          const val = (error as any)[prop]
-          if (typeof val === 'string' && val.length > 0) return val
-        }
-      }
-    } catch {
-      /* ignore */
-    }
-    try {
-      const str = String(error)
-      if (str && str !== '[object Object]' && str !== '{}') return str
-    } catch {
-      /* ignore */
-    }
-    try {
-      const str = JSON.stringify(error)
-      if (str && str !== '{}' && str !== '""' && str !== 'null') return str
-    } catch {
-      /* ignore */
-    }
-  }
-  return 'Erro desconhecido'
-}
-
-function serializeCreateUserError(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message || 'Erro desconhecido'
-  }
-  if (typeof error === 'string') return error
-  if (error && typeof error === 'object') {
-    const err = error as Record<string, any>
-    const msgProps = ['message', 'description', 'error_description', 'error', 'msg', 'detail']
-    for (const prop of msgProps) {
-      const val = err[prop]
       if (typeof val === 'string' && val.length > 0) {
         return val
       }
@@ -78,6 +39,24 @@ function serializeCreateUserError(error: unknown): string {
           }
         }
       }
+    } catch {
+      /* ignore */
+    }
+    try {
+      const str = String(error)
+      if (str && str !== '[object Object]' && str !== '{}') return str
+    } catch {
+      /* ignore */
+    }
+    try {
+      const str = JSON.stringify(error, Object.getOwnPropertyNames(error))
+      if (str && str !== '{}' && str !== '""' && str !== 'null') return str
+    } catch {
+      /* ignore */
+    }
+    try {
+      const str = JSON.stringify(error)
+      if (str && str !== '{}' && str !== '""' && str !== 'null') return str
     } catch {
       /* ignore */
     }
@@ -238,77 +217,71 @@ Deno.serve(async (req) => {
       return errorResponse('E-mail já está em uso', 409)
     }
 
-    const { data: authData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-    })
+    let authUserId: string | null = null
 
-    if (createError) {
-      console.error(
-        '[create-access-account] createUser error:',
-        JSON.stringify(createError, Object.getOwnPropertyNames(createError)),
-      )
+    try {
+      const { data: authData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+      })
 
-      const msg = serializeCreateUserError(createError)
-      const lowerMsg = msg.toLowerCase()
+      if (createError) {
+        console.error(createError)
 
-      if (
-        lowerMsg.includes('already') ||
-        lowerMsg.includes('registered') ||
-        lowerMsg.includes('exists') ||
-        lowerMsg.includes('duplicate')
-      ) {
-        return errorResponse('E-mail já está em uso', 409)
+        const errorMsg = extractErrorMessage(createError)
+
+        const lowerMsg = errorMsg.toLowerCase()
+        if (
+          lowerMsg.includes('already') ||
+          lowerMsg.includes('registered') ||
+          lowerMsg.includes('exists') ||
+          lowerMsg.includes('duplicate')
+        ) {
+          return errorResponse('E-mail já cadastrado no sistema de autenticação')
+        }
+
+        if (
+          lowerMsg.includes('password') &&
+          (lowerMsg.includes('weak') || lowerMsg.includes('invalid') || lowerMsg.includes('short'))
+        ) {
+          return errorResponse('Senha muito curta ou fraca. Use no mínimo 6 caracteres.')
+        }
+
+        return errorResponse(errorMsg)
       }
 
-      if (
-        lowerMsg.includes('password') &&
-        (lowerMsg.includes('weak') || lowerMsg.includes('invalid') || lowerMsg.includes('short'))
-      ) {
-        return errorResponse('Senha deve ter no mínimo 6 caracteres')
-      }
-
-      if (
-        lowerMsg.includes('permission') ||
-        lowerMsg.includes('forbidden') ||
-        lowerMsg.includes('unauthorized') ||
-        lowerMsg.includes('api key')
-      ) {
-        return errorResponse('Falha de permissão. Verifique as credenciais de serviço do servidor.')
-      }
-
-      if (lowerMsg.includes('rate') && lowerMsg.includes('limit')) {
+      if (!authData?.user?.id) {
         return errorResponse(
-          'Limite de criação de usuários excedido. Tente novamente em alguns minutos.',
+          'Falha ao criar usuário - resposta inválida do servidor de autenticação.',
         )
       }
 
-      return errorResponse(msg)
+      authUserId = authData.user.id
+    } catch (createException) {
+      console.error(createException)
+
+      let serialized: string
+      try {
+        serialized = JSON.stringify(createException)
+        if (serialized === '{}' || serialized === '""' || serialized === 'null') {
+          serialized = extractErrorMessage(createException)
+        }
+      } catch {
+        serialized = extractErrorMessage(createException)
+      }
+
+      return errorResponse(serialized)
     }
 
-    if (!authData?.user?.id) {
-      return errorResponse(
-        'Falha ao criar usuário - resposta inválida do servidor de autenticação.',
-      )
-    }
-
-    const linkError = await linkAuthUserToUsuario(
-      supabaseAdmin,
-      usuario_id,
-      authData.user.id,
-      email,
-    )
+    const linkError = await linkAuthUserToUsuario(supabaseAdmin, usuario_id, authUserId, email)
     if (linkError) {
       return errorResponse('Erro ao vincular conta de acesso ao usuário: ' + linkError)
     }
 
-    return successResponse({ success: true, user_id: authData.user.id })
+    return successResponse({ success: true, user_id: authUserId })
   } catch (error: unknown) {
-    console.error(
-      '[create-access-account] Unhandled error:',
-      JSON.stringify(error, Object.getOwnPropertyNames(error)),
-    )
+    console.error(error)
     return errorResponse(extractErrorMessage(error), 500)
   }
 })
