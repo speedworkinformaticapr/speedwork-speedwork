@@ -2,7 +2,7 @@
   "_versions": {
     "calculate-athlete-statistics": 1,
     "cron-billing-reminders": 1,
-    "cron-billing-trigger": 30,
+    "cron-billing-trigger": 31,
     "delete-user-soft": 2,
     "enviar_whatsapp": 4,
     "generate-affiliation-billing": 1,

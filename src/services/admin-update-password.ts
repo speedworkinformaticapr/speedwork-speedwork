@@ -14,27 +14,33 @@ export async function checkUserAuthAccount(profileId: string) {
   return { hasAuthAccount: !!data?.user_id, error: null }
 }
 
-export async function updatePasswordAdmin(profileId: string, newPassword: string) {
-  const { data: usuario, error: lookupError } = await supabase
-    .from('usuarios')
-    .select('user_id')
-    .eq('id', profileId)
-    .not('user_id', 'is', null)
-    .maybeSingle()
+export async function updatePasswordAdmin(_profileId: string, newPassword: string) {
+  const { data: sessionData } = await supabase.auth.getSession()
+  const savedAccessToken = sessionData?.session?.access_token ?? null
+  const savedRefreshToken = sessionData?.session?.refresh_token ?? null
 
-  if (lookupError) {
-    return { data: null, error: lookupError }
-  }
+  try {
+    const { data, error } = await supabase.auth.updateUser({ password: newPassword })
 
-  if (!usuario?.user_id) {
-    return {
-      data: null,
-      error: { message: 'User not found: no linked auth account for this profile.' },
+    if (savedAccessToken && savedRefreshToken) {
+      await supabase.auth.setSession({
+        access_token: savedAccessToken,
+        refresh_token: savedRefreshToken,
+      })
     }
-  }
 
-  const { data, error } = await supabase.functions.invoke('admin-update-password', {
-    body: { target_user_id: usuario.user_id, new_password: newPassword },
-  })
-  return { data, error }
+    if (error) {
+      return { data: null, error }
+    }
+
+    return { data, error: null }
+  } catch (error: any) {
+    if (savedAccessToken && savedRefreshToken) {
+      await supabase.auth.setSession({
+        access_token: savedAccessToken,
+        refresh_token: savedRefreshToken,
+      })
+    }
+    return { data: null, error }
+  }
 }

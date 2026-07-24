@@ -86,18 +86,18 @@ export function AdminPasswordUpdate({
       return toast({ title: 'Preencha todos os campos.', variant: 'destructive' })
     if (newPassword !== confirmPassword)
       return toast({ title: 'As senhas não coincidem', variant: 'destructive' })
-    if (newPassword.length < 6)
-      return toast({ title: 'A senha deve ter no mínimo 6 caracteres.', variant: 'destructive' })
+    if (newPassword.length < 8)
+      return toast({ title: 'A senha deve ter no mínimo 8 caracteres.', variant: 'destructive' })
     setLoading(true)
     try {
       const { error } = await updatePasswordAdmin(userId, newPassword)
       if (error) throw error
-      toast({ title: 'Senha atualizada com sucesso' })
+      toast({ title: 'Senha alterada com sucesso!' })
       setNewPassword('')
       setConfirmPassword('')
     } catch (error: any) {
       toast({
-        title: `Erro ao atualizar senha: ${error?.message || 'Erro desconhecido'}`,
+        title: `Erro ao alterar senha: ${error?.message || 'Erro desconhecido'}`,
         variant: 'destructive',
       })
     } finally {
