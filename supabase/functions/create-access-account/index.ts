@@ -12,11 +12,52 @@ function errorResponse(message: string, status = 400) {
 function extractErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message
   if (typeof error === 'string') return error
-  if (error && typeof error === 'object' && 'message' in error) {
-    const msg = (error as { message: unknown }).message
-    if (typeof msg === 'string' && msg.length > 0) return msg
+  if (error && typeof error === 'object') {
+    const err = error as Record<string, any>
+    if (typeof err.message === 'string' && err.message.length > 0) return err.message
+    if (typeof err.error === 'string' && err.error.length > 0) return err.error
+    if (typeof err.msg === 'string' && err.msg.length > 0) return err.msg
+    try {
+      const str = JSON.stringify(error)
+      if (str && str !== '{}') return str
+    } catch {
+      // ignore
+    }
   }
   return 'Erro desconhecido'
+}
+
+async function findAuthUserByEmail(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  email: string,
+): Promise<{ id: string } | null> {
+  const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
+  })
+  if (error) {
+    console.error('[create-access-account] Error listing users:', JSON.stringify(error))
+    return null
+  }
+  if (!data?.users) return null
+  return data.users.find((u) => u.email === email) ?? null
+}
+
+async function linkAuthUserToUsuario(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  usuarioId: string,
+  authUserId: string,
+  email: string,
+): Promise<string | null> {
+  const { error } = await supabaseAdmin
+    .from('usuarios')
+    .update({ user_id: authUserId, email })
+    .eq('id', usuarioId)
+  if (error) {
+    console.error('[create-access-account] Error linking user:', JSON.stringify(error))
+    return extractErrorMessage(error)
+  }
+  return null
 }
 
 Deno.serve(async (req) => {
@@ -103,6 +144,24 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Pre-check: does the email already exist in auth.users?
+    const existingUser = await findAuthUserByEmail(supabaseAdmin, email)
+    if (existingUser) {
+      const linkError = await linkAuthUserToUsuario(
+        supabaseAdmin,
+        usuario_id,
+        existingUser.id,
+        email,
+      )
+      if (linkError) {
+        return errorResponse('Erro ao vincular conta existente: ' + linkError)
+      }
+      return new Response(
+        JSON.stringify({ success: true, user_id: existingUser.id, existing: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+
     const { data: authData, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -110,10 +169,44 @@ Deno.serve(async (req) => {
     })
 
     if (createError) {
+      console.error(
+        '[create-access-account] createUser error:',
+        JSON.stringify({
+          message: createError.message,
+          status: createError.status,
+          code: createError.code,
+          name: createError.name,
+        }),
+      )
+
       const msg = extractErrorMessage(createError)
-      if (msg.toLowerCase().includes('already')) {
-        return errorResponse('Já existe uma conta com este e-mail')
+      const lowerMsg = msg.toLowerCase()
+
+      if (
+        lowerMsg.includes('already') ||
+        lowerMsg.includes('registered') ||
+        lowerMsg.includes('exists')
+      ) {
+        // Idempotency fallback: user may have been created in a partial failure
+        const foundUser = await findAuthUserByEmail(supabaseAdmin, email)
+        if (foundUser) {
+          const linkError = await linkAuthUserToUsuario(
+            supabaseAdmin,
+            usuario_id,
+            foundUser.id,
+            email,
+          )
+          if (linkError) {
+            return errorResponse('Erro ao vincular conta existente: ' + linkError)
+          }
+          return new Response(
+            JSON.stringify({ success: true, user_id: foundUser.id, existing: true }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+          )
+        }
+        return errorResponse('Já existe uma conta com este email')
       }
+
       return errorResponse('Erro ao criar conta: ' + msg)
     }
 
@@ -121,19 +214,24 @@ Deno.serve(async (req) => {
       return errorResponse('Falha ao criar usuário: resposta inválida do servidor de autenticação')
     }
 
-    const { error: updateError } = await supabaseAdmin
-      .from('usuarios')
-      .update({ user_id: authData.user.id, email })
-      .eq('id', usuario_id)
-
-    if (updateError) {
-      return errorResponse('Erro ao vincular conta: ' + extractErrorMessage(updateError))
+    const linkError = await linkAuthUserToUsuario(
+      supabaseAdmin,
+      usuario_id,
+      authData.user.id,
+      email,
+    )
+    if (linkError) {
+      return errorResponse('Erro ao vincular conta: ' + linkError)
     }
 
     return new Response(JSON.stringify({ success: true, user_id: authData.user.id }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error: unknown) {
+    console.error(
+      '[create-access-account] Unhandled error:',
+      JSON.stringify(error, Object.getOwnPropertyNames(error)),
+    )
     return errorResponse(extractErrorMessage(error))
   }
 })
