@@ -63,7 +63,7 @@ export function CreateAccessAccountDialog({
     setLoading(true)
     try {
       const { error } = await createAccessAccount(usuarioId, email, password)
-      if (error) throw error
+      if (error) throw new Error(error.message || 'Erro ao criar conta de acesso')
       toast({ title: 'Conta de acesso criada com sucesso.' })
       setPassword('')
       setConfirmPassword('')
@@ -71,7 +71,7 @@ export function CreateAccessAccountDialog({
       onOpenChange(false)
     } catch (error: any) {
       toast({
-        title: 'Erro ao criar conta: ' + (error?.message || 'Erro desconhecido'),
+        title: error?.message || 'Erro desconhecido',
         variant: 'destructive',
       })
     } finally {
