@@ -192,34 +192,48 @@ Deno.serve(async (req) => {
           JSON.stringify(createError, null, 2),
         )
 
-        const errorMsg = extractErrorMessage(createError)
-        const lowerMsg = errorMsg.toLowerCase()
+        let errorMsg = ''
 
-        if (
-          lowerMsg.includes('already') ||
-          lowerMsg.includes('registered') ||
-          lowerMsg.includes('exists') ||
-          lowerMsg.includes('duplicate') ||
-          lowerMsg.includes('has been taken')
-        ) {
-          return errorResponse(errorMsg || 'E-mail já cadastrado no sistema de autenticação', 409)
+        if (createError && typeof createError === 'object' && 'message' in createError) {
+          const msg = (createError as Record<string, unknown>).message
+          if (typeof msg === 'string' && msg.trim().length > 0) {
+            errorMsg = msg
+          }
         }
 
-        if (
-          lowerMsg.includes('password') &&
-          (lowerMsg.includes('weak') || lowerMsg.includes('invalid') || lowerMsg.includes('short'))
-        ) {
-          return errorResponse(
-            errorMsg || 'Senha muito curta ou fraca. Use no mínimo 6 caracteres.',
-          )
+        if (!errorMsg) {
+          try {
+            const serialized = JSON.stringify(createError)
+            if (serialized && serialized !== '{}' && serialized !== 'null') {
+              errorMsg = serialized
+            }
+          } catch {
+            /* ignore */
+          }
         }
 
-        return errorResponse(errorMsg || 'Falha ao criar usuário no sistema de autenticação.')
+        if (!errorMsg) {
+          try {
+            const str = String(createError)
+            if (str && str !== '[object Object]' && str !== '{}') {
+              errorMsg = str
+            }
+          } catch {
+            /* ignore */
+          }
+        }
+
+        if (!errorMsg) {
+          errorMsg = 'Falha ao criar usuário no sistema de autenticação.'
+        }
+
+        return errorResponse(errorMsg, 400)
       }
 
       if (!authData?.user?.id) {
         return errorResponse(
           'Falha ao criar usuário - resposta inválida do servidor de autenticação.',
+          400,
         )
       }
 
@@ -231,8 +245,42 @@ Deno.serve(async (req) => {
         JSON.stringify(createException, null, 2),
       )
 
-      const errorMsg = extractErrorMessage(createException)
-      return errorResponse(errorMsg || 'Erro inesperado ao criar conta de acesso.')
+      let errorMsg = ''
+
+      if (createException && typeof createException === 'object' && 'message' in createException) {
+        const msg = (createException as Record<string, unknown>).message
+        if (typeof msg === 'string' && msg.trim().length > 0) {
+          errorMsg = msg
+        }
+      }
+
+      if (!errorMsg) {
+        try {
+          const serialized = JSON.stringify(createException)
+          if (serialized && serialized !== '{}' && serialized !== 'null') {
+            errorMsg = serialized
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+
+      if (!errorMsg) {
+        try {
+          const str = String(createException)
+          if (str && str !== '[object Object]' && str !== '{}') {
+            errorMsg = str
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+
+      if (!errorMsg) {
+        errorMsg = 'Erro inesperado ao criar conta de acesso.'
+      }
+
+      return errorResponse(errorMsg, 400)
     }
 
     const { error: linkError } = await supabaseAdmin
