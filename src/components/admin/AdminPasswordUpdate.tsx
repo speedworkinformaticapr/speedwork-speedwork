@@ -55,6 +55,7 @@ export function AdminPasswordUpdate({
   const [loading, setLoading] = useState(false)
   const [checking, setChecking] = useState(true)
   const [hasAuthAccount, setHasAuthAccount] = useState(false)
+  const [usuarioId, setUsuarioId] = useState<string | null>(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [createEmail, setCreateEmail] = useState(profileEmail || '')
   const [createPassword, setCreatePassword] = useState('')
@@ -64,11 +65,12 @@ export function AdminPasswordUpdate({
 
   useEffect(() => {
     setChecking(true)
-    checkAuthAccount(userId).then(({ hasAccount }) => {
+    checkAuthAccount(userId, profileEmail).then(({ hasAccount, usuarioId }) => {
       setHasAuthAccount(hasAccount)
+      setUsuarioId(usuarioId)
       setChecking(false)
     })
-  }, [userId])
+  }, [userId, profileEmail])
 
   useEffect(() => {
     if (profileEmail) setCreateEmail(profileEmail)
@@ -99,6 +101,11 @@ export function AdminPasswordUpdate({
   }
 
   const handleCreateAccount = async () => {
+    if (!usuarioId)
+      return toast({
+        title: 'Não foi possível encontrar o registro de usuário vinculado a este perfil.',
+        variant: 'destructive',
+      })
     if (!createEmail || !createPassword || !createConfirm)
       return toast({ title: 'Preencha todos os campos.', variant: 'destructive' })
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createEmail))
@@ -109,7 +116,7 @@ export function AdminPasswordUpdate({
       return toast({ title: 'A senha deve ter no mínimo 6 caracteres.', variant: 'destructive' })
     setCreating(true)
     try {
-      const { error } = await createAccessAccount(userId, createEmail, createPassword)
+      const { error } = await createAccessAccount(usuarioId, createEmail, createPassword)
       if (error) throw error
       toast({ title: 'Conta de acesso criada com sucesso' })
       setHasAuthAccount(true)
@@ -144,9 +151,14 @@ export function AdminPasswordUpdate({
             Este usuário não possui uma conta de acesso vinculada.
           </AlertDescription>
         </Alert>
-        <Button onClick={() => setShowCreateForm(true)}>
+        <Button onClick={() => setShowCreateForm(true)} disabled={!usuarioId}>
           <UserPlus className="mr-2 h-4 w-4" /> Criar Conta de Acesso
         </Button>
+        {!usuarioId && (
+          <p className="text-sm text-muted-foreground">
+            Não há registro na tabela de usuários vinculado a este perfil.
+          </p>
+        )}
       </div>
     )
   }

@@ -49,10 +49,10 @@ Deno.serve(async (req) => {
       })
     }
 
-    const { profile_id, email, password } = await req.json()
+    const { usuario_id, email, password } = await req.json()
 
-    if (!profile_id || !email || !password) {
-      throw new Error('Missing parameters: profile_id, email, and password are required')
+    if (!usuario_id || !email || !password) {
+      throw new Error('Missing parameters: usuario_id, email, and password are required')
     }
 
     if (password.length < 6) {
@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
     const { data: usuario, error: lookupError } = await supabaseAdmin
       .from('usuarios')
       .select('id, user_id')
-      .eq('id', profile_id)
+      .eq('id', usuario_id)
       .maybeSingle()
 
     if (lookupError) throw lookupError
@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
     const { error: updateError } = await supabaseAdmin
       .from('usuarios')
       .update({ user_id: authUser.user.id, email })
-      .eq('id', profile_id)
+      .eq('id', usuario_id)
 
     if (updateError) throw updateError
 

@@ -2,23 +2,32 @@ import { supabase } from '@/lib/supabase/client'
 
 export async function checkAuthAccount(
   profileId: string,
-): Promise<{ hasAccount: boolean; userId: string | null }> {
-  const { data, error } = await supabase
-    .from('usuarios')
-    .select('user_id')
-    .eq('id', profileId)
-    .maybeSingle()
+  profileEmail?: string,
+): Promise<{ hasAccount: boolean; userId: string | null; usuarioId: string | null }> {
+  let query = supabase.from('usuarios').select('id, user_id, email')
 
-  if (error || !data) {
-    return { hasAccount: false, userId: null }
+  if (profileEmail) {
+    query = query.eq('email', profileEmail)
+  } else {
+    query = query.eq('id', profileId)
   }
 
-  return { hasAccount: !!data.user_id, userId: data.user_id }
+  const { data, error } = await query.maybeSingle()
+
+  if (error || !data) {
+    return { hasAccount: false, userId: null, usuarioId: null }
+  }
+
+  return {
+    hasAccount: !!data.user_id,
+    userId: data.user_id,
+    usuarioId: data.id,
+  }
 }
 
-export async function createAccessAccount(profileId: string, email: string, password: string) {
+export async function createAccessAccount(usuarioId: string, email: string, password: string) {
   const { data, error } = await supabase.functions.invoke('create-access-account', {
-    body: { profile_id: profileId, email, password },
+    body: { usuario_id: usuarioId, email, password },
   })
   return { data, error }
 }

@@ -16,7 +16,7 @@ import { createAccessAccount } from '@/services/create-access-account'
 interface CreateAccessAccountDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  profileId: string
+  usuarioId: string
   initialEmail: string
   onSuccess: () => void
 }
@@ -24,7 +24,7 @@ interface CreateAccessAccountDialogProps {
 export function CreateAccessAccountDialog({
   open,
   onOpenChange,
-  profileId,
+  usuarioId,
   initialEmail,
   onSuccess,
 }: CreateAccessAccountDialogProps) {
@@ -62,7 +62,7 @@ export function CreateAccessAccountDialog({
 
     setLoading(true)
     try {
-      const { error } = await createAccessAccount(profileId, email, password)
+      const { error } = await createAccessAccount(usuarioId, email, password)
       if (error) throw error
       toast({ title: 'Conta de acesso criada com sucesso.' })
       setPassword('')

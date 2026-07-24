@@ -260,7 +260,7 @@ export default function AdminProfileForm() {
                   <CardTitle>Acesso e Segurança</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <AdminPasswordUpdate userId={id!} email={form.email || ''} />
+                  <AdminPasswordUpdate userId={id!} profileEmail={form.email || ''} />
                 </CardContent>
               </Card>
             </TabsContent>
