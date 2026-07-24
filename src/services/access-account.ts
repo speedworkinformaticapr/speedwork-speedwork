@@ -113,7 +113,6 @@ export async function createAccessAccount(
   const profileData: Record<string, unknown> = {
     id: authUserId,
     email,
-    updated_at: now,
   }
   if (name) profileData.name = name
   if (role) profileData.role = role
