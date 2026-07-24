@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Lock, Loader2, AlertCircle, UserPlus, Mail } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { updatePasswordAdmin } from '@/services/admin-update-password'
+import { adminUpdatePassword } from '@/services/admin-update-password'
 import { checkAuthAccount, createAccessAccount } from '@/services/access-account'
 
 interface AdminPasswordUpdateProps {
@@ -90,7 +90,7 @@ export function AdminPasswordUpdate({
       return toast({ title: 'A senha deve ter no mínimo 8 caracteres.', variant: 'destructive' })
     setLoading(true)
     try {
-      const { error } = await updatePasswordAdmin(userId, newPassword)
+      const { error } = await adminUpdatePassword({ userId, newPassword })
       if (error) throw error
       toast({ title: 'Senha alterada com sucesso!' })
       setNewPassword('')
