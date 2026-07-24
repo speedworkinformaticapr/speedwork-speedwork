@@ -12,19 +12,29 @@ function jsonResponse(body: Record<string, unknown>, status = 200): Response {
   })
 }
 
-function extractErrorMessage(error: unknown): string {
-  if (!error) return 'Erro desconhecido'
+function extractCreateUserError(error: unknown): string {
+  if (!error) return 'Unknown error creating user'
   if (typeof error === 'string') return error
-  if (error instanceof Error) return error.message || 'Erro desconhecido'
-
+  if (error instanceof Error) return error.message || 'Unknown error creating user'
   if (typeof error === 'object' && error !== null) {
     const err = error as Record<string, unknown>
+    const msg = err.message
+    if (typeof msg === 'string' && msg.trim().length > 0) return msg
+    return 'Unknown error creating user'
+  }
+  return 'Unknown error creating user'
+}
 
+function extractGenericError(error: unknown): string {
+  if (!error) return 'Unknown error creating user'
+  if (typeof error === 'string') return error
+  if (error instanceof Error) return error.message || 'Unknown error creating user'
+  if (typeof error === 'object' && error !== null) {
+    const err = error as Record<string, unknown>
     for (const key of ['message', 'error', 'error_description', 'detail', 'description', 'msg']) {
       const val = err[key]
       if (typeof val === 'string' && val.trim().length > 0 && val.trim() !== '{}') return val
     }
-
     const code = err.code
     if (typeof code === 'string' && code.trim()) {
       const msg = err.message
@@ -32,10 +42,9 @@ function extractErrorMessage(error: unknown): string {
       return code
     }
   }
-
   const str = String(error)
   if (str && str !== '[object Object]' && str !== '{}') return str
-  return 'Erro desconhecido'
+  return 'Unknown error creating user'
 }
 
 function validateInput(body: {
@@ -109,7 +118,7 @@ Deno.serve(async (req: Request) => {
       error: getUserError,
     } = await supabaseUser.auth.getUser()
     if (getUserError || !user) {
-      console.error('[create-access-account] getUser failed:', extractErrorMessage(getUserError))
+      console.error('[create-access-account] getUser failed:', extractGenericError(getUserError))
       return jsonResponse({ error: 'Não autorizado. Sessão inválida ou expirada.' }, 401)
     }
 
@@ -122,7 +131,7 @@ Deno.serve(async (req: Request) => {
     if (profileError) {
       console.error(
         '[create-access-account] Profile lookup error:',
-        extractErrorMessage(profileError),
+        extractGenericError(profileError),
       )
       return jsonResponse({ error: 'Erro ao verificar permissões do usuário.' }, 403)
     }
@@ -157,14 +166,9 @@ Deno.serve(async (req: Request) => {
       .maybeSingle()
 
     if (lookupError) {
-      console.error(
-        '[create-access-account] Usuario lookup error:',
-        extractErrorMessage(lookupError),
-      )
-      return jsonResponse(
-        { error: 'Erro ao buscar usuário: ' + extractErrorMessage(lookupError) },
-        500,
-      )
+      const errorMsg = extractGenericError(lookupError)
+      console.error('[create-access-account] Usuario lookup error:', errorMsg)
+      return jsonResponse({ error: 'Erro ao buscar usuário: ' + errorMsg }, 500)
     }
 
     if (!usuario) {
@@ -185,49 +189,21 @@ Deno.serve(async (req: Request) => {
       })
 
       if (createError) {
-        console.error('[create-access-account] admin.createUser error (full object):', createError)
-        console.error('[create-access-account] admin.createUser error name:', createError.name)
-        console.error(
-          '[create-access-account] admin.createUser error message:',
-          createError.message,
-        )
-        console.error(
-          '[create-access-account] admin.createUser error stringified:',
-          JSON.stringify(createError, null, 2),
-        )
-
-        const errorMsg = extractErrorMessage(createError)
+        const errorMsg = extractCreateUserError(createError)
+        console.error('[create-access-account] admin.createUser error:', errorMsg)
         return jsonResponse({ error: errorMsg }, 400)
       }
 
       if (!authData?.user?.id) {
-        console.error(
-          '[create-access-account] admin.createUser returned no user id. Response:',
-          JSON.stringify(authData, null, 2),
-        )
-        return jsonResponse(
-          { error: 'Falha ao criar usuário - resposta inválida do servidor de autenticação.' },
-          400,
-        )
+        console.error('[create-access-account] admin.createUser returned no user id.')
+        return jsonResponse({ error: 'Unknown error creating user' }, 400)
       }
 
       authUserId = authData.user.id
       console.log('[create-access-account] User created successfully:', authUserId)
     } catch (createException) {
-      console.error(
-        '[create-access-account] admin.createUser exception (full object):',
-        createException,
-      )
-      console.error(
-        '[create-access-account] admin.createUser exception message:',
-        extractErrorMessage(createException),
-      )
-      console.error(
-        '[create-access-account] admin.createUser exception stringified:',
-        JSON.stringify(createException, null, 2),
-      )
-
-      const errorMsg = extractErrorMessage(createException)
+      const errorMsg = extractCreateUserError(createException)
+      console.error('[create-access-account] admin.createUser exception:', errorMsg)
       return jsonResponse({ error: errorMsg }, 400)
     }
 
@@ -237,9 +213,10 @@ Deno.serve(async (req: Request) => {
       .eq('id', usuario_id)
 
     if (linkError) {
-      console.error('[create-access-account] Link error:', extractErrorMessage(linkError))
+      const errorMsg = extractGenericError(linkError)
+      console.error('[create-access-account] Link error:', errorMsg)
       return jsonResponse(
-        { error: 'Erro ao vincular conta de acesso ao usuário: ' + extractErrorMessage(linkError) },
+        { error: 'Erro ao vincular conta de acesso ao usuário: ' + errorMsg },
         500,
       )
     }
@@ -247,15 +224,8 @@ Deno.serve(async (req: Request) => {
     console.log('[create-access-account] Account linked successfully for usuario:', usuario_id)
     return jsonResponse({ success: true, user_id: authUserId })
   } catch (error: unknown) {
-    console.error('[create-access-account] Unhandled error (full object):', error)
-    console.error(
-      '[create-access-account] Unhandled error stringified:',
-      JSON.stringify(error, null, 2),
-    )
-    const msg = extractErrorMessage(error)
-    return jsonResponse(
-      { error: msg !== 'Erro desconhecido' ? msg : 'Erro interno do servidor.' },
-      500,
-    )
+    const errorMsg = extractGenericError(error)
+    console.error('[create-access-account] Unhandled error:', errorMsg)
+    return jsonResponse({ error: errorMsg }, 500)
   }
 })
