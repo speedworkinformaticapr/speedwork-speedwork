@@ -2,6 +2,8 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 function jsonResponse(body: Record<string, unknown>, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -11,58 +13,21 @@ function jsonResponse(body: Record<string, unknown>, status = 200): Response {
 
 function extractErrorMessage(error: unknown): string {
   if (!error) return 'Erro desconhecido'
-
   if (typeof error === 'string') return error
-
-  if (error instanceof Error) {
-    return error.message || 'Erro desconhecido'
-  }
+  if (error instanceof Error) return error.message || 'Erro desconhecido'
 
   if (typeof error === 'object' && error !== null) {
-    const err = error as Record<string, any>
-    const candidates = [
-      err.message,
-      err.error,
-      err.detail,
-      err.description,
-      err.error_description,
-      err.msg,
-    ]
-    for (const c of candidates) {
-      if (typeof c === 'string' && c.trim().length > 0) {
-        return c
-      }
-    }
-
-    try {
-      const stringified = JSON.stringify(error)
-      if (stringified && stringified !== '{}') {
-        const parsed = JSON.parse(stringified)
-        for (const key of [
-          'message',
-          'error',
-          'detail',
-          'description',
-          'error_description',
-          'msg',
-        ]) {
-          if (typeof parsed[key] === 'string' && parsed[key].trim().length > 0) {
-            return parsed[key]
-          }
-        }
-      }
-    } catch {
-      // ignore
+    const err = error as Record<string, unknown>
+    for (const key of ['message', 'error', 'error_description', 'detail', 'description', 'msg']) {
+      const val = err[key]
+      if (typeof val === 'string' && val.trim().length > 0) return val
     }
   }
 
   const str = String(error)
   if (str && str !== '[object Object]' && str !== '{}') return str
-
   return 'Erro desconhecido'
 }
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -74,23 +39,13 @@ Deno.serve(async (req: Request) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
 
-    if (!supabaseUrl) {
-      console.error('[create-access-account] Missing SUPABASE_URL env var')
-      return jsonResponse({ error: 'Erro de configuração: URL do Supabase não encontrada' }, 500)
-    }
-    if (!serviceRoleKey) {
-      console.error('[create-access-account] Missing SUPABASE_SERVICE_ROLE_KEY env var')
-      return jsonResponse(
-        {
-          error:
-            'Erro de configuração: chave de serviço (service_role) não encontrada. Verifique as variáveis de ambiente do Edge Function.',
-        },
-        500,
-      )
-    }
-    if (!anonKey) {
-      console.error('[create-access-account] Missing SUPABASE_ANON_KEY env var')
-      return jsonResponse({ error: 'Erro de configuração: chave anônima não encontrada' }, 500)
+    if (!supabaseUrl || !serviceRoleKey || !anonKey) {
+      console.error('[create-access-account] Missing env vars:', {
+        hasUrl: !!supabaseUrl,
+        hasServiceKey: !!serviceRoleKey,
+        hasAnonKey: !!anonKey,
+      })
+      return jsonResponse({ error: 'Erro de configuração do servidor.' }, 500)
     }
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
@@ -146,25 +101,15 @@ Deno.serve(async (req: Request) => {
     const { usuario_id, email, password } = body
 
     if (!usuario_id || !email || !password) {
-      return jsonResponse(
-        {
-          error: 'Parâmetros ausentes: usuario_id, email e password são obrigatórios.',
-        },
-        400,
-      )
+      return jsonResponse({ error: 'Campos obrigatórios: email, password, usuario_id' }, 400)
     }
 
     if (!EMAIL_REGEX.test(email)) {
-      return jsonResponse({ error: 'E-mail inválido. Forneça um endereço de e-mail válido.' }, 400)
+      return jsonResponse({ error: 'Email inválido' }, 400)
     }
 
     if (password.length < 6) {
-      return jsonResponse(
-        {
-          error: 'Senha inválida. A senha deve ter no mínimo 6 caracteres.',
-        },
-        400,
-      )
+      return jsonResponse({ error: 'A senha deve ter no mínimo 6 caracteres' }, 400)
     }
 
     const { data: usuario, error: lookupError } = await supabaseAdmin
@@ -208,11 +153,6 @@ Deno.serve(async (req: Request) => {
           '[create-access-account] admin.createUser error message:',
           createError.message,
         )
-        console.error(
-          '[create-access-account] admin.createUser error stringified:',
-          JSON.stringify(createError),
-        )
-
         const errorMsg = extractErrorMessage(createError)
         return jsonResponse({ error: errorMsg }, 400)
       }
@@ -230,14 +170,9 @@ Deno.serve(async (req: Request) => {
     } catch (createException) {
       console.error('[create-access-account] admin.createUser exception:', createException)
       console.error(
-        '[create-access-account] admin.createUser exception stringified:',
-        JSON.stringify(createException),
+        '[create-access-account] admin.createUser exception message:',
+        extractErrorMessage(createException),
       )
-      console.error(
-        '[create-access-account] admin.createUser exception String():',
-        String(createException),
-      )
-
       const errorMsg = extractErrorMessage(createException)
       return jsonResponse({ error: errorMsg }, 400)
     }
@@ -259,14 +194,9 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ success: true, user_id: authUserId })
   } catch (error: unknown) {
     console.error('[create-access-account] Unhandled error:', error)
-    console.error('[create-access-account] Unhandled error stringified:', JSON.stringify(error))
-    console.error('[create-access-account] Unhandled error String():', String(error))
-
     const msg = extractErrorMessage(error)
     return jsonResponse(
-      {
-        error: msg && msg !== '{}' && msg !== '[object Object]' ? msg : 'Erro interno do servidor.',
-      },
+      { error: msg !== 'Erro desconhecido' ? msg : 'Erro interno do servidor.' },
       500,
     )
   }

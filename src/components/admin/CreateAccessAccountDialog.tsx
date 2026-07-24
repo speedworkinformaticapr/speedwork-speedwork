@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { createAccessAccount } from '@/services/create-access-account'
+import { createAccessAccount } from '@/services/access-account'
 
 interface CreateAccessAccountDialogProps {
   open: boolean

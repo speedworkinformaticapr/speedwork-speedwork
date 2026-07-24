@@ -35,7 +35,7 @@ export async function createAccessAccount(usuarioId: string, email: string, pass
     try {
       data = JSON.parse(text)
     } catch {
-      // Response body is not valid JSON — keep data null, use raw text
+      data = null
     }
   }
 
@@ -44,21 +44,14 @@ export async function createAccessAccount(usuarioId: string, email: string, pass
 
     if (data && typeof data === 'object') {
       const errObj = data as Record<string, unknown>
-      if (typeof errObj.error === 'string' && errObj.error.trim()) {
-        errorMsg = errObj.error
+      const errorVal = errObj.error
+      if (typeof errorVal === 'string' && errorVal.trim() && errorVal.trim() !== '{}') {
+        errorMsg = errorVal
       } else if (typeof errObj.message === 'string' && errObj.message.trim()) {
         errorMsg = errObj.message
       } else if (typeof errObj.detail === 'string' && errObj.detail.trim()) {
         errorMsg = errObj.detail
-      } else if (typeof errObj.description === 'string' && errObj.description.trim()) {
-        errorMsg = errObj.description
       }
-    }
-
-    if (!errorMsg && text && text.trim().length > 0 && text.trim().startsWith('{')) {
-      errorMsg = 'Erro ao processar a resposta do servidor.'
-    } else if (!errorMsg && text && text.trim().length > 0) {
-      errorMsg = text.trim()
     }
 
     if (!errorMsg) {

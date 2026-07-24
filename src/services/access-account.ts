@@ -37,9 +37,10 @@ export async function createAccessAccount(usuarioId: string, email: string, pass
     if (context instanceof Response) {
       try {
         const errorBody = await context.clone().json()
-        if (errorBody?.error && typeof errorBody.error === 'string') {
-          errorMsg = errorBody.error
-        } else if (errorBody?.message && typeof errorBody.message === 'string') {
+        const errorVal = errorBody?.error
+        if (typeof errorVal === 'string' && errorVal.trim() && errorVal.trim() !== '{}') {
+          errorMsg = errorVal
+        } else if (typeof errorBody?.message === 'string' && errorBody.message.trim()) {
           errorMsg = errorBody.message
         }
       } catch {
@@ -49,9 +50,10 @@ export async function createAccessAccount(usuarioId: string, email: string, pass
 
     if (errorMsg === 'Erro ao criar conta de acesso' && data && typeof data === 'object') {
       const errObj = data as Record<string, unknown>
-      if (typeof errObj.error === 'string' && errObj.error) {
-        errorMsg = errObj.error
-      } else if (typeof errObj.message === 'string' && errObj.message) {
+      const errorVal = errObj.error
+      if (typeof errorVal === 'string' && errorVal.trim() && errorVal.trim() !== '{}') {
+        errorMsg = errorVal
+      } else if (typeof errObj.message === 'string' && errObj.message.trim()) {
         errorMsg = errObj.message
       }
     }
