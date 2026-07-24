@@ -73,8 +73,8 @@ export function CreateAccessAccountDialog({
       return
     }
 
-    if (password.length < 6) {
-      const msg = 'A senha deve ter no mínimo 6 caracteres.'
+    if (password.length < 8) {
+      const msg = 'A senha deve ter no mínimo 8 caracteres.'
       setInlineError(msg)
       toast({ title: msg, variant: 'destructive' })
       return
@@ -141,7 +141,7 @@ export function CreateAccessAccountDialog({
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Digite a senha"
+              placeholder="Digite a senha (mínimo 8 caracteres)"
             />
           </div>
           <div className="space-y-2">
