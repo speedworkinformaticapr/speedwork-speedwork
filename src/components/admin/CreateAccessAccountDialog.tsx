@@ -68,9 +68,18 @@ export function CreateAccessAccountDialog({
       setConfirmPassword('')
       onSuccess()
       onOpenChange(false)
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string' && error.trim()
+            ? error
+            : 'Erro desconhecido ao criar conta de acesso.'
+
+      console.error('[CreateAccessAccountDialog] Error:', error)
+
       toast({
-        title: error?.message || 'Erro desconhecido',
+        title: errorMessage,
         variant: 'destructive',
       })
     } finally {
