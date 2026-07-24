@@ -19,6 +19,8 @@ interface CreateAccessAccountDialogProps {
   onOpenChange: (open: boolean) => void
   usuarioId: string
   initialEmail: string
+  name?: string
+  role?: string
   onSuccess: () => void
 }
 
@@ -27,6 +29,8 @@ export function CreateAccessAccountDialog({
   onOpenChange,
   usuarioId,
   initialEmail,
+  name,
+  role,
   onSuccess,
 }: CreateAccessAccountDialogProps) {
   const [email, setEmail] = useState(initialEmail)
@@ -82,7 +86,7 @@ export function CreateAccessAccountDialog({
 
     setLoading(true)
     try {
-      await createAccessAccount(usuarioId, email, password)
+      await createAccessAccount(usuarioId, email, password, name, role)
       toast({ title: 'Conta de acesso criada com sucesso.' })
       setPassword('')
       setConfirmPassword('')

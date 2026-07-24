@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import type { User } from '@supabase/supabase-js'
 
 export async function checkAuthAccount(
   profileId: string,
@@ -25,94 +26,105 @@ export async function checkAuthAccount(
   }
 }
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string
-
-function extractResponseError(data: Record<string, unknown> | null, rawText: string): string {
-  if (data && typeof data === 'object') {
-    const errObj = data as Record<string, unknown>
-    const errorVal = errObj.error
-    if (typeof errorVal === 'string' && errorVal.trim() && errorVal.trim() !== '{}') {
-      return errorVal.trim()
-    }
-    if (typeof errObj.message === 'string' && errObj.message.trim()) {
-      return errObj.message.trim()
-    }
-    if (typeof errObj.detail === 'string' && errObj.detail.trim()) {
-      return errObj.detail.trim()
-    }
-  }
-
-  if (
-    rawText &&
-    rawText.trim() &&
-    rawText.trim() !== '{}' &&
-    rawText.trim() !== '[object Object]'
-  ) {
-    return rawText.trim()
-  }
-
-  return ''
-}
-
-export async function createAccessAccount(usuarioId: string, email: string, password: string) {
+export async function createAccessAccount(
+  usuarioId: string | null,
+  email: string,
+  password: string,
+  name?: string,
+  role?: string,
+): Promise<{ user: User }> {
   const {
-    data: { session },
+    data: { session: adminSession },
   } = await supabase.auth.getSession()
 
-  if (!session?.access_token) {
+  if (!adminSession) {
     throw new Error('Sessão expirada. Faça login novamente.')
   }
 
-  let response: Response
-  try {
-    response = await fetch(`${SUPABASE_URL}/functions/v1/create-access-account`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-        apikey: SUPABASE_ANON_KEY,
-      },
-      body: JSON.stringify({ usuario_id: usuarioId, email, password }),
+  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: name ? { name } : undefined,
+    },
+  })
+
+  if (signUpError) {
+    throw signUpError
+  }
+
+  if (!signUpData.user) {
+    throw new Error('Nenhum usuário retornado pelo cadastro.')
+  }
+
+  const authUserId = signUpData.user.id
+
+  const {
+    data: { session: currentSession },
+  } = await supabase.auth.getSession()
+
+  if (currentSession?.user?.id !== adminSession.user.id) {
+    const { error: restoreError } = await supabase.auth.setSession({
+      access_token: adminSession.access_token,
+      refresh_token: adminSession.refresh_token,
     })
-  } catch (fetchError) {
-    console.error('[createAccessAccount] Network error:', fetchError)
-    const errMsg =
-      fetchError instanceof Error && fetchError.message
-        ? fetchError.message
-        : 'Erro de conexão desconhecido'
-    throw new Error(`Erro de conexão: ${errMsg}`)
-  }
 
-  const text = await response.text()
-  let data: Record<string, unknown> | null = null
-
-  if (text) {
-    try {
-      data = JSON.parse(text)
-    } catch {
-      data = null
+    if (restoreError) {
+      throw new Error('Erro ao restaurar sessão do administrador. Por favor, faça login novamente.')
     }
   }
 
-  if (!response.ok) {
-    let errorMsg = extractResponseError(data, text)
+  const now = new Date().toISOString()
 
-    if (!errorMsg) {
-      const statusMessages: Record<number, string> = {
-        400: 'Não foi possível criar a conta de acesso. Verifique os dados informados.',
-        401: 'Sessão expirada. Faça login novamente.',
-        403: 'Você não tem permissão para realizar esta operação.',
-        404: 'Usuário não encontrado no sistema.',
-        500: 'Erro interno do servidor. Tente novamente em instantes.',
-      }
-      errorMsg =
-        statusMessages[response.status] ||
-        `Erro ${response.status}: não foi possível criar a conta de acesso.`
+  if (usuarioId) {
+    const updateData: Record<string, unknown> = {
+      user_id: authUserId,
+      email,
+      updated_at: now,
     }
+    if (name) updateData.nome = name
+    if (role) updateData.role = role
 
-    throw new Error(errorMsg)
+    const { error: usuarioError } = await supabase
+      .from('usuarios')
+      .update(updateData)
+      .eq('id', usuarioId)
+
+    if (usuarioError) {
+      throw new Error('Erro ao vincular conta de acesso: ' + usuarioError.message)
+    }
+  } else {
+    const insertData: Record<string, unknown> = {
+      user_id: authUserId,
+      email,
+      created_at: now,
+      updated_at: now,
+    }
+    if (name) insertData.nome = name
+    if (role) insertData.role = role
+
+    const { error: usuarioError } = await supabase.from('usuarios').insert(insertData)
+
+    if (usuarioError) {
+      throw new Error('Erro ao criar registro de usuário: ' + usuarioError.message)
+    }
   }
 
-  return { data, error: null }
+  const profileData: Record<string, unknown> = {
+    id: authUserId,
+    email,
+    updated_at: now,
+  }
+  if (name) profileData.name = name
+  if (role) profileData.role = role
+
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .upsert(profileData, { onConflict: 'id' })
+
+  if (profileError) {
+    throw new Error('Erro ao criar/atualizar perfil: ' + profileError.message)
+  }
+
+  return { user: signUpData.user }
 }

@@ -11,6 +11,8 @@ import { checkAuthAccount, createAccessAccount } from '@/services/access-account
 interface AdminPasswordUpdateProps {
   userId: string
   profileEmail?: string
+  profileName?: string
+  profileRole?: string
   onAccountCreated?: () => void
 }
 
@@ -48,6 +50,8 @@ function PasswordField({
 export function AdminPasswordUpdate({
   userId,
   profileEmail,
+  profileName,
+  profileRole,
   onAccountCreated,
 }: AdminPasswordUpdateProps) {
   const [newPassword, setNewPassword] = useState('')
@@ -103,11 +107,6 @@ export function AdminPasswordUpdate({
 
   const handleCreateAccount = async () => {
     setCreateError(null)
-    if (!usuarioId) {
-      const msg = 'Não foi possível encontrar o registro de usuário vinculado a este perfil.'
-      setCreateError(msg)
-      return toast({ title: msg, variant: 'destructive' })
-    }
     if (!createEmail || !createPassword || !createConfirm) {
       const msg = 'Preencha todos os campos.'
       setCreateError(msg)
@@ -130,8 +129,7 @@ export function AdminPasswordUpdate({
     }
     setCreating(true)
     try {
-      const { error } = await createAccessAccount(usuarioId, createEmail, createPassword)
-      if (error) throw error
+      await createAccessAccount(usuarioId, createEmail, createPassword, profileName, profileRole)
       toast({ title: 'Conta de acesso criada com sucesso' })
       setHasAuthAccount(true)
       setShowCreateForm(false)
@@ -168,12 +166,13 @@ export function AdminPasswordUpdate({
             Este usuário não possui uma conta de acesso vinculada.
           </AlertDescription>
         </Alert>
-        <Button onClick={() => setShowCreateForm(true)} disabled={!usuarioId}>
+        <Button onClick={() => setShowCreateForm(true)}>
           <UserPlus className="mr-2 h-4 w-4" /> Criar Conta de Acesso
         </Button>
         {!usuarioId && (
           <p className="text-sm text-muted-foreground">
-            Não há registro na tabela de usuários vinculado a este perfil.
+            Não há registro na tabela de usuários vinculado a este perfil. Um novo registro será
+            criado.
           </p>
         )}
       </div>
