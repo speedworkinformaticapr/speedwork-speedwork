@@ -66,20 +66,6 @@ function extractErrorMessage(error: unknown): string {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-async function findAuthUserByEmail(
-  supabaseAdmin: ReturnType<typeof createClient>,
-  email: string,
-): Promise<{ id: string } | null> {
-  const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 })
-  if (error) {
-    console.error('[create-access-account] Error listing users:', extractErrorMessage(error))
-    return null
-  }
-  if (!data?.users) return null
-  const lowerEmail = email.toLowerCase()
-  return data.users.find((u) => u.email?.toLowerCase() === lowerEmail) ?? null
-}
-
 async function linkAuthUserToUsuario(
   supabaseAdmin: ReturnType<typeof createClient>,
   usuarioId: string,
@@ -193,30 +179,6 @@ Deno.serve(async (req) => {
       return successResponse({ success: true, user_id: usuario.user_id, existing: true })
     }
 
-    const existingUser = await findAuthUserByEmail(supabaseAdmin, email)
-    if (existingUser) {
-      const { data: linkedUsuario } = await supabaseAdmin
-        .from('usuarios')
-        .select('id')
-        .eq('user_id', existingUser.id)
-        .maybeSingle()
-
-      if (!linkedUsuario) {
-        const linkError = await linkAuthUserToUsuario(
-          supabaseAdmin,
-          usuario_id,
-          existingUser.id,
-          email,
-        )
-        if (linkError) {
-          return errorResponse('Erro ao vincular conta de acesso ao usuário: ' + linkError)
-        }
-        return successResponse({ success: true, user_id: existingUser.id, existing: true })
-      }
-
-      return errorResponse('E-mail já está em uso', 409)
-    }
-
     let authUserId: string | null = null
 
     try {
@@ -227,28 +189,30 @@ Deno.serve(async (req) => {
       })
 
       if (createError) {
-        console.error(createError)
-
+        console.error('[create-access-account] createUser error:', createError)
         const errorMsg = extractErrorMessage(createError)
-
         const lowerMsg = errorMsg.toLowerCase()
+
         if (
           lowerMsg.includes('already') ||
           lowerMsg.includes('registered') ||
           lowerMsg.includes('exists') ||
-          lowerMsg.includes('duplicate')
+          lowerMsg.includes('duplicate') ||
+          lowerMsg.includes('has been taken')
         ) {
-          return errorResponse('E-mail já cadastrado no sistema de autenticação')
+          return errorResponse('E-mail já cadastrado no sistema de autenticação', 409)
         }
 
         if (
           lowerMsg.includes('password') &&
           (lowerMsg.includes('weak') || lowerMsg.includes('invalid') || lowerMsg.includes('short'))
         ) {
-          return errorResponse('Senha muito curta ou fraca. Use no mínimo 6 caracteres.')
+          return errorResponse(
+            errorMsg || 'Senha muito curta ou fraca. Use no mínimo 6 caracteres.',
+          )
         }
 
-        return errorResponse(errorMsg)
+        return errorResponse(errorMsg || 'Falha ao criar usuário no sistema de autenticação.')
       }
 
       if (!authData?.user?.id) {
@@ -259,7 +223,7 @@ Deno.serve(async (req) => {
 
       authUserId = authData.user.id
     } catch (createException) {
-      console.error(createException)
+      console.error('[create-access-account] createUser exception:', createException)
 
       let serialized: string
       try {
@@ -269,6 +233,10 @@ Deno.serve(async (req) => {
         }
       } catch {
         serialized = extractErrorMessage(createException)
+      }
+
+      if (!serialized || serialized === '{}' || serialized === '""' || serialized === 'null') {
+        serialized = 'Erro inesperado ao criar conta de acesso.'
       }
 
       return errorResponse(serialized)
@@ -281,7 +249,8 @@ Deno.serve(async (req) => {
 
     return successResponse({ success: true, user_id: authUserId })
   } catch (error: unknown) {
-    console.error(error)
-    return errorResponse(extractErrorMessage(error), 500)
+    console.error('[create-access-account] Unhandled error:', error)
+    const msg = extractErrorMessage(error)
+    return errorResponse(msg && msg !== '{}' ? msg : 'Erro interno do servidor.', 500)
   }
 })
