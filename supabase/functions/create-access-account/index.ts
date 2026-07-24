@@ -17,16 +17,49 @@ function extractCreateUserError(error: unknown): string {
   if (typeof error === 'string') {
     return error.trim() || 'Erro ao criar usuário.'
   }
-  if (error instanceof Error) return error.message || 'Erro ao criar usuário.'
   if (typeof error === 'object' && error !== null) {
     const err = error as Record<string, unknown>
-    const msg = err.message
-    if (typeof msg === 'string' && msg.trim().length > 0 && msg.trim() !== '{}') return msg
-    const errorVal = err.error
-    if (typeof errorVal === 'string' && errorVal.trim().length > 0 && errorVal.trim() !== '{}')
-      return errorVal
-    const desc = err.error_description
-    if (typeof desc === 'string' && desc.trim().length > 0 && desc.trim() !== '{}') return desc
+    for (const key of ['message', 'error', 'error_description', 'msg', 'detail', 'description']) {
+      const val = err[key]
+      if (typeof val === 'string' && val.trim().length > 0 && val.trim() !== '{}') {
+        return val.trim()
+      }
+    }
+    for (const key of ['message', 'error', 'error_description', 'msg', 'detail']) {
+      const val = err[key]
+      if (val && typeof val === 'object') {
+        try {
+          const inner = val as Record<string, unknown>
+          for (const innerKey of [
+            'message',
+            'error',
+            'error_description',
+            'msg',
+            'detail',
+            'description',
+          ]) {
+            const innerVal = inner[innerKey]
+            if (
+              typeof innerVal === 'string' &&
+              innerVal.trim().length > 0 &&
+              innerVal.trim() !== '{}'
+            ) {
+              return innerVal.trim()
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+    try {
+      const str = (error as { toString?: () => string }).toString?.()
+      if (str && str !== '[object Object]' && str !== '{}') {
+        return str
+      }
+    } catch {
+      // ignore
+    }
     return 'Erro ao criar usuário.'
   }
   const str = String(error)

@@ -38,17 +38,11 @@ async function extractErrorFromResponse(response: Response): Promise<string | nu
     }
 
     if (parsed && typeof parsed === 'object') {
-      const errorVal = parsed.error
-      if (typeof errorVal === 'string' && errorVal.trim() && errorVal.trim() !== '{}') {
-        return errorVal
-      }
-      const msgVal = parsed.message
-      if (typeof msgVal === 'string' && msgVal.trim()) {
-        return msgVal
-      }
-      const detailVal = parsed.detail
-      if (typeof detailVal === 'string' && detailVal.trim()) {
-        return detailVal
+      for (const key of ['error', 'message', 'error_description', 'detail', 'description', 'msg']) {
+        const val = parsed[key]
+        if (typeof val === 'string' && val.trim() && val.trim() !== '{}') {
+          return val.trim()
+        }
       }
     }
 
@@ -64,7 +58,7 @@ export async function createAccessAccount(usuarioId: string, email: string, pass
   })
 
   if (error) {
-    let errorMsg = 'Erro ao criar conta de acesso.'
+    let errorMsg = ''
 
     const context = (error as Record<string, unknown>)?.context
     if (context instanceof Response) {
@@ -74,24 +68,47 @@ export async function createAccessAccount(usuarioId: string, email: string, pass
       }
     }
 
-    if (errorMsg === 'Erro ao criar conta de acesso.' && data && typeof data === 'object') {
+    if (!errorMsg && data && typeof data === 'object') {
       const errObj = data as Record<string, unknown>
-      const errorVal = errObj.error
-      if (typeof errorVal === 'string' && errorVal.trim() && errorVal.trim() !== '{}') {
-        errorMsg = errorVal
-      } else if (typeof errObj.message === 'string' && errObj.message.trim()) {
-        errorMsg = errObj.message
+      for (const key of ['error', 'message', 'error_description', 'detail', 'description', 'msg']) {
+        const val = errObj[key]
+        if (
+          typeof val === 'string' &&
+          val.trim() &&
+          val.trim() !== '{}' &&
+          val.trim() !== '[object Object]'
+        ) {
+          errorMsg = val.trim()
+          break
+        }
       }
     }
 
-    if (errorMsg === 'Erro ao criar conta de acesso.' && error instanceof Error && error.message) {
-      const fallbackMsg = error.message.trim()
-      if (fallbackMsg && fallbackMsg !== '{}') {
-        errorMsg = fallbackMsg
+    if (!errorMsg && typeof data === 'string' && data.trim() && data.trim() !== '{}') {
+      errorMsg = data.trim()
+    }
+
+    if (!errorMsg && typeof error === 'object' && error !== null) {
+      const errObj = error as Record<string, unknown>
+      for (const key of ['error', 'message', 'error_description', 'detail', 'description', 'msg']) {
+        const val = errObj[key]
+        if (
+          typeof val === 'string' &&
+          val.trim() &&
+          val.trim() !== '{}' &&
+          val.trim() !== '[object Object]'
+        ) {
+          errorMsg = val.trim()
+          break
+        }
       }
     }
 
-    console.error('[createAccessAccount] Error from edge function:', errorMsg)
+    if (!errorMsg) {
+      errorMsg = 'Erro ao criar conta de acesso.'
+    }
+
+    console.error('[createAccessAccount] Error from edge function:', errorMsg, { data, error })
     throw new Error(errorMsg)
   }
 
