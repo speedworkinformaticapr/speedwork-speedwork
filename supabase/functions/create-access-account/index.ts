@@ -55,49 +55,34 @@ function extractErrorMessage(error: unknown): string {
 }
 
 function serializeCreateUserError(error: unknown): string {
-  const parts: string[] = []
-
   if (error instanceof Error) {
-    const msg = error.message
-    if (msg && msg.length > 0) parts.push(msg)
+    return error.message || 'Erro desconhecido'
   }
-
+  if (typeof error === 'string') return error
   if (error && typeof error === 'object') {
     const err = error as Record<string, any>
-    if (typeof err.description === 'string' && err.description.length > 0) {
-      if (!parts.includes(err.description)) parts.push(err.description)
-    }
-    if (parts.length === 0) {
-      const msgProps = ['message', 'error_description', 'error', 'msg', 'detail']
-      for (const prop of msgProps) {
-        const val = err[prop]
-        if (typeof val === 'string' && val.length > 0) {
-          parts.push(val)
-          break
-        }
+    const msgProps = ['message', 'description', 'error_description', 'error', 'msg', 'detail']
+    for (const prop of msgProps) {
+      const val = err[prop]
+      if (typeof val === 'string' && val.length > 0) {
+        return val
       }
     }
-    if (parts.length === 0) {
-      try {
-        const ownProps = Object.getOwnPropertyNames(error)
-        for (const prop of ownProps) {
-          if (
-            ['message', 'description', 'error_description', 'error', 'msg', 'detail'].includes(prop)
-          ) {
-            const val = (error as any)[prop]
-            if (typeof val === 'string' && val.length > 0) {
-              parts.push(val)
-              break
-            }
+    try {
+      const ownProps = Object.getOwnPropertyNames(error)
+      for (const prop of ownProps) {
+        if (msgProps.includes(prop)) {
+          const val = (error as any)[prop]
+          if (typeof val === 'string' && val.length > 0) {
+            return val
           }
         }
-      } catch {
-        /* ignore */
       }
+    } catch {
+      /* ignore */
     }
   }
-
-  return parts.length > 0 ? parts.join(': ') : 'Erro desconhecido'
+  return 'Erro desconhecido'
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
