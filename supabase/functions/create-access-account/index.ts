@@ -3,6 +3,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function jsonResponse(body: Record<string, unknown>, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -18,15 +19,57 @@ function extractErrorMessage(error: unknown): string {
 
   if (typeof error === 'object' && error !== null) {
     const err = error as Record<string, unknown>
+
     for (const key of ['message', 'error', 'error_description', 'detail', 'description', 'msg']) {
       const val = err[key]
-      if (typeof val === 'string' && val.trim().length > 0) return val
+      if (typeof val === 'string' && val.trim().length > 0 && val.trim() !== '{}') return val
+    }
+
+    const code = err.code
+    if (typeof code === 'string' && code.trim()) {
+      const msg = err.message
+      if (typeof msg === 'string' && msg.trim()) return `${code}: ${msg}`
+      return code
     }
   }
 
   const str = String(error)
   if (str && str !== '[object Object]' && str !== '{}') return str
   return 'Erro desconhecido'
+}
+
+function validateInput(body: {
+  usuario_id?: unknown
+  email?: unknown
+  password?: unknown
+}): string | null {
+  const { usuario_id, email, password } = body
+
+  if (!usuario_id || typeof usuario_id !== 'string' || usuario_id.trim().length === 0) {
+    return 'O campo usuario_id é obrigatório.'
+  }
+
+  if (!UUID_REGEX.test(usuario_id)) {
+    return 'usuario_id deve ser um UUID válido.'
+  }
+
+  if (!email || typeof email !== 'string' || email.trim().length === 0) {
+    return 'O campo email é obrigatório.'
+  }
+
+  if (!EMAIL_REGEX.test(email)) {
+    return 'Formato de email inválido.'
+  }
+
+  if (!password || typeof password !== 'string' || password.trim().length === 0) {
+    return 'O campo password é obrigatório.'
+  }
+
+  if (password.length < 6) {
+    return 'A senha deve ter no mínimo 6 caracteres.'
+  }
+
+  return null
 }
 
 Deno.serve(async (req: Request) => {
@@ -91,26 +134,21 @@ Deno.serve(async (req: Request) => {
       )
     }
 
-    let body: { usuario_id?: string; email?: string; password?: string }
+    let body: Record<string, unknown>
     try {
       body = await req.json()
     } catch {
       return jsonResponse({ error: 'Corpo da requisição inválido. Envie um JSON válido.' }, 400)
     }
 
-    const { usuario_id, email, password } = body
-
-    if (!usuario_id || !email || !password) {
-      return jsonResponse({ error: 'Campos obrigatórios: email, password, usuario_id' }, 400)
+    const validationError = validateInput(body)
+    if (validationError) {
+      return jsonResponse({ error: validationError }, 400)
     }
 
-    if (!EMAIL_REGEX.test(email)) {
-      return jsonResponse({ error: 'Email inválido' }, 400)
-    }
-
-    if (password.length < 6) {
-      return jsonResponse({ error: 'A senha deve ter no mínimo 6 caracteres' }, 400)
-    }
+    const usuario_id = body.usuario_id as string
+    const email = body.email as string
+    const password = body.password as string
 
     const { data: usuario, error: lookupError } = await supabaseAdmin
       .from('usuarios')
@@ -147,18 +185,26 @@ Deno.serve(async (req: Request) => {
       })
 
       if (createError) {
-        console.error('[create-access-account] admin.createUser error:', createError)
+        console.error('[create-access-account] admin.createUser error (full object):', createError)
         console.error('[create-access-account] admin.createUser error name:', createError.name)
         console.error(
           '[create-access-account] admin.createUser error message:',
           createError.message,
         )
+        console.error(
+          '[create-access-account] admin.createUser error stringified:',
+          JSON.stringify(createError, null, 2),
+        )
+
         const errorMsg = extractErrorMessage(createError)
         return jsonResponse({ error: errorMsg }, 400)
       }
 
       if (!authData?.user?.id) {
-        console.error('[create-access-account] admin.createUser returned no user id')
+        console.error(
+          '[create-access-account] admin.createUser returned no user id. Response:',
+          JSON.stringify(authData, null, 2),
+        )
         return jsonResponse(
           { error: 'Falha ao criar usuário - resposta inválida do servidor de autenticação.' },
           400,
@@ -168,11 +214,19 @@ Deno.serve(async (req: Request) => {
       authUserId = authData.user.id
       console.log('[create-access-account] User created successfully:', authUserId)
     } catch (createException) {
-      console.error('[create-access-account] admin.createUser exception:', createException)
+      console.error(
+        '[create-access-account] admin.createUser exception (full object):',
+        createException,
+      )
       console.error(
         '[create-access-account] admin.createUser exception message:',
         extractErrorMessage(createException),
       )
+      console.error(
+        '[create-access-account] admin.createUser exception stringified:',
+        JSON.stringify(createException, null, 2),
+      )
+
       const errorMsg = extractErrorMessage(createException)
       return jsonResponse({ error: errorMsg }, 400)
     }
@@ -193,7 +247,11 @@ Deno.serve(async (req: Request) => {
     console.log('[create-access-account] Account linked successfully for usuario:', usuario_id)
     return jsonResponse({ success: true, user_id: authUserId })
   } catch (error: unknown) {
-    console.error('[create-access-account] Unhandled error:', error)
+    console.error('[create-access-account] Unhandled error (full object):', error)
+    console.error(
+      '[create-access-account] Unhandled error stringified:',
+      JSON.stringify(error, null, 2),
+    )
     const msg = extractErrorMessage(error)
     return jsonResponse(
       { error: msg !== 'Erro desconhecido' ? msg : 'Erro interno do servidor.' },

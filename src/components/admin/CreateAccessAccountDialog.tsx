@@ -9,7 +9,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2 } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Loader2, AlertCircle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { createAccessAccount } from '@/services/access-account'
 
@@ -32,31 +33,50 @@ export function CreateAccessAccountDialog({
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [inlineError, setInlineError] = useState<string | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
     setEmail(initialEmail)
   }, [initialEmail])
 
+  useEffect(() => {
+    if (open) {
+      setInlineError(null)
+      setPassword('')
+      setConfirmPassword('')
+    }
+  }, [open])
+
   const handleSubmit = async () => {
+    setInlineError(null)
+
     if (!email || !password || !confirmPassword) {
-      toast({ title: 'Preencha todos os campos.', variant: 'destructive' })
+      const msg = 'Preencha todos os campos.'
+      setInlineError(msg)
+      toast({ title: msg, variant: 'destructive' })
       return
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
-      toast({ title: 'E-mail inválido.', variant: 'destructive' })
+      const msg = 'E-mail inválido.'
+      setInlineError(msg)
+      toast({ title: msg, variant: 'destructive' })
       return
     }
 
     if (password !== confirmPassword) {
-      toast({ title: 'As senhas não coincidem.', variant: 'destructive' })
+      const msg = 'As senhas não coincidem.'
+      setInlineError(msg)
+      toast({ title: msg, variant: 'destructive' })
       return
     }
 
     if (password.length < 6) {
-      toast({ title: 'A senha deve ter no mínimo 6 caracteres.', variant: 'destructive' })
+      const msg = 'A senha deve ter no mínimo 6 caracteres.'
+      setInlineError(msg)
+      toast({ title: msg, variant: 'destructive' })
       return
     }
 
@@ -66,6 +86,7 @@ export function CreateAccessAccountDialog({
       toast({ title: 'Conta de acesso criada com sucesso.' })
       setPassword('')
       setConfirmPassword('')
+      setInlineError(null)
       onSuccess()
       onOpenChange(false)
     } catch (error: unknown) {
@@ -78,8 +99,11 @@ export function CreateAccessAccountDialog({
 
       console.error('[CreateAccessAccountDialog] Error:', error)
 
+      setInlineError(errorMessage)
+
       toast({
-        title: errorMessage,
+        title: 'Erro ao criar conta de acesso',
+        description: errorMessage,
         variant: 'destructive',
       })
     } finally {
@@ -94,6 +118,12 @@ export function CreateAccessAccountDialog({
           <DialogTitle>Criar Conta de Acesso</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+          {inlineError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{inlineError}</AlertDescription>
+            </Alert>
+          )}
           <div className="space-y-2">
             <Label htmlFor="create-email">E-mail</Label>
             <Input
