@@ -2,6 +2,23 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
+function errorResponse(message: string, status = 400) {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
+}
+
+function extractErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  if (typeof error === 'string') return error
+  if (error && typeof error === 'object' && 'message' in error) {
+    const msg = (error as { message: unknown }).message
+    if (typeof msg === 'string' && msg.length > 0) return msg
+  }
+  return 'Erro desconhecido'
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -12,14 +29,15 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
 
+    if (!supabaseUrl || !serviceRoleKey || !anonKey) {
+      return errorResponse('Configuração do servidor incompleta', 500)
+    }
+
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
 
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return errorResponse('Unauthorized', 401)
     }
 
     const supabaseUser = createClient(supabaseUrl, anonKey, {
@@ -30,76 +48,92 @@ Deno.serve(async (req) => {
       data: { user },
     } = await supabaseUser.auth.getUser()
     if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return errorResponse('Unauthorized', 401)
     }
 
-    const { data: profile } = await supabaseAdmin
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    if (!profile || !['admin', 'master'].includes(profile.role)) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+    if (profileError) {
+      return errorResponse('Erro ao verificar permissões', 403)
     }
 
-    const { usuario_id, email, password } = await req.json()
+    if (!profile || !['admin', 'master'].includes(profile.role)) {
+      return errorResponse('Forbidden', 403)
+    }
+
+    let body: { usuario_id?: string; email?: string; password?: string }
+    try {
+      body = await req.json()
+    } catch {
+      return errorResponse('Corpo da requisição inválido')
+    }
+
+    const { usuario_id, email, password } = body
 
     if (!usuario_id || !email || !password) {
-      throw new Error('Missing parameters: usuario_id, email, and password are required')
+      return errorResponse('Parâmetros ausentes: usuario_id, email e password são obrigatórios')
     }
 
     if (password.length < 6) {
-      throw new Error('A senha deve ter no mínimo 6 caracteres')
+      return errorResponse('A senha deve ter no mínimo 6 caracteres')
     }
 
     const { data: usuario, error: lookupError } = await supabaseAdmin
       .from('usuarios')
-      .select('id, user_id')
+      .select('id, user_id, email')
       .eq('id', usuario_id)
       .maybeSingle()
 
-    if (lookupError) throw lookupError
-    if (!usuario) {
-      throw new Error('Perfil não encontrado na tabela de usuários')
-    }
-    if (usuario.user_id) {
-      throw new Error('Este perfil já possui uma conta de acesso vinculada')
+    if (lookupError) {
+      return errorResponse('Erro ao buscar usuário: ' + extractErrorMessage(lookupError))
     }
 
-    const { data: authUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+    if (!usuario) {
+      return errorResponse('Usuário não encontrado')
+    }
+
+    if (usuario.user_id) {
+      return new Response(
+        JSON.stringify({ success: true, user_id: usuario.user_id, existing: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+
+    const { data: authData, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
     })
 
     if (createError) {
-      if (createError.message.toLowerCase().includes('already')) {
-        throw new Error('Já existe uma conta com este e-mail')
+      const msg = extractErrorMessage(createError)
+      if (msg.toLowerCase().includes('already')) {
+        return errorResponse('Já existe uma conta com este e-mail')
       }
-      throw createError
+      return errorResponse('Erro ao criar conta: ' + msg)
+    }
+
+    if (!authData?.user?.id) {
+      return errorResponse('Falha ao criar usuário: resposta inválida do servidor de autenticação')
     }
 
     const { error: updateError } = await supabaseAdmin
       .from('usuarios')
-      .update({ user_id: authUser.user.id, email })
+      .update({ user_id: authData.user.id, email })
       .eq('id', usuario_id)
 
-    if (updateError) throw updateError
+    if (updateError) {
+      return errorResponse('Erro ao vincular conta: ' + extractErrorMessage(updateError))
+    }
 
-    return new Response(JSON.stringify({ success: true, user_id: authUser.user.id }), {
+    return new Response(JSON.stringify({ success: true, user_id: authData.user.id }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
-  } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+  } catch (error: unknown) {
+    return errorResponse(extractErrorMessage(error))
   }
 })
