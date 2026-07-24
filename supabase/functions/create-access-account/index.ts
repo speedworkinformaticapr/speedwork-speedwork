@@ -15,10 +15,16 @@ function successResponse(data: Record<string, unknown>) {
   })
 }
 
-function extractErrorMessage(error: unknown): string {
+function serializeError(error: unknown): string {
+  console.error('[create-access-account] Raw error object:', JSON.stringify(error))
+
   if (!error) return 'Erro desconhecido'
 
   if (typeof error === 'string') return error
+
+  if (error instanceof Error) {
+    return error.message || 'Erro desconhecido'
+  }
 
   if (typeof error === 'object') {
     const err = error as Record<string, any>
@@ -27,25 +33,44 @@ function extractErrorMessage(error: unknown): string {
       return err.message
     }
 
-    if (err.error && typeof err.error === 'object') {
-      const nested = err.error as Record<string, any>
-      if (typeof nested.message === 'string' && nested.message.trim().length > 0) {
-        return nested.message
+    try {
+      const parsed = JSON.parse(JSON.stringify(error))
+      if (parsed && typeof parsed === 'object') {
+        if (typeof parsed.message === 'string' && parsed.message.trim().length > 0) {
+          return parsed.message
+        }
+        if (typeof parsed.error === 'string' && parsed.error.trim().length > 0) {
+          return parsed.error
+        }
+        if (typeof parsed.detail === 'string' && parsed.detail.trim().length > 0) {
+          return parsed.detail
+        }
+        if (typeof parsed.description === 'string' && parsed.description.trim().length > 0) {
+          return parsed.description
+        }
+        if (
+          typeof parsed.error_description === 'string' &&
+          parsed.error_description.trim().length > 0
+        ) {
+          return parsed.error_description
+        }
       }
+    } catch {
+      // ignore parse failures
     }
 
-    if (typeof err.description === 'string' && err.description.trim().length > 0) {
-      return err.description
+    if (typeof err.error === 'string' && err.error.trim().length > 0) {
+      return err.error
     }
-
     if (typeof err.detail === 'string' && err.detail.trim().length > 0) {
       return err.detail
     }
-
+    if (typeof err.description === 'string' && err.description.trim().length > 0) {
+      return err.description
+    }
     if (typeof err.error_description === 'string' && err.error_description.trim().length > 0) {
       return err.error_description
     }
-
     if (typeof err.msg === 'string' && err.msg.trim().length > 0) {
       return err.msg
     }
@@ -59,20 +84,12 @@ function extractErrorMessage(error: unknown): string {
         }
       }
     } catch {
-      /* ignore */
+      // ignore
     }
   }
 
-  if (error instanceof Error) {
-    return error.message || 'Erro desconhecido'
-  }
-
-  try {
-    const str = String(error)
-    if (str && str !== '[object Object]' && str !== '{}') return str
-  } catch {
-    /* ignore */
-  }
+  const str = String(error)
+  if (str && str !== '[object Object]' && str !== '{}') return str
 
   return 'Erro desconhecido'
 }
@@ -164,8 +181,8 @@ Deno.serve(async (req) => {
       .maybeSingle()
 
     if (lookupError) {
-      console.error('[create-access-account] Lookup error:', lookupError)
-      return errorResponse('Erro ao buscar usuário: ' + extractErrorMessage(lookupError))
+      console.error('[create-access-account] Lookup error:', JSON.stringify(lookupError))
+      return errorResponse('Erro ao buscar usuário: ' + serializeError(lookupError))
     }
 
     if (!usuario) {
@@ -186,47 +203,11 @@ Deno.serve(async (req) => {
       })
 
       if (createError) {
-        console.error('[create-access-account] createUser error:', createError)
-        console.error(
-          '[create-access-account] createUser error JSON:',
-          JSON.stringify(createError, null, 2),
-        )
+        console.error('[create-access-account] createUser error:', JSON.stringify(createError))
+        console.error('[create-access-account] createUser error message:', createError?.message)
+        console.error('[create-access-account] createUser error String:', String(createError))
 
-        let errorMsg = ''
-
-        if (createError && typeof createError === 'object' && 'message' in createError) {
-          const msg = (createError as Record<string, unknown>).message
-          if (typeof msg === 'string' && msg.trim().length > 0) {
-            errorMsg = msg
-          }
-        }
-
-        if (!errorMsg) {
-          try {
-            const serialized = JSON.stringify(createError)
-            if (serialized && serialized !== '{}' && serialized !== 'null') {
-              errorMsg = serialized
-            }
-          } catch {
-            /* ignore */
-          }
-        }
-
-        if (!errorMsg) {
-          try {
-            const str = String(createError)
-            if (str && str !== '[object Object]' && str !== '{}') {
-              errorMsg = str
-            }
-          } catch {
-            /* ignore */
-          }
-        }
-
-        if (!errorMsg) {
-          errorMsg = 'Falha ao criar usuário no sistema de autenticação.'
-        }
-
+        const errorMsg = serializeError(createError)
         return errorResponse(errorMsg, 400)
       }
 
@@ -239,47 +220,13 @@ Deno.serve(async (req) => {
 
       authUserId = authData.user.id
     } catch (createException) {
-      console.error('[create-access-account] createUser exception:', createException)
       console.error(
-        '[create-access-account] createUser exception JSON:',
-        JSON.stringify(createException, null, 2),
+        '[create-access-account] createUser exception:',
+        JSON.stringify(createException),
       )
+      console.error('[create-access-account] createUser exception String:', String(createException))
 
-      let errorMsg = ''
-
-      if (createException && typeof createException === 'object' && 'message' in createException) {
-        const msg = (createException as Record<string, unknown>).message
-        if (typeof msg === 'string' && msg.trim().length > 0) {
-          errorMsg = msg
-        }
-      }
-
-      if (!errorMsg) {
-        try {
-          const serialized = JSON.stringify(createException)
-          if (serialized && serialized !== '{}' && serialized !== 'null') {
-            errorMsg = serialized
-          }
-        } catch {
-          /* ignore */
-        }
-      }
-
-      if (!errorMsg) {
-        try {
-          const str = String(createException)
-          if (str && str !== '[object Object]' && str !== '{}') {
-            errorMsg = str
-          }
-        } catch {
-          /* ignore */
-        }
-      }
-
-      if (!errorMsg) {
-        errorMsg = 'Erro inesperado ao criar conta de acesso.'
-      }
-
+      const errorMsg = serializeError(createException)
       return errorResponse(errorMsg, 400)
     }
 
@@ -289,17 +236,17 @@ Deno.serve(async (req) => {
       .eq('id', usuario_id)
 
     if (linkError) {
-      console.error('[create-access-account] Link error:', linkError)
+      console.error('[create-access-account] Link error:', JSON.stringify(linkError))
       return errorResponse(
-        'Erro ao vincular conta de acesso ao usuário: ' + extractErrorMessage(linkError),
+        'Erro ao vincular conta de acesso ao usuário: ' + serializeError(linkError),
       )
     }
 
     return successResponse({ success: true, user_id: authUserId })
   } catch (error: unknown) {
-    console.error('[create-access-account] Unhandled error:', error)
-    console.error('[create-access-account] Unhandled error JSON:', JSON.stringify(error, null, 2))
-    const msg = extractErrorMessage(error)
+    console.error('[create-access-account] Unhandled error:', JSON.stringify(error))
+    console.error('[create-access-account] Unhandled error String:', String(error))
+    const msg = serializeError(error)
     return errorResponse(
       msg && msg !== '{}' && msg !== '[object Object]' ? msg : 'Erro interno do servidor.',
       500,
