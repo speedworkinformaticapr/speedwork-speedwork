@@ -16,18 +16,38 @@ function successResponse(data: Record<string, unknown>) {
 }
 
 function extractErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message
+  if (error instanceof Error) return error.message || 'Erro desconhecido'
   if (typeof error === 'string') return error
   if (error && typeof error === 'object') {
     const err = error as Record<string, any>
     if (typeof err.message === 'string' && err.message.length > 0) return err.message
+    if (typeof err.error_description === 'string' && err.error_description.length > 0)
+      return err.error_description
     if (typeof err.error === 'string' && err.error.length > 0) return err.error
     if (typeof err.msg === 'string' && err.msg.length > 0) return err.msg
+    if (typeof err.detail === 'string' && err.detail.length > 0) return err.detail
+    try {
+      const props = Object.getOwnPropertyNames(error)
+      for (const prop of props) {
+        if (['message', 'error_description', 'description'].includes(prop)) {
+          const val = (error as any)[prop]
+          if (typeof val === 'string' && val.length > 0) return val
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+    try {
+      const str = String(error)
+      if (str && str !== '[object Object]' && str !== '{}') return str
+    } catch {
+      /* ignore */
+    }
     try {
       const str = JSON.stringify(error)
-      if (str && str !== '{}') return str
+      if (str && str !== '{}' && str !== '""' && str !== 'null') return str
     } catch {
-      // ignore
+      /* ignore */
     }
   }
   return 'Erro desconhecido'
@@ -39,12 +59,9 @@ async function findAuthUserByEmail(
   supabaseAdmin: ReturnType<typeof createClient>,
   email: string,
 ): Promise<{ id: string } | null> {
-  const { data, error } = await supabaseAdmin.auth.admin.listUsers({
-    page: 1,
-    perPage: 1000,
-  })
+  const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 })
   if (error) {
-    console.error('[create-access-account] Error listing users:', JSON.stringify(error))
+    console.error('[create-access-account] Error listing users:', extractErrorMessage(error))
     return null
   }
   if (!data?.users) return null
@@ -63,7 +80,7 @@ async function linkAuthUserToUsuario(
     .update({ user_id: authUserId, email })
     .eq('id', usuarioId)
   if (error) {
-    console.error('[create-access-account] Error linking user:', JSON.stringify(error))
+    console.error('[create-access-account] Error linking user:', extractErrorMessage(error))
     return extractErrorMessage(error)
   }
   return null
@@ -79,8 +96,14 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
 
-    if (!supabaseUrl || !serviceRoleKey || !anonKey) {
-      return errorResponse('Configuração do servidor incompleta. Contate o suporte.', 500)
+    if (!supabaseUrl) {
+      return errorResponse('Erro de configuração: URL do Supabase não encontrada', 500)
+    }
+    if (!serviceRoleKey) {
+      return errorResponse('Erro de configuração: chave de serviço não encontrada', 500)
+    }
+    if (!anonKey) {
+      return errorResponse('Erro de configuração: chave anônima não encontrada', 500)
     }
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
@@ -161,7 +184,28 @@ Deno.serve(async (req) => {
 
     const existingUser = await findAuthUserByEmail(supabaseAdmin, email)
     if (existingUser) {
-      return errorResponse('Este e-mail já está em uso por outro usuário.')
+      const { data: linkedUsuario } = await supabaseAdmin
+        .from('usuarios')
+        .select('id')
+        .eq('user_id', existingUser.id)
+        .maybeSingle()
+
+      if (!linkedUsuario) {
+        const linkError = await linkAuthUserToUsuario(
+          supabaseAdmin,
+          usuario_id,
+          existingUser.id,
+          email,
+        )
+        if (linkError) {
+          return errorResponse('Erro ao vincular conta de acesso ao usuário: ' + linkError)
+        }
+        return successResponse({ success: true, user_id: existingUser.id, existing: true })
+      }
+
+      return errorResponse(
+        'Erro ao criar conta de acesso: Este e-mail já está em uso por outro usuário.',
+      )
     }
 
     const { data: authData, error: createError } = await supabaseAdmin.auth.admin.createUser({
@@ -173,12 +217,7 @@ Deno.serve(async (req) => {
     if (createError) {
       console.error(
         '[create-access-account] createUser error:',
-        JSON.stringify({
-          message: createError.message,
-          status: createError.status,
-          code: createError.code,
-          name: createError.name,
-        }),
+        JSON.stringify(createError, Object.getOwnPropertyNames(createError)),
       )
 
       const msg = extractErrorMessage(createError)
@@ -190,14 +229,14 @@ Deno.serve(async (req) => {
         lowerMsg.includes('exists') ||
         lowerMsg.includes('duplicate')
       ) {
-        return errorResponse('Este e-mail já está em uso por outro usuário.')
+        return errorResponse('Erro ao criar conta de acesso: Este e-mail já está em uso')
       }
 
       if (
         lowerMsg.includes('password') &&
         (lowerMsg.includes('weak') || lowerMsg.includes('invalid') || lowerMsg.includes('short'))
       ) {
-        return errorResponse('Senha inválida. A senha deve ter no mínimo 6 caracteres.')
+        return errorResponse('Erro ao criar conta de acesso: Senha deve ter no mínimo 6 caracteres')
       }
 
       if (
@@ -206,12 +245,14 @@ Deno.serve(async (req) => {
         lowerMsg.includes('unauthorized') ||
         lowerMsg.includes('api key')
       ) {
-        return errorResponse('Erro de permissão. Verifique as credenciais de serviço do servidor.')
+        return errorResponse(
+          'Erro ao criar conta de acesso: Falha de permissão. Verifique as credenciais de serviço do servidor.',
+        )
       }
 
       if (lowerMsg.includes('rate') && lowerMsg.includes('limit')) {
         return errorResponse(
-          'Limite de criação de usuários excedido. Tente novamente em alguns minutos.',
+          'Erro ao criar conta de acesso: Limite de criação de usuários excedido. Tente novamente em alguns minutos.',
         )
       }
 
@@ -219,7 +260,9 @@ Deno.serve(async (req) => {
     }
 
     if (!authData?.user?.id) {
-      return errorResponse('Falha ao criar usuário: resposta inválida do servidor de autenticação.')
+      return errorResponse(
+        'Erro ao criar conta de acesso: Falha ao criar usuário - resposta inválida do servidor de autenticação.',
+      )
     }
 
     const linkError = await linkAuthUserToUsuario(
@@ -238,6 +281,6 @@ Deno.serve(async (req) => {
       '[create-access-account] Unhandled error:',
       JSON.stringify(error, Object.getOwnPropertyNames(error)),
     )
-    return errorResponse('Erro interno do servidor: ' + extractErrorMessage(error), 500)
+    return errorResponse('Erro ao criar conta de acesso: ' + extractErrorMessage(error), 500)
   }
 })
