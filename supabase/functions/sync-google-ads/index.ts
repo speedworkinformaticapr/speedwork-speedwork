@@ -1,5 +1,5 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
 Deno.serve(async (req: Request) => {
@@ -8,101 +8,143 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // In a real scenario, you would fetch GOOGLE_ADS_REFRESH_TOKEN from env
-    // const refreshToken = Deno.env.get('GOOGLE_ADS_REFRESH_TOKEN');
-    // Call Google OAuth2 endpoint to get access_token
-    // Call Google Ads API endpoint to query campaigns and metrics
-    // Since we don't have real credentials, we will mock the response and update the database
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase environment variables not set')
+    if (!supabaseUrl || !serviceRoleKey) {
+      return new Response(JSON.stringify({ error: 'Missing server configuration' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      })
     }
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseKey)
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
 
-    // Get the user ID from the authorization header if available
-    const authHeader = req.headers.get('Authorization')
-    let userId = null
+    const body = await req.json().catch(() => ({}))
+    const userId = body.userId
+    const accessToken = body.accessToken
+    const refreshToken = body.refreshToken
+    const clientId = body.clientId
+    const clientSecret = body.clientSecret
+    const customerId = body.customerId
 
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '')
-      const {
-        data: { user },
-        error,
-      } = await supabaseAdmin.auth.getUser(token)
-      if (!error && user) {
-        userId = user.id
+    if (!accessToken || !customerId) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields: accessToken and customerId' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
+      )
+    }
+
+    const googleAdsUrl = `https://googleads.googleapis.com/v17/customers/${customerId}/googleAds:searchStream`
+    const query =
+      body.query ||
+      'SELECT campaign.id, campaign.name, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions FROM campaign WHERE segments.date DURING LAST_7_DAYS'
+
+    const response = await fetch(googleAdsUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        'developer-token': body.developerToken || '',
+      },
+      body: JSON.stringify({ query }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      let errorDetail: unknown = errorText
+      try {
+        errorDetail = JSON.parse(errorText)
+      } catch {
+        // response was not JSON, keep raw text
+      }
+      return new Response(
+        JSON.stringify({
+          error: 'Google Ads API request failed',
+          detail: errorDetail,
+          status: response.status,
+        }),
+        {
+          status: response.status,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        },
+      )
+    }
+
+    const responseText = await response.text()
+    let adsData: unknown = []
+    try {
+      adsData = JSON.parse(responseText)
+    } catch {
+      adsData = [{ raw: responseText }]
+    }
+
+    const results = Array.isArray(adsData) ? adsData : [adsData]
+    let totalImpressions = 0
+    let totalClicks = 0
+    let totalCost = 0
+    let totalConversions = 0
+
+    for (const batch of results) {
+      const batchResults = (batch as Record<string, unknown>)?.results
+      if (Array.isArray(batchResults)) {
+        for (const row of batchResults) {
+          const metrics = (row as Record<string, Record<string, string>>)?.metrics
+          if (metrics) {
+            totalImpressions += parseInt(metrics.impressions || '0', 10)
+            totalClicks += parseInt(metrics.clicks || '0', 10)
+            totalCost += parseInt(metrics.cost_micros || '0', 10) / 1_000_000
+            totalConversions += parseFloat(metrics.conversions || '0')
+          }
+        }
       }
     }
 
-    // Mock new data representing the latest sync
-    const today = new Date().toISOString().split('T')[0]
+    if (userId) {
+      const today = new Date().toISOString().split('T')[0]
+      const { error: upsertError } = await supabase.from('google_ads_cache').upsert(
+        {
+          user_id: userId,
+          campaign_id: customerId,
+          campaign_name: `Customer ${customerId}`,
+          impressions: totalImpressions,
+          clicks: totalClicks,
+          cost: totalCost,
+          conversions: totalConversions,
+          date: today,
+          last_updated: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,campaign_id,date' },
+      )
 
-    const mockSyncData = [
-      {
-        user_id: userId,
-        campaign_id: 'C-001',
-        campaign_name: 'Campanha Inverno 2026',
-        impressions: Math.floor(Math.random() * 2000 + 500),
-        clicks: Math.floor(Math.random() * 100 + 20),
-        cost: Math.floor(Math.random() * 50 + 10),
-        conversions: Math.floor(Math.random() * 5 + 1),
-        date: today,
-      },
-      {
-        user_id: userId,
-        campaign_id: 'C-002',
-        campaign_name: 'Retargeting Associados',
-        impressions: Math.floor(Math.random() * 1000 + 300),
-        clicks: Math.floor(Math.random() * 80 + 10),
-        cost: Math.floor(Math.random() * 40 + 8),
-        conversions: Math.floor(Math.random() * 4 + 1),
-        date: today,
-      },
-      {
-        user_id: userId,
-        campaign_id: 'C-003',
-        campaign_name: 'Busca Institucional',
-        impressions: Math.floor(Math.random() * 3000 + 800),
-        clicks: Math.floor(Math.random() * 150 + 30),
-        cost: Math.floor(Math.random() * 60 + 15),
-        conversions: Math.floor(Math.random() * 6 + 1),
-        date: today,
-      },
-    ]
-
-    // Upsert or insert the new data
-    // For simplicity, we just insert it. In a real scenario, you'd use ON CONFLICT to update
-    const { data, error } = await supabaseAdmin
-      .from('google_ads_cache')
-      .insert(mockSyncData)
-      .select()
-
-    if (error) {
-      console.error('DB Insert Error:', error)
-      throw error
+      if (upsertError) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to cache Google Ads data', detail: upsertError.message }),
+          { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
+        )
+      }
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Dados sincronizados com sucesso (Mock)',
-        recordsAdded: mockSyncData.length,
-        data,
+        summary: {
+          impressions: totalImpressions,
+          clicks: totalClicks,
+          cost: totalCost,
+          conversions: totalConversions,
+        },
+        raw: adsData,
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      },
+      { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
     )
-  } catch (error: any) {
-    console.error('Sync error:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Internal server error'
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   }
 })

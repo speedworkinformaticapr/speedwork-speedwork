@@ -2,78 +2,54 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
-
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    if (!supabaseUrl || !serviceRoleKey) {
+      return new Response(JSON.stringify({ error: 'Missing server configuration' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
     }
 
-    const supabaseUser = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
     })
 
-    const {
-      data: { user },
-    } = await supabaseUser.auth.getUser()
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    const body = await req.json().catch(() => null)
+    if (!body || !body.userId || !body.newPassword) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields: userId and newPassword' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
+      )
+    }
+
+    const { data, error } = await supabase.auth.admin.updateUserById(body.userId, {
+      password: body.newPassword,
+    })
+
+    if (error) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
     }
 
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || !['admin', 'master'].includes(profile.role)) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    const { target_user_id, new_password } = await req.json()
-
-    if (!target_user_id || !new_password) {
-      throw new Error('Missing parameters: target_user_id and new_password are required')
-    }
-
-    if (new_password.length < 6) {
-      throw new Error('A senha deve ter no mínimo 6 caracteres')
-    }
-
-    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(target_user_id, {
-      password: new_password,
-    })
-
-    if (updateError) {
-      throw new Error(updateError.message)
-    }
-
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    return new Response(
+      JSON.stringify({ success: true, user: { id: data.user?.id, email: data.user?.email } }),
+      { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
+    )
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Internal server error'
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   }
 })
