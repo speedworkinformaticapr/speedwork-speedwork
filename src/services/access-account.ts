@@ -25,90 +25,83 @@ export async function checkAuthAccount(
   }
 }
 
-async function extractErrorFromResponse(response: Response): Promise<string | null> {
-  try {
-    const text = await response.text()
-    if (!text || text.trim().length === 0) return null
-
-    let parsed: Record<string, unknown>
-    try {
-      parsed = JSON.parse(text)
-    } catch {
-      return text.trim()
-    }
-
-    if (parsed && typeof parsed === 'object') {
-      for (const key of ['error', 'message', 'error_description', 'detail', 'description', 'msg']) {
-        const val = parsed[key]
-        if (typeof val === 'string' && val.trim() && val.trim() !== '{}') {
-          return val.trim()
-        }
-      }
-    }
-
-    return text.trim()
-  } catch {
-    return null
-  }
-}
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string
 
 export async function createAccessAccount(usuarioId: string, email: string, password: string) {
-  const { data, error } = await supabase.functions.invoke('create-access-account', {
-    body: { usuario_id: usuarioId, email, password },
-  })
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
 
-  if (error) {
+  if (!session?.access_token) {
+    throw new Error('Sessão expirada. Faça login novamente.')
+  }
+
+  let response: Response
+  try {
+    response = await fetch(`${SUPABASE_URL}/functions/v1/create-access-account`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+        apikey: SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ usuario_id: usuarioId, email, password }),
+    })
+  } catch (fetchError) {
+    console.error('[createAccessAccount] Network error:', fetchError)
+    throw new Error('Erro de conexão. Verifique sua internet e tente novamente.')
+  }
+
+  const text = await response.text()
+  let data: Record<string, unknown> | null = null
+
+  if (text) {
+    try {
+      data = JSON.parse(text)
+    } catch {
+      data = null
+    }
+  }
+
+  if (!response.ok) {
     let errorMsg = ''
 
-    const context = (error as Record<string, unknown>)?.context
-    if (context instanceof Response) {
-      const extracted = await extractErrorFromResponse(context)
-      if (extracted) {
-        errorMsg = extracted
-      }
-    }
-
-    if (!errorMsg && data && typeof data === 'object') {
+    if (data && typeof data === 'object') {
       const errObj = data as Record<string, unknown>
-      for (const key of ['error', 'message', 'error_description', 'detail', 'description', 'msg']) {
-        const val = errObj[key]
-        if (
-          typeof val === 'string' &&
-          val.trim() &&
-          val.trim() !== '{}' &&
-          val.trim() !== '[object Object]'
-        ) {
-          errorMsg = val.trim()
-          break
-        }
+      const errorVal = errObj.error
+      if (typeof errorVal === 'string' && errorVal.trim() && errorVal.trim() !== '{}') {
+        errorMsg = errorVal.trim()
+      } else if (typeof errObj.message === 'string' && errObj.message.trim()) {
+        errorMsg = errObj.message.trim()
+      } else if (typeof errObj.detail === 'string' && errObj.detail.trim()) {
+        errorMsg = errObj.detail.trim()
       }
     }
 
-    if (!errorMsg && typeof data === 'string' && data.trim() && data.trim() !== '{}') {
-      errorMsg = data.trim()
-    }
-
-    if (!errorMsg && typeof error === 'object' && error !== null) {
-      const errObj = error as Record<string, unknown>
-      for (const key of ['error', 'message', 'error_description', 'detail', 'description', 'msg']) {
-        const val = errObj[key]
-        if (
-          typeof val === 'string' &&
-          val.trim() &&
-          val.trim() !== '{}' &&
-          val.trim() !== '[object Object]'
-        ) {
-          errorMsg = val.trim()
-          break
-        }
-      }
+    if (
+      !errorMsg &&
+      text &&
+      text.trim() &&
+      text.trim() !== '{}' &&
+      text.trim() !== '[object Object]'
+    ) {
+      errorMsg = text.trim()
     }
 
     if (!errorMsg) {
-      errorMsg = 'Erro ao criar conta de acesso.'
+      const statusMessages: Record<number, string> = {
+        400: 'Não foi possível criar a conta de acesso. Verifique os dados informados.',
+        401: 'Sessão expirada. Faça login novamente.',
+        403: 'Você não tem permissão para realizar esta operação.',
+        404: 'Usuário não encontrado no sistema.',
+        500: 'Erro interno do servidor. Tente novamente em instantes.',
+      }
+      errorMsg =
+        statusMessages[response.status] ||
+        `Erro ${response.status}: não foi possível criar a conta de acesso.`
     }
 
-    console.error('[createAccessAccount] Error from edge function:', errorMsg, { data, error })
     throw new Error(errorMsg)
   }
 

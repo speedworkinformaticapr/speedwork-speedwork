@@ -14,12 +14,24 @@ function jsonResponse(body: Record<string, unknown>, status = 200): Response {
 
 function extractCreateUserError(error: unknown): string {
   if (!error) return 'Erro ao criar usuário.'
+  if (error instanceof Error) {
+    const msg = error.message.trim()
+    if (msg && msg !== '{}' && msg !== '[object Object]') return msg
+  }
   if (typeof error === 'string') {
     return error.trim() || 'Erro ao criar usuário.'
   }
   if (typeof error === 'object' && error !== null) {
     const err = error as Record<string, unknown>
-    for (const key of ['message', 'error', 'error_description', 'msg', 'detail', 'description']) {
+    for (const key of [
+      'message',
+      'error',
+      'error_description',
+      'msg',
+      'detail',
+      'description',
+      'code',
+    ]) {
       const val = err[key]
       if (typeof val === 'string' && val.trim().length > 0 && val.trim() !== '{}') {
         return val.trim()
