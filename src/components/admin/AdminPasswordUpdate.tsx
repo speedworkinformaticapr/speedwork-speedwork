@@ -60,6 +60,7 @@ export function AdminPasswordUpdate({
   const [checking, setChecking] = useState(true)
   const [hasAuthAccount, setHasAuthAccount] = useState(false)
   const [usuarioId, setUsuarioId] = useState<string | null>(null)
+  const [authUserId, setAuthUserId] = useState<string | null>(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [createEmail, setCreateEmail] = useState(profileEmail || '')
   const [createPassword, setCreatePassword] = useState('')
@@ -70,11 +71,14 @@ export function AdminPasswordUpdate({
 
   useEffect(() => {
     setChecking(true)
-    checkAuthAccount(userId, profileEmail).then(({ hasAccount, usuarioId }) => {
-      setHasAuthAccount(hasAccount)
-      setUsuarioId(usuarioId)
-      setChecking(false)
-    })
+    checkAuthAccount(userId, profileEmail).then(
+      ({ hasAccount, userId: authId, usuarioId: uId }) => {
+        setHasAuthAccount(hasAccount)
+        setAuthUserId(authId)
+        setUsuarioId(uId)
+        setChecking(false)
+      },
+    )
   }, [userId, profileEmail])
 
   useEffect(() => {
@@ -90,7 +94,11 @@ export function AdminPasswordUpdate({
       return toast({ title: 'A senha deve ter no mínimo 8 caracteres.', variant: 'destructive' })
     setLoading(true)
     try {
-      const { error } = await adminUpdatePassword({ userId, newPassword })
+      const { error } = await adminUpdatePassword({
+        userId: authUserId || userId,
+        newPassword,
+        email: profileEmail,
+      })
       if (error) throw error
       toast({ title: 'Senha alterada com sucesso!' })
       setNewPassword('')

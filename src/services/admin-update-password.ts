@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase/client'
 export interface AdminUpdatePasswordParams {
   userId: string
   newPassword: string
+  email?: string
 }
 
 export const adminUpdatePassword = async (params: AdminUpdatePasswordParams) => {

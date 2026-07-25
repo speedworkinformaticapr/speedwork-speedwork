@@ -12,7 +12,7 @@ Deno.serve(async (req: Request) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
     if (!supabaseUrl || !serviceRoleKey) {
-      return new Response(JSON.stringify({ error: 'Missing server configuration' }), {
+      return new Response(JSON.stringify({ error: 'Internal server error' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
@@ -24,77 +24,119 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json().catch(() => null)
     if (!body) {
-      return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      })
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields: userId and newPassword' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
+      )
     }
 
-    const { userId, newPassword } = body
+    const { userId, newPassword, email } = body
 
-    if (!userId || typeof userId !== 'string') {
-      return new Response(JSON.stringify({ error: 'Missing or invalid field: userId' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      })
-    }
-
-    if (!newPassword || typeof newPassword !== 'string') {
-      return new Response(JSON.stringify({ error: 'Missing or invalid field: newPassword' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      })
+    if (!userId || typeof userId !== 'string' || !newPassword || typeof newPassword !== 'string') {
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields: userId and newPassword' }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
+      )
     }
 
     if (newPassword.length < 6) {
-      return new Response(JSON.stringify({ error: 'newPassword must be at least 6 characters' }), {
+      return new Response(JSON.stringify({ error: 'Password must be at least 6 characters' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
     }
 
-    const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      userId,
-      {
-        password: newPassword,
-      },
-    )
+    const updateResult = await attemptPasswordUpdate(supabaseAdmin, userId, newPassword)
+    if (updateResult.success) {
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      })
+    }
 
-    if (updateError) {
-      const message = updateError.message.toLowerCase()
-      if (
-        message.includes('user not found') ||
-        message.includes('not found') ||
-        message.includes('does not exist')
-      ) {
+    if (updateResult.errorType === 'not_found' && email && typeof email === 'string') {
+      const foundUserId = await findUserIdByEmail(supabaseAdmin, email)
+      if (!foundUserId) {
         return new Response(JSON.stringify({ error: 'User not found' }), {
           status: 404,
           headers: { 'Content-Type': 'application/json', ...corsHeaders },
         })
       }
 
-      return new Response(JSON.stringify({ error: updateError.message }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      })
-    }
+      const fallbackResult = await attemptPasswordUpdate(supabaseAdmin, foundUserId, newPassword)
+      if (fallbackResult.success) {
+        return new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        })
+      }
 
-    if (!updateData?.user) {
       return new Response(JSON.stringify({ error: 'User not found' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
     }
 
-    return new Response(JSON.stringify({ success: true }), {
-      status: 200,
+    if (updateResult.errorType === 'not_found') {
+      return new Response(JSON.stringify({ error: 'User not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      })
+    }
+
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Internal server error'
+  } catch {
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   }
 })
+
+async function attemptPasswordUpdate(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  targetUserId: string,
+  newPassword: string,
+): Promise<{ success: boolean; errorType?: 'not_found' | 'other' }> {
+  const { data, error } = await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
+    password: newPassword,
+  })
+
+  if (error) {
+    const message = error.message.toLowerCase()
+    if (
+      message.includes('user not found') ||
+      message.includes('not found') ||
+      message.includes('does not exist')
+    ) {
+      return { success: false, errorType: 'not_found' }
+    }
+    return { success: false, errorType: 'other' }
+  }
+
+  if (!data?.user) {
+    return { success: false, errorType: 'not_found' }
+  }
+
+  return { success: true }
+}
+
+async function findUserIdByEmail(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  email: string,
+): Promise<string | null> {
+  const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
+  })
+
+  if (error || !data?.users) {
+    return null
+  }
+
+  const foundUser = data.users.find((u) => u.email === email)
+  return foundUser?.id ?? null
+}
