@@ -44,6 +44,7 @@ import { FloatingWidgets } from './components/FloatingWidgets'
 import { CookieConsent } from './components/CookieConsent'
 import { RoleGuard } from './components/RoleGuard'
 import { AuthorRouteGuard } from './components/admin/AuthorRouteGuard'
+import { useAuthorSessionTimeout } from '@/hooks/use-author-session-timeout'
 import { Analytics } from './components/Analytics'
 import { ScrollToTop } from './components/ScrollToTop'
 import { SidebarProvider } from '@/components/ui/sidebar'
@@ -135,6 +136,11 @@ const AdminEvaluationDetail = lazy(() => import('./pages/admin/commercial/AdminE
 const AdminAthletes = lazy(() => import('./pages/admin/business/AdminAthletes'))
 const AdminQuestionnaires = lazy(() => import('./pages/admin/services/AdminQuestionnaires'))
 
+function AuthorSessionGuard() {
+  useAuthorSessionTimeout()
+  return null
+}
+
 function ScrollToHash() {
   const location = useLocation()
 
@@ -186,6 +192,7 @@ const App = () => (
           <BrowserRouter>
             <ScrollToHash />
             <ScrollToTop />
+            <AuthorSessionGuard />
             <TooltipProvider>
               <Toaster />
               <Sonner />

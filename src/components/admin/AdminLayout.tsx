@@ -25,6 +25,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import * as Icons from 'lucide-react'
 import { ChevronRight, LogOut, User } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
+import { useAuthorSessionTimeout } from '@/hooks/use-author-session-timeout'
 
 const renderIcon = (iconName: string, className?: string) => {
   const IconCmp = (Icons as any)[iconName] || Icons.Circle
@@ -39,6 +40,8 @@ export default function AdminLayout() {
   const [profile, setProfile] = useState<any>(null)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const { open: sidebarOpen, state: sidebarState } = useSidebar()
+
+  useAuthorSessionTimeout()
 
   const rawMenuConfig = systemData?.admin_menu_config as any[] | undefined
   const menuConfig: MenuConfig[] = useMemo(

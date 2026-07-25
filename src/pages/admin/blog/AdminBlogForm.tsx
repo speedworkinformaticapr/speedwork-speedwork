@@ -1,8 +1,11 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { useAuth } from '@/hooks/use-auth'
+import { useBlogAutoSave } from '@/hooks/use-blog-autosave'
+import { useUnsavedChanges } from '@/hooks/use-unsaved-changes'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
@@ -22,7 +25,8 @@ import { CharCounter } from '@/components/blog/CharCounter'
 import { TagInput } from '@/components/blog/TagInput'
 import { StepImageRepeater } from '@/components/blog/StepImageRepeater'
 import { blogService, StepImage } from '@/services/blog'
-import { ArrowLeft, Save, ImagePlus, Sparkles, Loader2 } from 'lucide-react'
+import { useBlogAutosave } from '@/hooks/use-blog-autosave'
+import { ArrowLeft, Save, ImagePlus, Sparkles, Loader2, Check } from 'lucide-react'
 
 function stripHtml(html: string): string {
   if (!html) return ''
@@ -92,6 +96,36 @@ export default function AdminBlogForm() {
   const [saving, setSaving] = useState(false)
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([])
   const [generatingCover, setGeneratingCover] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
+  const { saveState, currentPostId, markSaved } = useBlogAutosave({
+    form,
+    postId: id,
+    ready: !loading,
+    formRef,
+  })
+
+  const { user } = useAuth()
+  const {
+    draftId,
+    isDirty,
+    isSaving: isAutoSaving,
+    showSaved: showSavedIndicator,
+    saveNow,
+    markSaved,
+  } = useBlogAutoSave({
+    form,
+    postId: id || null,
+    userId: user?.id || null,
+    enabled: !loading,
+  })
+
+  useUnsavedChanges(isDirty)
+
+  useEffect(() => {
+    if (draftId && draftId !== id) {
+      navigate(`/admin/settings/blog/${draftId}/edit`, { replace: true })
+    }
+  }, [draftId, id, navigate])
 
   const title = form.watch('title')
 
@@ -145,17 +179,19 @@ export default function AdminBlogForm() {
   const onSubmit = async (values: FormValues) => {
     setSaving(true)
     try {
+      const targetId = draftId || id
       const payload: any = {
         ...values,
         tags: values.tags,
         step_images: values.step_images,
         published_at: values.status === 'published' ? new Date().toISOString() : null,
       }
-      if (id) {
-        await blogService.updatePost(id, payload)
+      if (targetId) {
+        await blogService.updatePost(targetId, payload)
       } else {
         await blogService.createPost(payload)
       }
+      markSaved()
       toast.success('Post salvo com sucesso!')
       navigate('/admin/settings/blog')
     } catch {
@@ -189,8 +225,30 @@ export default function AdminBlogForm() {
         </div>
       </div>
 
+      {(isAutoSaving || showSavedIndicator) && (
+        <div className="flex items-center justify-center gap-2 text-sm py-2 px-4 rounded-lg bg-muted/50">
+          {isAutoSaving ? (
+            <>
+              <Loader2 className="w-3 h-3 animate-spin" />
+              <span>Salvando…</span>
+            </>
+          ) : (
+            <>
+              <Check className="w-3 h-3 text-green-500" />
+              <span>Rascunho salvo ✓</span>
+            </>
+          )}
+        </div>
+      )}
+
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="space-y-6"
+          onBlur={() => {
+            if (isDirty) saveNow()
+          }}
+        >
           <Card>
             <CardContent className="pt-6 space-y-6">
               <FormField
