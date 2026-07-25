@@ -63,6 +63,8 @@ export default function Login() {
     }
     if (role === 'admin' || role === 'master') {
       navigate('/admin/financial', { replace: true })
+    } else if (role === 'autor') {
+      navigate('/admin/settings/blog', { replace: true })
     } else {
       navigate('/client/dashboard', { replace: true })
     }
