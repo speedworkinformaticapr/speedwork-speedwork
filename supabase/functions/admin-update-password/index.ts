@@ -23,32 +23,65 @@ Deno.serve(async (req: Request) => {
     })
 
     const body = await req.json().catch(() => null)
-    if (!body || !body.userId || !body.newPassword) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields: userId and newPassword' }),
-        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
-      )
-    }
-
-    const { userId, newPassword } = body
-
-    const { data: existingUser, error: lookupError } =
-      await supabaseAdmin.auth.admin.getUserById(userId)
-
-    if (lookupError || !existingUser?.user) {
-      return new Response(JSON.stringify({ error: 'User not found' }), {
-        status: 404,
+    if (!body) {
+      return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
+        status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
     }
 
-    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-      password: newPassword,
-    })
+    const { userId, newPassword } = body
+
+    if (!userId || typeof userId !== 'string') {
+      return new Response(JSON.stringify({ error: 'Missing or invalid field: userId' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      })
+    }
+
+    if (!newPassword || typeof newPassword !== 'string') {
+      return new Response(JSON.stringify({ error: 'Missing or invalid field: newPassword' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      })
+    }
+
+    if (newPassword.length < 6) {
+      return new Response(JSON.stringify({ error: 'newPassword must be at least 6 characters' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      })
+    }
+
+    const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+      userId,
+      {
+        password: newPassword,
+      },
+    )
 
     if (updateError) {
+      const message = updateError.message.toLowerCase()
+      if (
+        message.includes('user not found') ||
+        message.includes('not found') ||
+        message.includes('does not exist')
+      ) {
+        return new Response(JSON.stringify({ error: 'User not found' }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        })
+      }
+
       return new Response(JSON.stringify({ error: updateError.message }), {
         status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      })
+    }
+
+    if (!updateData?.user) {
+      return new Response(JSON.stringify({ error: 'User not found' }), {
+        status: 404,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
     }
@@ -59,7 +92,7 @@ Deno.serve(async (req: Request) => {
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal server error'
-    return new Response(JSON.stringify({ error: message }), {
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
