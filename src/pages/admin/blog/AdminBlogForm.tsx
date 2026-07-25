@@ -24,6 +24,23 @@ import { StepImageRepeater } from '@/components/blog/StepImageRepeater'
 import { blogService, StepImage } from '@/services/blog'
 import { ArrowLeft, Save, ImagePlus, Sparkles, Loader2 } from 'lucide-react'
 
+function stripHtml(html: string): string {
+  if (!html) return ''
+  return html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+}
+
+function countWordsInHtml(html: string): number {
+  const text = stripHtml(html)
+  return text.trim().split(/\s+/).filter(Boolean).length
+}
+
 const STATUS_OPTIONS = [
   { value: 'draft', label: 'Rascunho' },
   { value: 'review', label: 'Revisão' },
@@ -204,9 +221,12 @@ export default function AdminBlogForm() {
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Categoria</FormLabel>
+                      <div className="flex justify-between items-center">
+                        <FormLabel>Categoria</FormLabel>
+                        <CharCounter value={field.value || ''} max={50} />
+                      </div>
                       <FormControl>
-                        <Input placeholder="Ex: Dicas, Notícias..." {...field} />
+                        <Input maxLength={50} placeholder="Ex: Dicas, Notícias..." {...field} />
                       </FormControl>
                     </FormItem>
                   )}
@@ -239,9 +259,12 @@ export default function AdminBlogForm() {
                   name="author_source"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Autor/Fonte</FormLabel>
+                      <div className="flex justify-between items-center">
+                        <FormLabel>Autor/Fonte</FormLabel>
+                        <CharCounter value={field.value || ''} max={100} />
+                      </div>
                       <FormControl>
-                        <Input placeholder="Nome do autor ou fonte" {...field} />
+                        <Input maxLength={100} placeholder="Nome do autor ou fonte" {...field} />
                       </FormControl>
                     </FormItem>
                   )}
@@ -412,7 +435,7 @@ export default function AdminBlogForm() {
                     <div className="flex justify-between items-center">
                       <FormLabel>Conteúdo Principal</FormLabel>
                       <div className="flex gap-2">
-                        <CharCounter value={field.value || ''} type="word" />
+                        <CharCounter value={stripHtml(field.value || '')} type="word" max={1000} />
                         <AIGenerateButton
                           onGenerate={(t) => form.setValue('content', t)}
                           fieldContext={aiCtx('Conteúdo rico e detalhado')}
@@ -424,6 +447,11 @@ export default function AdminBlogForm() {
                       <RichTextEditor
                         className="min-h-[400px]"
                         {...field}
+                        onChange={(val: string) => {
+                          if (countWordsInHtml(val) <= 1000) {
+                            field.onChange(val)
+                          }
+                        }}
                         withAi
                         aiContext={aiCtx('Desenvolvimento rico e detalhado')}
                       />
@@ -466,15 +494,23 @@ export default function AdminBlogForm() {
                   <FormItem>
                     <div className="flex justify-between items-center">
                       <FormLabel>Conclusão</FormLabel>
-                      <AIGenerateButton
-                        onGenerate={(t) => form.setValue('conclusion', t)}
-                        fieldContext={aiCtx('Conclusão impactante')}
-                        currentText={field.value}
-                      />
+                      <div className="flex gap-2">
+                        <CharCounter value={stripHtml(field.value || '')} type="word" max={300} />
+                        <AIGenerateButton
+                          onGenerate={(t) => form.setValue('conclusion', t)}
+                          fieldContext={aiCtx('Conclusão impactante')}
+                          currentText={field.value}
+                        />
+                      </div>
                     </div>
                     <FormControl>
                       <RichTextEditor
                         {...field}
+                        onChange={(val: string) => {
+                          if (countWordsInHtml(val) <= 300) {
+                            field.onChange(val)
+                          }
+                        }}
                         withAi
                         aiContext={aiCtx('Conclusão impactante e CTA')}
                       />

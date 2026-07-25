@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { MediaPicker } from '@/components/MediaPicker'
+import { CharCounter } from '@/components/blog/CharCounter'
 import { blogService, StepImage } from '@/services/blog'
 import { useState } from 'react'
 
@@ -77,13 +78,19 @@ export function StepImageRepeater({ images, onChange, postTitle }: StepImageRepe
               onChange={(e) => update(i, 'url', e.target.value)}
               className="h-8 text-sm"
             />
-            <Textarea
-              placeholder="Descrição da imagem (alt text)..."
-              value={img.description}
-              onChange={(e) => update(i, 'description', e.target.value)}
-              rows={2}
-              className="text-sm"
-            />
+            <div>
+              <div className="flex justify-end mb-1">
+                <CharCounter value={img.description} max={125} />
+              </div>
+              <Textarea
+                placeholder="Descrição da imagem (alt text)..."
+                value={img.description}
+                onChange={(e) => update(i, 'description', e.target.value)}
+                rows={2}
+                maxLength={125}
+                className="text-sm"
+              />
+            </div>
           </div>
           <Button type="button" variant="ghost" size="icon" onClick={() => remove(i)}>
             <Trash2 className="w-4 h-4 text-destructive" />
