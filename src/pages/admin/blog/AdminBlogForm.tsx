@@ -97,35 +97,20 @@ export default function AdminBlogForm() {
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([])
   const [generatingCover, setGeneratingCover] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
-  const { saveState, currentPostId, markSaved } = useBlogAutosave({
+  const { saveState, currentPostId, hasUnsavedChanges, markSaved } = useBlogAutosave({
     form,
     postId: id,
     ready: !loading,
     formRef,
   })
 
-  const { user } = useAuth()
-  const {
-    draftId,
-    isDirty,
-    isSaving: isAutoSaving,
-    showSaved: showSavedIndicator,
-    saveNow,
-    markSaved,
-  } = useBlogAutoSave({
-    form,
-    postId: id || null,
-    userId: user?.id || null,
-    enabled: !loading,
-  })
-
-  useUnsavedChanges(isDirty)
+  useUnsavedChanges(hasUnsavedChanges)
 
   useEffect(() => {
-    if (draftId && draftId !== id) {
-      navigate(`/admin/settings/blog/${draftId}/edit`, { replace: true })
+    if (currentPostId && currentPostId !== id) {
+      navigate(`/admin/settings/blog/${currentPostId}/edit`, { replace: true })
     }
-  }, [draftId, id, navigate])
+  }, [currentPostId, id, navigate])
 
   const title = form.watch('title')
 
