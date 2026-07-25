@@ -43,6 +43,7 @@ import { ThemeProvider } from './components/theme-provider'
 import { FloatingWidgets } from './components/FloatingWidgets'
 import { CookieConsent } from './components/CookieConsent'
 import { RoleGuard } from './components/RoleGuard'
+import { AuthorRouteGuard } from './components/admin/AuthorRouteGuard'
 import { Analytics } from './components/Analytics'
 import { ScrollToTop } from './components/ScrollToTop'
 import { SidebarProvider } from '@/components/ui/sidebar'
@@ -209,12 +210,14 @@ const App = () => (
                   <Route
                     path="admin"
                     element={
-                      <RoleGuard allowedRoles={['admin', 'master']}>
-                        <SidebarProvider
-                          defaultOpen={localStorage.getItem('sidebar_open') !== 'false'}
-                        >
-                          <AdminLayout />
-                        </SidebarProvider>
+                      <RoleGuard allowedRoles={['admin', 'master', 'autor']}>
+                        <AuthorRouteGuard>
+                          <SidebarProvider
+                            defaultOpen={localStorage.getItem('sidebar_open') !== 'false'}
+                          >
+                            <AdminLayout />
+                          </SidebarProvider>
+                        </AuthorRouteGuard>
                       </RoleGuard>
                     }
                   >

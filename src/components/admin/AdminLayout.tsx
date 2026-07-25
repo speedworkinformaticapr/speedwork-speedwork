@@ -34,7 +34,7 @@ const renderIcon = (iconName: string, className?: string) => {
 export default function AdminLayout() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { signOut, user } = useAuth()
+  const { signOut, user, roles } = useAuth()
   const { data: systemData } = useSystemData()
   const [profile, setProfile] = useState<any>(null)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
@@ -46,9 +46,23 @@ export default function AdminLayout() {
     [rawMenuConfig],
   )
 
+  const isAuthor = roles.some((r) => r.toLowerCase() === 'autor')
+
+  const filteredMenuConfig = useMemo<MenuConfig[]>(() => {
+    if (!isAuthor) return menuConfig
+    return [
+      {
+        id: 'blog',
+        label: 'Posts do Blog',
+        url: '/admin/settings/blog',
+        icon: 'FileText',
+      },
+    ]
+  }, [menuConfig, isAuthor])
+
   const allTerminalUrls = useMemo(() => {
     const urls: string[] = []
-    for (const group of menuConfig) {
+    for (const group of filteredMenuConfig) {
       if (group.submenus) {
         for (const sub of group.submenus) {
           if (sub.url) urls.push(sub.url)
@@ -58,7 +72,7 @@ export default function AdminLayout() {
       }
     }
     return urls
-  }, [menuConfig])
+  }, [filteredMenuConfig])
 
   const activeUrl = useMemo(() => {
     let best = ''
@@ -82,13 +96,13 @@ export default function AdminLayout() {
 
   useEffect(() => {
     if (sidebarState === 'collapsed') return
-    for (const group of menuConfig) {
+    for (const group of filteredMenuConfig) {
       if (group.submenus?.some((sub) => sub.url === activeUrl)) {
         setOpenMenu(group.id)
         break
       }
     }
-  }, [activeUrl, menuConfig, sidebarState])
+  }, [activeUrl, filteredMenuConfig, sidebarState])
 
   useEffect(() => {
     if (user?.id) {
@@ -128,7 +142,7 @@ export default function AdminLayout() {
         </SidebarHeader>
         <SidebarContent className="p-2">
           <SidebarMenu>
-            {menuConfig.map((group) => {
+            {filteredMenuConfig.map((group) => {
               const isOpen = openMenu === group.id
               const isActiveGroup = group.submenus?.some((sub) => sub.url === activeUrl) ?? false
 
