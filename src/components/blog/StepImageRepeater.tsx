@@ -16,7 +16,11 @@ interface StepImageRepeaterProps {
 export function StepImageRepeater({ images, onChange, postTitle }: StepImageRepeaterProps) {
   const [generatingIdx, setGeneratingIdx] = useState<number | null>(null)
 
-  const add = () => onChange([...images, { url: '', description: '' }])
+  const MAX_STEP_IMAGES = 3
+  const add = () => {
+    if (images.length >= MAX_STEP_IMAGES) return
+    onChange([...images, { url: '', description: '' }])
+  }
   const remove = (i: number) => onChange(images.filter((_, idx) => idx !== i))
   const update = (i: number, field: keyof StepImage, value: string) =>
     onChange(images.map((img, idx) => (idx === i ? { ...img, [field]: value } : img)))
@@ -97,7 +101,16 @@ export function StepImageRepeater({ images, onChange, postTitle }: StepImageRepe
           </Button>
         </div>
       ))}
-      <Button type="button" variant="outline" size="sm" onClick={add}>
+      {images.length >= MAX_STEP_IMAGES && (
+        <p className="text-xs text-muted-foreground">Máximo de 3 imagens</p>
+      )}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={add}
+        disabled={images.length >= MAX_STEP_IMAGES}
+      >
         <ImagePlus className="w-4 h-4 mr-2" /> Adicionar Imagem
       </Button>
     </div>

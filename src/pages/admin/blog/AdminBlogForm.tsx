@@ -331,11 +331,11 @@ export default function AdminBlogForm() {
                   <FormItem>
                     <div className="flex justify-between items-center">
                       <FormLabel>Texto Alternativo da Capa</FormLabel>
-                      <CharCounter value={field.value || ''} max={100} />
+                      <CharCounter value={field.value || ''} max={125} />
                     </div>
                     <FormControl>
                       <Input
-                        maxLength={100}
+                        maxLength={125}
                         placeholder="Descrição da imagem para acessibilidade"
                         {...field}
                       />
@@ -412,17 +412,27 @@ export default function AdminBlogForm() {
                     <div className="flex justify-between items-center">
                       <FormLabel>Introdução</FormLabel>
                       <div className="flex gap-2">
-                        <CharCounter value={field.value || ''} max={300} />
+                        <CharCounter value={stripHtml(field.value || '')} max={800} />
                         <AIGenerateButton
                           onGenerate={(t) => form.setValue('introduction', t)}
                           fieldContext={aiCtx('Introdução envolvente')}
                           currentText={field.value}
-                          maxLength={300}
+                          maxLength={800}
                         />
                       </div>
                     </div>
                     <FormControl>
-                      <Textarea maxLength={300} rows={3} {...field} />
+                      <RichTextEditor
+                        className="min-h-[150px]"
+                        {...field}
+                        onChange={(val: string) => {
+                          if (stripHtml(val).length <= 800) {
+                            field.onChange(val)
+                          }
+                        }}
+                        withAi
+                        aiContext={aiCtx('Introdução envolvente')}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
@@ -435,7 +445,7 @@ export default function AdminBlogForm() {
                     <div className="flex justify-between items-center">
                       <FormLabel>Conteúdo Principal</FormLabel>
                       <div className="flex gap-2">
-                        <CharCounter value={stripHtml(field.value || '')} type="word" max={1000} />
+                        <CharCounter value={stripHtml(field.value || '')} type="word" max={2000} />
                         <AIGenerateButton
                           onGenerate={(t) => form.setValue('content', t)}
                           fieldContext={aiCtx('Conteúdo rico e detalhado')}
@@ -448,7 +458,7 @@ export default function AdminBlogForm() {
                         className="min-h-[400px]"
                         {...field}
                         onChange={(val: string) => {
-                          if (countWordsInHtml(val) <= 1000) {
+                          if (countWordsInHtml(val) <= 2000) {
                             field.onChange(val)
                           }
                         }}
@@ -467,18 +477,18 @@ export default function AdminBlogForm() {
                     <div className="flex justify-between items-center">
                       <FormLabel>Pontos Principais (Takeaways)</FormLabel>
                       <div className="flex gap-2">
-                        <CharCounter value={field.value || ''} max={200} />
+                        <CharCounter value={field.value || ''} max={500} />
                         <AIGenerateButton
                           onGenerate={(t) => form.setValue('takeaways', t)}
                           fieldContext={aiCtx('Takeaways em bullet points')}
                           currentText={field.value}
-                          maxLength={200}
+                          maxLength={500}
                         />
                       </div>
                     </div>
                     <FormControl>
                       <Textarea
-                        maxLength={200}
+                        maxLength={500}
                         rows={3}
                         placeholder="Use bullet points (- item)"
                         {...field}
@@ -526,18 +536,18 @@ export default function AdminBlogForm() {
                     <div className="flex justify-between items-center">
                       <FormLabel>Chamada para Ação (CTA)</FormLabel>
                       <div className="flex gap-2">
-                        <CharCounter value={field.value || ''} max={100} />
+                        <CharCounter value={field.value || ''} max={150} />
                         <AIGenerateButton
                           onGenerate={(t) => form.setValue('cta_final', t)}
                           fieldContext={aiCtx('CTA final persuasiva')}
                           currentText={field.value}
-                          maxLength={100}
+                          maxLength={150}
                         />
                       </div>
                     </div>
                     <FormControl>
                       <Input
-                        maxLength={100}
+                        maxLength={150}
                         placeholder="Ex: Inscreva-se já no próximo torneio!"
                         {...field}
                       />
