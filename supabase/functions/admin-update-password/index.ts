@@ -32,7 +32,6 @@ Deno.serve(async (req: Request) => {
 
     const { userId, newPassword } = body
 
-    // First verify the user exists to avoid false "User not found" errors
     const { data: existingUser, error: lookupError } =
       await supabaseAdmin.auth.admin.getUserById(userId)
 
@@ -43,26 +42,21 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    // Perform the password update using the admin API
-    const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       password: newPassword,
     })
 
-    if (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 400,
+    if (updateError) {
+      return new Response(JSON.stringify({ error: updateError.message }), {
+        status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
     }
 
-    return new Response(
-      JSON.stringify({
-        message: 'Password updated successfully',
-        success: true,
-        user: { id: data.user?.id, email: data.user?.email },
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } },
-    )
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal server error'
     return new Response(JSON.stringify({ error: message }), {
