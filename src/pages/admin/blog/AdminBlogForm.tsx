@@ -4,8 +4,7 @@ import { useForm } from 'react-hook-form'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/use-auth'
-import { useBlogAutoSave } from '@/hooks/use-blog-autosave'
-import { useUnsavedChanges } from '@/hooks/use-unsaved-changes'
+import { useBlogAutosave } from '@/hooks/use-blog-autosave'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
@@ -25,7 +24,6 @@ import { CharCounter } from '@/components/blog/CharCounter'
 import { TagInput } from '@/components/blog/TagInput'
 import { StepImageRepeater } from '@/components/blog/StepImageRepeater'
 import { blogService, StepImage } from '@/services/blog'
-import { useBlogAutosave } from '@/hooks/use-blog-autosave'
 import { ArrowLeft, Save, ImagePlus, Sparkles, Loader2, Check } from 'lucide-react'
 
 function stripHtml(html: string): string {
@@ -104,7 +102,8 @@ export default function AdminBlogForm() {
     formRef,
   })
 
-  useUnsavedChanges(hasUnsavedChanges)
+  const isAutoSaving = saveState === 'saving'
+  const showSavedIndicator = saveState === 'saved'
 
   useEffect(() => {
     if (currentPostId && currentPostId !== id) {
@@ -164,7 +163,7 @@ export default function AdminBlogForm() {
   const onSubmit = async (values: FormValues) => {
     setSaving(true)
     try {
-      const targetId = draftId || id
+      const targetId = currentPostId || id
       const payload: any = {
         ...values,
         tags: values.tags,
@@ -227,13 +226,7 @@ export default function AdminBlogForm() {
       )}
 
       <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-6"
-          onBlur={() => {
-            if (isDirty) saveNow()
-          }}
-        >
+        <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <Card>
             <CardContent className="pt-6 space-y-6">
               <FormField
