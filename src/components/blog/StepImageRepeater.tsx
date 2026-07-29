@@ -16,7 +16,7 @@ interface StepImageRepeaterProps {
 export function StepImageRepeater({ images, onChange, postTitle }: StepImageRepeaterProps) {
   const [generatingIdx, setGeneratingIdx] = useState<number | null>(null)
 
-  const MAX_STEP_IMAGES = 3
+  const MAX_STEP_IMAGES = 4
   const add = () => {
     if (images.length >= MAX_STEP_IMAGES) return
     onChange([...images, { url: '', description: '' }])
@@ -102,7 +102,7 @@ export function StepImageRepeater({ images, onChange, postTitle }: StepImageRepe
         </div>
       ))}
       {images.length >= MAX_STEP_IMAGES && (
-        <p className="text-xs text-muted-foreground">Máximo de 3 imagens</p>
+        <p className="text-xs text-muted-foreground">Máximo de 4 imagens</p>
       )}
       <Button
         type="button"

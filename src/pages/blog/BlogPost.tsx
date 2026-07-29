@@ -28,12 +28,9 @@ export default function BlogPost() {
     [post],
   )
   const firstImage = useMemo(() => stepImages[0] || null, [stepImages])
-  const lastImage = useMemo(
-    () => (stepImages.length >= 2 ? stepImages[stepImages.length - 1] : null),
-    [stepImages],
-  )
+  const lastImage = useMemo(() => (stepImages.length === 4 ? stepImages[3] : null), [stepImages])
   const middleImages = useMemo(
-    () => (stepImages.length > 2 ? stepImages.slice(1, -1) : []),
+    () => (stepImages.length === 4 ? stepImages.slice(1, -1) : stepImages.slice(1)),
     [stepImages],
   )
   const postTags = useMemo(() => (Array.isArray(post?.tags) ? (post.tags as string[]) : []), [post])
@@ -44,10 +41,14 @@ export default function BlogPost() {
       try {
         setLoading(true)
         const data = await blogService.getPostById(id)
+        if (data.status !== 'published') {
+          setPost(null)
+          return
+        }
         setPost(data)
         blogService.incrementViewCount(id)
         if (data.category) {
-          const all = await blogService.getPosts()
+          const all = await blogService.getPublishedPosts()
           setRelatedPosts(
             all.filter((p) => p.category === data.category && p.id !== id).slice(0, 3),
           )

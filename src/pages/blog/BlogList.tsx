@@ -38,7 +38,7 @@ export default function BlogList() {
   const loadPosts = async () => {
     try {
       setLoading(true)
-      const data = await blogService.getPosts()
+      const data = await blogService.getPublishedPosts()
       setPosts(data)
     } catch (error) {
       console.error('Failed to load posts', error)

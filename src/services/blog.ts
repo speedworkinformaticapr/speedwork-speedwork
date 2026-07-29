@@ -63,6 +63,16 @@ export const blogService = {
     return (data || []) as unknown as BlogPost[]
   },
 
+  async getPublishedPosts() {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('status', 'published')
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return (data || []) as unknown as BlogPost[]
+  },
+
   async getPostById(id: string) {
     const { data, error } = await supabase.from('blog_posts').select('*').eq('id', id).single()
     if (error) throw error
