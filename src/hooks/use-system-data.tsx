@@ -35,8 +35,10 @@ export const SystemDataProvider = ({ children }: { children: ReactNode }) => {
         }
 
         if (systemData) {
-          const { ai_context, aiContext, ...rest } = systemData as any
-          setData(rest)
+          const cleaned = { ...systemData } as Record<string, unknown>
+          delete cleaned.ai_context
+          delete cleaned.aiContext
+          setData(cleaned)
         } else {
           setData(null)
         }
