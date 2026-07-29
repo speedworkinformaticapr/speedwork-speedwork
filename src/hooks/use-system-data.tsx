@@ -1,70 +1,15 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { useToast } from '@/hooks/use-toast'
 
 export const SYSTEM_DATA_ID = '00000000-0000-0000-0000-000000000001'
-
-export interface SystemData {
-  id: string
-  platform_name?: string
-  logo_url?: string
-  slogan?: string
-  cnpj?: string
-  razao_social?: string
-  address_street?: string
-  address_number?: string
-  address_complement?: string
-  address_city?: string
-  address_state?: string
-  address_zip?: string
-  phone?: string
-  email?: string
-  mobile?: string
-  responsible_name?: string
-  responsible_cpf?: string
-  responsible_role?: string
-  responsible_email?: string
-  responsible_phone?: string
-  updated_at?: string
-  bg_opacity?: number
-  bg_image_url?: string
-  menu_logo_size?: number
-  browser_icon_url?: string
-  show_cnpj?: boolean
-  show_contact_bar?: boolean
-  session_lifetime?: number
-  ai_context?: string
-  active_theme?: string
-  dark_mode?: boolean
-  language?: string
-  libras_enabled?: boolean
-  two_factor_auth?: boolean
-  two_factor_method?: string
-  integrations?: Record<string, any>
-  terms?: Record<string, any>
-  records_per_page?: number
-  quote_validity_days?: number
-  quote_footer_text?: string
-  business_hours?: Record<string, any>
-  scheduling_interval_minutes?: number
-  admin_menu_config?: any
-  login_bg_image_url?: string
-  login_title?: string
-  login_subtitle?: string
-  login_impact_text?: string
-}
+export type SystemData = any
 
 interface SystemDataContextType {
   data: SystemData | null
   loading: boolean
-  updateData: (updates: Partial<SystemData>) => Promise<boolean>
 }
 
-const SystemDataContext = createContext<SystemDataContextType>({
-  data: null,
-  loading: true,
-  updateData: async () => false,
-})
+const SystemDataContext = createContext<SystemDataContextType | undefined>(undefined)
 
 export const useSystemData = () => {
   const context = useContext(SystemDataContext)
@@ -75,32 +20,25 @@ export const useSystemData = () => {
 export const SystemDataProvider = ({ children }: { children: ReactNode }) => {
   const [data, setData] = useState<SystemData | null>(null)
   const [loading, setLoading] = useState(true)
-  const { toast } = useToast()
 
   useEffect(() => {
-    const updateFavicon = (url?: string) => {
-      if (url) {
-        let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']")
-        if (!link) {
-          link = document.createElement('link')
-          link.rel = 'icon'
-          document.head.appendChild(link)
-        }
-        link.href = url
-      }
-    }
-
-    const fetchInitialData = async () => {
+    const fetchSystemData = async () => {
       try {
         const { data: systemData, error } = await supabase
           .from('system_data')
           .select('*')
           .eq('id', SYSTEM_DATA_ID)
-          .single()
+          .maybeSingle()
 
-        if (!error && systemData) {
-          setData(systemData as SystemData)
-          updateFavicon(systemData.browser_icon_url)
+        if (error) {
+          console.error('Error fetching system data:', error)
+        }
+
+        if (systemData) {
+          const { ai_context, aiContext, ...rest } = systemData as any
+          setData(rest)
+        } else {
+          setData(null)
         }
       } catch (err) {
         console.error('Error fetching system data:', err)
@@ -109,91 +47,10 @@ export const SystemDataProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
-    fetchInitialData()
-
-    const channel = supabase
-      .channel('system_data_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'system_data' }, (payload) => {
-        const newData = payload.new as SystemData
-        setData(newData)
-        updateFavicon(newData.browser_icon_url)
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    fetchSystemData()
   }, [])
 
-  const updateData = async (updates: Partial<SystemData>) => {
-    try {
-      const { error } = await supabase
-        .from('system_data')
-        .update(updates as any)
-        .eq('id', SYSTEM_DATA_ID)
-
-      if (error) throw error
-
-      if (updates.integrations) {
-        const integrations = updates.integrations as any
-        if (
-          integrations.stripe_public_key !== undefined ||
-          integrations.stripe_secret_key !== undefined
-        ) {
-          const tenant_id = '00000000-0000-0000-0000-000000000001'
-
-          const { data: stripeConfig, error: fetchStripeError } = await supabase
-            .from('stripe_config')
-            .select('id')
-            .eq('tenant_id', tenant_id)
-            .maybeSingle()
-
-          if (fetchStripeError) {
-            console.error('Error fetching stripe config:', fetchStripeError)
-          }
-
-          if (stripeConfig) {
-            const { error: stripeUpdateError } = await supabase
-              .from('stripe_config')
-              .update({
-                public_key: integrations.stripe_public_key,
-                secret_key: integrations.stripe_secret_key,
-              })
-              .eq('tenant_id', tenant_id)
-
-            if (stripeUpdateError) throw stripeUpdateError
-          } else {
-            const { error: stripeInsertError } = await supabase.from('stripe_config').insert({
-              tenant_id,
-              public_key: integrations.stripe_public_key,
-              secret_key: integrations.stripe_secret_key,
-            })
-
-            if (stripeInsertError) throw stripeInsertError
-          }
-        }
-      }
-
-      toast({
-        title: 'Configurações Salvas',
-        description: 'Todos os dados foram persistidos com sucesso.',
-        variant: 'default',
-      })
-      return true
-    } catch (err: any) {
-      console.error('Error updating system data:', err)
-      toast({
-        title: 'Erro de Persistência',
-        description: err.message || 'Ocorreu um erro inesperado ao salvar no servidor.',
-        variant: 'destructive',
-      })
-      return false
-    }
-  }
-
   return (
-    <SystemDataContext.Provider value={{ data, loading, updateData }}>
-      {children}
-    </SystemDataContext.Provider>
+    <SystemDataContext.Provider value={{ data, loading }}>{children}</SystemDataContext.Provider>
   )
 }
