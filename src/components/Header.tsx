@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useAuth } from '@/hooks/use-auth'
 import { useSystemData } from '@/hooks/use-system-data'
-import { supabase } from '@/lib/supabase/client'
+import { fetchPages } from '@/lib/pages-data'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import { RefreshCcw } from 'lucide-react'
@@ -27,19 +27,11 @@ export default function Header() {
   const { data: systemData } = useSystemData()
 
   useEffect(() => {
-    const fetchPages = async () => {
-      const { data } = await supabase
-        .from('pages')
-        .select('id, title, slug')
-        .eq('is_published', true)
-        .order('display_order', { ascending: true })
-
-      if (data) {
-        // Remove slugs que já possuem menus dedicados para evitar duplicidade
-        setPages(data.filter((p) => p.slug !== 'services' && p.slug !== 'portal-de-servicos'))
-      }
+    const loadPages = async () => {
+      const data = await fetchPages()
+      setPages(data.filter((p) => p.slug !== 'services' && p.slug !== 'portal-de-servicos'))
     }
-    fetchPages()
+    loadPages()
   }, [])
 
   const handleLogout = async () => {
@@ -90,6 +82,10 @@ export default function Header() {
               src={systemData.logo_url}
               alt={systemData?.platform_name || 'Logo'}
               className="h-10 object-contain"
+              width={160}
+              height={40}
+              loading="eager"
+              decoding="async"
             />
           ) : (
             <span className="text-xl font-bold text-primary uppercase">

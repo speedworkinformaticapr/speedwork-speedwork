@@ -1,39 +1,41 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
-import { useEffect, lazy } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import Layout from './components/Layout'
 import AuthLayout from './components/AuthLayout'
-import Index from './pages/Index'
-import BlogPost from './pages/blog/BlogPost'
-import Profile from './pages/Profile'
-import AthleteProfile from './pages/athlete/AthleteProfile'
-import NotFound from './pages/NotFound'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import RegisterClub from './pages/RegisterClub'
-import EmailConfirmation from './pages/EmailConfirmation'
-import ForgotPassword from './pages/ForgotPassword'
-import ResetPassword from './pages/ResetPassword'
-import MfaVerify from './pages/MfaVerify'
-import Forbidden from './pages/Forbidden'
-import Cart from './pages/store/Cart'
-import Checkout from './pages/store/Checkout'
-import Orders from './pages/store/Orders'
-import PublicPage from './pages/PublicPage'
-import ClubDashboard from './pages/club/dashboard/ClubDashboard'
 import AdminLayout from './components/admin/AdminLayout'
-import StaffDashboard from './pages/staff/dashboard/StaffDashboard'
-import ClientQuotes from './pages/client/quotes/ClientQuotes'
-import ClientDashboard from './pages/client/dashboard/ClientDashboard'
-import Scheduling from './pages/Scheduling'
-import PublicScheduling from './pages/PublicScheduling'
-import PublicSchedulingCancel from './pages/PublicSchedulingCancel'
-import EvaluationForm from './pages/evaluation/EvaluationForm'
-import Services from './pages/Services'
-import EvaluationSuccess from './pages/evaluation/EvaluationSuccess'
-import QuoteApprovalPortal from './pages/client/quotes/QuoteApprovalPortal'
+
+// Lazy-loaded public and auth routes for better performance (smaller initial bundle)
+const Index = lazy(() => import('./pages/Index'))
+const BlogPost = lazy(() => import('./pages/blog/BlogPost'))
+const Profile = lazy(() => import('./pages/Profile'))
+const AthleteProfile = lazy(() => import('./pages/athlete/AthleteProfile'))
+const NotFound = lazy(() => import('./pages/NotFound'))
+const Login = lazy(() => import('./pages/Login'))
+const Register = lazy(() => import('./pages/Register'))
+const RegisterClub = lazy(() => import('./pages/RegisterClub'))
+const EmailConfirmation = lazy(() => import('./pages/EmailConfirmation'))
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
+const MfaVerify = lazy(() => import('./pages/MfaVerify'))
+const Forbidden = lazy(() => import('./pages/Forbidden'))
+const Cart = lazy(() => import('./pages/store/Cart'))
+const Checkout = lazy(() => import('./pages/store/Checkout'))
+const Orders = lazy(() => import('./pages/store/Orders'))
+const PublicPage = lazy(() => import('./pages/PublicPage'))
+const ClubDashboard = lazy(() => import('./pages/club/dashboard/ClubDashboard'))
+const StaffDashboard = lazy(() => import('./pages/staff/dashboard/StaffDashboard'))
+const ClientQuotes = lazy(() => import('./pages/client/quotes/ClientQuotes'))
+const ClientDashboard = lazy(() => import('./pages/client/dashboard/ClientDashboard'))
+const Scheduling = lazy(() => import('./pages/Scheduling'))
+const PublicScheduling = lazy(() => import('./pages/PublicScheduling'))
+const PublicSchedulingCancel = lazy(() => import('./pages/PublicSchedulingCancel'))
+const EvaluationForm = lazy(() => import('./pages/evaluation/EvaluationForm'))
+const Services = lazy(() => import('./pages/Services'))
+const EvaluationSuccess = lazy(() => import('./pages/evaluation/EvaluationSuccess'))
+const QuoteApprovalPortal = lazy(() => import('./pages/client/quotes/QuoteApprovalPortal'))
 import { AuthProvider } from './hooks/use-auth'
 import { TranslationProvider } from './hooks/use-translation'
 import { SystemDataProvider } from './hooks/use-system-data'
@@ -199,227 +201,244 @@ const App = () => (
               <AccessibilityWidget />
               <Analytics />
               <MaintenanceGuard>
-                <Routes>
-                  {/* Auth Routes - Evaluated first to ensure static paths take precedence */}
-                  <Route element={<AuthLayout />}>
-                    <Route path="login" element={<Login />} />
-                    <Route path="register" element={<Register />} />
-                    <Route path="register-club" element={<RegisterClub />} />
-                    <Route path="email-confirmation" element={<EmailConfirmation />} />
-                    <Route path="forgot-password" element={<ForgotPassword />} />
-                    <Route path="reset-password" element={<ResetPassword />} />
-                  </Route>
+                <Suspense
+                  fallback={
+                    <div className="flex min-h-screen items-center justify-center bg-background">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    </div>
+                  }
+                >
+                  <Routes>
+                    {/* Auth Routes - Evaluated first to ensure static paths take precedence */}
+                    <Route element={<AuthLayout />}>
+                      <Route path="login" element={<Login />} />
+                      <Route path="register" element={<Register />} />
+                      <Route path="register-club" element={<RegisterClub />} />
+                      <Route path="email-confirmation" element={<EmailConfirmation />} />
+                      <Route path="forgot-password" element={<ForgotPassword />} />
+                      <Route path="reset-password" element={<ResetPassword />} />
+                    </Route>
 
-                  {/* MFA Verification Route */}
-                  <Route path="mfa-verify" element={<MfaVerify />} />
+                    {/* MFA Verification Route */}
+                    <Route path="mfa-verify" element={<MfaVerify />} />
 
-                  {/* Admin Routes - Evaluated second to guarantee static paths precedence */}
-                  <Route
-                    path="admin"
-                    element={
-                      <RoleGuard allowedRoles={['admin', 'master', 'autor']}>
-                        <AuthorRouteGuard>
-                          <SidebarProvider
-                            defaultOpen={localStorage.getItem('sidebar_open') !== 'false'}
-                          >
-                            <AdminLayout />
-                          </SidebarProvider>
-                        </AuthorRouteGuard>
-                      </RoleGuard>
-                    }
-                  >
-                    <Route path="commercial/quotes" element={<AdminQuotes />} />
-                    <Route path="commercial/quotes/new" element={<QuoteForm />} />
-                    <Route path="commercial/quotes/:id/edit" element={<QuoteForm />} />
-                    <Route path="commercial/quotes/:id" element={<QuoteView />} />
+                    {/* Admin Routes - Evaluated second to guarantee static paths precedence */}
                     <Route
-                      path="quotes"
-                      element={<Navigate to="/admin/commercial/quotes" replace />}
-                    />
-                    <Route
-                      path="quotes/new"
-                      element={<Navigate to="/admin/commercial/quotes/new" replace />}
-                    />
-                    <Route
-                      path="quotes/:id/edit"
-                      element={<Navigate to="/admin/commercial/quotes/:id/edit" replace />}
-                    />
-                    <Route
-                      path="quotes/:id"
-                      element={<Navigate to="/admin/commercial/quotes/:id" replace />}
-                    />
-                    <Route path="support/tickets" element={<SupportTickets />} />
-                    <Route path="support/sla" element={<SupportSlaConfig />} />
-                    <Route path="commercial/dashboard" element={<AdminCommercialDashboard />} />
-                    <Route path="commercial/orders" element={<AdminPedidosList />} />
-                    <Route path="commercial/orders/new" element={<AdminPedidoForm />} />
-                    <Route path="commercial/orders/:id/edit" element={<AdminPedidoForm />} />
-                    <Route path="commercial/orders/:id" element={<AdminPedidoView />} />
-                    <Route path="commercial/contracts" element={<AdminContratosList />} />
-                    <Route path="commercial/contracts/new" element={<AdminContratoForm />} />
-                    <Route path="commercial/contracts/:id/edit" element={<AdminContratoForm />} />
-                    <Route path="commercial/contracts/:id" element={<AdminContratoView />} />
-                    <Route
-                      path="contracts"
-                      element={<Navigate to="/admin/contracts/dashboard" replace />}
-                    />
-                    <Route path="contracts/dashboard" element={<AdminContractsDashboard />} />
-                    <Route path="contracts/wizard" element={<AdminContractWizard />} />
-                    <Route path="contracts/templates" element={<AdminTemplateList />} />
-                    <Route path="contracts/templates/new" element={<AdminTemplateForm />} />
-                    <Route path="contracts/templates/:id/edit" element={<AdminTemplateForm />} />
-                    <Route path="contracts/clauses" element={<AdminClausesList />} />
-                    <Route path="contracts/clauses/new" element={<AdminClauseForm />} />
-                    <Route path="contracts/clauses/:id/edit" element={<AdminClauseForm />} />
-                    <Route path="contracts/addendums" element={<AdminAddendumsList />} />
-                    <Route path="contracts/addendums/new" element={<AdminAddendumForm />} />
-                    <Route path="contracts/addendums/:id/edit" element={<AdminAddendumForm />} />
-                    <Route path="contracts/entities" element={<AdminEntitiesList />} />
-                    <Route path="contracts/reports" element={<AdminContractReports />} />
-                    <Route path="contracts/:id" element={<AdminContractView />} />
-                    <Route path="services" element={<AdminServices />} />
-                    <Route path="whatsapp" element={<AdminWhatsApp />} />
-                    <Route path="email" element={<AdminEmail />} />
-                    <Route path="commercial/appointments" element={<AdminAppointments />} />
-                    <Route path="commercial/leads" element={<AdminLeads />} />
-                    <Route path="commercial/leads/:id" element={<AdminLeadDetail />} />
-                    <Route path="commercial/pipeline" element={<AdminPipeline />} />
-                    <Route path="commercial/activities" element={<AdminActivities />} />
-                    <Route path="commercial/diagnostic-form" element={<AdminDiagnosticForm />} />
-                    <Route path="commercial/evaluations" element={<AdminEvaluations />} />
-                    <Route path="commercial/evaluations/:id" element={<AdminEvaluationDetail />} />
-                    <Route path="dashboard" element={<AdminDashboard />} />
-                    <Route path="settings/pages" element={<AdminPageList />} />
-                    <Route path="settings/pages/new" element={<AdminPageForm />} />
-                    <Route path="settings/pages/:id/edit" element={<AdminPageForm />} />
-                    <Route path="pages" element={<AdminPageList />} />
-                    <Route path="pages/new" element={<AdminPageForm />} />
-                    <Route path="pages/:id/edit" element={<AdminPageForm />} />
-                    <Route path="settings/blog" element={<AdminBlogList />} />
-                    <Route path="settings/blog/new" element={<AdminBlogForm />} />
-                    <Route path="settings/blog/:id/edit" element={<AdminBlogForm />} />
-                    <Route path="gallery" element={<AdminGallery />} />
-                    <Route path="settings/maintenance" element={<AdminMaintenance />} />
-                    <Route path="settings/system" element={<AdminSystemData />} />
-                    <Route path="settings/menu" element={<AdminMenuConfig />} />
-                    <Route path="settings/plan-services" element={<AdminPlanServices />} />
-                    <Route path="settings/sla-types" element={<AdminSlaTypes />} />
-                    <Route path="settings/media" element={<AdminMedia />} />
-                    <Route path="settings/analytics" element={<AdminAnalytics />} />
-                    <Route path="settings/publish-logs" element={<AdminPublishLogs />} />
-                    <Route path="users" element={<AdminUsers />} />
-                    <Route path="users/new" element={<AdminProfileForm />} />
-                    <Route path="users/:id/edit" element={<AdminProfileForm />} />
-                    {/* Keep legacy routes temporarily to avoid breaking any external bookmarks or unpatched layout links */}
-                    <Route path="business/profiles" element={<AdminUsers />} />
-                    <Route path="business/profiles/new" element={<AdminProfileForm />} />
-                    <Route path="business/profiles/:id/edit" element={<AdminProfileForm />} />
-                    <Route path="feedback/dashboard" element={<CustomerFeedbackDashboard />} />
-                    <Route path="financial" element={<AdminFinancialDashboard />} />
-                    <Route path="financial/categories" element={<AdminFinancialCategories />} />
-                    <Route path="financial/accounts" element={<AdminChartOfAccounts />} />
-                    <Route path="financial/bank-accounts" element={<AdminBankAccounts />} />
-                    <Route
-                      path="financial/payments"
-                      element={<Navigate to="/admin/financial" replace />}
-                    />
-                    <Route path="financial/payments/new" element={<AdminFinancialPaymentForm />} />
-                    <Route
-                      path="financial/payments/:id/edit"
-                      element={<AdminFinancialPaymentForm />}
-                    />
-                    <Route path="financial/partners" element={<AdminFinancialPartners />} />
-                    <Route path="financial/settings" element={<AdminStripeConfig />} />
-                    <Route path="financial/general-settings" element={<AdminFinancialSettings />} />
-                    <Route path="financial/billing-logs" element={<AdminBillingLogs />} />
-                    <Route
-                      path="financial/registration-payments"
-                      element={<AdminRegistrationPayments />}
-                    />
-                    <Route
-                      path="financial/dashboard"
-                      element={<Navigate to="/admin/financial" replace />}
-                    />
-                    <Route path="financial/stripe-payments" element={<AdminStripePayments />} />
-                    <Route path="ecommerce/groups" element={<AdminEcommerceGroups />} />
-                    <Route path="ecommerce/products" element={<AdminEcommerceProducts />} />
-                    <Route path="ecommerce/store" element={<AdminStoreEditor />} />
-                    <Route path="ecommerce/abandoned-carts" element={<AdminAbandonedCarts />} />
-                    <Route path="ecommerce/checkout-config" element={<AdminCheckoutConfig />} />
-                    <Route path="ecommerce/orders" element={<AdminOrders />} />
-                    <Route path="ecommerce/logistics" element={<AdminLogistics />} />
-                    <Route path="sports/athletes" element={<AdminAthletes />} />
-                    <Route path="services/questionnaires" element={<AdminQuestionnaires />} />
-                  </Route>
-
-                  {/* Redirect legacy financial route to admin */}
-                  <Route
-                    path="financial/bank-accounts"
-                    element={<Navigate to="/admin/financial/bank-accounts" replace />}
-                  />
-
-                  {/* Public and Dynamic Routes - Placed last so the catch-all dynamic route does not intercept static ones */}
-                  <Route element={<Layout />}>
-                    <Route index element={<Index />} />
-                    <Route path="servicos" element={<Services />} />
-                    <Route path="blog/:id" element={<BlogPost />} />
-
-                    <Route path="profile" element={<Profile />} />
-                    <Route path="athlete/:id" element={<AthleteProfile />} />
-                    <Route path="cart" element={<Cart />} />
-                    <Route path="checkout" element={<Checkout />} />
-                    <Route path="orders" element={<Orders />} />
-                    <Route
-                      path="club/dashboard"
+                      path="admin"
                       element={
-                        <RoleGuard allowedRoles={['club', 'admin', 'master']}>
-                          <ClubDashboard />
+                        <RoleGuard allowedRoles={['admin', 'master', 'autor']}>
+                          <AuthorRouteGuard>
+                            <SidebarProvider
+                              defaultOpen={localStorage.getItem('sidebar_open') !== 'false'}
+                            >
+                              <AdminLayout />
+                            </SidebarProvider>
+                          </AuthorRouteGuard>
                         </RoleGuard>
                       }
-                    />
+                    >
+                      <Route path="commercial/quotes" element={<AdminQuotes />} />
+                      <Route path="commercial/quotes/new" element={<QuoteForm />} />
+                      <Route path="commercial/quotes/:id/edit" element={<QuoteForm />} />
+                      <Route path="commercial/quotes/:id" element={<QuoteView />} />
+                      <Route
+                        path="quotes"
+                        element={<Navigate to="/admin/commercial/quotes" replace />}
+                      />
+                      <Route
+                        path="quotes/new"
+                        element={<Navigate to="/admin/commercial/quotes/new" replace />}
+                      />
+                      <Route
+                        path="quotes/:id/edit"
+                        element={<Navigate to="/admin/commercial/quotes/:id/edit" replace />}
+                      />
+                      <Route
+                        path="quotes/:id"
+                        element={<Navigate to="/admin/commercial/quotes/:id" replace />}
+                      />
+                      <Route path="support/tickets" element={<SupportTickets />} />
+                      <Route path="support/sla" element={<SupportSlaConfig />} />
+                      <Route path="commercial/dashboard" element={<AdminCommercialDashboard />} />
+                      <Route path="commercial/orders" element={<AdminPedidosList />} />
+                      <Route path="commercial/orders/new" element={<AdminPedidoForm />} />
+                      <Route path="commercial/orders/:id/edit" element={<AdminPedidoForm />} />
+                      <Route path="commercial/orders/:id" element={<AdminPedidoView />} />
+                      <Route path="commercial/contracts" element={<AdminContratosList />} />
+                      <Route path="commercial/contracts/new" element={<AdminContratoForm />} />
+                      <Route path="commercial/contracts/:id/edit" element={<AdminContratoForm />} />
+                      <Route path="commercial/contracts/:id" element={<AdminContratoView />} />
+                      <Route
+                        path="contracts"
+                        element={<Navigate to="/admin/contracts/dashboard" replace />}
+                      />
+                      <Route path="contracts/dashboard" element={<AdminContractsDashboard />} />
+                      <Route path="contracts/wizard" element={<AdminContractWizard />} />
+                      <Route path="contracts/templates" element={<AdminTemplateList />} />
+                      <Route path="contracts/templates/new" element={<AdminTemplateForm />} />
+                      <Route path="contracts/templates/:id/edit" element={<AdminTemplateForm />} />
+                      <Route path="contracts/clauses" element={<AdminClausesList />} />
+                      <Route path="contracts/clauses/new" element={<AdminClauseForm />} />
+                      <Route path="contracts/clauses/:id/edit" element={<AdminClauseForm />} />
+                      <Route path="contracts/addendums" element={<AdminAddendumsList />} />
+                      <Route path="contracts/addendums/new" element={<AdminAddendumForm />} />
+                      <Route path="contracts/addendums/:id/edit" element={<AdminAddendumForm />} />
+                      <Route path="contracts/entities" element={<AdminEntitiesList />} />
+                      <Route path="contracts/reports" element={<AdminContractReports />} />
+                      <Route path="contracts/:id" element={<AdminContractView />} />
+                      <Route path="services" element={<AdminServices />} />
+                      <Route path="whatsapp" element={<AdminWhatsApp />} />
+                      <Route path="email" element={<AdminEmail />} />
+                      <Route path="commercial/appointments" element={<AdminAppointments />} />
+                      <Route path="commercial/leads" element={<AdminLeads />} />
+                      <Route path="commercial/leads/:id" element={<AdminLeadDetail />} />
+                      <Route path="commercial/pipeline" element={<AdminPipeline />} />
+                      <Route path="commercial/activities" element={<AdminActivities />} />
+                      <Route path="commercial/diagnostic-form" element={<AdminDiagnosticForm />} />
+                      <Route path="commercial/evaluations" element={<AdminEvaluations />} />
+                      <Route
+                        path="commercial/evaluations/:id"
+                        element={<AdminEvaluationDetail />}
+                      />
+                      <Route path="dashboard" element={<AdminDashboard />} />
+                      <Route path="settings/pages" element={<AdminPageList />} />
+                      <Route path="settings/pages/new" element={<AdminPageForm />} />
+                      <Route path="settings/pages/:id/edit" element={<AdminPageForm />} />
+                      <Route path="pages" element={<AdminPageList />} />
+                      <Route path="pages/new" element={<AdminPageForm />} />
+                      <Route path="pages/:id/edit" element={<AdminPageForm />} />
+                      <Route path="settings/blog" element={<AdminBlogList />} />
+                      <Route path="settings/blog/new" element={<AdminBlogForm />} />
+                      <Route path="settings/blog/:id/edit" element={<AdminBlogForm />} />
+                      <Route path="gallery" element={<AdminGallery />} />
+                      <Route path="settings/maintenance" element={<AdminMaintenance />} />
+                      <Route path="settings/system" element={<AdminSystemData />} />
+                      <Route path="settings/menu" element={<AdminMenuConfig />} />
+                      <Route path="settings/plan-services" element={<AdminPlanServices />} />
+                      <Route path="settings/sla-types" element={<AdminSlaTypes />} />
+                      <Route path="settings/media" element={<AdminMedia />} />
+                      <Route path="settings/analytics" element={<AdminAnalytics />} />
+                      <Route path="settings/publish-logs" element={<AdminPublishLogs />} />
+                      <Route path="users" element={<AdminUsers />} />
+                      <Route path="users/new" element={<AdminProfileForm />} />
+                      <Route path="users/:id/edit" element={<AdminProfileForm />} />
+                      {/* Keep legacy routes temporarily to avoid breaking any external bookmarks or unpatched layout links */}
+                      <Route path="business/profiles" element={<AdminUsers />} />
+                      <Route path="business/profiles/new" element={<AdminProfileForm />} />
+                      <Route path="business/profiles/:id/edit" element={<AdminProfileForm />} />
+                      <Route path="feedback/dashboard" element={<CustomerFeedbackDashboard />} />
+                      <Route path="financial" element={<AdminFinancialDashboard />} />
+                      <Route path="financial/categories" element={<AdminFinancialCategories />} />
+                      <Route path="financial/accounts" element={<AdminChartOfAccounts />} />
+                      <Route path="financial/bank-accounts" element={<AdminBankAccounts />} />
+                      <Route
+                        path="financial/payments"
+                        element={<Navigate to="/admin/financial" replace />}
+                      />
+                      <Route
+                        path="financial/payments/new"
+                        element={<AdminFinancialPaymentForm />}
+                      />
+                      <Route
+                        path="financial/payments/:id/edit"
+                        element={<AdminFinancialPaymentForm />}
+                      />
+                      <Route path="financial/partners" element={<AdminFinancialPartners />} />
+                      <Route path="financial/settings" element={<AdminStripeConfig />} />
+                      <Route
+                        path="financial/general-settings"
+                        element={<AdminFinancialSettings />}
+                      />
+                      <Route path="financial/billing-logs" element={<AdminBillingLogs />} />
+                      <Route
+                        path="financial/registration-payments"
+                        element={<AdminRegistrationPayments />}
+                      />
+                      <Route
+                        path="financial/dashboard"
+                        element={<Navigate to="/admin/financial" replace />}
+                      />
+                      <Route path="financial/stripe-payments" element={<AdminStripePayments />} />
+                      <Route path="ecommerce/groups" element={<AdminEcommerceGroups />} />
+                      <Route path="ecommerce/products" element={<AdminEcommerceProducts />} />
+                      <Route path="ecommerce/store" element={<AdminStoreEditor />} />
+                      <Route path="ecommerce/abandoned-carts" element={<AdminAbandonedCarts />} />
+                      <Route path="ecommerce/checkout-config" element={<AdminCheckoutConfig />} />
+                      <Route path="ecommerce/orders" element={<AdminOrders />} />
+                      <Route path="ecommerce/logistics" element={<AdminLogistics />} />
+                      <Route path="sports/athletes" element={<AdminAthletes />} />
+                      <Route path="services/questionnaires" element={<AdminQuestionnaires />} />
+                    </Route>
 
+                    {/* Redirect legacy financial route to admin */}
                     <Route
-                      path="staff/dashboard"
-                      element={
-                        <RoleGuard allowedRoles={['staff', 'admin', 'master']}>
-                          <StaffDashboard />
-                        </RoleGuard>
-                      }
+                      path="financial/bank-accounts"
+                      element={<Navigate to="/admin/financial/bank-accounts" replace />}
                     />
-                    <Route
-                      path="client/quotes"
-                      element={
-                        <RoleGuard allowedRoles={['client', 'admin', 'master']}>
-                          <ClientQuotes />
-                        </RoleGuard>
-                      }
-                    />
-                    <Route
-                      path="client/dashboard"
-                      element={
-                        <RoleGuard allowedRoles={['client', 'admin', 'master']}>
-                          <ClientDashboard />
-                        </RoleGuard>
-                      }
-                    />
-                    <Route path="scheduling" element={<Scheduling />} />
-                    <Route path="agendar/:id" element={<PublicScheduling />} />
-                    <Route path="agendar/cancelar/:id" element={<PublicSchedulingCancel />} />
 
-                    <Route path="quote/approval/:id" element={<QuoteApprovalPortal />} />
+                    {/* Public and Dynamic Routes - Placed last so the catch-all dynamic route does not intercept static ones */}
+                    <Route element={<Layout />}>
+                      <Route index element={<Index />} />
+                      <Route path="servicos" element={<Services />} />
+                      <Route path="blog/:id" element={<BlogPost />} />
 
-                    {/* Public Evaluation Form — accessible without authentication (no login required) */}
-                    <Route path="avaliar/:slug" element={<EvaluationForm />} />
+                      <Route path="profile" element={<Profile />} />
+                      <Route path="athlete/:id" element={<AthleteProfile />} />
+                      <Route path="cart" element={<Cart />} />
+                      <Route path="checkout" element={<Checkout />} />
+                      <Route path="orders" element={<Orders />} />
+                      <Route
+                        path="club/dashboard"
+                        element={
+                          <RoleGuard allowedRoles={['club', 'admin', 'master']}>
+                            <ClubDashboard />
+                          </RoleGuard>
+                        }
+                      />
 
-                    {/* Evaluation Success Page — accessible without authentication */}
-                    <Route path="sucesso-avaliacao" element={<EvaluationSuccess />} />
+                      <Route
+                        path="staff/dashboard"
+                        element={
+                          <RoleGuard allowedRoles={['staff', 'admin', 'master']}>
+                            <StaffDashboard />
+                          </RoleGuard>
+                        }
+                      />
+                      <Route
+                        path="client/quotes"
+                        element={
+                          <RoleGuard allowedRoles={['client', 'admin', 'master']}>
+                            <ClientQuotes />
+                          </RoleGuard>
+                        }
+                      />
+                      <Route
+                        path="client/dashboard"
+                        element={
+                          <RoleGuard allowedRoles={['client', 'admin', 'master']}>
+                            <ClientDashboard />
+                          </RoleGuard>
+                        }
+                      />
+                      <Route path="scheduling" element={<Scheduling />} />
+                      <Route path="agendar/:id" element={<PublicScheduling />} />
+                      <Route path="agendar/cancelar/:id" element={<PublicSchedulingCancel />} />
 
-                    {/* Catch-all dynamic routing evaluated only if everything above fails */}
-                    <Route path=":slug" element={<PublicPage />} />
-                  </Route>
+                      <Route path="quote/approval/:id" element={<QuoteApprovalPortal />} />
 
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+                      {/* Public Evaluation Form — accessible without authentication (no login required) */}
+                      <Route path="avaliar/:slug" element={<EvaluationForm />} />
+
+                      {/* Evaluation Success Page — accessible without authentication */}
+                      <Route path="sucesso-avaliacao" element={<EvaluationSuccess />} />
+
+                      {/* Catch-all dynamic routing evaluated only if everything above fails */}
+                      <Route path=":slug" element={<PublicPage />} />
+                    </Route>
+
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
               </MaintenanceGuard>
               <FloatingWidgets />
               <CookieConsent />

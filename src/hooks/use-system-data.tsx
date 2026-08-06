@@ -1,8 +1,12 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { getCachedData, setCachedData } from '@/lib/cache'
 
 export const SYSTEM_DATA_ID = '00000000-0000-0000-0000-000000000001'
 export type SystemData = any
+
+const SYSTEM_DATA_CACHE_KEY = 'system_data'
+const SYSTEM_DATA_TTL = 5 * 60 * 1000
 
 interface SystemDataContextType {
   data: SystemData | null
@@ -18,8 +22,13 @@ export const useSystemData = () => {
 }
 
 export const SystemDataProvider = ({ children }: { children: ReactNode }) => {
-  const [data, setData] = useState<SystemData | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState<SystemData | null>(() =>
+    getCachedData<SystemData>(SYSTEM_DATA_CACHE_KEY, SYSTEM_DATA_TTL),
+  )
+  const [loading, setLoading] = useState(() => {
+    const cached = getCachedData<SystemData>(SYSTEM_DATA_CACHE_KEY, SYSTEM_DATA_TTL)
+    return !cached
+  })
 
   useEffect(() => {
     const fetchSystemData = async () => {
@@ -39,6 +48,7 @@ export const SystemDataProvider = ({ children }: { children: ReactNode }) => {
           delete cleaned.ai_context
           delete cleaned.aiContext
           setData(cleaned)
+          setCachedData(SYSTEM_DATA_CACHE_KEY, cleaned)
         } else {
           setData(null)
         }

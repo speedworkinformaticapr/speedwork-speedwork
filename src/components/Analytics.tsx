@@ -19,23 +19,35 @@ export function Analytics() {
   useEffect(() => {
     if (!trackingId) return
 
-    let script = document.getElementById('ga-script') as HTMLScriptElement
-    if (!script) {
-      script = document.createElement('script')
-      script.id = 'ga-script'
-      script.async = true
-      script.src = `https://www.googletagmanager.com/gtag/js?id=${trackingId}`
-      document.head.appendChild(script)
+    const loadGA = () => {
+      let script = document.getElementById('ga-script') as HTMLScriptElement
+      if (!script) {
+        script = document.createElement('script')
+        script.id = 'ga-script'
+        script.async = true
+        script.fetchPriority = 'low'
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${trackingId}`
+        document.head.appendChild(script)
 
-      const inlineScript = document.createElement('script')
-      inlineScript.id = 'ga-inline-script'
-      inlineScript.innerHTML = `
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', '${trackingId}');
-      `
-      document.head.appendChild(inlineScript)
+        const inlineScript = document.createElement('script')
+        inlineScript.id = 'ga-inline-script'
+        inlineScript.innerHTML = `
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${trackingId}');
+        `
+        document.head.appendChild(inlineScript)
+      }
+    }
+
+    // Defer GA loading to avoid competing with page rendering
+    if ('requestIdleCallback' in window) {
+      const idleId = (window as any).requestIdleCallback(loadGA, { timeout: 3000 })
+      return () => (window as any).cancelIdleCallback(idleId)
+    } else {
+      const timer = setTimeout(loadGA, 1500)
+      return () => clearTimeout(timer)
     }
   }, [trackingId])
 

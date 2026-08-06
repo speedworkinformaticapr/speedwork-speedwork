@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast'
 import { useTranslation } from '@/hooks/use-translation'
 import { useSystemData } from '@/hooks/use-system-data'
 import { useAuth } from '@/hooks/use-auth'
-import { supabase } from '@/lib/supabase/client'
+import { fetchPages } from '@/lib/pages-data'
 import {
   Dialog,
   DialogContent,
@@ -26,15 +26,11 @@ export function Footer() {
   const [pages, setPages] = useState<{ id: string; slug: string; title: string }[]>([])
 
   useEffect(() => {
-    const fetchPages = async () => {
-      const { data } = await supabase
-        .from('pages')
-        .select('id, slug, title')
-        .eq('is_published', true)
-        .order('display_order')
-      if (data) setPages(data)
+    const loadPages = async () => {
+      const data = await fetchPages()
+      setPages(data)
     }
-    fetchPages()
+    loadPages()
   }, [])
 
   const renderLegalModal = (title: string, content: string | undefined, defaultLink: string) => {
@@ -115,6 +111,10 @@ export function Footer() {
                     src={systemData.browser_icon_url}
                     alt="Icon"
                     className="w-full h-full object-cover"
+                    width={40}
+                    height={40}
+                    loading="lazy"
+                    decoding="async"
                     style={{
                       transform: `scale(${((systemData as any)?.footer_icon_size || 100) / 100})`,
                       transition: 'transform 0.2s ease-in-out',

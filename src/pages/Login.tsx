@@ -238,12 +238,20 @@ export default function Login() {
                 src={systemData.logo_url}
                 alt={systemData?.platform_name || 'Speedwork'}
                 className="h-[7.875rem] w-auto mb-8 object-contain"
+                width={200}
+                height={126}
+                loading="eager"
+                decoding="async"
               />
             ) : (
               <img
                 src="/skip.png"
                 alt="Speedwork"
                 className="h-[7.875rem] w-auto mb-8 object-contain"
+                width={200}
+                height={126}
+                loading="eager"
+                decoding="async"
               />
             )}
           </Link>
@@ -275,12 +283,20 @@ export default function Login() {
                 src={systemData.browser_icon_url}
                 alt="Ícone da Plataforma"
                 className="h-16 w-16 object-contain"
+                width={64}
+                height={64}
+                loading="eager"
+                decoding="async"
               />
             ) : (
               <img
                 src="/favicon.ico"
                 alt="Ícone da Plataforma"
                 className="h-16 w-16 object-contain"
+                width={64}
+                height={64}
+                loading="eager"
+                decoding="async"
               />
             )}
           </div>
