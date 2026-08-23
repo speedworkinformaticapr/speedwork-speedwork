@@ -4,7 +4,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Settings, AlertCircle, Plus, Trash2, Save, Image as ImageIcon } from 'lucide-react'
+import {
+  Settings,
+  AlertCircle,
+  Plus,
+  Trash2,
+  Save,
+  Image as ImageIcon,
+  Layers,
+  ArrowRight,
+} from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AIGenerateButton } from '@/components/AIGenerateButton'
@@ -27,7 +36,8 @@ import {
 } from '@/components/ui/accordion'
 import { toast } from '@/hooks/use-toast'
 import { z } from 'zod'
-import { ELEMENT_CONFIGS, FieldType, FieldDef, ListDef } from './builder-config'
+import { ELEMENT_CONFIGS, type FieldType, type FieldDef, type ListDef } from './builder-config'
+import { BUILDER_ELEMENTS } from './builder-elements-data'
 
 const urlSchema = z.string().url().or(z.literal(''))
 const colorSchema = z
@@ -624,6 +634,9 @@ export function BuilderProperties() {
   const { state, setState } = usePageBuilderStore()
   const selectedBlock = state.blocks.find((b) => b.id === state.selectedBlockId)
 
+  const elementDef = BUILDER_ELEMENTS.find((el) => el.type === selectedBlock?.type)
+  const elementLabel = elementDef?.label || selectedBlock?.name || selectedBlock?.type || 'Elemento'
+
   const updateBlockData = useCallback(
     (data: any) => {
       if (!selectedBlock) return
@@ -643,39 +656,98 @@ export function BuilderProperties() {
 
   const handleSave = () => {
     toast({
-      title: 'Alterações salvas',
-      description: 'As propriedades da dobra foram atualizadas no Canvas.',
+      title: 'Alterações aplicadas',
+      description: 'As propriedades do elemento foram atualizadas no Canvas.',
       variant: 'default',
     })
   }
 
   return (
-    <div className="w-full md:w-[320px] bg-muted/20 border-l flex flex-col h-full overflow-hidden">
-      <div className="p-4 border-b bg-muted/40 font-semibold text-sm uppercase tracking-wider flex items-center gap-2 shrink-0">
-        <Settings className="w-4 h-4" />
-        Propriedades
-      </div>
-      <ScrollArea className="flex-1 p-4">
+    <div className="flex-1 bg-muted/10 overflow-y-auto p-4 md:p-8 flex flex-col transition-colors">
+      <div className="max-w-3xl w-full mx-auto flex-1 flex flex-col">
         {!selectedBlock ? (
-          <div className="text-center text-muted-foreground text-sm pt-12">
-            Selecione uma dobra no canvas para editar suas propriedades.
+          <div className="h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-muted-foreground/30 rounded-2xl p-12 text-center text-muted-foreground bg-card my-auto">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+              <Layers className="w-8 h-8 text-muted-foreground/50" />
+            </div>
+            <h3 className="text-xl font-bold text-foreground mb-2">Nenhum elemento selecionado</h3>
+            <p className="max-w-md text-sm mb-6">
+              Selecione um elemento na guia <strong>Page Builder</strong> para editar suas
+              propriedades (título, subtítulo, cores, mídias, links e listas).
+            </p>
+            <Button
+              onClick={() => setState({ activeTab: 'builder' })}
+              variant="outline"
+              className="gap-2"
+            >
+              Ir para o Page Builder
+              <ArrowRight className="w-4 h-4" />
+            </Button>
           </div>
         ) : (
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <Label>Nome de Identificação</Label>
-              <Input
-                value={selectedBlock.name}
-                onChange={(e) => updateBlockProp({ name: e.target.value })}
-                placeholder="Ex: Hero Principal"
-                className="h-8 text-xs"
-              />
+          <div className="space-y-6 pb-12">
+            {/* Header of properties tab */}
+            <div className="bg-card p-6 rounded-xl border shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs uppercase font-bold text-primary tracking-wider bg-primary/10 px-2 py-0.5 rounded">
+                    Editando: {elementLabel}
+                  </span>
+                  {selectedBlock.isHidden && (
+                    <span className="text-xs font-semibold text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded">
+                      Oculto
+                    </span>
+                  )}
+                </div>
+                <h2 className="text-xl font-bold text-foreground">Propriedades do Elemento</h2>
+                <p className="text-xs text-muted-foreground">
+                  Altere os campos visuais, textos e configurações deste bloco.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setState({ activeTab: 'builder' })}
+                >
+                  Ver no Canvas
+                </Button>
+                <Button size="sm" onClick={handleSave} className="gap-2 shadow-sm">
+                  <Save className="w-4 h-4" />
+                  Salvar Propriedades
+                </Button>
+              </div>
             </div>
 
+            {/* General Block Identifiers */}
+            <div className="bg-card p-6 rounded-xl border shadow-sm space-y-4">
+              <h3 className="font-bold text-sm border-b pb-2 text-primary flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                Identificação do Bloco
+              </h3>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">
+                  Nome / Rótulo de Identificação Interna
+                </Label>
+                <Input
+                  value={selectedBlock.name || ''}
+                  onChange={(e) => updateBlockProp({ name: e.target.value })}
+                  placeholder={`Ex: ${elementLabel} Principal`}
+                  className="h-9 text-xs"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Usado para identificar este bloco no Page Builder e navegação interna.
+                </p>
+              </div>
+            </div>
+
+            {/* Dynamic visual form according to block type */}
             <DynamicForm block={selectedBlock} onUpdate={updateBlockData} />
 
+            {/* Google Reviews special section if testimonials */}
             {selectedBlock.type === 'testimonials' && (
-              <div className="space-y-4 bg-card p-4 rounded-xl border shadow-sm mt-6">
+              <div className="space-y-4 bg-card p-6 rounded-xl border shadow-sm">
                 <h4 className="font-bold text-sm border-b pb-2 text-primary">
                   Moderação Google Meu Negócio
                 </h4>
@@ -684,14 +756,7 @@ export function BuilderProperties() {
             )}
           </div>
         )}
-      </ScrollArea>
-      {selectedBlock && (
-        <div className="p-4 border-t bg-background shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-          <Button onClick={handleSave} className="w-full shadow-sm">
-            <Save className="w-4 h-4 mr-2" /> Salvar Alterações
-          </Button>
-        </div>
-      )}
+      </div>
     </div>
   )
 }

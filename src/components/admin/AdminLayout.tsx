@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, Suspense } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
+import { AdminHeaderProvider, useAdminHeader } from './AdminHeaderContext'
 import { useAuth } from '@/hooks/use-auth'
 import { useSystemData } from '@/hooks/use-system-data'
 import { DEFAULT_MENU_CONFIG, normalizeMenuConfig, type MenuConfig } from '@/lib/menu-constants'
@@ -126,6 +127,36 @@ export default function AdminLayout() {
   }
 
   return (
+    <AdminHeaderProvider>
+      <AdminLayoutContent
+        sidebarOpen={sidebarOpen}
+        sidebarState={sidebarState}
+        openMenu={openMenu}
+        setOpenMenu={setOpenMenu}
+        filteredMenuConfig={filteredMenuConfig}
+        activeUrl={activeUrl}
+        handleSignOut={handleSignOut}
+        systemData={systemData}
+        profile={profile}
+      />
+    </AdminHeaderProvider>
+  )
+}
+
+function AdminLayoutContent({
+  sidebarOpen: _sidebarOpen,
+  sidebarState: _sidebarState,
+  openMenu,
+  setOpenMenu,
+  filteredMenuConfig,
+  activeUrl,
+  handleSignOut,
+  systemData,
+  profile,
+}: any) {
+  const { headerContent } = useAdminHeader()
+
+  return (
     <div className="flex w-full min-h-screen bg-background">
       <Sidebar variant="sidebar" collapsible="icon">
         <SidebarHeader className="flex min-h-16 items-center justify-center border-b px-4 py-3">
@@ -242,13 +273,21 @@ export default function AdminLayout() {
       </Sidebar>
 
       <SidebarInset className="flex flex-col flex-1 w-full min-w-0">
-        <header className="flex h-16 shrink-0 items-center justify-between border-b bg-card px-4 md:px-6 z-10 sticky top-0">
-          <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-2" />
+        <header className="flex min-h-16 shrink-0 items-center justify-between border-b bg-card px-4 md:px-6 z-10 sticky top-0 gap-3 py-2 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <SidebarTrigger className="-ml-2 shrink-0" />
+            {headerContent?.title ? (
+              <div className="min-w-0 flex-1 truncate">{headerContent.title}</div>
+            ) : null}
           </div>
 
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild className="rounded-full h-8 w-8">
+          <div className="flex items-center gap-3 shrink-0">
+            {headerContent?.controls ? (
+              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                {headerContent.controls}
+              </div>
+            ) : null}
+            <Button variant="ghost" size="icon" asChild className="rounded-full h-8 w-8 shrink-0">
               <Link to="/profile">
                 <Avatar className="size-8 border bg-background">
                   {profile?.photo_url ? (

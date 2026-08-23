@@ -6,6 +6,7 @@ export interface PageBlock {
   name: string
   order: number
   data: any
+  isHidden?: boolean
 }
 
 export interface PageBuilderState {
@@ -16,8 +17,10 @@ export interface PageBuilderState {
   metaTitle: string
   metaDescription: string
   metaKeywords: string
+  displayOrder: number
   blocks: PageBlock[]
   selectedBlockId: string | null
+  activeTab: 'properties' | 'builder' | 'block_properties'
   status: 'loading' | 'idle' | 'saving' | 'error'
   errorMessage: string | null
   isPreview: boolean
@@ -34,8 +37,10 @@ let state: PageBuilderState = {
   metaTitle: '',
   metaDescription: '',
   metaKeywords: '',
+  displayOrder: 0,
   blocks: [],
   selectedBlockId: null,
+  activeTab: 'properties',
   status: 'loading',
   errorMessage: null,
   isPreview: false,
