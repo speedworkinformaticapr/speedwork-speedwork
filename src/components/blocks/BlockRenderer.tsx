@@ -101,6 +101,24 @@ export function BlockRenderer({ block }: { block: any }) {
       return <SectionRenderer section={{ type: 'timeline', data: block.data, id: blockId }} />
     case 'media_carousel':
       return <SectionRenderer section={{ type: 'media_carousel', data: block.data, id: blockId }} />
+    case 'accordion':
+    case 'faq':
+      return <SectionRenderer section={{ type: 'accordion', data: block.data, id: blockId }} />
+    case 'team_members':
+    case 'team':
+      return <SectionRenderer section={{ type: 'team_members', data: block.data, id: blockId }} />
+    case 'stats_counter':
+      return <SectionRenderer section={{ type: 'stats_counter', data: block.data, id: blockId }} />
+    case 'newsletter':
+      return <SectionRenderer section={{ type: 'newsletter', data: block.data, id: blockId }} />
+    case 'contact_form':
+      return <SectionRenderer section={{ type: 'contact_form', data: block.data, id: blockId }} />
+    case 'social_proof':
+      return <SectionRenderer section={{ type: 'social_proof', data: block.data, id: blockId }} />
+    case 'rich_text_divider':
+      return (
+        <SectionRenderer section={{ type: 'rich_text_divider', data: block.data, id: blockId }} />
+      )
     default:
       console.warn(
         `[BlockRenderer] Unmapped block type received: "${block.type}" (normalized: "${blockType}"). Block data:`,

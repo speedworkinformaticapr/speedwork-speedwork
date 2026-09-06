@@ -18,6 +18,8 @@ interface ConferenceViewProps {
   description: string
   totalAmount: string
   installments: InstallmentItem[]
+  contaOrigemName?: string
+  contaDestinoName?: string
 }
 
 export function ConferenceView({

@@ -47,29 +47,32 @@ export function ShareDocumentDialog({
     const itemsTable = type === 'quote' ? 'orcamento_itens' : 'pedido_itens'
     const fk = type === 'quote' ? 'orcamento_id' : 'pedido_id'
 
-    const { data: doc } = await supabase
-      .from(table)
+    const { data: doc } = await (supabase.from(table as any) as any)
       .select('*, clientes(*)')
       .eq('id', documentId)
       .single()
     if (doc) {
       setDocData(doc)
-      const { data: its } = await supabase.from(itemsTable).select('*').eq(fk, documentId)
+      const { data: its } = await (supabase.from(itemsTable as any) as any)
+        .select('*')
+        .eq(fk, documentId)
       setItems(its || [])
 
-      const phone = doc.clientes?.telefone || ''
+      const phone = (doc as any).clientes?.telefone || ''
       setWhatsappPhone(phone.replace(/\D/g, ''))
-      setEmailAddress(doc.clientes?.email || '')
+      setEmailAddress((doc as any).clientes?.email || '')
 
-      const num = type === 'quote' ? doc.numero_orcamento : doc.numero_pedido
+      const num = type === 'quote' ? (doc as any).numero_orcamento : (doc as any).numero_pedido
       setEmailSubject(`Envio de ${type === 'quote' ? 'Orçamento' : 'Pedido'}: ${num}`)
 
-      const totalFormatado = Number(doc.valor_total || doc.total || 0).toLocaleString('pt-BR', {
+      const totalFormatado = Number(
+        (doc as any).valor_total || (doc as any).total || 0,
+      ).toLocaleString('pt-BR', {
         style: 'currency',
         currency: 'BRL',
       })
       setCustomMessage(
-        `Olá ${doc.clientes?.nome},\n\nSegue o resumo do seu ${type === 'quote' ? 'orçamento' : 'pedido'} (${num}).\nTotal: ${totalFormatado}\n\nFicamos à disposição para qualquer dúvida.`,
+        `Olá ${(doc as any).clientes?.nome},\n\nSegue o resumo do seu ${type === 'quote' ? 'orçamento' : 'pedido'} (${num}).\nTotal: ${totalFormatado}\n\nFicamos à disposição para qualquer dúvida.`,
       )
 
       if (autoPrint) {

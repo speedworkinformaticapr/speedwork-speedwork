@@ -243,8 +243,10 @@ export default function AdminBlogForm() {
                         className="text-lg py-4"
                         maxLength={100}
                         {...field}
-                        withAi
-                        aiContext={aiCtx('Título chamativo e otimizado para SEO')}
+                        {...({
+                          withAi: true,
+                          aiContext: aiCtx('Título chamativo e otimizado para SEO'),
+                        } as any)}
                       />
                     </FormControl>
                   </FormItem>

@@ -378,12 +378,11 @@ function getNextFreeOrder(items: any[]): number {
 
 function ItemPositionInput({
   currentOrder,
-  totalItems,
   onOrderChange,
   className,
 }: {
   currentOrder: number
-  totalItems: number
+  totalItems?: number
   onOrderChange: (newOrder: number) => void
   className?: string
 }) {
@@ -396,15 +395,15 @@ function ItemPositionInput({
   const commitValue = () => {
     const trimmed = localVal.trim()
     const parsed = parseInt(trimmed, 10)
-    if (isNaN(parsed) || parsed < 1) {
+    // Proteção mínima: se não for número ou for <= 0, corrige para 1
+    if (isNaN(parsed)) {
       setLocalVal(String(currentOrder))
       return
     }
-    const maxVal = Math.max(totalItems, 1)
-    const clampedTarget = Math.max(1, Math.min(parsed, maxVal))
-    setLocalVal(String(clampedTarget))
-    if (clampedTarget !== currentOrder) {
-      onOrderChange(clampedTarget)
+    const targetOrder = Math.max(1, parsed)
+    setLocalVal(String(targetOrder))
+    if (targetOrder !== currentOrder) {
+      onOrderChange(targetOrder)
     }
   }
 
@@ -412,7 +411,6 @@ function ItemPositionInput({
     <Input
       type="number"
       min={1}
-      max={Math.max(totalItems, 1)}
       value={localVal}
       onChange={(e) => {
         setLocalVal(e.target.value)
@@ -434,8 +432,8 @@ function ItemPositionInput({
       onMouseDown={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
       draggable={false}
-      aria-label={`Ordem do item (1 a ${Math.max(totalItems, 1)})`}
-      title={`Ordem do item (1 a ${Math.max(totalItems, 1)})`}
+      aria-label="Posição/ordem do item (número >= 1)"
+      title="Posição/ordem do item (número >= 1)"
       className={cn(
         'w-12 h-7 text-center font-mono text-xs px-1 py-0 shrink-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
         className,
@@ -684,7 +682,7 @@ function ListRenderer({
   }
 
   const handleOrderChange = (idx: number, newOrder: number) => {
-    // Altera APENAS o número daquele item (com clamp já feito). Nenhum outro item tem seu número alterado.
+    // Altera APENAS o número daquele item. Nenhum outro item tem seu número alterado.
     const updated = [...sortedItems]
     const cur = updated[idx]
     if (typeof cur === 'object' && cur !== null) {

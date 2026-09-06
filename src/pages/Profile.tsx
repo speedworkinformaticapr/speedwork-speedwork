@@ -40,7 +40,7 @@ export default function Profile() {
   }, [user, authLoading, navigate])
 
   useEffect(() => {
-    let interval: NodeJS.Timeout
+    let interval: ReturnType<typeof setInterval>
     if (user && user.last_sign_in_at) {
       const startTime = new Date(user.last_sign_in_at).getTime()
 

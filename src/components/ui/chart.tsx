@@ -147,7 +147,12 @@ const ChartLegend = Legend
 
 const ChartLegendContent = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<'div'> & { hideIcon?: boolean; nameKey?: string }
+  React.ComponentProps<'div'> & {
+    hideIcon?: boolean
+    nameKey?: string
+    payload?: any[]
+    verticalAlign?: string
+  }
 >(({ className, hideIcon, payload, verticalAlign = 'middle', nameKey }, ref) => {
   const { config } = useChart()
   if (!payload?.length) return null

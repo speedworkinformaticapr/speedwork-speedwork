@@ -170,7 +170,10 @@ export default function Gallery() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.3, delay: i * 0.05 }}
-                  className="group relative rounded-2xl overflow-hidden shadow-md bg-white cursor-pointer"
+                  {...({
+                    className:
+                      'group relative rounded-2xl overflow-hidden shadow-md bg-white cursor-pointer',
+                  } as any)}
                 >
                   <div className="aspect-[4/3] overflow-hidden">
                     <img
@@ -198,7 +201,10 @@ export default function Gallery() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 20 }}
                   transition={{ duration: 0.4, delay: i * 0.05 }}
-                  className="bg-white rounded-2xl overflow-hidden shadow-lg border border-border flex flex-col"
+                  {...({
+                    className:
+                      'bg-white rounded-2xl overflow-hidden shadow-lg border border-border flex flex-col',
+                  } as any)}
                 >
                   <div className="flex aspect-[16/9] w-full relative group">
                     <div className="w-1/2 relative overflow-hidden">

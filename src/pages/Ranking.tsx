@@ -118,7 +118,7 @@ export default function Ranking() {
 
   const loadData = async () => {
     setLoading(true)
-    let query = supabase.from('rankings').select(
+    let query = (supabase.from('rankings' as any) as any).select(
       `
       id, points, fifg_points, fbfg_points, fpfg_points, club_points,
       athletes!inner (
@@ -159,8 +159,9 @@ export default function Ranking() {
 
       let ovrMap: Record<string, number> = {}
       if (athleteIds.length > 0) {
-        const { data: attrData, error: attrError } = await supabase
-          .from('athlete_attribute_values')
+        const { data: attrData, error: attrError } = await (
+          supabase.from('athlete_attribute_values' as any) as any
+        )
           .select('user_id, athlete_id, valor, athlete_attributes(valor_maximo, tipo_dado)')
           .or(`user_id.in.(${athleteIds.join(',')}),athlete_id.in.(${athleteIds.join(',')})`)
 
