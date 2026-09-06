@@ -10,7 +10,10 @@ const SYSTEM_DATA_TTL = 5 * 60 * 1000
 
 interface SystemDataContextType {
   data: SystemData | null
+  systemData?: SystemData | null
   loading: boolean
+  updateData: (newData: any) => Promise<any>
+  refetch?: () => Promise<void>
 }
 
 const SystemDataContext = createContext<SystemDataContextType | undefined>(undefined)
@@ -62,7 +65,42 @@ export const SystemDataProvider = ({ children }: { children: ReactNode }) => {
     fetchSystemData()
   }, [])
 
+  const updateData = async (newData: any) => {
+    try {
+      const merged = { ...(data || {}), ...newData }
+      const { error } = await supabase.from('system_data').update(merged).eq('id', SYSTEM_DATA_ID)
+      if (error) throw error
+      setData(merged)
+      setCachedData(SYSTEM_DATA_CACHE_KEY, merged)
+      return merged
+    } catch (err) {
+      console.error('Error updating system data:', err)
+      throw err
+    }
+  }
+
+  const refetch = async () => {
+    try {
+      const { data: systemData } = await supabase
+        .from('system_data')
+        .select('*')
+        .eq('id', SYSTEM_DATA_ID)
+        .maybeSingle()
+      if (systemData) {
+        const cleaned = { ...systemData } as Record<string, unknown>
+        delete cleaned.ai_context
+        delete cleaned.aiContext
+        setData(cleaned)
+        setCachedData(SYSTEM_DATA_CACHE_KEY, cleaned)
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   return (
-    <SystemDataContext.Provider value={{ data, loading }}>{children}</SystemDataContext.Provider>
+    <SystemDataContext.Provider value={{ data, systemData: data, loading, updateData, refetch }}>
+      {children}
+    </SystemDataContext.Provider>
   )
 }

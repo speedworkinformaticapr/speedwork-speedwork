@@ -40,32 +40,35 @@ export default function AdminClauseForm() {
 
       if (error) throw error
       if (data) {
-        reset(data)
+        reset({
+          title: data.title,
+          content: data.content,
+          version: Number(data.version) || 1,
+        })
       }
     } catch (error) {
       console.error('Error fetching clause:', error)
     }
   }
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (formData: any) => {
     setLoading(true)
     try {
       if (isEditing) {
-        const { error } = await supabase
-          .from('contract_clauses')
+        const { error } = await (supabase.from('contract_clauses') as any)
           .update({
-            title: data.title,
-            content: data.content,
-            version: Number(data.version),
+            title: formData.title,
+            content: formData.content,
+            version: String(formData.version || 1),
           })
           .eq('id', id)
         if (error) throw error
       } else {
-        const { error } = await supabase.from('contract_clauses').insert([
+        const { error } = await (supabase.from('contract_clauses') as any).insert([
           {
-            title: data.title,
-            content: data.content,
-            version: Number(data.version),
+            title: formData.title,
+            content: formData.content,
+            version: String(formData.version || 1),
           },
         ])
         if (error) throw error

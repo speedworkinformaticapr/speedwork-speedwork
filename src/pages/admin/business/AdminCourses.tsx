@@ -52,11 +52,7 @@ export default function AdminCourses() {
                     <FormItem>
                       <FormLabel>Nome do Campo</FormLabel>
                       <FormControl>
-                        <Input
-                          {...field}
-                          withAi
-                          aiContext="Nome criativo para um campo de footgolf"
-                        />
+                        <Input {...field} placeholder="Nome criativo para o campo" />
                       </FormControl>
                     </FormItem>
                   )}

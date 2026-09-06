@@ -32,10 +32,26 @@ export interface RichTextEditorProps extends Omit<
   aiContext?: string
   disabled?: boolean
   name?: string
+  minHeight?: string
+  variables?: { label: string; value: string }[]
 }
 
 export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
-  ({ value = '', onChange, withAi, aiContext, className, disabled, name, ...props }, ref) => {
+  (
+    {
+      value = '',
+      onChange,
+      withAi,
+      aiContext,
+      className,
+      disabled,
+      name,
+      minHeight,
+      variables,
+      ...props
+    },
+    ref,
+  ) => {
     const internalRef = React.useRef<HTMLDivElement>(null)
     const [isGenerating, setIsGenerating] = React.useState(false)
     const { toast } = useToast()
@@ -297,6 +313,7 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
           contentEditable={!disabled}
           onInput={handleInput}
           onBlur={handleInput}
+          style={{ minHeight: minHeight || undefined }}
           className={cn(
             'p-3 min-h-[150px] outline-none prose prose-sm max-w-none dark:prose-invert break-words',
             disabled && 'opacity-50 cursor-not-allowed bg-muted',

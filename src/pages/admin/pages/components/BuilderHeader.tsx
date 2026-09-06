@@ -44,11 +44,16 @@ export function BuilderHeader() {
       }
 
       if (state.pageId) {
-        const { error } = await supabase.from('pages').update(payload).eq('id', state.pageId)
+        const { error } = await (supabase.from('pages') as any)
+          .update(payload)
+          .eq('id', state.pageId)
         if (error) throw error
         toast({ title: 'Sucesso', description: 'Página atualizada com sucesso!' })
       } else {
-        const { data, error } = await supabase.from('pages').insert(payload).select().single()
+        const { data, error } = await (supabase.from('pages') as any)
+          .insert(payload)
+          .select()
+          .single()
         if (error) throw error
         toast({ title: 'Sucesso', description: 'Página criada com sucesso!' })
         if (data) setState({ pageId: data.id })

@@ -87,7 +87,7 @@ export function useAppointmentActions(onSuccess: () => void) {
         toast({
           title: 'Aviso',
           description: 'Cliente não possui e-mail cadastrado, mas o registro foi feito.',
-          variant: 'warning',
+          variant: 'default',
         })
       }
       onSuccess()

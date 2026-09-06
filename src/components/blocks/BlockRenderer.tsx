@@ -28,6 +28,7 @@ export function BlockRenderer({ block }: { block: any }) {
   const blockType = String(block.type).trim().toLowerCase()
   const blockId = (block.data?.anchorId || block.name || '').trim() || undefined
 
+  // Normalização e roteamento dos blocos disponíveis no Page Builder
   switch (blockType) {
     case 'map':
     case 'map_element':

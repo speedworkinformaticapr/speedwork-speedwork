@@ -56,11 +56,7 @@ export default function AdminTournaments() {
                     <FormItem>
                       <FormLabel>Nome</FormLabel>
                       <FormControl>
-                        <Input
-                          {...field}
-                          withAi
-                          aiContext="Nome chamativo para um torneio de footgolf"
-                        />
+                        <Input {...field} placeholder="Nome chamativo para o evento" />
                       </FormControl>
                     </FormItem>
                   )}

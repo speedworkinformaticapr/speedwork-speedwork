@@ -321,7 +321,7 @@ export default function AdminPedidoForm() {
       responsavel_id: user?.id,
       valor_total: subtotal,
       status,
-      numero_pedido: formData.numero_pedido || `PED-${Date.now()}`,
+      numero_pedido: (formData as any).numero_pedido || `PED-${Date.now()}`,
     }
     if (!pedidoData.conta_id) pedidoData.conta_id = null
 
@@ -354,8 +354,7 @@ export default function AdminPedidoForm() {
       is_client: true,
       birth_date: newClient.birth_date || null,
     }
-    const { data, error } = await supabase
-      .from('profiles')
+    const { data, error } = await (supabase.from('profiles') as any)
       .insert([payload])
       .select('id, name as nome')
       .single()

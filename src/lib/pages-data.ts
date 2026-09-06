@@ -11,12 +11,14 @@ export async function fetchPages(): Promise<any[]> {
   if (cached) return cached
 
   if (!fetchPromise) {
-    fetchPromise = supabase
-      .from('pages')
-      .select('id, title, slug')
-      .eq('is_published', true)
-      .order('display_order', { ascending: true })
-      .then(({ data, error }) => {
+    fetchPromise = Promise.resolve(
+      supabase
+        .from('pages')
+        .select('id, title, slug')
+        .eq('is_published', true)
+        .order('display_order', { ascending: true }),
+    )
+      .then(({ data, error }: any) => {
         if (error) throw error
         const pages = data || []
         setCachedData(PAGES_CACHE_KEY, pages)

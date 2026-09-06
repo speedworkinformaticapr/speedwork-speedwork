@@ -41,22 +41,22 @@ export default function AdminStripeConfig() {
   const fetchConfig = async () => {
     setIsLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('stripe_config' as any)
+      const { data, error } = await (supabase.from('stripe_config' as any) as any)
         .select('*')
         .limit(1)
         .single()
 
       if (error && error.code !== 'PGRST116') throw error
       if (data) {
+        const d = data as any
         setConfig({
-          public_key: data.public_key || '',
-          secret_key: data.secret_key || '',
-          webhook_secret: data.webhook_secret || '',
-          pix_enabled: data.pix_enabled || false,
-          pass_fees_to_customer: data.pass_fees_to_customer || false,
-          card_fee_percentage: data.card_fee_percentage || 0,
-          card_fee_fixed: data.card_fee_fixed || 0,
+          public_key: d.public_key || '',
+          secret_key: d.secret_key || '',
+          webhook_secret: d.webhook_secret || '',
+          pix_enabled: d.pix_enabled || false,
+          pass_fees_to_customer: d.pass_fees_to_customer || false,
+          card_fee_percentage: d.card_fee_percentage || 0,
+          card_fee_fixed: d.card_fee_fixed || 0,
         })
       }
     } catch (err: any) {
@@ -71,21 +71,19 @@ export default function AdminStripeConfig() {
     setIsSaving(true)
     try {
       const tenant_id = '00000000-0000-0000-0000-000000000001'
-      const { data: existing } = await supabase
-        .from('stripe_config' as any)
+      const { data: existing } = await (supabase.from('stripe_config' as any) as any)
         .select('id')
         .eq('tenant_id', tenant_id)
         .single()
 
       const payload = { ...config, updated_at: new Date().toISOString() }
 
-      if (existing) {
-        await supabase
-          .from('stripe_config' as any)
+      if (existing && (existing as any).id) {
+        await (supabase.from('stripe_config' as any) as any)
           .update(payload)
-          .eq('id', existing.id)
+          .eq('id', (existing as any).id)
       } else {
-        await supabase.from('stripe_config' as any).insert([{ ...payload, tenant_id }])
+        await (supabase.from('stripe_config' as any) as any).insert([{ ...payload, tenant_id }])
       }
 
       toast({

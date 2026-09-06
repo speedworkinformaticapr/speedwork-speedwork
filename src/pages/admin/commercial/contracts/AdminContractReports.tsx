@@ -149,7 +149,7 @@ export default function AdminContractReports() {
                   {} as Record<string, number>,
                 ),
               )
-                .sort((a, b) => b[1] - a[1])
+                .sort((a: [string, number], b: [string, number]) => Number(b[1]) - Number(a[1]))
                 .slice(0, 5)
                 .map(([name, count]) => (
                   <TableRow key={name}>

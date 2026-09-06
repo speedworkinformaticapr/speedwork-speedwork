@@ -41,8 +41,7 @@ export default function AdminAthleteScouting() {
 
   useEffect(() => {
     const fetchAthletes = async () => {
-      const { data } = await supabase
-        .from('athletes')
+      const { data } = await (supabase.from('athletes') as any)
         .select('id, name, avatar_url, category, birth_date')
         .order('name')
       if (data) setAthletes(data as Athlete[])
@@ -59,8 +58,7 @@ export default function AdminAthleteScouting() {
 
     const fetchScoutingData = async () => {
       setLoading(true)
-      const { data: profile } = await supabase
-        .from('athletes')
+      const { data: profile } = await (supabase.from('athletes') as any)
         .select('id, name, avatar_url, category, birth_date')
         .eq('id', selectedId)
         .single()

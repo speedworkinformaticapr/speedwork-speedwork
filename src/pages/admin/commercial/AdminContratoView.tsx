@@ -74,8 +74,7 @@ export default function AdminContratoView() {
     setContrato(data)
 
     if (data) {
-      const { data: sigs } = await supabase
-        .from('contract_signatories')
+      const { data: sigs } = await (supabase.from('contract_signatories') as any)
         .select('*, profiles(name, email)')
         .eq('contract_id', id)
         .order('created_at')
@@ -100,14 +99,14 @@ export default function AdminContratoView() {
 
   const addSignatory = async () => {
     if (!sigForm.profile_id) return
-    await supabase.from('contract_signatories').insert([{ contract_id: id, ...sigForm }])
+    await (supabase.from('contract_signatories') as any).insert([{ contract_id: id, ...sigForm }])
     toast({ title: 'Signatário adicionado' })
     setSigOpen(false)
     load()
   }
 
   const removeSignatory = async (sigId: string) => {
-    await supabase.from('contract_signatories').delete().eq('id', sigId)
+    await (supabase.from('contract_signatories') as any).delete().eq('id', sigId)
     load()
   }
 

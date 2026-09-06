@@ -91,7 +91,7 @@ export default function AdminPageManager() {
               metaDescription: data.meta_description || '',
               metaKeywords: data.meta_keywords || '',
               displayOrder: data.display_order ?? 0,
-              blocks: (data.blocks || [])
+              blocks: ((Array.isArray(data.blocks) ? data.blocks : []) as any[])
                 .map((b: any) => {
                   let normalizedType = String(b.type || '')
                     .trim()
@@ -210,14 +210,19 @@ export default function AdminPageManager() {
 
     try {
       if (state.pageId) {
-        const { error } = await supabase.from('pages').update(payload).eq('id', state.pageId)
+        const { error } = await (supabase.from('pages') as any)
+          .update(payload)
+          .eq('id', state.pageId)
         if (error) throw error
         toast({
           title: 'Página atualizada com sucesso!',
           description: `"${state.title}" foi salva com todas as alterações.`,
         })
       } else {
-        const { data, error } = await supabase.from('pages').insert(payload).select().single()
+        const { data, error } = await (supabase.from('pages') as any)
+          .insert(payload)
+          .select()
+          .single()
         if (error) throw error
         toast({
           title: 'Página criada com sucesso!',

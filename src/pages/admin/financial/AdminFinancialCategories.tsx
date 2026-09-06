@@ -124,8 +124,7 @@ export default function AdminFinancialCategories() {
   const handleToggleStatus = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active'
     try {
-      const { error } = await supabase
-        .from('financial_categories')
+      const { error } = await (supabase.from('financial_categories') as any)
         .update({ status: newStatus })
         .eq('id', id)
       if (error) throw error

@@ -43,9 +43,9 @@ export function FloatingWidgets() {
   return (
     <>
       {systemData?.libras_enabled && (
-        <div vw="true" className="enabled">
-          <div vw-access-button="true" className="active"></div>
-          <div vw-plugin-wrapper="true">
+        <div {...({ vw: 'true' } as any)} className="enabled">
+          <div {...({ 'vw-access-button': 'true' } as any)} className="active"></div>
+          <div {...({ 'vw-plugin-wrapper': 'true' } as any)}>
             <div className="vw-plugin-top-wrapper"></div>
           </div>
         </div>

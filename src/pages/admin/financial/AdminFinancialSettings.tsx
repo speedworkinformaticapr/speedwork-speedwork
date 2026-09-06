@@ -81,8 +81,9 @@ export default function AdminFinancialSettings() {
         })
       }
 
-      const { data: rcData, error: rcError } = await supabase
-        .from('billing_registration_config')
+      const { data: rcData, error: rcError } = await (
+        supabase.from('billing_registration_config') as any
+      )
         .select('*')
         .limit(1)
         .maybeSingle()
@@ -90,13 +91,14 @@ export default function AdminFinancialSettings() {
       if (rcError) throw rcError
 
       if (rcData) {
+        const anyRc = rcData as any
         setRegConfig({
-          id: rcData.id,
-          charge_on_athlete_registration: rcData.charge_on_athlete_registration || false,
-          charge_on_club_registration: rcData.charge_on_club_registration || false,
-          athlete_registration_amount: rcData.athlete_registration_amount || 0,
-          club_registration_amount: rcData.club_registration_amount || 0,
-          payment_method: rcData.payment_method || 'both',
+          id: anyRc.id,
+          charge_on_athlete_registration: anyRc.charge_on_athlete_registration || false,
+          charge_on_club_registration: anyRc.charge_on_club_registration || false,
+          athlete_registration_amount: anyRc.athlete_registration_amount || 0,
+          club_registration_amount: anyRc.club_registration_amount || 0,
+          payment_method: anyRc.payment_method || 'both',
         })
       }
     } catch (err: any) {
@@ -225,14 +227,12 @@ export default function AdminFinancialSettings() {
       }
 
       if (regConfig.id) {
-        const { error } = await supabase
-          .from('billing_registration_config')
+        const { error } = await (supabase.from('billing_registration_config') as any)
           .update(regPayload)
           .eq('id', regConfig.id)
         if (error) throw error
       } else {
-        const { data, error } = await supabase
-          .from('billing_registration_config')
+        const { data, error } = await (supabase.from('billing_registration_config') as any)
           .insert([regPayload])
           .select()
           .single()

@@ -57,3 +57,5 @@ export function DatePickerWithRange({ className, date, setDate }: DatePickerWith
     </div>
   )
 }
+
+export { DatePickerWithRange as DateRangePicker }

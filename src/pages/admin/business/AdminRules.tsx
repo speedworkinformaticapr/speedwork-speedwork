@@ -61,11 +61,7 @@ export default function AdminRules() {
                     <FormItem>
                       <FormLabel>Título</FormLabel>
                       <FormControl>
-                        <Input
-                          {...field}
-                          withAi
-                          aiContext="Título de uma regra oficial de footgolf"
-                        />
+                        <Input {...field} placeholder="Título da regra" />
                       </FormControl>
                     </FormItem>
                   )}
