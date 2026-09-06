@@ -509,9 +509,9 @@ function StringListEditor({ value, onChange }: { value: any[]; onChange: (v: any
     const reordered = [...sortedItems]
     const [moved] = reordered.splice(fromIndex, 1)
     reordered.splice(toIndex, 0, moved)
-    // Ao arrastar, atualiza a ordem conforme a posição final do arrasto (1-based)
-    const updated = reordered.map((it, i) => ({ ...it, _order: i + 1 }))
-    onChange(updated)
+    // Preserva os números (_order) definidos pela usuária em cada item,
+    // apenas reposicionando os elementos no array
+    onChange(reordered)
   }
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
@@ -701,9 +701,9 @@ function ListRenderer({
     const reordered = [...sortedItems]
     const [moved] = reordered.splice(fromIndex, 1)
     reordered.splice(toIndex, 0, moved)
-    // Drag & drop: ao arrastar, atualiza a ordem conforme a posição final do arrasto (1-based)
-    const updated = reordered.map((it, i) => ({ ...it, _order: i + 1 }))
-    onChange(updated)
+    // Preserva os números (_order) definidos pela usuária em cada item,
+    // apenas reposicionando os elementos no array
+    onChange(reordered)
   }
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
@@ -770,6 +770,8 @@ function ListRenderer({
           let displayTitle = `Item ${itemOrder}`
 
           if (isMediaCarousel) {
+            // Título do item da mídia: exibe item.title se preenchido, senão fallback "Mídia N" (onde N = itemOrder)
+            // NUNCA herda o título da página
             displayTitle = (item.title && String(item.title).trim()) || `Mídia ${itemOrder}`
           } else if (isGalleryList) {
             displayTitle = `Imagem ${itemOrder}`
