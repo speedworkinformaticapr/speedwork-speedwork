@@ -532,8 +532,8 @@ export default function QuoteForm() {
 
       if (error) throw error
 
-      const orcId = result?.id
-      const numOrc = result?.numero_orcamento
+      const orcId = (result as any)?.id
+      const numOrc = (result as any)?.numero_orcamento
 
       if (!quoteId && orcId) {
         setQuoteId(orcId)

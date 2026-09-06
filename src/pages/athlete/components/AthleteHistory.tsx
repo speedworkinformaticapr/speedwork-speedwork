@@ -6,8 +6,7 @@ export default function AthleteHistory({ athleteId }: { athleteId: string }) {
   const [history, setHistory] = useState<any[]>([])
 
   useEffect(() => {
-    supabase
-      .from('athlete_history')
+    ;(supabase.from as any)('athlete_history')
       .select('*, club_ant:clube_id_anterior(name), club_nov:clube_id_novo(name)')
       .eq('user_id', athleteId)
       .order('data_mudanca', { ascending: false })

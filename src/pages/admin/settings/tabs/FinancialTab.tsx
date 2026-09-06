@@ -69,8 +69,8 @@ export default function FinancialTab() {
       }
 
       if (asaasRes.data) {
-        setValue('asaas_production_key', asaasRes.data.production_key || '')
-        setValue('asaas_sandbox_key', asaasRes.data.sandbox_key || '')
+        setValue('asaas_production_key', (asaasRes.data as any).production_key || '')
+        setValue('asaas_sandbox_key', (asaasRes.data as any).sandbox_key || '')
       }
     }
     fetchData()

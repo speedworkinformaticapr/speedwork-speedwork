@@ -109,11 +109,7 @@ export default function AdminMaintenance() {
                   <FormItem>
                     <FormLabel>Título Principal</FormLabel>
                     <FormControl>
-                      <Input
-                        {...field}
-                        withAi
-                        aiContext="Título de página amigável avisando que o sistema está em manutenção"
-                      />
+                      <Input {...field} />
                     </FormControl>
                   </FormItem>
                 )}

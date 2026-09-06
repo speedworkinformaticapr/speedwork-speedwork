@@ -22,7 +22,7 @@ export default function SystemDataForm() {
   const [isSaving, setIsSaving] = useState(false)
 
   const form = useForm<SystemDataFormData>({
-    resolver: zodResolver(systemDataSchema),
+    resolver: zodResolver(systemDataSchema) as any,
     defaultValues: {
       records_per_page: 50,
       bg_opacity: 100,
@@ -227,7 +227,7 @@ export default function SystemDataForm() {
           google_place_id: values.google_place_id,
           active_payment_gateway: values.active_payment_gateway,
           payment_environment: values.payment_environment,
-          asaas_api_key: values.asaas_api_key,
+          asaas_api_key: (values as any).asaas_api_key,
           openai_api_key_test: values.openai_api_key_test,
           openai_api_key_production: values.openai_api_key_production,
           openai_environment: values.openai_environment,

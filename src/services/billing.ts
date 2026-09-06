@@ -19,13 +19,12 @@ export interface BillingLog {
 }
 
 export const getBillingConfig = async (): Promise<BillingConfig | null> => {
-  const { data, error } = await supabase
-    .from('billing_configuration' as any)
+  const { data, error } = await (supabase.from as any)('billing_configuration')
     .select('*')
     .single()
 
   if (error && error.code !== 'PGRST116') throw error
-  return data
+  return data as BillingConfig | null
 }
 
 export const updateBillingConfig = async (config: Partial<BillingConfig>) => {
@@ -40,13 +39,12 @@ export const updateBillingConfig = async (config: Partial<BillingConfig>) => {
 }
 
 export const getBillingLogs = async (): Promise<BillingLog[]> => {
-  const { data, error } = await supabase
-    .from('billing_logs' as any)
+  const { data, error } = await (supabase.from as any)('billing_logs')
     .select('*')
     .order('execution_date', { ascending: false })
 
   if (error) throw error
-  return data || []
+  return (data || []) as BillingLog[]
 }
 
 export const triggerBillingGeneration = async (manual = false) => {

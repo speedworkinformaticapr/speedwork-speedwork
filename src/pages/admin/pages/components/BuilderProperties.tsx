@@ -757,7 +757,8 @@ function ListRenderer({
 
           // RÓTULO NEUTRO DO HEADER DO ITEM:
           // NUNCA exibir o título da página.
-          // Para Media Carousel: use item.title se preenchido, senão "Mídia N" (N = itemOrder).
+          // Para Media Carousel: use item.itemLabel se preenchido, senão "Mídia N" (N = itemOrder).
+          // NUNCA deve exibir o campo "Título" (title) do item nem o título da página.
           // Para Galeria: use "Imagem N".
           // Para FAQ: use item.question se preenchido, senão "Item N".
           // Para Equipe: use item.name se preenchido, senão "Item N".
@@ -768,9 +769,9 @@ function ListRenderer({
           let displayTitle = `Item ${itemOrder}`
 
           if (isMediaCarousel) {
-            // Título do item da mídia: exibe item.title se preenchido, senão fallback "Mídia N" (onde N = itemOrder)
-            // NUNCA herda o título da página
-            displayTitle = (item.title && String(item.title).trim()) || `Mídia ${itemOrder}`
+            // Título do item da mídia: exibe item.itemLabel se preenchido, senão fallback "Mídia N" (onde N = itemOrder)
+            // NUNCA exibe item.title nem herda o título da página
+            displayTitle = (item.itemLabel && String(item.itemLabel).trim()) || `Mídia ${itemOrder}`
           } else if (isGalleryList) {
             displayTitle = `Imagem ${itemOrder}`
           } else if (isStringList) {

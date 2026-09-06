@@ -121,7 +121,7 @@ export default function ClientQuotes() {
                       <SelectContent>
                         {MOCK_CATALOG_SERVICES.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
-                            {s.title}
+                            {(s as any).title || s.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -161,7 +161,7 @@ export default function ClientQuotes() {
                       <SelectContent>
                         {MOCK_CATALOG_PRODUCTS.map((p) => (
                           <SelectItem key={p.id} value={p.id}>
-                            {p.title}
+                            {(p as any).title || p.name}
                           </SelectItem>
                         ))}
                       </SelectContent>

@@ -34,12 +34,11 @@ export default function Checkout() {
     if (!planId && items.length === 0) navigate('/store')
 
     if (planId) {
-      supabase
-        .from('plan_services')
+      ;(supabase.from as any)('plan_services')
         .select('*, contract_templates(content)')
         .eq('id', planId)
         .single()
-        .then(({ data }) => {
+        .then(({ data }: any) => {
           if (data) setPlan(data)
         })
     }
@@ -74,6 +73,7 @@ export default function Checkout() {
 
     setLoading(true)
     try {
+      let createdOrderId: string | null = null
       if (planId && plan) {
         let clienteId = null
         const { data: cliente } = await supabase
@@ -144,6 +144,7 @@ export default function Checkout() {
 
         if (itemsError) throw itemsError
 
+        createdOrderId = order.id
         await clearCart(user!.id)
       }
 
@@ -160,7 +161,7 @@ export default function Checkout() {
             tipo_mensagem: 'pedido_confirmacao',
             variaveis: {
               cliente_nome: user!.user_metadata?.name || 'Cliente',
-              numero_pedido: order.id.slice(0, 8).toUpperCase(),
+              numero_pedido: (createdOrderId || 'PLAN').slice(0, 8).toUpperCase(),
               data_pedido: new Date().toLocaleDateString(),
               valor_total: total.toFixed(2),
               itens_resumo: items.map((i) => i.product?.name).join(', '),

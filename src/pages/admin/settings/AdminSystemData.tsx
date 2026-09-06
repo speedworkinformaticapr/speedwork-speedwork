@@ -24,8 +24,8 @@ export default function AdminSystemData() {
   const { toast } = useToast()
 
   const form = useForm<SystemDataFormValues>({
-    resolver: zodResolver(systemDataSchema),
-    defaultValues: {},
+    resolver: zodResolver(systemDataSchema) as any,
+    defaultValues: {} as any,
   })
 
   useEffect(() => {
@@ -37,9 +37,9 @@ export default function AdminSystemData() {
           supabase.from('asaas_config').select('*').eq('tenant_id', TENANT_ID).maybeSingle(),
         ])
 
-        const sys = sysRes.data || {}
-        const stripe = stripeRes.data || {}
-        const asaas = asaasRes.data || {}
+        const sys = (sysRes.data || {}) as any
+        const stripe = (stripeRes.data || {}) as any
+        const asaas = (asaasRes.data || {}) as any
 
         form.reset({
           platform_name: sys.platform_name || '',

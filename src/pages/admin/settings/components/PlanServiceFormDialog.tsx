@@ -99,7 +99,7 @@ export function PlanServiceFormDialog({ open, onOpenChange, initialData, onSave 
   const { toast } = useToast()
 
   const form = useForm<PlanServiceData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
     defaultValues: {
       title: '',
       description: '',

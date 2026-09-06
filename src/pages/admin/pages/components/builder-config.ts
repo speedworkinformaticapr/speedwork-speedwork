@@ -491,6 +491,7 @@ export const ELEMENT_CONFIGS: Record<string, ElementConfig> = {
         name: 'items',
         label: 'Mídias',
         fields: [
+          { name: 'itemLabel', label: 'Título do Item', type: 'text', maxLength: 80 },
           { name: 'url', label: 'URL da Mídia', type: 'url' },
           {
             name: 'type',

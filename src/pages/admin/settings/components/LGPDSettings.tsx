@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Download } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 
 export default function LGPDSettings() {

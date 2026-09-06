@@ -7,8 +7,7 @@ export default function AthleteFinancial({ athleteId }: { athleteId: string }) {
   const [movements, setMovements] = useState<any[]>([])
 
   useEffect(() => {
-    supabase
-      .from('financial_movements')
+    ;(supabase.from as any)('financial_movements')
       .select('*')
       .eq('user_id', athleteId)
       .order('data_movimento', { ascending: false })

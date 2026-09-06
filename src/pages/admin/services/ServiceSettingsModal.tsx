@@ -72,7 +72,7 @@ export function ServiceSettingsModal({
         .order('hora_inicio', { ascending: true }),
     ])
 
-    if (resFields.data) setFields(resFields.data)
+    if (resFields.data) setFields(resFields.data as any)
     if (resAvail.data) setAvailabilities(resAvail.data)
     setLoading(false)
   }

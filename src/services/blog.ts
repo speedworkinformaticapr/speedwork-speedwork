@@ -80,14 +80,14 @@ export const blogService = {
   },
 
   async createPost(post: Partial<BlogPost>) {
-    const { data, error } = await supabase.from('blog_posts').insert(post).select().single()
+    const { data, error } = await (supabase.from('blog_posts') as any).insert(post).select().single()
     if (error) throw error
     return data as unknown as BlogPost
   },
 
   async updatePost(id: string, post: Partial<BlogPost>) {
-    const { data, error } = await supabase
-      .from('blog_posts')
+    const { data, error } = await (supabase
+      .from('blog_posts') as any)
       .update(post)
       .eq('id', id)
       .select()
@@ -155,8 +155,8 @@ export const commentService = {
   },
 
   async addComment(comment: Partial<BlogComment>) {
-    const { data, error } = await supabase
-      .from('blog_comments')
+    const { data, error } = await (supabase
+      .from('blog_comments') as any)
       .insert({ ...comment, status: 'pending' })
       .select()
       .single()
