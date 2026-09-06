@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { SectionRenderer } from '@/components/sections/SectionRenderer'
 import { useSeo } from '@/hooks/use-seo'
-import { HeroCarousel } from '@/components/sections/HeroCarousel'
 
 export default function Index() {
   const [sections, setSections] = useState<any[]>([])

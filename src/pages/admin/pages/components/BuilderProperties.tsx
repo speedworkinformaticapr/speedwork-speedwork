@@ -470,6 +470,7 @@ function StringListEditor({
               'border-t-2 border-t-primary bg-primary/5',
           )}
         >
+          {/* Esquerda: alça de arrasto + input de texto */}
           <div
             draggable
             onDragStart={(e) => handleDragStart(e, idx)}
@@ -480,8 +481,6 @@ function StringListEditor({
             <GripVertical className="w-3.5 h-3.5" />
           </div>
 
-          <ItemPositionInput currentIndex={idx} totalItems={items.length} onMove={handleMove} />
-
           <Input
             value={item || ''}
             onChange={(e) => {
@@ -489,10 +488,13 @@ function StringListEditor({
               newArr[idx] = e.target.value
               onChange(newArr)
             }}
-            className="h-8 text-xs flex-1"
+            className="h-8 text-xs flex-1 min-w-0"
           />
 
-          <div className="flex items-center gap-0.5 shrink-0">
+          {/* Direita: input numérico de posição + lixeira */}
+          <div className="flex items-center gap-1 shrink-0">
+            <ItemPositionInput currentIndex={idx} totalItems={items.length} onMove={handleMove} />
+
             <Button
               type="button"
               variant="ghost"
@@ -639,43 +641,46 @@ function ListRenderer({
               )}
             >
               <div className="flex items-center justify-between w-full h-10 gap-2">
-                {/* Drag Handle */}
-                <div
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, idx)}
-                  onDragEnd={handleDragEnd}
-                  className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-1 shrink-0 rounded hover:bg-muted/60"
-                  title="Arraste para reordenar"
-                >
-                  <GripVertical className="w-3.5 h-3.5" />
+                {/* Esquerda: Drag Handle + Accordion Trigger com Título */}
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <div
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, idx)}
+                    onDragEnd={handleDragEnd}
+                    className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-1 shrink-0 rounded hover:bg-muted/60"
+                    title="Arraste para reordenar"
+                  >
+                    <GripVertical className="w-3.5 h-3.5" />
+                  </div>
+
+                  {/* Accordion Trigger (Title + Chevron) */}
+                  <AccordionTrigger className="hover:no-underline py-0 flex-1 min-w-0 justify-start text-xs font-medium px-1 text-left">
+                    <span className="truncate">{displayTitle}</span>
+                  </AccordionTrigger>
                 </div>
 
-                {/* Position Input */}
-                <ItemPositionInput
-                  currentIndex={idx}
-                  totalItems={(items || []).length}
-                  onMove={handleMove}
-                />
+                {/* Direita: Grupo com input numérico de posição + Lixeira */}
+                <div className="flex items-center gap-1 shrink-0">
+                  <ItemPositionInput
+                    currentIndex={idx}
+                    totalItems={(items || []).length}
+                    onMove={handleMove}
+                  />
 
-                {/* Accordion Trigger (Title + Chevron) */}
-                <AccordionTrigger className="hover:no-underline py-0 flex-1 justify-start text-xs font-medium truncate px-1">
-                  <span className="truncate">{displayTitle}</span>
-                </AccordionTrigger>
-
-                {/* Delete Button */}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 text-destructive hover:bg-destructive/10 shrink-0"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleRemove(idx)
-                  }}
-                  title="Excluir item"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-destructive hover:bg-destructive/10 shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleRemove(idx)
+                    }}
+                    title="Excluir item"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
               </div>
               <AccordionContent className="pb-3 pt-1 space-y-4">
                 {isStringList ? (
