@@ -158,9 +158,12 @@ export function SectionRenderer({ section }: { section: any }) {
   }
 
   if (type === 'feature_cards' || type === 'cards') {
+    const rawItems = data.items && data.items.length > 0 ? data.items : []
     const items =
-      data.items && data.items.length > 0
-        ? data.items
+      rawItems.length > 0
+        ? [...rawItems].sort(
+            (a: any, b: any) => (a._order ?? a.order ?? 0) - (b._order ?? b.order ?? 0),
+          )
         : [
             { title: 'Recurso Principal 1', description: 'Descrição detalhada do recurso.' },
             { title: 'Benefício Exclusivo 2', description: 'Como este benefício ajuda o usuário.' },
@@ -225,17 +228,27 @@ export function SectionRenderer({ section }: { section: any }) {
   }
 
   if (type === 'gallery' || type === 'galeria' || type === 'carrossel') {
-    const items =
+    const rawItems =
       data.items && data.items.length > 0
         ? data.items
         : data.images && data.images.length > 0
           ? data.images
-          : [
-              'https://img.usecurling.com/p/400/400?seed=1',
-              'https://img.usecurling.com/p/400/400?seed=2',
-              'https://img.usecurling.com/p/400/400?seed=3',
-              'https://img.usecurling.com/p/400/400?seed=4',
-            ]
+          : []
+    const items =
+      rawItems.length > 0
+        ? [...rawItems]
+            .sort((a: any, b: any) => (a._order ?? a.order ?? 0) - (b._order ?? b.order ?? 0))
+            .map((item: any) =>
+              typeof item === 'object' && item !== null
+                ? item.value || item.url || item.image || item
+                : item,
+            )
+        : [
+            'https://img.usecurling.com/p/400/400?seed=1',
+            'https://img.usecurling.com/p/400/400?seed=2',
+            'https://img.usecurling.com/p/400/400?seed=3',
+            'https://img.usecurling.com/p/400/400?seed=4',
+          ]
     return (
       <section id={sectionId} className="py-24 w-full bg-background">
         <AnimatedWrapper animation={animation} className="container mx-auto px-4">
@@ -324,9 +337,12 @@ export function SectionRenderer({ section }: { section: any }) {
   }
 
   if (type === 'testimonials') {
+    const rawItems = data.items && data.items.length > 0 ? data.items : []
     const items =
-      data.items && data.items.length > 0
-        ? data.items
+      rawItems.length > 0
+        ? [...rawItems].sort(
+            (a: any, b: any) => (a._order ?? a.order ?? 0) - (b._order ?? b.order ?? 0),
+          )
         : [
             {
               author: 'João Silva',
@@ -384,9 +400,12 @@ export function SectionRenderer({ section }: { section: any }) {
   }
 
   if (type === 'accordion' || type === 'faq') {
+    const rawItems = data.items && data.items.length > 0 ? data.items : []
     const items =
-      data.items && data.items.length > 0
-        ? data.items
+      rawItems.length > 0
+        ? [...rawItems].sort(
+            (a: any, b: any) => (a._order ?? a.order ?? 0) - (b._order ?? b.order ?? 0),
+          )
         : [
             {
               question: 'Como funciona o serviço?',
@@ -685,9 +704,12 @@ export function SectionRenderer({ section }: { section: any }) {
   }
 
   if (type === 'team_members') {
+    const rawMembers = data.members && data.members.length > 0 ? data.members : []
     const members =
-      data.members && data.members.length > 0
-        ? data.members
+      rawMembers.length > 0
+        ? [...rawMembers].sort(
+            (a: any, b: any) => (a._order ?? a.order ?? 0) - (b._order ?? b.order ?? 0),
+          )
         : [
             { name: 'Ana Silva', role: 'CEO', bio: 'Especialista em gestão estratégica.' },
             { name: 'Marcos Paulo', role: 'CTO', bio: 'Arquiteto de software com 10 anos de XP.' },
@@ -739,7 +761,7 @@ export function SectionRenderer({ section }: { section: any }) {
   }
 
   if (type === 'social_proof') {
-    const logos =
+    const rawLogos =
       data.logos && data.logos.length > 0
         ? data.logos
         : [
@@ -749,6 +771,13 @@ export function SectionRenderer({ section }: { section: any }) {
             'https://img.usecurling.com/i?q=apple&color=gray',
             'https://img.usecurling.com/i?q=meta&color=gray',
           ]
+    const logos = [...rawLogos]
+      .sort((a: any, b: any) => (a._order ?? a.order ?? 0) - (b._order ?? b.order ?? 0))
+      .map((item: any) =>
+        typeof item === 'object' && item !== null
+          ? item.value || item.url || item.image || ''
+          : item,
+      )
     return (
       <section id={sectionId} className="py-12 border-y bg-background w-full overflow-hidden">
         <AnimatedWrapper animation={animation} className="container mx-auto px-4">

@@ -34,7 +34,12 @@ export function TestimonialsBlock({ data, id }: { data: any; id?: string }) {
     }
   }, [data.useGoogleReviews, data.googleReviewsLimit, data.googleReviewsOrder])
 
-  const manualItems = data.items || []
+  const rawManualItems = data.items || []
+  const manualItems = Array.isArray(rawManualItems)
+    ? [...rawManualItems].sort(
+        (a: any, b: any) => (a._order ?? a.order ?? 0) - (b._order ?? b.order ?? 0),
+      )
+    : []
 
   const displayItems = [
     ...manualItems.map((item: any) => ({

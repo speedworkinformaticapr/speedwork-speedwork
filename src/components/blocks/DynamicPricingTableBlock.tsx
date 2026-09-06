@@ -54,7 +54,11 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
     loadData()
   }, [])
 
-  const plans = Array.isArray(data?.plans) ? data.plans : []
+  const plans = Array.isArray(data?.plans)
+    ? [...data.plans].sort(
+        (a: any, b: any) => (a._order ?? a.order ?? 0) - (b._order ?? b.order ?? 0),
+      )
+    : []
 
   if (isLoading) {
     return (
