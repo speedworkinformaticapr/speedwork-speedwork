@@ -13,7 +13,11 @@ import {
   Image as ImageIcon,
   Layers,
   ArrowRight,
+  ChevronUp,
+  ChevronDown,
+  GripVertical,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AIGenerateButton } from '@/components/AIGenerateButton'
@@ -328,44 +332,146 @@ function FieldRenderer({
       {field.type === 'services_multiselect' && (
         <ServicesMultiselect value={value} onChange={onChange} />
       )}
-      {field.type === 'string_list' && (
-        <div className="space-y-2 mt-1">
-          {(value || []).map((item: string, idx: number) => (
-            <div key={idx} className="flex gap-2">
-              <Input
-                value={item || ''}
-                onChange={(e) => {
-                  const newArr = [...(value || [])]
-                  newArr[idx] = e.target.value
-                  onChange(newArr)
-                }}
-                className="h-8 text-xs"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 shrink-0"
-                onClick={() => {
-                  const newArr = [...(value || [])]
-                  newArr.splice(idx, 1)
-                  onChange(newArr)
-                }}
-              >
-                <Trash2 className="w-4 h-4 text-destructive" />
-              </Button>
-            </div>
-          ))}
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full h-8 text-xs border-dashed"
-            onClick={() => onChange([...(value || []), ''])}
-          >
-            <Plus className="w-3 h-3 mr-1" /> Adicionar
-          </Button>
-        </div>
-      )}
+      {field.type === 'string_list' && <StringListEditor value={value || []} onChange={onChange} />}
       {error && <span className="text-[10px] text-destructive block mt-1">{error}</span>}
+    </div>
+  )
+}
+
+function StringListEditor({
+  value,
+  onChange,
+}: {
+  value: string[]
+  onChange: (v: string[]) => void
+}) {
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+
+  const items = value || []
+
+  const handleMove = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= items.length || fromIndex === toIndex) return
+    const newArr = [...items]
+    const [moved] = newArr.splice(fromIndex, 1)
+    newArr.splice(toIndex, 0, moved)
+    onChange(newArr)
+  }
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index)
+    e.dataTransfer.setData('text/plain', String(index))
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    if (dragOverIndex !== index) {
+      setDragOverIndex(index)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null)
+      setDragOverIndex(null)
+      return
+    }
+    handleMove(draggedIndex, dropIndex)
+    setDraggedIndex(null)
+    setDragOverIndex(null)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null)
+    setDragOverIndex(null)
+  }
+
+  return (
+    <div className="space-y-2 mt-1">
+      {items.map((item: string, idx: number) => (
+        <div
+          key={idx}
+          onDragOver={(e) => handleDragOver(e, idx)}
+          onDrop={(e) => handleDrop(e, idx)}
+          className={cn(
+            'flex items-center gap-1.5 p-1 rounded-md border bg-background transition-all',
+            draggedIndex === idx && 'opacity-40 scale-[0.99] border-dashed',
+            dragOverIndex === idx &&
+              draggedIndex !== idx &&
+              'border-t-2 border-t-primary bg-primary/5',
+          )}
+        >
+          <div
+            draggable
+            onDragStart={(e) => handleDragStart(e, idx)}
+            onDragEnd={handleDragEnd}
+            className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-1 shrink-0 rounded hover:bg-muted/60"
+            title="Arraste para reordenar"
+          >
+            <GripVertical className="w-3.5 h-3.5" />
+          </div>
+
+          <Input
+            value={item || ''}
+            onChange={(e) => {
+              const newArr = [...items]
+              newArr[idx] = e.target.value
+              onChange(newArr)
+            }}
+            className="h-8 text-xs flex-1"
+          />
+
+          <div className="flex items-center gap-0.5 shrink-0">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground disabled:opacity-30"
+              disabled={idx === 0}
+              onClick={() => handleMove(idx, idx - 1)}
+              title="Mover para cima"
+            >
+              <ChevronUp className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground disabled:opacity-30"
+              disabled={idx === items.length - 1}
+              onClick={() => handleMove(idx, idx + 1)}
+              title="Mover para baixo"
+            >
+              <ChevronDown className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-destructive hover:bg-destructive/10"
+              onClick={() => {
+                const newArr = [...items]
+                newArr.splice(idx, 1)
+                onChange(newArr)
+              }}
+              title="Excluir item"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
+      ))}
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full h-8 text-xs border-dashed"
+        onClick={() => onChange([...items, ''])}
+      >
+        <Plus className="w-3 h-3 mr-1" /> Adicionar
+      </Button>
     </div>
   )
 }
@@ -380,6 +486,8 @@ function ListRenderer({
   onChange: (v: any[]) => void
 }) {
   const isStringList = !listDef.fields
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
 
   const handleAdd = () => {
     if (isStringList) onChange([...(items || []), ''])
@@ -390,6 +498,45 @@ function ListRenderer({
     const newItems = [...(items || [])]
     newItems.splice(idx, 1)
     onChange(newItems)
+  }
+
+  const handleMove = (fromIndex: number, toIndex: number) => {
+    if (!items || toIndex < 0 || toIndex >= items.length || fromIndex === toIndex) return
+    const newItems = [...items]
+    const [moved] = newItems.splice(fromIndex, 1)
+    newItems.splice(toIndex, 0, moved)
+    onChange(newItems)
+  }
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index)
+    e.dataTransfer.setData('text/plain', String(index))
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    if (dragOverIndex !== index) {
+      setDragOverIndex(index)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null)
+      setDragOverIndex(null)
+      return
+    }
+    handleMove(draggedIndex, dropIndex)
+    setDraggedIndex(null)
+    setDragOverIndex(null)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null)
+    setDragOverIndex(null)
   }
 
   const handleUpdateItem = (idx: number, fieldName: string, value: any) => {
@@ -435,17 +582,76 @@ function ListRenderer({
             <AccordionItem
               key={idx}
               value={`item-${idx}`}
-              className="border rounded-md px-3 mb-2 bg-card"
+              onDragOver={(e) => handleDragOver(e, idx)}
+              onDrop={(e) => handleDrop(e, idx)}
+              className={cn(
+                'border rounded-md px-3 mb-2 bg-card transition-all',
+                draggedIndex === idx && 'opacity-40 scale-[0.99] border-dashed',
+                dragOverIndex === idx &&
+                  draggedIndex !== idx &&
+                  'border-t-2 border-t-primary bg-primary/5',
+              )}
             >
-              <div className="flex items-center justify-between w-full h-10">
-                <AccordionTrigger className="hover:no-underline py-0 flex-1 justify-start text-xs font-medium truncate pr-4">
-                  {displayTitle}
+              <div className="flex items-center justify-between w-full h-10 gap-1">
+                {/* Drag Handle */}
+                <div
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, idx)}
+                  onDragEnd={handleDragEnd}
+                  className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-1 shrink-0 rounded hover:bg-muted/60"
+                  title="Arraste para reordenar"
+                >
+                  <GripVertical className="w-3.5 h-3.5" />
+                </div>
+
+                {/* Reorder Arrows */}
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                    disabled={idx === 0}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleMove(idx, idx - 1)
+                    }}
+                    title="Mover para cima"
+                  >
+                    <ChevronUp className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                    disabled={idx === (items || []).length - 1}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleMove(idx, idx + 1)
+                    }}
+                    title="Mover para baixo"
+                  >
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+
+                {/* Accordion Trigger (Title + Chevron) */}
+                <AccordionTrigger className="hover:no-underline py-0 flex-1 justify-start text-xs font-medium truncate px-1">
+                  <span className="truncate">{displayTitle}</span>
                 </AccordionTrigger>
+
+                {/* Delete Button */}
                 <Button
+                  type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 text-destructive shrink-0"
-                  onClick={() => handleRemove(idx)}
+                  className="h-6 w-6 text-destructive hover:bg-destructive/10 shrink-0"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleRemove(idx)
+                  }}
+                  title="Excluir item"
                 >
                   <Trash2 className="w-3 h-3" />
                 </Button>
