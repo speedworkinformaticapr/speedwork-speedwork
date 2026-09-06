@@ -13,8 +13,6 @@ import {
   Image as ImageIcon,
   Layers,
   ArrowRight,
-  ChevronUp,
-  ChevronDown,
   GripVertical,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -338,6 +336,74 @@ function FieldRenderer({
   )
 }
 
+function ItemPositionInput({
+  currentIndex,
+  totalItems,
+  onMove,
+  className,
+}: {
+  currentIndex: number
+  totalItems: number
+  onMove: (fromIndex: number, toIndex: number) => void
+  className?: string
+}) {
+  const [localVal, setLocalVal] = useState<string>(String(currentIndex + 1))
+
+  useEffect(() => {
+    setLocalVal(String(currentIndex + 1))
+  }, [currentIndex])
+
+  const commitValue = () => {
+    const trimmed = localVal.trim()
+    const parsed = parseInt(trimmed, 10)
+    if (isNaN(parsed) || parsed < 1) {
+      setLocalVal(String(currentIndex + 1))
+      return
+    }
+    const clampedTarget = Math.max(1, Math.min(parsed, totalItems))
+    setLocalVal(String(clampedTarget))
+    const targetIndex = clampedTarget - 1
+    if (targetIndex !== currentIndex) {
+      onMove(currentIndex, targetIndex)
+    }
+  }
+
+  return (
+    <Input
+      type="number"
+      min={1}
+      max={totalItems}
+      value={localVal}
+      onChange={(e) => {
+        setLocalVal(e.target.value)
+      }}
+      onBlur={commitValue}
+      onKeyDown={(e) => {
+        e.stopPropagation()
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          commitValue()
+          ;(e.target as HTMLInputElement).blur()
+        } else if (e.key === 'Escape') {
+          e.preventDefault()
+          setLocalVal(String(currentIndex + 1))
+          ;(e.target as HTMLInputElement).blur()
+        }
+      }}
+      onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+      draggable={false}
+      aria-label={`Posição do item (1 a ${totalItems})`}
+      title={`Posição do item (1 a ${totalItems})`}
+      className={cn(
+        'w-12 h-7 text-center font-mono text-xs px-1 py-0 shrink-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
+        className,
+      )}
+    />
+  )
+}
+
 function StringListEditor({
   value,
   onChange,
@@ -414,6 +480,8 @@ function StringListEditor({
             <GripVertical className="w-3.5 h-3.5" />
           </div>
 
+          <ItemPositionInput currentIndex={idx} totalItems={items.length} onMove={handleMove} />
+
           <Input
             value={item || ''}
             onChange={(e) => {
@@ -425,28 +493,6 @@ function StringListEditor({
           />
 
           <div className="flex items-center gap-0.5 shrink-0">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-foreground disabled:opacity-30"
-              disabled={idx === 0}
-              onClick={() => handleMove(idx, idx - 1)}
-              title="Mover para cima"
-            >
-              <ChevronUp className="w-3.5 h-3.5" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-foreground disabled:opacity-30"
-              disabled={idx === items.length - 1}
-              onClick={() => handleMove(idx, idx + 1)}
-              title="Mover para baixo"
-            >
-              <ChevronDown className="w-3.5 h-3.5" />
-            </Button>
             <Button
               type="button"
               variant="ghost"
@@ -592,7 +638,7 @@ function ListRenderer({
                   'border-t-2 border-t-primary bg-primary/5',
               )}
             >
-              <div className="flex items-center justify-between w-full h-10 gap-1">
+              <div className="flex items-center justify-between w-full h-10 gap-2">
                 {/* Drag Handle */}
                 <div
                   draggable
@@ -604,37 +650,12 @@ function ListRenderer({
                   <GripVertical className="w-3.5 h-3.5" />
                 </div>
 
-                {/* Reorder Arrows */}
-                <div className="flex items-center gap-0.5 shrink-0">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-muted-foreground hover:text-foreground disabled:opacity-30"
-                    disabled={idx === 0}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleMove(idx, idx - 1)
-                    }}
-                    title="Mover para cima"
-                  >
-                    <ChevronUp className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-muted-foreground hover:text-foreground disabled:opacity-30"
-                    disabled={idx === (items || []).length - 1}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleMove(idx, idx + 1)
-                    }}
-                    title="Mover para baixo"
-                  >
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
+                {/* Position Input */}
+                <ItemPositionInput
+                  currentIndex={idx}
+                  totalItems={(items || []).length}
+                  onMove={handleMove}
+                />
 
                 {/* Accordion Trigger (Title + Chevron) */}
                 <AccordionTrigger className="hover:no-underline py-0 flex-1 justify-start text-xs font-medium truncate px-1">
