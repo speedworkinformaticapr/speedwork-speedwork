@@ -13,8 +13,30 @@ export function MediaCarousel({ data }: { data: any }) {
     transition = 'slide',
     alignHorizontal = 'center',
     alignVertical = 'center',
-    items = [],
+    items: rawItems = [],
   } = data || {}
+
+  // Ordenação estável pela ordem definida pela usuária (_order / order)
+  const items = useMemo(() => {
+    if (!Array.isArray(rawItems)) return []
+    return rawItems
+      .map((item, originalIndex) => {
+        const orderVal =
+          typeof item === 'object' && item !== null
+            ? (item._order ?? item.order ?? originalIndex + 1)
+            : originalIndex + 1
+        const numOrder =
+          typeof orderVal === 'number'
+            ? orderVal
+            : parseInt(String(orderVal), 10) || originalIndex + 1
+        return { item, originalIndex, order: numOrder }
+      })
+      .sort((a, b) => {
+        if (a.order !== b.order) return a.order - b.order
+        return a.originalIndex - b.originalIndex
+      })
+      .map((entry) => entry.item)
+  }, [rawItems])
 
   const parsedDelay = parseInt(String(delay), 10) || 5000
   const isSlide = transition === 'slide'

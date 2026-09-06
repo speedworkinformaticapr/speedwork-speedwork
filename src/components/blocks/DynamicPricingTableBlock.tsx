@@ -55,9 +55,17 @@ export function DynamicPricingTableBlock({ data }: { data: any }) {
   }, [])
 
   const plans = Array.isArray(data?.plans)
-    ? [...data.plans].sort(
-        (a: any, b: any) => (a._order ?? a.order ?? 0) - (b._order ?? b.order ?? 0),
-      )
+    ? data.plans
+        .map((plan: any, originalIndex: number) => {
+          const raw = plan._order ?? plan.order ?? originalIndex + 1
+          const num = typeof raw === 'number' ? raw : parseInt(String(raw), 10) || originalIndex + 1
+          return { plan, originalIndex, order: num }
+        })
+        .sort((a: any, b: any) => {
+          if (a.order !== b.order) return a.order - b.order
+          return a.originalIndex - b.originalIndex
+        })
+        .map((entry: any) => entry.plan)
     : []
 
   if (isLoading) {

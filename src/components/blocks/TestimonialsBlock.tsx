@@ -36,9 +36,17 @@ export function TestimonialsBlock({ data, id }: { data: any; id?: string }) {
 
   const rawManualItems = data.items || []
   const manualItems = Array.isArray(rawManualItems)
-    ? [...rawManualItems].sort(
-        (a: any, b: any) => (a._order ?? a.order ?? 0) - (b._order ?? b.order ?? 0),
-      )
+    ? rawManualItems
+        .map((item: any, originalIndex: number) => {
+          const raw = item._order ?? item.order ?? originalIndex + 1
+          const num = typeof raw === 'number' ? raw : parseInt(String(raw), 10) || originalIndex + 1
+          return { item, originalIndex, order: num }
+        })
+        .sort((a: any, b: any) => {
+          if (a.order !== b.order) return a.order - b.order
+          return a.originalIndex - b.originalIndex
+        })
+        .map((entry: any) => entry.item)
     : []
 
   const displayItems = [

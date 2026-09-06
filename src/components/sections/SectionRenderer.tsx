@@ -157,13 +157,30 @@ export function SectionRenderer({ section }: { section: any }) {
     )
   }
 
+  // Helper interno de ordenação estável por ordem persistente
+  const stableSortItems = (arr: any[]): any[] => {
+    if (!Array.isArray(arr)) return []
+    return arr
+      .map((item, originalIndex) => {
+        const raw =
+          typeof item === 'object' && item !== null
+            ? (item._order ?? item.order ?? originalIndex + 1)
+            : originalIndex + 1
+        const num = typeof raw === 'number' ? raw : parseInt(String(raw), 10) || originalIndex + 1
+        return { item, originalIndex, order: num }
+      })
+      .sort((a, b) => {
+        if (a.order !== b.order) return a.order - b.order
+        return a.originalIndex - b.originalIndex
+      })
+      .map((entry) => entry.item)
+  }
+
   if (type === 'feature_cards' || type === 'cards') {
     const rawItems = data.items && data.items.length > 0 ? data.items : []
     const items =
       rawItems.length > 0
-        ? [...rawItems].sort(
-            (a: any, b: any) => (a._order ?? a.order ?? 0) - (b._order ?? b.order ?? 0),
-          )
+        ? stableSortItems(rawItems)
         : [
             { title: 'Recurso Principal 1', description: 'Descrição detalhada do recurso.' },
             { title: 'Benefício Exclusivo 2', description: 'Como este benefício ajuda o usuário.' },
@@ -236,13 +253,11 @@ export function SectionRenderer({ section }: { section: any }) {
           : []
     const items =
       rawItems.length > 0
-        ? [...rawItems]
-            .sort((a: any, b: any) => (a._order ?? a.order ?? 0) - (b._order ?? b.order ?? 0))
-            .map((item: any) =>
-              typeof item === 'object' && item !== null
-                ? item.value || item.url || item.image || item
-                : item,
-            )
+        ? stableSortItems(rawItems).map((item: any) =>
+            typeof item === 'object' && item !== null
+              ? item.value || item.url || item.image || item
+              : item,
+          )
         : [
             'https://img.usecurling.com/p/400/400?seed=1',
             'https://img.usecurling.com/p/400/400?seed=2',
@@ -340,9 +355,7 @@ export function SectionRenderer({ section }: { section: any }) {
     const rawItems = data.items && data.items.length > 0 ? data.items : []
     const items =
       rawItems.length > 0
-        ? [...rawItems].sort(
-            (a: any, b: any) => (a._order ?? a.order ?? 0) - (b._order ?? b.order ?? 0),
-          )
+        ? stableSortItems(rawItems)
         : [
             {
               author: 'João Silva',
@@ -403,9 +416,7 @@ export function SectionRenderer({ section }: { section: any }) {
     const rawItems = data.items && data.items.length > 0 ? data.items : []
     const items =
       rawItems.length > 0
-        ? [...rawItems].sort(
-            (a: any, b: any) => (a._order ?? a.order ?? 0) - (b._order ?? b.order ?? 0),
-          )
+        ? stableSortItems(rawItems)
         : [
             {
               question: 'Como funciona o serviço?',
@@ -548,14 +559,17 @@ export function SectionRenderer({ section }: { section: any }) {
 
   if (type === 'timeline') {
     const title = data.title
-    const events = Array.isArray(data.events) ? [...data.events] : []
+    const rawEvents = Array.isArray(data.events) ? [...data.events] : []
 
-    // Ordenação automática por data
-    events.sort((a, b) => {
-      const dateA = new Date(a.date || 0).getTime()
-      const dateB = new Date(b.date || 0).getTime()
-      return dateA - dateB
-    })
+    // Se houver _order ou order definido, respeita a numeração da usuária de forma estável; caso contrário ordena por data
+    const hasManualOrder = rawEvents.some((ev) => ev._order !== undefined || ev.order !== undefined)
+    const events = hasManualOrder
+      ? stableSortItems(rawEvents)
+      : [...rawEvents].sort((a, b) => {
+          const dateA = new Date(a.date || 0).getTime()
+          const dateB = new Date(b.date || 0).getTime()
+          return dateA - dateB
+        })
 
     return (
       <section id={sectionId} className="py-24 w-full bg-background">
@@ -707,9 +721,7 @@ export function SectionRenderer({ section }: { section: any }) {
     const rawMembers = data.members && data.members.length > 0 ? data.members : []
     const members =
       rawMembers.length > 0
-        ? [...rawMembers].sort(
-            (a: any, b: any) => (a._order ?? a.order ?? 0) - (b._order ?? b.order ?? 0),
-          )
+        ? stableSortItems(rawMembers)
         : [
             { name: 'Ana Silva', role: 'CEO', bio: 'Especialista em gestão estratégica.' },
             { name: 'Marcos Paulo', role: 'CTO', bio: 'Arquiteto de software com 10 anos de XP.' },
@@ -771,13 +783,9 @@ export function SectionRenderer({ section }: { section: any }) {
             'https://img.usecurling.com/i?q=apple&color=gray',
             'https://img.usecurling.com/i?q=meta&color=gray',
           ]
-    const logos = [...rawLogos]
-      .sort((a: any, b: any) => (a._order ?? a.order ?? 0) - (b._order ?? b.order ?? 0))
-      .map((item: any) =>
-        typeof item === 'object' && item !== null
-          ? item.value || item.url || item.image || ''
-          : item,
-      )
+    const logos = stableSortItems(rawLogos).map((item: any) =>
+      typeof item === 'object' && item !== null ? item.value || item.url || item.image || '' : item,
+    )
     return (
       <section id={sectionId} className="py-12 border-y bg-background w-full overflow-hidden">
         <AnimatedWrapper animation={animation} className="container mx-auto px-4">

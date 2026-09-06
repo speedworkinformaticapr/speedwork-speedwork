@@ -336,35 +336,75 @@ function FieldRenderer({
   )
 }
 
+// Helper: obtém o número de ordem persistente de um item (1-based)
+export function getItemOrder(item: any, fallbackIndex: number): number {
+  if (typeof item === 'object' && item !== null) {
+    const raw = item._order ?? item.order
+    if (typeof raw === 'number' && !isNaN(raw)) return raw
+    if (typeof raw === 'string') {
+      const p = parseInt(raw, 10)
+      if (!isNaN(p)) return p
+    }
+  }
+  return fallbackIndex + 1
+}
+
+// Helper: ordenação estável pela ordem persistente do item
+export function stableSortByOrder<T>(list: T[]): T[] {
+  if (!Array.isArray(list)) return []
+  return list
+    .map((item, originalIndex) => ({
+      item,
+      originalIndex,
+      order: getItemOrder(item, originalIndex),
+    }))
+    .sort((a, b) => {
+      if (a.order !== b.order) return a.order - b.order
+      return a.originalIndex - b.originalIndex
+    })
+    .map((entry) => entry.item)
+}
+
+// Helper: calcula o próximo número livre (máximo atual + 1, mínimo 1)
+function getNextFreeOrder(items: any[]): number {
+  if (!items || items.length === 0) return 1
+  let maxOrder = 0
+  items.forEach((item, idx) => {
+    const ord = getItemOrder(item, idx)
+    if (ord > maxOrder) maxOrder = ord
+  })
+  return Math.max(1, maxOrder + 1)
+}
+
 function ItemPositionInput({
-  currentIndex,
+  currentOrder,
   totalItems,
-  onMove,
+  onOrderChange,
   className,
 }: {
-  currentIndex: number
+  currentOrder: number
   totalItems: number
-  onMove: (fromIndex: number, toIndex: number) => void
+  onOrderChange: (newOrder: number) => void
   className?: string
 }) {
-  const [localVal, setLocalVal] = useState<string>(String(currentIndex + 1))
+  const [localVal, setLocalVal] = useState<string>(String(currentOrder))
 
   useEffect(() => {
-    setLocalVal(String(currentIndex + 1))
-  }, [currentIndex])
+    setLocalVal(String(currentOrder))
+  }, [currentOrder])
 
   const commitValue = () => {
     const trimmed = localVal.trim()
     const parsed = parseInt(trimmed, 10)
     if (isNaN(parsed) || parsed < 1) {
-      setLocalVal(String(currentIndex + 1))
+      setLocalVal(String(currentOrder))
       return
     }
-    const clampedTarget = Math.max(1, Math.min(parsed, totalItems))
+    const maxVal = Math.max(totalItems, 1)
+    const clampedTarget = Math.max(1, Math.min(parsed, maxVal))
     setLocalVal(String(clampedTarget))
-    const targetIndex = clampedTarget - 1
-    if (targetIndex !== currentIndex) {
-      onMove(currentIndex, targetIndex)
+    if (clampedTarget !== currentOrder) {
+      onOrderChange(clampedTarget)
     }
   }
 
@@ -372,7 +412,7 @@ function ItemPositionInput({
     <Input
       type="number"
       min={1}
-      max={totalItems}
+      max={Math.max(totalItems, 1)}
       value={localVal}
       onChange={(e) => {
         setLocalVal(e.target.value)
@@ -386,7 +426,7 @@ function ItemPositionInput({
           ;(e.target as HTMLInputElement).blur()
         } else if (e.key === 'Escape') {
           e.preventDefault()
-          setLocalVal(String(currentIndex + 1))
+          setLocalVal(String(currentOrder))
           ;(e.target as HTMLInputElement).blur()
         }
       }}
@@ -394,8 +434,8 @@ function ItemPositionInput({
       onMouseDown={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
       draggable={false}
-      aria-label={`Posição do item (1 a ${totalItems})`}
-      title={`Posição do item (1 a ${totalItems})`}
+      aria-label={`Ordem do item (1 a ${Math.max(totalItems, 1)})`}
+      title={`Ordem do item (1 a ${Math.max(totalItems, 1)})`}
       className={cn(
         'w-12 h-7 text-center font-mono text-xs px-1 py-0 shrink-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
         className,
@@ -404,24 +444,74 @@ function ItemPositionInput({
   )
 }
 
-function StringListEditor({
-  value,
-  onChange,
-}: {
-  value: string[]
-  onChange: (v: string[]) => void
-}) {
+interface StringListItem {
+  value: string
+  _order: number
+}
+
+function StringListEditor({ value, onChange }: { value: any[]; onChange: (v: any[]) => void }) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
 
-  const items = value || []
+  // Normaliza itens garantindo formato objeto { value, _order }
+  const rawList = value || []
+  const normalizedItems: StringListItem[] = rawList.map((item: any, idx: number) => {
+    if (typeof item === 'object' && item !== null) {
+      return {
+        value: typeof item.value === 'string' ? item.value : item.url || '',
+        _order: getItemOrder(item, idx),
+      }
+    }
+    return {
+      value: typeof item === 'string' ? item : '',
+      _order: idx + 1,
+    }
+  })
 
-  const handleMove = (fromIndex: number, toIndex: number) => {
-    if (toIndex < 0 || toIndex >= items.length || fromIndex === toIndex) return
-    const newArr = [...items]
-    const [moved] = newArr.splice(fromIndex, 1)
-    newArr.splice(toIndex, 0, moved)
-    onChange(newArr)
+  // Lista ordenada de forma estável para exibição visual
+  const sortedItems = stableSortByOrder(normalizedItems)
+
+  const handleUpdateItemValue = (idx: number, newVal: string) => {
+    const updated = [...sortedItems]
+    updated[idx] = { ...updated[idx], value: newVal }
+    // Retorna array de strings se a entrada original era de strings simples (mantendo persistência de objeto se já tinha _order)
+    const hasObjectFormat = rawList.some((x: any) => typeof x === 'object' && x !== null)
+    if (hasObjectFormat) {
+      onChange(updated)
+    } else {
+      // Preserva objetos com _order para manter a numeração persistente
+      onChange(updated)
+    }
+  }
+
+  const handleUpdateOrder = (idx: number, newOrder: number) => {
+    // Altera APENAS o número deste item, nenhum outro é renumerado
+    const updated = [...sortedItems]
+    updated[idx] = { ...updated[idx], _order: newOrder }
+    // Ordena de forma estável
+    onChange(stableSortByOrder(updated))
+  }
+
+  const handleAdd = () => {
+    const nextOrder = getNextFreeOrder(sortedItems)
+    const newItem: StringListItem = { value: '', _order: nextOrder }
+    onChange([...sortedItems, newItem])
+  }
+
+  const handleRemove = (idx: number) => {
+    const updated = [...sortedItems]
+    updated.splice(idx, 1)
+    onChange(updated)
+  }
+
+  const handleDrop = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex || toIndex < 0 || toIndex >= sortedItems.length) return
+    const reordered = [...sortedItems]
+    const [moved] = reordered.splice(fromIndex, 1)
+    reordered.splice(toIndex, 0, moved)
+    // Ao arrastar, atualiza a ordem conforme a posição final do arrasto (1-based)
+    const updated = reordered.map((it, i) => ({ ...it, _order: i + 1 }))
+    onChange(updated)
   }
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
@@ -437,7 +527,7 @@ function StringListEditor({
     }
   }
 
-  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+  const handleDropEvent = (e: React.DragEvent, dropIndex: number) => {
     e.preventDefault()
     e.stopPropagation()
     if (draggedIndex === null || draggedIndex === dropIndex) {
@@ -445,7 +535,7 @@ function StringListEditor({
       setDragOverIndex(null)
       return
     }
-    handleMove(draggedIndex, dropIndex)
+    handleDrop(draggedIndex, dropIndex)
     setDraggedIndex(null)
     setDragOverIndex(null)
   }
@@ -457,66 +547,66 @@ function StringListEditor({
 
   return (
     <div className="space-y-2 mt-1">
-      {items.map((item: string, idx: number) => (
-        <div
-          key={idx}
-          onDragOver={(e) => handleDragOver(e, idx)}
-          onDrop={(e) => handleDrop(e, idx)}
-          className={cn(
-            'flex items-center gap-1.5 p-1 rounded-md border bg-background transition-all',
-            draggedIndex === idx && 'opacity-40 scale-[0.99] border-dashed',
-            dragOverIndex === idx &&
-              draggedIndex !== idx &&
-              'border-t-2 border-t-primary bg-primary/5',
-          )}
-        >
-          {/* Esquerda: alça de arrasto + input de texto */}
+      {sortedItems.map((item: StringListItem, idx: number) => {
+        const itemNum = item._order ?? idx + 1
+        return (
           <div
-            draggable
-            onDragStart={(e) => handleDragStart(e, idx)}
-            onDragEnd={handleDragEnd}
-            className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-1 shrink-0 rounded hover:bg-muted/60"
-            title="Arraste para reordenar"
+            key={idx}
+            onDragOver={(e) => handleDragOver(e, idx)}
+            onDrop={(e) => handleDropEvent(e, idx)}
+            className={cn(
+              'flex items-center gap-1.5 p-1 rounded-md border bg-background transition-all',
+              draggedIndex === idx && 'opacity-40 scale-[0.99] border-dashed',
+              dragOverIndex === idx &&
+                draggedIndex !== idx &&
+                'border-t-2 border-t-primary bg-primary/5',
+            )}
           >
-            <GripVertical className="w-3.5 h-3.5" />
-          </div>
-
-          <Input
-            value={item || ''}
-            onChange={(e) => {
-              const newArr = [...items]
-              newArr[idx] = e.target.value
-              onChange(newArr)
-            }}
-            className="h-8 text-xs flex-1 min-w-0"
-          />
-
-          {/* Direita: input numérico de posição + lixeira */}
-          <div className="flex items-center gap-1 shrink-0">
-            <ItemPositionInput currentIndex={idx} totalItems={items.length} onMove={handleMove} />
-
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-destructive hover:bg-destructive/10"
-              onClick={() => {
-                const newArr = [...items]
-                newArr.splice(idx, 1)
-                onChange(newArr)
-              }}
-              title="Excluir item"
+            {/* Esquerda: alça de arrasto + label compacto */}
+            <div
+              draggable
+              onDragStart={(e) => handleDragStart(e, idx)}
+              onDragEnd={handleDragEnd}
+              className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-1 shrink-0 rounded hover:bg-muted/60"
+              title="Arraste para reordenar"
             >
-              <Trash2 className="w-3.5 h-3.5" />
-            </Button>
+              <GripVertical className="w-3.5 h-3.5" />
+            </div>
+
+            <Input
+              value={item.value || ''}
+              onChange={(e) => handleUpdateItemValue(idx, e.target.value)}
+              placeholder={`Item ${itemNum}`}
+              className="h-8 text-xs flex-1 min-w-0"
+            />
+
+            {/* Direita: input numérico de posição + lixeira */}
+            <div className="flex items-center gap-1 shrink-0">
+              <ItemPositionInput
+                currentOrder={itemNum}
+                totalItems={sortedItems.length}
+                onOrderChange={(newOrder) => handleUpdateOrder(idx, newOrder)}
+              />
+
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                onClick={() => handleRemove(idx)}
+                title="Excluir item"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
       <Button
         variant="outline"
         size="sm"
         className="w-full h-8 text-xs border-dashed"
-        onClick={() => onChange([...items, ''])}
+        onClick={handleAdd}
       >
         <Plus className="w-3 h-3 mr-1" /> Adicionar
       </Button>
@@ -528,32 +618,92 @@ function ListRenderer({
   listDef,
   items,
   onChange,
+  blockType,
 }: {
   listDef: ListDef
   items: any[]
   onChange: (v: any[]) => void
+  blockType?: string
 }) {
   const isStringList = !listDef.fields
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
 
+  const rawList = items || []
+
+  // Normaliza itens atribuindo _order persistente se ainda não existir
+  const normalizedItems = rawList.map((item: any, idx: number) => {
+    if (typeof item === 'object' && item !== null) {
+      const order = getItemOrder(item, idx)
+      return { ...item, _order: order }
+    }
+    return {
+      value: typeof item === 'string' ? item : '',
+      _order: idx + 1,
+    }
+  })
+
+  // Lista ordenada de forma estável pela numeração definida pelo usuário
+  const sortedItems = stableSortByOrder(normalizedItems)
+
   const handleAdd = () => {
-    if (isStringList) onChange([...(items || []), ''])
-    else onChange([...(items || []), {}])
+    const nextOrder = getNextFreeOrder(sortedItems)
+    if (isStringList) {
+      const newItem = { value: '', _order: nextOrder }
+      onChange([...sortedItems, newItem])
+    } else {
+      const newItem: any = { _order: nextOrder }
+      if (blockType === 'media_carousel') {
+        newItem.type = 'image'
+      }
+      onChange([...sortedItems, newItem])
+    }
   }
 
   const handleRemove = (idx: number) => {
-    const newItems = [...(items || [])]
-    newItems.splice(idx, 1)
-    onChange(newItems)
+    const updated = [...sortedItems]
+    updated.splice(idx, 1)
+    onChange(updated)
   }
 
-  const handleMove = (fromIndex: number, toIndex: number) => {
-    if (!items || toIndex < 0 || toIndex >= items.length || fromIndex === toIndex) return
-    const newItems = [...items]
-    const [moved] = newItems.splice(fromIndex, 1)
-    newItems.splice(toIndex, 0, moved)
-    onChange(newItems)
+  const handleUpdateItem = (idx: number, fieldName: string, value: any) => {
+    const updated = [...sortedItems]
+    updated[idx] = { ...updated[idx], [fieldName]: value }
+    onChange(updated)
+  }
+
+  const handleUpdateStringItem = (idx: number, value: string) => {
+    const updated = [...sortedItems]
+    const cur = updated[idx]
+    if (typeof cur === 'object' && cur !== null) {
+      updated[idx] = { ...cur, value }
+    } else {
+      updated[idx] = { value, _order: idx + 1 }
+    }
+    onChange(updated)
+  }
+
+  const handleOrderChange = (idx: number, newOrder: number) => {
+    // Altera APENAS o número daquele item (com clamp já feito). Nenhum outro item tem seu número alterado.
+    const updated = [...sortedItems]
+    const cur = updated[idx]
+    if (typeof cur === 'object' && cur !== null) {
+      updated[idx] = { ...cur, _order: newOrder }
+    } else {
+      updated[idx] = { value: cur, _order: newOrder }
+    }
+    // Ordenação estável
+    onChange(stableSortByOrder(updated))
+  }
+
+  const handleDrop = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex || toIndex < 0 || toIndex >= sortedItems.length) return
+    const reordered = [...sortedItems]
+    const [moved] = reordered.splice(fromIndex, 1)
+    reordered.splice(toIndex, 0, moved)
+    // Drag & drop: ao arrastar, atualiza a ordem conforme a posição final do arrasto (1-based)
+    const updated = reordered.map((it, i) => ({ ...it, _order: i + 1 }))
+    onChange(updated)
   }
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
@@ -569,7 +719,7 @@ function ListRenderer({
     }
   }
 
-  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+  const handleDropEvent = (e: React.DragEvent, dropIndex: number) => {
     e.preventDefault()
     e.stopPropagation()
     if (draggedIndex === null || draggedIndex === dropIndex) {
@@ -577,7 +727,7 @@ function ListRenderer({
       setDragOverIndex(null)
       return
     }
-    handleMove(draggedIndex, dropIndex)
+    handleDrop(draggedIndex, dropIndex)
     setDraggedIndex(null)
     setDragOverIndex(null)
   }
@@ -585,18 +735,6 @@ function ListRenderer({
   const handleDragEnd = () => {
     setDraggedIndex(null)
     setDragOverIndex(null)
-  }
-
-  const handleUpdateItem = (idx: number, fieldName: string, value: any) => {
-    const newItems = [...(items || [])]
-    newItems[idx] = { ...newItems[idx], [fieldName]: value }
-    onChange(newItems)
-  }
-
-  const handleUpdateStringItem = (idx: number, value: string) => {
-    const newItems = [...(items || [])]
-    newItems[idx] = value
-    onChange(newItems)
   }
 
   return (
@@ -608,30 +746,58 @@ function ListRenderer({
         </Button>
       </div>
 
-      {(!items || items.length === 0) && (
+      {(!sortedItems || sortedItems.length === 0) && (
         <p className="text-xs text-muted-foreground italic">Nenhum item adicionado.</p>
       )}
 
       <Accordion type="multiple" className="w-full">
-        {(items || []).map((item, idx) => {
-          const isMediaList = listDef.name === 'items' && listDef.label.includes('URLs')
-          const displayTitle = isStringList
-            ? item || `Item ${idx + 1}`
-            : isMediaList && typeof item === 'string'
-              ? item || `Mídia ${idx + 1}`
-              : item.title ||
-                item.name ||
-                item.question ||
-                item.author ||
-                item.date ||
-                `Item ${idx + 1}`
+        {sortedItems.map((item, idx) => {
+          const itemOrder = getItemOrder(item, idx)
+          const isMediaCarousel = blockType === 'media_carousel'
+          const isGalleryList =
+            blockType === 'gallery' || listDef.label?.toLowerCase().includes('imagem')
+
+          // RÓTULO NEUTRO DO HEADER DO ITEM:
+          // NUNCA exibir o título da página.
+          // Para Media Carousel: use item.title se preenchido, senão "Mídia N" (N = itemOrder).
+          // Para Galeria: use "Imagem N".
+          // Para FAQ: use item.question se preenchido, senão "Item N".
+          // Para Equipe: use item.name se preenchido, senão "Item N".
+          // Para Planos: use item.name se preenchido, senão "Item N".
+          // Para Depoimentos: use item.author se preenchido, senão "Item N".
+          // Para Timeline: use item.date || item.description se preenchido, senão "Item N".
+          // Para Cards/Feature Cards: use item.title se preenchido, senão "Item N".
+          let displayTitle = `Item ${itemOrder}`
+
+          if (isMediaCarousel) {
+            displayTitle = (item.title && String(item.title).trim()) || `Mídia ${itemOrder}`
+          } else if (isGalleryList) {
+            displayTitle = `Imagem ${itemOrder}`
+          } else if (isStringList) {
+            const rawVal = typeof item === 'object' && item !== null ? item.value : item
+            displayTitle =
+              rawVal && String(rawVal).trim() ? String(rawVal).trim() : `Item ${itemOrder}`
+          } else if (item.question && String(item.question).trim()) {
+            displayTitle = String(item.question).trim()
+          } else if (item.author && String(item.author).trim()) {
+            displayTitle = String(item.author).trim()
+          } else if (item.name && String(item.name).trim()) {
+            displayTitle = String(item.name).trim()
+          } else if (item.title && String(item.title).trim()) {
+            displayTitle = String(item.title).trim()
+          } else if (item.date && String(item.date).trim()) {
+            displayTitle = String(item.date).trim()
+          }
+
+          const stringItemVal =
+            typeof item === 'object' && item !== null ? item.value || item.url || '' : item || ''
 
           return (
             <AccordionItem
               key={idx}
               value={`item-${idx}`}
               onDragOver={(e) => handleDragOver(e, idx)}
-              onDrop={(e) => handleDrop(e, idx)}
+              onDrop={(e) => handleDropEvent(e, idx)}
               className={cn(
                 'border rounded-md px-3 mb-2 bg-card transition-all',
                 draggedIndex === idx && 'opacity-40 scale-[0.99] border-dashed',
@@ -662,9 +828,9 @@ function ListRenderer({
                 {/* Direita: Grupo com input numérico de posição + Lixeira */}
                 <div className="flex items-center gap-1 shrink-0">
                   <ItemPositionInput
-                    currentIndex={idx}
-                    totalItems={(items || []).length}
-                    onMove={handleMove}
+                    currentOrder={itemOrder}
+                    totalItems={sortedItems.length}
+                    onOrderChange={(newOrder) => handleOrderChange(idx, newOrder)}
                   />
 
                   <Button
@@ -686,8 +852,9 @@ function ListRenderer({
                 {isStringList ? (
                   <div className="flex gap-2">
                     <Input
-                      value={item || ''}
+                      value={stringItemVal}
                       onChange={(e) => handleUpdateStringItem(idx, e.target.value)}
+                      placeholder={`URL do item ${itemOrder}`}
                       className="h-8 text-xs flex-1"
                     />
                     {listDef.label.includes('URLs') && (
@@ -799,6 +966,7 @@ function DynamicForm({ block, onUpdate }: { block: any; onUpdate: (data: any) =>
           <ListRenderer
             listDef={lst}
             items={formData[lst.name] || []}
+            blockType={block.type}
             onChange={(v) => setFormData((prev) => ({ ...prev, [lst.name]: v }))}
           />
         </div>
