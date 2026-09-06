@@ -83,7 +83,7 @@ export async function createLead(input: Partial<Lead>): Promise<Lead> {
 
   const { data, error } = await supabase
     .from('leads')
-    .insert([{ ...input, diagnostic_data: diagnosticData, score }])
+    .insert([{ ...(input as any), diagnostic_data: diagnosticData, score }])
     .select()
     .single()
 
@@ -107,7 +107,13 @@ export async function upsertLeadByDiagnostic(input: {
     .maybeSingle()
 
   if (existing) {
-    const mergedData = { ...existing.diagnostic_data, ...input.diagnostic_data }
+    const existingDiag =
+      existing.diagnostic_data &&
+      typeof existing.diagnostic_data === 'object' &&
+      !Array.isArray(existing.diagnostic_data)
+        ? (existing.diagnostic_data as Record<string, any>)
+        : {}
+    const mergedData = { ...existingDiag, ...input.diagnostic_data }
     const { data, error } = await supabase
       .from('leads')
       .update({

@@ -19,9 +19,7 @@ export interface BillingLog {
 }
 
 export const getBillingConfig = async (): Promise<BillingConfig | null> => {
-  const { data, error } = await (supabase.from as any)('billing_configuration')
-    .select('*')
-    .single()
+  const { data, error } = await (supabase.from as any)('billing_configuration').select('*').single()
 
   if (error && error.code !== 'PGRST116') throw error
   return data as BillingConfig | null

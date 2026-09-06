@@ -54,7 +54,7 @@ export async function fetchServiceById(id: string): Promise<UnifiedService | nul
 export async function createService(values: Record<string, any>): Promise<UnifiedService> {
   const { data, error } = await supabase
     .from('services')
-    .insert(values)
+    .insert(values as any)
     .select('*, plan_categories(title)')
     .single()
   if (error) throw error
@@ -67,7 +67,7 @@ export async function updateService(
 ): Promise<UnifiedService> {
   const { data, error } = await supabase
     .from('services')
-    .update(values)
+    .update(values as any)
     .eq('id', id)
     .select('*, plan_categories(title)')
     .single()

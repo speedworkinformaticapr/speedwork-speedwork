@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+// MediaCarousel: exibe itens de mídia (imagens e vídeos).
 export function MediaCarousel({ data }: { data: any }) {
   const {
     autoplay = true,

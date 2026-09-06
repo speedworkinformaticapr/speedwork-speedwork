@@ -72,7 +72,11 @@ export async function uploadGalleryPhotos(
 }
 
 export async function createGalleryEvent(eventData: Partial<EventData>) {
-  const { data, error } = await supabase.from('events').insert([eventData]).select().single()
+  const { data, error } = await supabase
+    .from('events')
+    .insert([eventData as any])
+    .select()
+    .single()
 
   if (error) throw error
   return data
