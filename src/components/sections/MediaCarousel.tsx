@@ -3,7 +3,7 @@ import useEmblaCarousel from 'embla-carousel-react'
 import Autoplay from 'embla-carousel-autoplay'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // MediaCarousel: exibe itens de mídia (imagens e vídeos).
@@ -43,6 +43,7 @@ export function MediaCarousel({ data }: { data: any }) {
   const isSlide = transition === 'slide'
 
   const [activeVideoIndex, setActiveVideoIndex] = useState<number | null>(null)
+  const [isMuted, setIsMuted] = useState(true)
 
   const videoRefs = useRef<Record<number, HTMLVideoElement | null>>({})
 
@@ -100,12 +101,16 @@ export function MediaCarousel({ data }: { data: any }) {
   }, [])
 
   useEffect(() => {
+    // Ao trocar de slide, reseta o estado de áudio para mudo padrão
+    setIsMuted(true)
+
     // Pausa todos os outros vídeos
     Object.entries(videoRefs.current).forEach(([idxStr, video]) => {
       const idx = Number(idxStr)
       if (video && idx !== selectedIndex) {
         video.pause()
         video.currentTime = 0
+        video.muted = true
       }
     })
 
@@ -140,6 +145,30 @@ export function MediaCarousel({ data }: { data: any }) {
       }
     }
   }, [selectedIndex, items, emblaApi, autoplay, playActiveVideo])
+
+  // Alterna o som do vídeo ativo
+  const toggleMute = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      const video = videoRefs.current[selectedIndex]
+      if (!video) return
+
+      if (video.muted) {
+        video.muted = false
+        setIsMuted(false)
+        const playPromise = video.play()
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            /* ignorado se já estiver tocando */
+          })
+        }
+      } else {
+        video.muted = true
+        setIsMuted(true)
+      }
+    },
+    [selectedIndex],
+  )
 
   // Handler executado quando o vídeo termina
   const handleVideoEnded = useCallback(
@@ -330,6 +359,22 @@ export function MediaCarousel({ data }: { data: any }) {
           />
         ))}
       </div>
+
+      {activeVideoIndex !== null && (
+        <button
+          type="button"
+          onClick={toggleMute}
+          aria-label={isMuted ? 'Ativar som' : 'Desativar som'}
+          title={isMuted ? 'Ativar som' : 'Desativar som'}
+          className="absolute bottom-6 right-6 z-30 flex items-center justify-center w-11 h-11 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-sm border border-white/20 shadow-lg transition-all duration-200 hover:scale-105 pointer-events-auto cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/50"
+        >
+          {isMuted ? (
+            <VolumeX className="w-5 h-5 text-white" />
+          ) : (
+            <Volume2 className="w-5 h-5 text-white" />
+          )}
+        </button>
+      )}
     </div>
   )
 }
