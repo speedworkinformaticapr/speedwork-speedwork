@@ -45,8 +45,6 @@ export function MediaCarousel({ data }: { data: any }) {
   const [activeVideoIndex, setActiveVideoIndex] = useState<number | null>(null)
 
   const videoRefs = useRef<Record<number, HTMLVideoElement | null>>({})
-  const hasInteractedRef = useRef(false)
-  const pendingUnmuteRef = useRef(false)
 
   const plugins = useMemo(() => {
     if (!autoplay) return []
@@ -85,69 +83,75 @@ export function MediaCarousel({ data }: { data: any }) {
     emblaApi.on('select', onSelect)
   }, [emblaApi, onInit, onSelect])
 
-  const tryUnmuteVideo = useCallback((video: HTMLVideoElement) => {
-    video.muted = false
-    video.volume = 1
+  const playActiveVideo = useCallback((video: HTMLVideoElement) => {
+    // Autoplay com som mudo e playsinline para conformidade estrita com navegadores
+    video.muted = true
+    video.playsInline = true
     const playPromise = video.play()
     if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          video.muted = false
-          pendingUnmuteRef.current = false
+      playPromise.catch((err) => {
+        // Tenta novamente garantindo muted
+        video.muted = true
+        video.play().catch(() => {
+          /* erro de autoplay ignorado */
         })
-        .catch(() => {
-          video.muted = true
-          pendingUnmuteRef.current = true
-        })
+      })
     }
   }, [])
 
   useEffect(() => {
-    const handleFirstInteraction = () => {
-      if (hasInteractedRef.current) return
-      hasInteractedRef.current = true
-      if (pendingUnmuteRef.current && activeVideoIndex !== null) {
-        const video = videoRefs.current[activeVideoIndex]
-        if (video) {
-          tryUnmuteVideo(video)
-        }
-      }
-      document.removeEventListener('click', handleFirstInteraction)
-      document.removeEventListener('touchstart', handleFirstInteraction)
-      document.removeEventListener('keydown', handleFirstInteraction)
-    }
-
-    document.addEventListener('click', handleFirstInteraction)
-    document.addEventListener('touchstart', handleFirstInteraction)
-    document.addEventListener('keydown', handleFirstInteraction)
-
-    return () => {
-      document.removeEventListener('click', handleFirstInteraction)
-      document.removeEventListener('touchstart', handleFirstInteraction)
-      document.removeEventListener('keydown', handleFirstInteraction)
-    }
-  }, [activeVideoIndex, tryUnmuteVideo])
-
-  useEffect(() => {
-    Object.values(videoRefs.current).forEach((video) => {
-      if (video) {
-        video.muted = true
+    // Pausa todos os outros vídeos
+    Object.entries(videoRefs.current).forEach(([idxStr, video]) => {
+      const idx = Number(idxStr)
+      if (video && idx !== selectedIndex) {
         video.pause()
+        video.currentTime = 0
       }
     })
 
     const current = items[selectedIndex]
+    const autoplayPlugin = emblaApi?.plugins()?.autoplay as any
+
     if (current && current.type === 'video') {
       setActiveVideoIndex(selectedIndex)
+      // Pausa o autoplay do timer de imagens enquanto o vídeo estiver em exibição
+      if (autoplayPlugin) {
+        try {
+          autoplayPlugin.stop()
+        } catch {
+          /* ignorado */
+        }
+      }
+
       const video = videoRefs.current[selectedIndex]
       if (video) {
         video.currentTime = 0
-        tryUnmuteVideo(video)
+        playActiveVideo(video)
       }
     } else {
       setActiveVideoIndex(null)
+      // Se voltou para um slide de imagem, retoma o autoplay do timer
+      if (autoplay && autoplayPlugin) {
+        try {
+          autoplayPlugin.reset()
+        } catch {
+          /* ignorado */
+        }
+      }
     }
-  }, [selectedIndex, items, tryUnmuteVideo])
+  }, [selectedIndex, items, emblaApi, autoplay, playActiveVideo])
+
+  // Handler executado quando o vídeo termina
+  const handleVideoEnded = useCallback(
+    (index: number) => {
+      if (!emblaApi) return
+      // Só avança se o vídeo que disparou o evento ainda for o slide selecionado
+      if (selectedIndex === index) {
+        emblaApi.scrollNext()
+      }
+    },
+    [emblaApi, selectedIndex],
+  )
 
   if (!items || items.length === 0) return null
 
@@ -225,9 +229,9 @@ export function MediaCarousel({ data }: { data: any }) {
                   }}
                   src={slide.url}
                   autoPlay
-                  loop
                   muted
                   playsInline
+                  onEnded={() => handleVideoEnded(index)}
                   className="w-full h-full object-contain pointer-events-none"
                 >
                   {slide.subtitleUrl && (
