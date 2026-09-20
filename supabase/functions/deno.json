@@ -2,7 +2,7 @@
   "_versions": {
     "calculate-athlete-statistics": 1,
     "cron-billing-reminders": 1,
-    "cron-billing-trigger": 76,
+    "cron-billing-trigger": 77,
     "delete-user-soft": 2,
     "enviar_whatsapp": 4,
     "generate-affiliation-billing": 1,
@@ -13,16 +13,16 @@
     "request-password-reset": 2,
     "send-email": 12,
     "stripe-webhook": 1,
-    "sync-google-ads": 76,
+    "sync-google-ads": 77,
     "validar_whatsapp_config": 5,
     "cron-commercial-contracts": 2,
     "generate-ai-text": 3,
     "verify-recaptcha": 2,
     "translate-text": 1,
     "webhook-asaas": 2,
-    "sync-google-reviews": 1,
+    "sync-google-reviews": 2,
     "create-asaas-charge": 2,
     "webhook-asaas-manual": 2,
-    "admin-update-password": 73
+    "admin-update-password": 74
   }
 }

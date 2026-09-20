@@ -27,8 +27,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const integrations = (sysData.integrations as any) || {}
-    const apiKey = integrations.google_maps_api_key
-    const placeId = integrations.place_id
+    const apiKey = integrations.google_maps_key
+    const placeId = integrations.google_place_id
 
     if (!apiKey || !placeId) {
       throw new Error('Chave da API do Google Maps ou Place ID não configurados.')

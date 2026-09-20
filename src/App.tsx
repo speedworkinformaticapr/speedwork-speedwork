@@ -313,6 +313,10 @@ const App = () => (
                       <Route path="gallery" element={<AdminGallery />} />
                       <Route path="settings/maintenance" element={<AdminMaintenance />} />
                       <Route path="settings/system" element={<AdminSystemData />} />
+                      <Route
+                        path="settings/integrations"
+                        element={<Navigate to="/admin/settings/system" replace />}
+                      />
                       <Route path="settings/menu" element={<AdminMenuConfig />} />
                       <Route path="settings/plan-services" element={<AdminPlanServices />} />
                       <Route path="settings/sla-types" element={<AdminSlaTypes />} />
