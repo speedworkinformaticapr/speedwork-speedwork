@@ -37,9 +37,31 @@ export const systemDataSchema = z.object({
   language: z.string().optional(),
   libras_enabled: z.boolean().optional(),
   footer_icon_size: z.coerce.number().optional(),
+  short_description: z.string().max(80, 'Máximo de 80 caracteres').optional(),
   terms_uso: z.string().optional(),
   terms_lgpd: z.string().optional(),
   terms_cookies: z.string().optional(),
+  quote_footer_text: z.string().optional(),
+  footer_links: z.any().optional(),
+
+  // Preferências
+  ai_context: z.string().optional(),
+  show_contact_bar: z.boolean().optional(),
+  two_factor_auth: z.boolean().optional(),
+  two_factor_method: z.string().optional(),
+
+  // Redes sociais e Acessibilidade/Widgets
+  instagram: z.string().optional(),
+  facebook: z.string().optional(),
+  youtube: z.string().optional(),
+  accessibility_enabled: z.boolean().optional(),
+  cookie_consent_enabled: z.boolean().optional(),
+  whatsapp_enabled: z.boolean().optional(),
+  whatsapp_number: z.string().optional(),
+
+  // Integrações Externas
+  active_payment_gateway: z.string().optional(),
+  payment_environment: z.string().optional(),
   stripe_public_key: z.string().optional(),
   stripe_secret_key: z.string().optional(),
   stripe_webhook_secret: z.string().optional(),
@@ -51,6 +73,18 @@ export const systemDataSchema = z.object({
   asaas_sandbox_key: z.string().optional(),
   asaas_webhook_secret: z.string().optional(),
   asaas_payment_environment: z.string().optional(),
+  google_maps_key: z.string().optional(),
+  google_place_id: z.string().optional(),
+  openai_environment: z.string().optional(),
+  openai_api_key_test: z.string().optional(),
+  openai_api_key_production: z.string().optional(),
+  blog_ai_model: z.string().optional(),
+  recaptcha_site_key: z.string().optional(),
+  recaptcha_secret_key: z.string().optional(),
+  smtp_key: z.string().optional(),
+  smtp_sender_email: z.string().optional(),
+  correios_token: z.string().optional(),
+  mercadolivre_token: z.string().optional(),
 })
 
 export type SystemDataFormValues = z.infer<typeof systemDataSchema>

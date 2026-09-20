@@ -47,11 +47,8 @@ export const SystemDataProvider = ({ children }: { children: ReactNode }) => {
         }
 
         if (systemData) {
-          const cleaned = { ...systemData } as Record<string, unknown>
-          delete cleaned.ai_context
-          delete cleaned.aiContext
-          setData(cleaned)
-          setCachedData(SYSTEM_DATA_CACHE_KEY, cleaned)
+          setData(systemData)
+          setCachedData(SYSTEM_DATA_CACHE_KEY, systemData)
         } else {
           setData(null)
         }
@@ -87,11 +84,8 @@ export const SystemDataProvider = ({ children }: { children: ReactNode }) => {
         .eq('id', SYSTEM_DATA_ID)
         .maybeSingle()
       if (systemData) {
-        const cleaned = { ...systemData } as Record<string, unknown>
-        delete cleaned.ai_context
-        delete cleaned.aiContext
-        setData(cleaned)
-        setCachedData(SYSTEM_DATA_CACHE_KEY, cleaned)
+        setData(systemData)
+        setCachedData(SYSTEM_DATA_CACHE_KEY, systemData)
       }
     } catch (e) {
       console.error(e)
