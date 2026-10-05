@@ -124,6 +124,12 @@ export const DEFAULT_MENU_CONFIG: MenuConfig[] = [
     label: 'Configurações',
     icon: 'Settings',
     submenus: [
+      {
+        id: 'system-documentation',
+        label: 'Documentação do Sistema',
+        url: '/admin/settings/documentation',
+        icon: 'FileText',
+      },
       { id: 'system-data', label: 'Dados do Sistema', url: '/admin/settings/system' },
       { id: 'users', label: 'Gestão de Usuários', url: '/admin/users' },
       { id: 'media', label: 'Biblioteca de Mídias', url: '/admin/settings/media' },

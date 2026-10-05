@@ -92,6 +92,9 @@ const CustomerFeedbackDashboard = lazy(
   () => import('./pages/admin/feedback/CustomerFeedbackDashboard'),
 )
 const AdminSlaTypes = lazy(() => import('./pages/admin/settings/AdminSlaTypes'))
+const AdminSystemDocumentation = lazy(
+  () => import('./pages/admin/settings/AdminSystemDocumentation'),
+)
 const AdminSystemData = lazy(() => import('./pages/admin/settings/AdminSystemData'))
 const AdminMenuConfig = lazy(() => import('./pages/admin/settings/AdminMenuConfig'))
 const AdminMedia = lazy(() => import('./pages/admin/settings/AdminMedia'))
@@ -311,6 +314,8 @@ const App = () => (
                       <Route path="settings/blog/new" element={<AdminBlogForm />} />
                       <Route path="settings/blog/:id/edit" element={<AdminBlogForm />} />
                       <Route path="gallery" element={<AdminGallery />} />
+                      <Route path="settings/documentation" element={<AdminSystemDocumentation />} />
+                      <Route path="documentation" element={<AdminSystemDocumentation />} />
                       <Route path="settings/maintenance" element={<AdminMaintenance />} />
                       <Route path="settings/system" element={<AdminSystemData />} />
                       <Route
