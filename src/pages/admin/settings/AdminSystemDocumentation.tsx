@@ -23,6 +23,8 @@ export default function AdminSystemDocumentation() {
   const [isGenerating, setIsGenerating] = useState(false)
 
   const handleDownloadDocx = async () => {
+    if (isGenerating) return
+
     try {
       setIsGenerating(true)
       toast.info('Gerando arquivo Word formatado (.docx)...')
