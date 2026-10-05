@@ -385,6 +385,16 @@ const App = () => (
                       element={<Navigate to="/admin/financial/bank-accounts" replace />}
                     />
 
+                    {/* Redirect legacy / without admin prefix routes to correct admin routes */}
+                    <Route
+                      path="settings/documentation"
+                      element={<Navigate to="/admin/settings/documentation" replace />}
+                    />
+                    <Route
+                      path="documentation"
+                      element={<Navigate to="/admin/settings/documentation" replace />}
+                    />
+
                     {/* Public and Dynamic Routes - Placed last so the catch-all dynamic route does not intercept static ones */}
                     <Route element={<Layout />}>
                       <Route index element={<Index />} />
