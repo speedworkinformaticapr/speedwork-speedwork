@@ -1,11 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
-}
+import { corsHeaders } from '../_shared/cors.ts'
+import { requireAdmin } from '../_shared/auth.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -18,24 +14,14 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
-    const { target_user_id, admin_id } = await req.json()
+    // Exige JWT de usuário autenticado com papel admin/master
+    const admin = await requireAdmin(req)
+    if (admin.response) return admin.response
 
-    if (!target_user_id || !admin_id) {
+    const { target_user_id } = await req.json()
+
+    if (!target_user_id) {
       throw new Error('Missing parameters')
-    }
-
-    // Verify admin
-    const { data: adminProfile } = await supabaseAdmin
-      .from('profiles')
-      .select('role')
-      .eq('id', admin_id)
-      .single()
-
-    if (!adminProfile || !['admin', 'master'].includes(adminProfile.role)) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
     }
 
     const now = new Date().toISOString()

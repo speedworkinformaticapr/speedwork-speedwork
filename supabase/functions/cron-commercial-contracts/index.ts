@@ -2,6 +2,17 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 Deno.serve(async (req: Request) => {
+  // Proteção: exige secret via header x-cron-secret ou ?secret= (CRON_SECRET).
+  const cronSecret = Deno.env.get('CRON_SECRET') ?? ''
+  const provided =
+    req.headers.get('x-cron-secret') || new URL(req.url).searchParams.get('secret') || ''
+  if (!cronSecret || provided !== cronSecret) {
+    return new Response(JSON.stringify({ error: 'Cron secret inválido' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
   try {
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',

@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { requireAdmin } from '../_shared/auth.ts'
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -17,6 +18,10 @@ Deno.serve(async (req: Request) => {
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
     }
+
+    // Exige JWT de usuário autenticado com papel admin/master (uso no painel)
+    const admin = await requireAdmin(req)
+    if (admin.response) return admin.response
 
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },

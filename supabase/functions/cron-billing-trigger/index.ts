@@ -2,6 +2,13 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
+function unauthorized(message: string) {
+  return new Response(JSON.stringify({ error: message }), {
+    status: 401,
+    headers: { 'Content-Type': 'application/json', ...corsHeaders },
+  })
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -9,6 +16,14 @@ Deno.serve(async (req: Request) => {
 
   // NOTE: This endpoint should be triggered by a pg_cron job or a scheduled webhook daily.
   // It iterates over active configurations and invokes the billing generation logic.
+  // Proteção: exige secret via header x-cron-secret ou ?secret= (CRON_SECRET).
+
+  const cronSecret = Deno.env.get('CRON_SECRET') ?? ''
+  const provided =
+    req.headers.get('x-cron-secret') || new URL(req.url).searchParams.get('secret') || ''
+  if (!cronSecret || provided !== cronSecret) {
+    return unauthorized('Cron secret inválido')
+  }
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''

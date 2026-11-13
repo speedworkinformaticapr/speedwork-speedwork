@@ -1,8 +1,21 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
+// Proteção: token compartilhado obrigatório (header x-webhook-secret ou ?secret=).
+// Configure o mesmo valor no Asaas (campo de webhook) e na variável WEBHOOK_SECRET.
+function unauthorized(message: string) {
+  return new Response(JSON.stringify({ error: message }), { status: 401 })
+}
+
 Deno.serve(async (req: Request) => {
   try {
+    const expected = Deno.env.get('WEBHOOK_SECRET') ?? ''
+    const provided =
+      req.headers.get('x-webhook-secret') || new URL(req.url).searchParams.get('secret') || ''
+    if (!expected || provided !== expected) {
+      return unauthorized('Webhook secret inválido')
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const supabase = createClient(supabaseUrl, supabaseKey)

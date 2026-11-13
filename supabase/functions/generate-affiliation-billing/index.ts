@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient, SupabaseClient } from 'jsr:@supabase/supabase-js@2'
+import { requireAdmin } from '../_shared/auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -51,6 +52,10 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Exige JWT de usuário autenticado com papel admin/master (uso no painel)
+    const admin = await requireAdmin(req)
+    if (admin.response) return admin.response
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey)

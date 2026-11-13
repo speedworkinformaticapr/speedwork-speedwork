@@ -22,15 +22,16 @@ Deno.serve(async (req: Request) => {
     let event
     const stripe = new Stripe('', { apiVersion: '2023-10-16' })
 
-    if (config?.webhook_secret && signature) {
-      try {
-        event = stripe.webhooks.constructEvent(body, signature, config.webhook_secret)
-      } catch (err: any) {
-        console.error(`Webhook signature verification failed: ${err.message}`)
-        return new Response('Webhook Error', { status: 400 })
-      }
-    } else {
-      event = JSON.parse(body)
+    // Falha fechada: exige secret configurado E assinatura válida
+    if (!config?.webhook_secret || !signature) {
+      console.error('Stripe webhook rejeitado: secret ou assinatura ausentes')
+      return new Response('Webhook Error: assinatura ausente', { status: 401 })
+    }
+    try {
+      event = stripe.webhooks.constructEvent(body, signature, config.webhook_secret)
+    } catch (err: any) {
+      console.error(`Webhook signature verification failed: ${err.message}`)
+      return new Response('Webhook Error: assinatura inválida', { status: 401 })
     }
 
     if (event.type === 'payment_intent.succeeded') {

@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import OpenAI from 'npm:openai@4'
+import { requireAdmin } from '../_shared/auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,6 +13,10 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
+    // Exige JWT de usuário autenticado com papel admin/master (uso no painel)
+    const admin = await requireAdmin(req)
+    if (admin.response) return admin.response
+
     const { field_context, current_text, system_context, max_length, type, aspect_ratio } =
       await req.json()
 
