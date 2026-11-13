@@ -18,7 +18,7 @@ export function StepSlotSelection({ data, onChange, onNext }: any) {
       const dateStr = date.toISOString().split('T')[0]
       const [{ data: sys }, { data: apps }] = await Promise.all([
         supabase
-          .from('system_data')
+          .from('system_data_public')
           .select('scheduling_interval_minutes')
           .eq('id', '00000000-0000-0000-0000-000000000001')
           .single(),

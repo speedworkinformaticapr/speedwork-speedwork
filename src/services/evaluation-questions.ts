@@ -24,7 +24,7 @@ export async function fetchQuestionsByService(serviceId: string): Promise<Evalua
 
 export async function fetchQuestionsBySlug(slug: string): Promise<EvaluationQuestion[]> {
   const { data: service } = await supabase
-    .from('services')
+    .from('services_public')
     .select('id')
     .eq('evaluation_slug', slug)
     .maybeSingle()

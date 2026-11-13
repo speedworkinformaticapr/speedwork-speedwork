@@ -44,7 +44,7 @@ export default function Scheduling() {
 
   useEffect(() => {
     supabase
-      .from('system_data')
+      .from('system_data_public')
       .select('scheduling_interval_minutes, business_hours')
       .single()
       .then(({ data }) => {
@@ -59,10 +59,11 @@ export default function Scheduling() {
   const searchClient = async () => {
     if (!data.cpf) return setStep(2)
     setLoading(true)
+    // Busca anônima via RPC security definer: retorna apenas nome, e-mail e telefone
     const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('cpf_cnpj', data.cpf)
+      .rpc('lookup_profile_by_cnpj', {
+        p_cnpj: data.cpf,
+      })
       .maybeSingle()
     if (profile) {
       setData((p) => ({

@@ -22,7 +22,7 @@ export function SchedulingCalendarBlock({ data }: { data: any }) {
 
   useEffect(() => {
     const fetchAvail = async () => {
-      const { data: svcs } = await supabase.from('services').select('id').limit(1)
+      const { data: svcs } = await supabase.from('services_public').select('id').limit(1)
       if (svcs && svcs.length > 0) {
         const { data: avails } = await supabase
           .from('disponibilidade_servicos')

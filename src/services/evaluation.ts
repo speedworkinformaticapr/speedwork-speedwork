@@ -100,7 +100,7 @@ export async function fetchEvaluationLeads(): Promise<Lead[]> {
 
 export async function fetchServicesWithEvaluation() {
   const { data, error } = await supabase
-    .from('services')
+    .from('services_public')
     .select('id, title, description, evaluation_slug')
     .not('evaluation_slug', 'is', null)
     .neq('evaluation_slug', 'automacao-comercial')
@@ -111,7 +111,7 @@ export async function fetchServicesWithEvaluation() {
 
 export async function fetchServiceByEvaluationSlug(slug: string) {
   const { data, error } = await supabase
-    .from('services')
+    .from('services_public')
     .select('id, title, description, evaluation_slug')
     .eq('evaluation_slug', slug)
     .maybeSingle()

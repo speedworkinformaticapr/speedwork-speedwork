@@ -36,8 +36,9 @@ export const SystemDataProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const fetchSystemData = async () => {
       try {
+        // Leitura pública via view (sem integrations/ai_context — dados sensíveis ficam na tabela)
         const { data: systemData, error } = await supabase
-          .from('system_data')
+          .from('system_data_public')
           .select('*')
           .eq('id', SYSTEM_DATA_ID)
           .maybeSingle()
@@ -79,7 +80,7 @@ export const SystemDataProvider = ({ children }: { children: ReactNode }) => {
   const refetch = async () => {
     try {
       const { data: systemData } = await supabase
-        .from('system_data')
+        .from('system_data_public')
         .select('*')
         .eq('id', SYSTEM_DATA_ID)
         .maybeSingle()

@@ -12,7 +12,7 @@ interface ServiceItem {
   title: string
   description: string | null
   evaluation_slug: string | null
-  sale_value: number | null
+  avulso_value: number | null
 }
 
 export default function Services() {
@@ -25,8 +25,8 @@ export default function Services() {
 
   useEffect(() => {
     supabase
-      .from('services')
-      .select('id, title, description, evaluation_slug, sale_value')
+      .from('services_public')
+      .select('id, title, description, evaluation_slug, avulso_value')
       .order('title', { ascending: true })
       .then(({ data }) => {
         setServices(data || [])

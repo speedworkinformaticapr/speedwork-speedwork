@@ -22,7 +22,7 @@ export default function QuoteApprovalPortal() {
 
   const loadData = async () => {
     setLoading(true)
-    const { data: sys } = await supabase.from('system_data').select('*').limit(1).single()
+    const { data: sys } = await supabase.from('system_data_public').select('*').limit(1).single()
     if (sys) setSystemData(sys)
 
     const { data: q } = await supabase
