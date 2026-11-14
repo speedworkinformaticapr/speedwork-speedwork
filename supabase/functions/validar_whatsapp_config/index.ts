@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { requireAdmin } from '../_shared/auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,6 +11,11 @@ const corsHeaders = {
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
+  // Auditoria de segurança (Etapa 3): exige JWT válido com papel admin/master.
+  // Chamador: apenas tela admin (Admin > WhatsApp > WhatsAppCredentials).
+  const auth = await requireAdmin(req)
+  if (auth.response) return auth.response
 
   let empresa_id_ref = ''
   let test_phone_ref = ''

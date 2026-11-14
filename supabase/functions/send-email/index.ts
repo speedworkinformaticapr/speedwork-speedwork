@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { rateLimit, clientIp } from '../_shared/auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,6 +11,48 @@ const corsHeaders = {
 
 const BRAND_COLOR = '#2563EB'
 const BRAND_COLOR_DARK = '#1D4ED8'
+
+/**
+ * Auditoria de segurança (Etapa 3): whitelist dos tipos de e-mail que o
+ * sistema realmente envia hoje. Qualquer outro tipo é rejeitado com 400
+ * sem tocar no provedor de e-mail.
+ *
+ * Fontes (grep nos chamadores de send-email):
+ * - mfa_code          → Login.tsx / MfaVerify.tsx (código 2FA por e-mail)
+ * - custom            → ShareDocumentDialog, ShareFinancialDialog(s),
+ *                       StepDetails (pré-agendamento), EmailTemplatesTab (teste
+ *                       de modelo), ShareFinancialRecordModal, QuoteForm
+ * - test_smtp         → EmailConfigTab (teste de conexão SMTP2GO)
+ * - password_reset    → request-password-reset (esqueci minha senha)
+ * - welcome/event_registration → services/email.ts (cadastro e inscrição em evento)
+ * - billing_reminder/billing_overdue → cron-billing-reminders (cobranças)
+ */
+const ALLOWED_EMAIL_TYPES = [
+  'mfa_code',
+  'custom',
+  'test_smtp',
+  'password_reset',
+  'welcome',
+  'welcome_club',
+  'event_registration',
+  'billing_reminder',
+  'billing_overdue',
+] as const
+
+/**
+ * Auditoria de segurança (Etapa 3): rate limit por IP para o endpoint público
+ * (mesmo mecanismo de enviar_whatsapp/mfa-totp). Limite de 15 envios por
+ * janela de 15 minutos por IP — folgado para o fluxo de login MFA (1 envio +
+ * reenvios em MfaVerify) e para o reset de senha, mas suficiente para barrar
+ * abuso. Chamadas internas (Authorization = service role key, usadas pelo
+ * cron-billing-reminders e pelo request-password-reset) ficam de fora do
+ * limite para não quebrar o disparo em lote de cobranças.
+ */
+function isInternalServiceCall(req: Request): boolean {
+  const authHeader = req.headers.get('Authorization') ?? ''
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  return serviceKey !== '' && authHeader === `Bearer ${serviceKey}`
+}
 
 /**
  * Resolve a URL pública da logo para uso em e-mail.
@@ -97,6 +140,39 @@ Deno.serve(async (req: Request) => {
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey)
 
     const body = await req.json()
+
+    // Auditoria de segurança (Etapa 3): whitelist de tipos — rejeita antes de
+    // qualquer consulta ou envio.
+    if (!ALLOWED_EMAIL_TYPES.includes(body?.type)) {
+      return new Response(
+        JSON.stringify({
+          error: `Tipo de e-mail não permitido: ${body?.type ?? '(vazio)'}`,
+          code: 'EMAIL_TYPE_NOT_ALLOWED',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        },
+      )
+    }
+
+    // Rate limit por IP (não se aplica a chamadas internas com service role).
+    if (!isInternalServiceCall(req)) {
+      const ip = clientIp(req)
+      if (!rateLimit(`send-email:${ip}`, 15, 15 * 60 * 1000).ok) {
+        return new Response(
+          JSON.stringify({
+            error:
+              'Muitas solicitações de envio de e-mail. Aguarde alguns minutos e tente novamente.',
+            code: 'RATE_LIMITED',
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 429,
+          },
+        )
+      }
+    }
     const {
       type,
       email,
