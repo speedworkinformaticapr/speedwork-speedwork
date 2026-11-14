@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
+import { hardDeleteRecord } from '@/services/hard-delete'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -84,9 +85,14 @@ export default function AdminContratosList({
       })
       return
     }
-    await supabase.from('contratos').delete().eq('id', id)
-    setRecordToDelete(null)
-    fetchData()
+    const { error } = await hardDeleteRecord('contratos', id)
+    if (error) {
+      toast({ title: 'Erro ao excluir', description: error, variant: 'destructive' })
+    } else {
+      toast({ title: 'Registro excluído com sucesso.' })
+      setRecordToDelete(null)
+      fetchData()
+    }
   }
 
   const filteredData = useMemo(() => {

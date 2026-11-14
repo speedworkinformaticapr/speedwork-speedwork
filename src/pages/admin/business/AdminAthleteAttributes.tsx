@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Edit, Trash2, Loader2, Search } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
+import { hardDeleteRecord } from '@/services/hard-delete'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -99,10 +100,10 @@ export default function AdminAthleteAttributes() {
   const [recordToDelete, setRecordToDelete] = useState<{ id: string; name: string } | null>(null)
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('athlete_attributes').delete().eq('id', id)
-    if (error) toast({ title: 'Erro', description: error.message, variant: 'destructive' })
+    const { error } = await hardDeleteRecord('athlete_attributes', id)
+    if (error) toast({ title: 'Erro ao excluir', description: error, variant: 'destructive' })
     else {
-      toast({ title: 'Excluído com sucesso!' })
+      toast({ title: 'Registro excluído com sucesso.' })
       setRecordToDelete(null)
       fetchAttributes()
     }

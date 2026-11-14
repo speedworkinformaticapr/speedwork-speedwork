@@ -37,6 +37,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { supabase } from '@/lib/supabase/client'
+import { hardDeleteRecord } from '@/services/hard-delete'
 import { useToast } from '@/hooks/use-toast'
 import { Edit2, Plus, Trash2, Filter } from 'lucide-react'
 
@@ -154,12 +155,9 @@ export default function AdminFinancialPartners() {
     if (!itemToDelete) return
     setIsDeleting(true)
     try {
-      const { error } = await supabase
-        .from('financial_partners' as any)
-        .delete()
-        .eq('id', itemToDelete)
+      const { error } = await hardDeleteRecord('financial_partners', itemToDelete)
       if (error) throw error
-      toast({ title: 'Sucesso', description: 'Parceiro excluído com sucesso!' })
+      toast({ title: 'Registro excluído com sucesso.' })
       fetchPartners()
     } catch (err: any) {
       toast({ title: 'Erro ao excluir', description: err.message, variant: 'destructive' })

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { hardDeleteUser } from '@/services/hard-delete'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -35,9 +36,19 @@ export default function AdminUsers() {
   const { toast } = useToast()
 
   const [entityType, setEntityType] = useState<string>('all')
-  const [recordToDeactivate, setRecordToDeactivate] = useState<{ id: string; name: string } | null>(
-    null,
-  )
+  const [recordToDelete, setRecordToDelete] = useState<{
+    id: string
+    name: string
+    isSelf: boolean
+  } | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setCurrentUserId(user?.id ?? null)
+    })
+  }, [])
 
   const fetchData = async () => {
     let q = supabase.from('profiles').select('*')
@@ -49,9 +60,6 @@ export default function AdminUsers() {
     }
     if (status && status !== 'all') {
       q = q.eq('status', status)
-    } else {
-      // Filtro padrão "Todos": oculta registros desativados (soft-delete)
-      q = q.neq('status', 'inactive')
     }
 
     if (entityType === 'clients') q = q.eq('is_client', true)
@@ -79,13 +87,15 @@ export default function AdminUsers() {
   }, [debouncedSearch, status, entityType, dateRange, sortConfig])
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('profiles').update({ status: 'inactive' }).eq('id', id)
-    if (!error) {
-      toast({ title: 'Registro desativado com sucesso.' })
-      setRecordToDeactivate(null)
-      fetchData()
+    setDeleting(true)
+    const { error } = await hardDeleteUser(id)
+    setDeleting(false)
+    if (error) {
+      toast({ title: 'Erro ao excluir', description: error, variant: 'destructive' })
     } else {
-      toast({ title: 'Erro ao desativar', variant: 'destructive' })
+      toast({ title: 'Registro excluído com sucesso.' })
+      setRecordToDelete(null)
+      fetchData()
     }
   }
 
@@ -265,8 +275,18 @@ export default function AdminUsers() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            disabled={item.id === currentUserId}
+                            title={
+                              item.id === currentUserId
+                                ? 'Você não pode excluir o seu próprio registro.'
+                                : 'Excluir definitivamente'
+                            }
                             onClick={() =>
-                              setRecordToDeactivate({ id: item.id, name: item.name || 'Sem nome' })
+                              setRecordToDelete({
+                                id: item.id,
+                                name: item.name || 'Sem nome',
+                                isSelf: item.id === currentUserId,
+                              })
                             }
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
@@ -283,16 +303,22 @@ export default function AdminUsers() {
       </Card>
 
       <ConfirmDialog
-        open={!!recordToDeactivate}
+        open={!!recordToDelete}
         onOpenChange={(open) => {
-          if (!open) setRecordToDeactivate(null)
+          if (!open) setRecordToDelete(null)
         }}
-        title="Desativar registro"
-        description={`Tem certeza que deseja desativar o registro de ${recordToDeactivate?.name ?? ''}? Esta ação é reversível: o registro continuará acessível pelo filtro de status "Inativo".`}
-        confirmLabel="Desativar"
+        title="Excluir definitivamente"
+        description={
+          recordToDelete?.isSelf
+            ? 'Você não pode excluir o seu próprio registro.'
+            : `Tem certeza que deseja excluir DEFINITIVAMENTE o registro de ${recordToDelete?.name ?? ''}? O registro e o acesso de login (autenticação) serão removidos. Esta ação não pode ser desfeita.`
+        }
+        confirmLabel={deleting ? 'Excluindo...' : 'Excluir'}
         cancelLabel="Cancelar"
         destructive
-        onConfirm={() => recordToDeactivate && handleDelete(recordToDeactivate.id)}
+        onConfirm={() =>
+          recordToDelete && !recordToDelete.isSelf && handleDelete(recordToDelete.id)
+        }
       />
     </div>
   )

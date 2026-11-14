@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { hardDeleteRecord } from '@/services/hard-delete'
 import { useNavigate } from 'react-router-dom'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
@@ -92,11 +93,11 @@ export default function AdminAppointments() {
       return
     }
 
-    const { error } = await supabase.from('appointments').delete().eq('id', app.id)
+    const { error } = await hardDeleteRecord('appointments', app.id)
     if (error) {
-      toast({ title: 'Erro ao excluir', description: error.message, variant: 'destructive' })
+      toast({ title: 'Erro ao excluir', description: error, variant: 'destructive' })
     } else {
-      toast({ title: 'Sucesso', description: 'Agendamento excluído.' })
+      toast({ title: 'Registro excluído com sucesso.' })
       fetchAppointments()
     }
   }

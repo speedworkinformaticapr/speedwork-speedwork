@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select'
 import { useAuth } from '@/hooks/use-auth'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { hardDeleteRecord } from '@/services/hard-delete'
 
 export default function AdminAthleteEvaluations() {
   const { user } = useAuth()
@@ -129,11 +130,11 @@ export default function AdminAthleteEvaluations() {
   )
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('athlete_attribute_values').delete().eq('id', id)
+    const { error } = await hardDeleteRecord('athlete_attribute_values', id)
     if (error) {
-      toast({ title: 'Erro ao excluir', description: error.message, variant: 'destructive' })
+      toast({ title: 'Erro ao excluir', description: error, variant: 'destructive' })
     } else {
-      toast({ title: 'Avaliação excluída com sucesso!' })
+      toast({ title: 'Registro excluído com sucesso.' })
       setEvaluationToDelete(null)
       fetchData()
     }

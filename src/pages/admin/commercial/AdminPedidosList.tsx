@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
+import { hardDeleteRecord } from '@/services/hard-delete'
+import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -30,6 +32,7 @@ export default function AdminPedidosList() {
     sortConfig,
     handleSort,
   } = useDataTable()
+  const { toast } = useToast()
 
   const fetchData = async () => {
     let q = supabase.from('pedidos').select('*, profiles(name)')
@@ -63,9 +66,14 @@ export default function AdminPedidosList() {
   const [recordToDelete, setRecordToDelete] = useState<{ id: string; name: string } | null>(null)
 
   const handleDelete = async (id: string) => {
-    await supabase.from('pedidos').delete().eq('id', id)
-    setRecordToDelete(null)
-    fetchData()
+    const { error } = await hardDeleteRecord('pedidos', id)
+    if (error) {
+      toast({ title: 'Erro ao excluir', description: error, variant: 'destructive' })
+    } else {
+      toast({ title: 'Registro excluído com sucesso.' })
+      setRecordToDelete(null)
+      fetchData()
+    }
   }
 
   const statusOptions = [

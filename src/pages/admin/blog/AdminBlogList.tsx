@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { hardDeleteRecord } from '@/services/hard-delete'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -104,9 +105,14 @@ export default function AdminBlogList() {
   const [postToDelete, setPostToDelete] = useState<{ id: string; name: string } | null>(null)
 
   const handleDelete = async (id: string) => {
-    await supabase.from('blog_posts').delete().eq('id', id)
-    setPostToDelete(null)
-    fetchData()
+    const { error } = await hardDeleteRecord('blog_posts', id)
+    if (error) {
+      toast({ title: 'Erro ao excluir', description: error, variant: 'destructive' })
+    } else {
+      toast({ title: 'Registro excluído com sucesso.' })
+      setPostToDelete(null)
+      fetchData()
+    }
   }
 
   const handleInlineUpdate = async (

@@ -40,6 +40,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { hardDeleteMany, friendlyDeleteError } from '@/services/hard-delete'
 
 export default function AdminAthleteCategories() {
   const [categories, setCategories] = useState<any[]>([])
@@ -156,7 +157,7 @@ export default function AdminAthleteCategories() {
     if (itemsToDelete.length === 0) return
     setIsDeleting(true)
     try {
-      const { error } = await supabase.from('categories').delete().in('id', itemsToDelete)
+      const { error } = await hardDeleteMany('categories', itemsToDelete)
       if (error) throw error
       toast({
         title: 'Sucesso',
@@ -166,8 +167,8 @@ export default function AdminAthleteCategories() {
       loadCategories()
     } catch (err: any) {
       toast({
-        title: 'Erro na transação',
-        description: `Falha ao excluir no banco de dados: ${err.message}`,
+        title: 'Erro ao excluir',
+        description: friendlyDeleteError(err),
         variant: 'destructive',
       })
     } finally {

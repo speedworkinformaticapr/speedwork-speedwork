@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Plus, Edit2, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
+import { hardDeleteRecord } from '@/services/hard-delete'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/use-auth'
 import { Badge } from '@/components/ui/badge'
@@ -109,12 +110,12 @@ export default function AdminFinancialCategories() {
     if (!itemToDelete) return
     setIsDeleting(true)
     try {
-      const { error } = await supabase.from('financial_categories').delete().eq('id', itemToDelete)
+      const { error } = await hardDeleteRecord('financial_categories', itemToDelete)
       if (error) throw error
-      toast({ title: 'Sucesso', description: 'Categoria excluída com sucesso!' })
+      toast({ title: 'Registro excluído com sucesso.' })
       loadData()
     } catch (err: any) {
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' })
+      toast({ title: 'Erro ao excluir', description: err.message, variant: 'destructive' })
     } finally {
       setIsDeleting(false)
       setItemToDelete(null)

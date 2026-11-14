@@ -40,8 +40,8 @@ export const updateAppointment = async (id: string, updates: Partial<Appointment
 }
 
 export const deleteAppointment = async (id: string) => {
-  const { error } = await supabase.from('appointments').delete().eq('id', id)
-  if (error) throw error
+  const { error, message } = await hardDeleteRecord('appointments', id)
+  if (error) throw new Error(message || 'Erro ao excluir agendamento.')
   return true
 }
 

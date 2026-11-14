@@ -30,6 +30,7 @@ import { Switch } from '@/components/ui/switch'
 import { Plus, Search, Edit2, Trash2, Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { hardDeleteRecord } from '@/services/hard-delete'
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Ativo' },
@@ -175,11 +176,11 @@ export default function AdminAthletes() {
   const [athleteToDelete, setAthleteToDelete] = useState<{ id: string; name: string } | null>(null)
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('athletes').delete().eq('id', id)
+    const { error } = await hardDeleteRecord('athletes', id)
     if (error) {
-      toast({ title: 'Erro', description: error.message, variant: 'destructive' })
+      toast({ title: 'Erro ao excluir', description: error, variant: 'destructive' })
     } else {
-      toast({ title: 'Sucesso', description: 'Atleta excluído!' })
+      toast({ title: 'Registro excluído com sucesso.' })
       setAthleteToDelete(null)
       loadData()
     }
@@ -467,7 +468,7 @@ export default function AdminAthletes() {
           if (!open) setAthleteToDelete(null)
         }}
         title="Excluir atleta"
-        description={`Tem certeza que deseja excluir o atleta ${athleteToDelete?.name ?? ''}? Esta ação não pode ser desfeita.`}
+        description={`Tem certeza que deseja excluir DEFINITIVAMENTE o atleta ${athleteToDelete?.name ?? ''}? Esta ação não pode ser desfeita.`}
         confirmLabel="Excluir"
         cancelLabel="Cancelar"
         destructive
