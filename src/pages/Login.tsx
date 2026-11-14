@@ -137,58 +137,61 @@ export default function Login() {
       await supabase.from('profiles').update({ mfa_verified: false }).eq('id', authData.user.id)
 
       if (profile?.mfa_enabled) {
-        try {
-          const { error: mfaError } = await supabase.functions.invoke('send-email', {
-            body: {
-              type: 'mfa_code',
-              email,
-            },
-          })
+        if (profile.mfa_type === 'email') {
+          try {
+            const { error: mfaError } = await supabase.functions.invoke('send-email', {
+              body: {
+                type: 'mfa_code',
+                email,
+              },
+            })
 
-          if (mfaError) {
-            let errorDescription =
-              'Falha ao enviar o e-mail de verificação. Verifique a configuração de SMTP ou contate o suporte.'
-            try {
-              const errorResp = (mfaError as any).context || mfaError
-              if (errorResp?.json) {
-                const errorData = await errorResp.json()
-                if (errorData?.error) {
-                  errorDescription = errorData.error
+            if (mfaError) {
+              let errorDescription =
+                'Falha ao enviar o e-mail de verificação. Verifique a configuração de SMTP ou contate o suporte.'
+              try {
+                const errorResp = (mfaError as any).context || mfaError
+                if (errorResp?.json) {
+                  const errorData = await errorResp.json()
+                  if (errorData?.error) {
+                    errorDescription = errorData.error
+                  }
+                } else if ((mfaError as any).message) {
+                  errorDescription = (mfaError as any).message
                 }
-              } else if ((mfaError as any).message) {
-                errorDescription = (mfaError as any).message
+              } catch {
+                if ((mfaError as any).message) {
+                  errorDescription = (mfaError as any).message
+                }
               }
-            } catch {
-              if ((mfaError as any).message) {
-                errorDescription = (mfaError as any).message
-              }
+              toast({
+                title: 'Erro ao enviar código de verificação',
+                description:
+                  'Não foi possível enviar o código. Você pode reenviá-lo na página de verificação.',
+                variant: 'destructive',
+              })
+              setLoading(false)
+              navigate('/mfa-verify', { replace: true })
+              return
             }
+          } catch (err) {
             toast({
               title: 'Erro ao enviar código de verificação',
               description:
-                'Não foi possível enviar o código. Você pode reenviá-lo na página de verificação.',
+                'Ocorreu um erro inesperado. Você pode reenviar o código na página de verificação.',
               variant: 'destructive',
             })
             setLoading(false)
             navigate('/mfa-verify', { replace: true })
             return
           }
-        } catch (err) {
+
           toast({
-            title: 'Erro ao enviar código de verificação',
-            description:
-              'Ocorreu um erro inesperado. Você pode reenviar o código na página de verificação.',
-            variant: 'destructive',
+            title: 'Verificação em Duas Etapas',
+            description: 'Um código de acesso foi enviado para seu e-mail.',
           })
-          setLoading(false)
-          navigate('/mfa-verify', { replace: true })
-          return
         }
 
-        toast({
-          title: 'Verificação em Duas Etapas',
-          description: 'Um código de acesso foi enviado para seu e-mail.',
-        })
         setLoading(false)
         navigate('/mfa-verify', { replace: true })
         return
