@@ -36,6 +36,7 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
   const pageSize = systemData?.records_per_page || 10
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [paymentCharge, setPaymentCharge] = useState<any>(null)
+  const [recordToDelete, setRecordToDelete] = useState<{ id: string; name: string } | null>(null)
   const { enriched, total, sortConfig, handleSort, page, setPage, accounts } = useCashFlowGrid(
     records,
     pageSize,
@@ -58,8 +59,6 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
       </Card>
     )
   }
-
-  const [recordToDelete, setRecordToDelete] = useState<{ id: string; name: string } | null>(null)
 
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from('financial_master_records').delete().eq('id', id)

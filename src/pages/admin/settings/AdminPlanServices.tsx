@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase/client'
 import { PlanServiceFormDialog, PlanServiceData } from './components/PlanServiceFormDialog'
 import { GridPagination } from '@/pages/admin/financial/components/GridPagination'
 import { SortableTableHead } from '@/pages/admin/financial/components/SortableTableHead'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import {
   calculatePrice,
   formatCurrency,
@@ -31,6 +32,7 @@ export default function AdminPlanServices() {
   const [page, setPage] = useState(0)
   const [total, setTotal] = useState(0)
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null)
+  const [recordToDelete, setRecordToDelete] = useState<string | null>(null)
   const { toast } = useToast()
   const { data: systemData } = useSystemData()
   const pageSize = systemData?.records_per_page || DEFAULT_PAGE_SIZE
@@ -105,7 +107,6 @@ export default function AdminPlanServices() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Tem certeza que deseja remover este serviço?')) return
     try {
       const { error } = await supabase
         .from('services' as any)
@@ -302,7 +303,7 @@ export default function AdminPlanServices() {
                           variant="ghost"
                           size="icon"
                           className="text-destructive hover:text-destructive"
-                          onClick={() => handleDelete(item.id)}
+                          onClick={() => setRecordToDelete(item.id)}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -322,6 +323,19 @@ export default function AdminPlanServices() {
         onOpenChange={setFormOpen}
         initialData={editingItem}
         onSave={handleSave}
+      />
+
+      <ConfirmDialog
+        open={!!recordToDelete}
+        onOpenChange={(open) => {
+          if (!open) setRecordToDelete(null)
+        }}
+        title="Remover serviço"
+        description="Tem certeza que deseja remover este serviço? Esta ação não pode ser desfeita."
+        confirmLabel="Remover"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={() => recordToDelete && handleDelete(recordToDelete)}
       />
     </div>
   )

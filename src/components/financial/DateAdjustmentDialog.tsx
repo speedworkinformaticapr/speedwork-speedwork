@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { CalendarClock, AlertTriangle, CheckCircle2, Loader2, FileWarning } from 'lucide-react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import {
   analyzeDateAdjustment,
   executeDateAdjustment,
@@ -30,6 +31,7 @@ export function DateAdjustmentDialog({ onSuccess }: DateAdjustmentDialogProps) {
   const [analysis, setAnalysis] = useState<AdjustmentAnalysis | null>(null)
   const [result, setResult] = useState<AdjustmentResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   const resetState = () => {
     setPhase('idle')
@@ -57,12 +59,7 @@ export function DateAdjustmentDialog({ onSuccess }: DateAdjustmentDialogProps) {
   }
 
   const handleExecute = async () => {
-    if (
-      !confirm(
-        'Tem certeza que deseja executar o ajuste de datas? Esta operação irá recalcular todas as datas de vencimento e não pode ser desfeita.',
-      )
-    )
-      return
+    setConfirmOpen(false)
     setPhase('executing')
     setError(null)
     try {
@@ -153,7 +150,11 @@ export function DateAdjustmentDialog({ onSuccess }: DateAdjustmentDialogProps) {
                   Nenhum registro encontrado para ajuste.
                 </p>
               ) : (
-                <Button onClick={handleExecute} className="w-full" variant="destructive">
+                <Button
+                  onClick={() => setConfirmOpen(true)}
+                  className="w-full"
+                  variant="destructive"
+                >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   Confirmar e Executar
                 </Button>
@@ -197,6 +198,16 @@ export function DateAdjustmentDialog({ onSuccess }: DateAdjustmentDialogProps) {
           )}
         </div>
       </DialogContent>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Executar ajuste de datas"
+        description="Tem certeza que deseja executar o ajuste de datas? Esta operação irá recalcular todas as datas de vencimento e não pode ser desfeita."
+        confirmLabel="Executar"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={handleExecute}
+      />
     </Dialog>
   )
 }

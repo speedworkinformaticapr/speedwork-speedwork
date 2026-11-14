@@ -21,12 +21,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 export default function AdminSlaTypes() {
   const [slas, setSlas] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [recordToDelete, setRecordToDelete] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -81,7 +83,6 @@ export default function AdminSlaTypes() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Deseja realmente excluir este SLA?')) return
     const { error } = await supabase.from('sla_types').delete().eq('id', id)
     if (error) toast({ title: 'Erro', description: error.message, variant: 'destructive' })
     else {
@@ -182,7 +183,7 @@ export default function AdminSlaTypes() {
                     variant="ghost"
                     size="icon"
                     className="text-destructive"
-                    onClick={() => handleDelete(sla.id)}
+                    onClick={() => setRecordToDelete(sla.id)}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -199,6 +200,19 @@ export default function AdminSlaTypes() {
           </TableBody>
         </Table>
       </div>
+
+      <ConfirmDialog
+        open={!!recordToDelete}
+        onOpenChange={(open) => {
+          if (!open) setRecordToDelete(null)
+        }}
+        title="Excluir SLA"
+        description="Deseja realmente excluir este SLA? Esta ação não pode ser desfeita."
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={() => recordToDelete && handleDelete(recordToDelete)}
+      />
     </div>
   )
 }

@@ -23,6 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 export const MOCK_CATALOG_SERVICES = [
   { id: '1', name: 'Consultoria Esportiva', price: 1500, type: 'service' },
@@ -47,6 +48,7 @@ export default function AdminQuotes() {
 
   const [billingOpen, setBillingOpen] = useState(false)
   const [billingQuoteId, setBillingQuoteId] = useState('')
+  const [recordToDelete, setRecordToDelete] = useState<string | null>(null)
 
   useEffect(() => {
     loadQuotes()
@@ -67,7 +69,6 @@ export default function AdminQuotes() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Deseja excluir este orçamento?')) return
     const { error } = await supabase.from('orcamentos').delete().eq('id', id)
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' })
@@ -227,7 +228,7 @@ export default function AdminQuotes() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => handleDelete(q.id)}
+                                onClick={() => setRecordToDelete(q.id)}
                               >
                                 <Trash2 className="w-4 h-4 text-red-500" />
                               </Button>
@@ -258,6 +259,19 @@ export default function AdminQuotes() {
         onOpenChange={setBillingOpen}
         orcamentoId={billingQuoteId}
         onSuccess={loadQuotes}
+      />
+
+      <ConfirmDialog
+        open={!!recordToDelete}
+        onOpenChange={(open) => {
+          if (!open) setRecordToDelete(null)
+        }}
+        title="Excluir orçamento"
+        description="Deseja excluir este orçamento? Esta ação não pode ser desfeita."
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={() => recordToDelete && handleDelete(recordToDelete)}
       />
     </div>
   )

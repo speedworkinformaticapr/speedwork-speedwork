@@ -29,6 +29,7 @@ import {
   type EvaluationQuestion,
 } from '@/services/evaluation-questions'
 import { QuestionEditorDialog } from './QuestionEditorDialog'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { useToast } from '@/hooks/use-toast'
 import { useSystemData } from '@/hooks/use-system-data'
 import { GridPagination } from '@/pages/admin/financial/components/GridPagination'
@@ -64,6 +65,7 @@ export default function AdminQuestionnaires() {
   const [total, setTotal] = useState(0)
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null)
   const [generatingPdf, setGeneratingPdf] = useState(false)
+  const [recordToDelete, setRecordToDelete] = useState<string | null>(null)
   const { toast } = useToast()
   const { data: systemData } = useSystemData()
   const pageSize = systemData?.records_per_page || DEFAULT_PAGE_SIZE
@@ -190,7 +192,6 @@ export default function AdminQuestionnaires() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Excluir esta pergunta?')) return
     try {
       await deleteQuestion(id)
       toast({ title: 'Sucesso', description: 'Pergunta excluída.' })
@@ -378,7 +379,7 @@ export default function AdminQuestionnaires() {
                           variant="ghost"
                           size="icon"
                           className="text-destructive hover:text-destructive"
-                          onClick={() => handleDelete(q.id)}
+                          onClick={() => setRecordToDelete(q.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -400,6 +401,19 @@ export default function AdminQuestionnaires() {
         onSave={handleSave}
         services={services}
         defaultServiceId={selectedServiceId}
+      />
+
+      <ConfirmDialog
+        open={!!recordToDelete}
+        onOpenChange={(open) => {
+          if (!open) setRecordToDelete(null)
+        }}
+        title="Excluir pergunta"
+        description="Excluir esta pergunta? Esta ação não pode ser desfeita."
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={() => recordToDelete && handleDelete(recordToDelete)}
       />
     </div>
   )

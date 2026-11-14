@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/hooks/use-translation'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { toast } from 'sonner'
 
 export function MasterRecordsTable({
