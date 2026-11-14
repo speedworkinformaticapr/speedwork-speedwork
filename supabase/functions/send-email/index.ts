@@ -174,10 +174,53 @@ Deno.serve(async (req: Request) => {
       const code = Math.floor(100000 + Math.random() * 900000).toString()
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
 
-      await supabaseAdmin
+      const { error: mfaUpdateError } = await supabaseAdmin
         .from('profiles')
         .update({ mfa_code: code, mfa_code_expires_at: expiresAt })
         .eq('id', profile.id)
+
+      // Falha ao gravar o código não pode ser silenciosa: o e-mail chegaria com um
+      // código que nunca é salvo no banco e a verificação sempre responderia
+      // "Código incorreto" (bug do trigger trg_protect_sensitive_profiles).
+      if (mfaUpdateError) {
+        console.error('Falha ao gravar mfa_code no perfil:', mfaUpdateError.message)
+        return new Response(
+          JSON.stringify({
+            error: 'Não foi possível registrar o código de verificação. Tente novamente.',
+            code: 'MFA_CODE_SAVE_FAILED',
+            details: mfaUpdateError.message,
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          },
+        )
+      }
+
+      // Confirmação ativa: o código precisa estar gravado antes do e-mail partir.
+      const { data: savedProfile, error: verifySaveError } = await supabaseAdmin
+        .from('profiles')
+        .select('mfa_code')
+        .eq('id', profile.id)
+        .maybeSingle()
+
+      if (verifySaveError) {
+        console.error('Falha ao confirmar gravação do mfa_code:', verifySaveError.message)
+      } else if (savedProfile?.mfa_code !== code) {
+        console.error(
+          'mfa_code gravado difere do código gerado — e-mail não deve conter código inválido',
+        )
+        return new Response(
+          JSON.stringify({
+            error: 'Falha ao registrar o código de verificação. Tente novamente.',
+            code: 'MFA_CODE_SAVE_FAILED',
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          },
+        )
+      }
 
       subject = `Código de Verificação - ${senderName}`
       bodyContent = `<p>Olá <strong>${profile.name || ''}</strong>,</p><p>Seu código de verificação é:</p><p style="font-size:32px;font-weight:bold;letter-spacing:8px;text-align:center;padding:20px;background:#f4f4f4;border-radius:8px;color:${BRAND_COLOR};">${code}</p><p>Este código expira em 15 minutos.</p><p>Se você não solicitou este código, ignore este e-mail.</p>`
