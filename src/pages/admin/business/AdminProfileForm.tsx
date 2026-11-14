@@ -16,6 +16,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/hooks/use-toast'
 import { AdminPasswordUpdate } from '@/components/admin/AdminPasswordUpdate'
+import { computeRoleChange, syncUserRolesAfterSave, fetchEditorRole } from '@/services/user-roles'
 import { ArrowLeft, Save, Loader2 } from 'lucide-react'
 
 export default function AdminProfileForm() {
@@ -26,6 +27,7 @@ export default function AdminProfileForm() {
 
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [editorRole, setEditorRole] = useState<string | null>(null)
   const [form, setForm] = useState<Record<string, any>>({
     name: '',
     email: '',
@@ -43,6 +45,15 @@ export default function AdminProfileForm() {
     is_club: false,
     is_author: false,
   })
+  // Estado dos checkboxes e do papel como estavam NO BANCO (para comparar
+  // antes/depois no salvamento).
+  const [savedState, setSavedState] = useState<Record<string, any> | null>(null)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) fetchEditorRole(data.user.id).then(setEditorRole)
+    })
+  }, [])
 
   const loadProfile = () => {
     if (!id) return
@@ -53,7 +64,10 @@ export default function AdminProfileForm() {
       .eq('id', id)
       .single()
       .then(({ data }) => {
-        if (data) setForm((prev) => ({ ...prev, ...data }))
+        if (data) {
+          setForm((prev) => ({ ...prev, ...data }))
+          setSavedState(data)
+        }
         setLoading(false)
       })
   }
@@ -71,7 +85,6 @@ export default function AdminProfileForm() {
       const payload = {
         name: form.name,
         email: form.email,
-        role: form.role,
         status: form.status,
         phone: form.phone,
         cpf_cnpj: form.cpf_cnpj,
@@ -84,14 +97,46 @@ export default function AdminProfileForm() {
         is_athlete: form.is_athlete,
         is_club: form.is_club,
         is_author: form.is_author,
+        role: form.role as string,
       }
+
+      // Papel de acesso: calculado a partir dos checkboxes + select Função,
+      // com proteção para admin/master (nunca rebaixados por esta tela).
+      const roleChange = computeRoleChange({
+        before: {
+          is_client: savedState?.is_client ?? false,
+          is_author: savedState?.is_author ?? false,
+        },
+        after: { is_client: form.is_client, is_author: form.is_author },
+        profileRole: savedState?.role ?? form.role,
+        formRole: form.role,
+        userId: id || '',
+        editorRole,
+      })
+
+      if (roleChange.warning) {
+        toast({ title: 'Atenção', description: roleChange.warning, variant: 'destructive' })
+      }
+      if (roleChange.finalRole) payload.role = roleChange.finalRole
+
       if (isEditing) {
         const { error } = await supabase.from('profiles').update(payload).eq('id', id)
         if (error) throw error
+
+        if (roleChange.changed && roleChange.finalRole) {
+          await syncUserRolesAfterSave(id!, roleChange.finalRole, savedState?.role ?? form.role)
+        }
         toast({ title: 'Perfil atualizado com sucesso' })
       } else {
-        const { error } = await supabase.from('profiles').insert(payload)
+        const { data: inserted, error } = await supabase
+          .from('profiles')
+          .insert(payload)
+          .select('id')
+          .single()
         if (error) throw error
+        if (roleChange.changed && roleChange.finalRole && inserted?.id) {
+          await syncUserRolesAfterSave(inserted.id, roleChange.finalRole, null)
+        }
         toast({ title: 'Perfil criado com sucesso' })
         navigate('/admin/users')
       }
@@ -174,7 +219,23 @@ export default function AdminProfileForm() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="role">Função</Label>
-                    <Select value={form.role} onValueChange={(v) => setField('role', v)}>
+                    <Select
+                      value={form.role}
+                      onValueChange={(v) => {
+                        const isProtected = ['admin', 'master'].includes(
+                          (savedState?.role || '').toLowerCase(),
+                        )
+                        if (isProtected) {
+                          toast({
+                            title: 'Atenção',
+                            description: `Este usuário é ${savedState?.role === 'master' ? 'master' : 'administrador'}: o papel de acesso não pode ser alterado por esta tela.`,
+                            variant: 'destructive',
+                          })
+                          return
+                        }
+                        setField('role', v)
+                      }}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -185,6 +246,8 @@ export default function AdminProfileForm() {
                         <SelectItem value="club">Clube</SelectItem>
                         <SelectItem value="staff">Staff</SelectItem>
                         <SelectItem value="athlete">Atleta</SelectItem>
+                        <SelectItem value="client">Cliente</SelectItem>
+                        <SelectItem value="autor">Autor</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -222,7 +285,7 @@ export default function AdminProfileForm() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2 md:col-span-2">
+                  <div className="space-y-2">
                     <Label htmlFor="address">Endereço</Label>
                     <Input
                       id="address"
@@ -238,17 +301,29 @@ export default function AdminProfileForm() {
                     { key: 'is_athlete', label: 'Atleta' },
                     { key: 'is_club', label: 'Clube' },
                     { key: 'is_author', label: 'Autor' },
-                  ].map(({ key, label }) => (
-                    <div key={key} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={key}
-                        checked={!!form[key]}
-                        onCheckedChange={(v) => setField(key, v)}
-                      />
-                      <Label htmlFor={key}>{label}</Label>
-                    </div>
-                  ))}
+                  ].map(({ key, label }) => {
+                    const isProtected = ['admin', 'master'].includes(
+                      (savedState?.role || '').toLowerCase(),
+                    )
+                    const mapsToRole = key === 'is_client' || key === 'is_author' ? true : false
+                    return (
+                      <div key={key} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={key}
+                          checked={!!form[key]}
+                          disabled={isProtected && mapsToRole}
+                          onCheckedChange={(v) => setField(key, v)}
+                        />
+                        <Label htmlFor={key}>{label}</Label>
+                      </div>
+                    )
+                  })}
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Os checkboxes Cliente e Autor definem o papel de acesso do usuário (Cliente → área
+                  do cliente; Autor → painel de posts). Atleta, Clube e Fornecedor são apenas
+                  classificações, sem área própria.
+                </p>
               </CardContent>
             </Card>
           </TabsContent>
