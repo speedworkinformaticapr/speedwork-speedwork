@@ -31,6 +31,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Plus, Edit2, Trash2, Landmark, CreditCard, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { hardDeleteRecord } from '@/services/hard-delete'
 import { formatCurrency } from '@/lib/financial-utils'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 
@@ -185,9 +186,9 @@ export default function AdminBankAccounts() {
   const [recordToDelete, setRecordToDelete] = useState<{ id: string; name: string } | null>(null)
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('contas_bancarias').delete().eq('id', id)
-    if (error) return toast.error('Erro ao excluir: ' + error.message)
-    toast.success('Registro excluído!')
+    const { error } = await hardDeleteRecord('contas_bancarias', id)
+    if (error) return toast.error('Erro ao excluir: ' + error)
+    toast.success('Registro excluído com sucesso.')
     setRecordToDelete(null)
     loadData()
   }

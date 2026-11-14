@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 import { useTranslation } from '@/hooks/use-translation'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { toast } from 'sonner'
+import { hardDeleteRecord } from '@/services/hard-delete'
 
 export function MasterRecordsTable({
   selectedId,
@@ -58,11 +59,11 @@ export function MasterRecordsTable({
   const [recordToDelete, setRecordToDelete] = useState<string | null>(null)
 
   async function handleDelete(id: string) {
-    const { error } = await supabase.from('financial_master_records').delete().eq('id', id)
+    const { error } = await hardDeleteRecord('financial_master_records', id)
     if (error) {
-      toast.error(t('Erro ao excluir'))
+      toast.error(t('Erro ao excluir') + ': ' + error)
     } else {
-      toast.success(t('Registro excluído com sucesso'))
+      toast.success(t('Registro excluído com sucesso.'))
       setRecordToDelete(null)
       fetchRecords()
       if (selectedId === id) onSelect('')

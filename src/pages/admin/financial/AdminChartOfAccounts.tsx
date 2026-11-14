@@ -30,6 +30,7 @@ import { Badge } from '@/components/ui/badge'
 import { Plus, Edit2, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { hardDeleteRecord } from '@/services/hard-delete'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 
 export default function AdminChartOfAccounts() {
@@ -99,13 +100,13 @@ export default function AdminChartOfAccounts() {
   const [accountToDelete, setAccountToDelete] = useState<{ id: string; name: string } | null>(null)
 
   const handleDelete = async (id: string) => {
-    try {
-      await supabase.from('plano_contas').delete().eq('id', id)
-      toast({ title: 'Conta excluída!' })
+    const { error } = await hardDeleteRecord('plano_contas', id)
+    if (error) {
+      toast({ title: 'Erro ao excluir', description: error, variant: 'destructive' })
+    } else {
+      toast({ title: 'Registro excluído com sucesso.' })
       setAccountToDelete(null)
       loadData()
-    } catch (err: any) {
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' })
     }
   }
 

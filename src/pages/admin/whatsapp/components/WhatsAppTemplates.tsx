@@ -22,6 +22,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Plus, Edit2, Trash2, Send } from 'lucide-react'
+import { hardDeleteRecord } from '@/services/hard-delete'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 const MSG_TYPES = [
   'agendamento_confirmacao',
@@ -96,9 +98,17 @@ export default function WhatsAppTemplates() {
     }
   }
 
+  const [tplToDelete, setTplToDelete] = useState<string | null>(null)
+
   const handleDel = async (id: string) => {
-    await supabase.from('whatsapp_templates').delete().eq('id', id)
-    toast({ title: 'Sucesso', description: 'Template removido!' })
+    const { error } = await hardDeleteRecord('whatsapp_templates', id)
+    if (error) {
+      toast({ title: 'Erro ao excluir', description: error, variant: 'destructive' })
+      setTplToDelete(null)
+      return
+    }
+    toast({ title: 'Sucesso', description: 'Registro excluído com sucesso.' })
+    setTplToDelete(null)
     loadData()
   }
 
@@ -170,7 +180,7 @@ export default function WhatsAppTemplates() {
                   variant="ghost"
                   size="icon"
                   className="text-red-500"
-                  onClick={() => handleDel(t.id)}
+                  onClick={() => setTplToDelete(t.id)}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>

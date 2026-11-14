@@ -13,6 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useToast } from '@/components/ui/use-toast'
+import { hardDeleteRecord } from '@/services/hard-delete'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,13 +71,14 @@ export default function AdminFinancialPayments() {
   const handleDelete = async () => {
     if (!deleteRecord) return
 
-    const { error } = await supabase
-      .from('financial_master_records')
-      .delete()
-      .eq('id', deleteRecord.id)
+    const { error } = await hardDeleteRecord('financial_master_records', deleteRecord.id)
 
     if (error) {
-      toast({ title: 'Erro', description: 'Erro ao excluir o registro.', variant: 'destructive' })
+      toast({
+        title: 'Erro ao excluir',
+        description: error,
+        variant: 'destructive',
+      })
     } else {
       toast({ title: 'Sucesso', description: 'Registro excluído com sucesso.' })
       fetchRecords()

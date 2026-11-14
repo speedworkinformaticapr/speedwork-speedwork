@@ -16,6 +16,7 @@ import { format } from 'date-fns'
 import { formatCurrency, getTypeLabel } from '@/lib/financial-utils'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { hardDeleteRecord } from '@/services/hard-delete'
 import { useSystemData } from '@/hooks/use-system-data'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { PaymentRegistrationModal } from '@/components/financial/PaymentRegistrationModal'
@@ -61,11 +62,11 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
   }
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('financial_master_records').delete().eq('id', id)
+    const { error } = await hardDeleteRecord('financial_master_records', id)
     if (error) {
-      toast.error('Erro ao excluir')
+      toast.error(`Erro ao excluir: ${error}`)
     } else {
-      toast.success('Lançamento excluído')
+      toast.success('Registro excluído com sucesso.')
       setRecordToDelete(null)
       onRefresh()
     }

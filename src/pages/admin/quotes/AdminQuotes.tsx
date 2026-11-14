@@ -16,6 +16,7 @@ import { AsaasBillingDialog } from '@/components/AsaasBillingDialog'
 import { Link } from 'react-router-dom'
 import { Edit, Share2, Trash2, CreditCard, PlusCircle, Search } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
+import { hardDeleteRecord } from '@/services/hard-delete'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   DropdownMenu,
@@ -69,11 +70,11 @@ export default function AdminQuotes() {
   }
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('orcamentos').delete().eq('id', id)
+    const { error } = await hardDeleteRecord('orcamentos', id)
     if (error) {
-      toast({ title: 'Erro', description: error.message, variant: 'destructive' })
+      toast({ title: 'Erro ao excluir', description: error, variant: 'destructive' })
     } else {
-      toast({ title: 'Sucesso', description: 'Orçamento excluído.' })
+      toast({ title: 'Sucesso', description: 'Registro excluído com sucesso.' })
       loadQuotes()
     }
   }

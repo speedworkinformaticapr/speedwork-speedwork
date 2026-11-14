@@ -107,9 +107,9 @@ export default function AdminBlogList() {
   const handleDelete = async (id: string) => {
     const { error } = await hardDeleteRecord('blog_posts', id)
     if (error) {
-      toast({ title: 'Erro ao excluir', description: error, variant: 'destructive' })
+      toast.error(`Erro ao excluir: ${error}`)
     } else {
-      toast({ title: 'Registro excluído com sucesso.' })
+      toast.success('Registro excluído com sucesso.')
       setPostToDelete(null)
       fetchData()
     }

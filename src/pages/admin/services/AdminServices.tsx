@@ -27,6 +27,7 @@ import {
 } from '@/pages/admin/settings/components/PlanServiceFormDialog'
 import { useToast } from '@/hooks/use-toast'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { hardDeleteRecord } from '@/services/hard-delete'
 
 export default function AdminServices() {
   const [data, setData] = useState<any[]>([])
@@ -74,9 +75,14 @@ export default function AdminServices() {
   const [recordToDelete, setRecordToDelete] = useState<{ id: string; name: string } | null>(null)
 
   const handleDelete = async (id: string) => {
-    await supabase.from('services').delete().eq('id', id)
-    setRecordToDelete(null)
-    fetchData()
+    const { error } = await hardDeleteRecord('services', id)
+    if (error) {
+      toast({ title: 'Erro ao excluir', description: error, variant: 'destructive' })
+    } else {
+      toast({ title: 'Registro excluído com sucesso.' })
+      setRecordToDelete(null)
+      fetchData()
+    }
   }
 
   const renderPrice = (item: any, cycle: BillingCycle) => {

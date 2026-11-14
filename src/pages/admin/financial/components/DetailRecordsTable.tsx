@@ -15,6 +15,7 @@ import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/hooks/use-translation'
 import { toast } from 'sonner'
+import { hardDeleteRecord } from '@/services/hard-delete'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 
 export function DetailRecordsTable({ masterId }: { masterId: string | null }) {
@@ -55,11 +56,11 @@ export function DetailRecordsTable({ masterId }: { masterId: string | null }) {
   const [chargeToDelete, setChargeToDelete] = useState<string | null>(null)
 
   async function handleDelete(id: string) {
-    const { error } = await supabase.from('financial_charges').delete().eq('id', id)
+    const { error } = await hardDeleteRecord('financial_charges', id)
     if (error) {
-      toast.error(t('Erro ao excluir parcela'))
+      toast.error(t('Erro ao excluir parcela') + ': ' + error)
     } else {
-      toast.success(t('Parcela excluída com sucesso'))
+      toast.success(t('Registro excluído com sucesso.'))
       setChargeToDelete(null)
       fetchCharges()
     }

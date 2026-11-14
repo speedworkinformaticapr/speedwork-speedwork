@@ -1,3 +1,4 @@
+import { hardDeleteRecord } from '@/services/hard-delete'
 import { supabase } from '@/lib/supabase/client'
 
 export interface EvaluationQuestion {
@@ -53,6 +54,7 @@ export async function updateQuestion(
 }
 
 export async function deleteQuestion(id: string): Promise<void> {
-  const { error } = await supabase.from('evaluation_questions').delete().eq('id', id)
-  if (error) throw error
+  // Exclusão definitiva, com erro amigável em caso de referência (FK)
+  const { error } = await hardDeleteRecord('evaluation_questions', id)
+  if (error) throw new Error(error)
 }

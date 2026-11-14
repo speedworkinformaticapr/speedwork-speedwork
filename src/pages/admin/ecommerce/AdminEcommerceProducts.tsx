@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { toast } from 'sonner'
+import { hardDeleteRecord } from '@/services/hard-delete'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -50,9 +52,14 @@ export default function AdminEcommerceProducts() {
   const [recordToDelete, setRecordToDelete] = useState<{ id: string; name: string } | null>(null)
 
   const handleDelete = async (id: string) => {
-    await supabase.from('products').delete().eq('id', id)
-    setRecordToDelete(null)
-    fetchData()
+    const { error } = await hardDeleteRecord('products', id)
+    if (error) {
+      toast.error(`Erro ao excluir: ${error}`)
+    } else {
+      toast.success('Registro excluído com sucesso.')
+      setRecordToDelete(null)
+      fetchData()
+    }
   }
 
   return (
