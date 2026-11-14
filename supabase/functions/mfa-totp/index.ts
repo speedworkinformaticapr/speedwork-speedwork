@@ -292,6 +292,13 @@ Deno.serve(async (req: Request) => {
       if (!valid) {
         return json({ error: 'Código incorreto.' }, 400)
       }
+      // Marca a verificação MFA da sessão no perfil. Usa SEMPRE o id do JWT
+      // (user.userId), nunca um id vindo do corpo da requisição.
+      const { error: verErr } = await adminClient
+        .from('profiles')
+        .update({ mfa_verified: true })
+        .eq('id', user.userId!)
+      if (verErr) return json({ error: 'Erro ao salvar verificação: ' + verErr.message }, 500)
       return json({ ok: true })
     }
 

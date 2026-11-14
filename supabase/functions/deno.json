@@ -24,6 +24,6 @@
     "create-asaas-charge": 2,
     "webhook-asaas-manual": 2,
     "admin-update-password": 82,
-    "mfa-totp": 1
+    "mfa-totp": 2
   }
 }
