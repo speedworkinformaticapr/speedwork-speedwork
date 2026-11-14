@@ -16,6 +16,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/hooks/use-toast'
 import { AdminPasswordUpdate } from '@/components/admin/AdminPasswordUpdate'
+import { MfaSettingsSection } from '@/components/admin/MfaSettingsSection'
 import { computeRoleChange, syncUserRolesAfterSave, fetchEditorRole } from '@/services/user-roles'
 import { ArrowLeft, Save, Loader2 } from 'lucide-react'
 
@@ -44,6 +45,8 @@ export default function AdminProfileForm() {
     is_athlete: false,
     is_club: false,
     is_author: false,
+    mfa_enabled: false,
+    mfa_type: 'email',
   })
   // Estado dos checkboxes e do papel como estavam NO BANCO (para comparar
   // antes/depois no salvamento).
@@ -334,8 +337,18 @@ export default function AdminProfileForm() {
                 <CardHeader>
                   <CardTitle>Acesso e Segurança</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-6">
                   <AdminPasswordUpdate userId={id!} profileEmail={form.email || ''} />
+                  <MfaSettingsSection
+                    userId={id!}
+                    profileRole={savedState?.role ?? form.role}
+                    mfaEnabled={!!form.mfa_enabled}
+                    mfaType={form.mfa_type || 'email'}
+                    onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+                    onTotpEnabled={() =>
+                      setForm((prev) => ({ ...prev, mfa_enabled: true, mfa_type: 'totp' }))
+                    }
+                  />
                 </CardContent>
               </Card>
             </TabsContent>

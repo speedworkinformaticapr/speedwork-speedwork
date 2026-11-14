@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, Link, Navigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -7,17 +7,37 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/use-auth'
 import { useSystemData } from '@/hooks/use-system-data'
-import { Loader2, Key, ShieldCheck } from 'lucide-react'
+import { totpVerify } from '@/services/mfa'
+import { Loader2, Key, ShieldCheck, Smartphone } from 'lucide-react'
 
 export default function MfaVerify() {
   const [mfaCode, setMfaCode] = useState('')
   const [verifying, setVerifying] = useState(false)
   const [resending, setResending] = useState(false)
+  const [mfaType, setMfaType] = useState<'email' | 'totp'>('email')
 
   const navigate = useNavigate()
   const { toast } = useToast()
   const { user, mfaVerified, loading, profile, validateSession, signOut } = useAuth()
   const { data: systemData } = useSystemData()
+
+  // Descobre o método configurado para este usuário (totp ou email).
+  useEffect(() => {
+    if (!user) return
+    const loadMfaType = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('mfa_type, mfa_enabled')
+        .eq('id', user.id)
+        .single()
+      if (data?.mfa_enabled && data.mfa_type === 'totp') {
+        setMfaType('totp')
+      } else {
+        setMfaType('email')
+      }
+    }
+    loadMfaType()
+  }, [user])
 
   if (loading) {
     return (
@@ -44,6 +64,28 @@ export default function MfaVerify() {
     setVerifying(true)
 
     try {
+      if (mfaType === 'totp') {
+        // Código gerado pelo app autenticador: validação via edge function.
+        try {
+          await totpVerify(mfaCode)
+        } catch (err: any) {
+          toast({ title: 'Código incorreto', description: err.message, variant: 'destructive' })
+          setVerifying(false)
+          return
+        }
+        sessionStorage.removeItem('mfa_pending')
+        await validateSession()
+        toast({ title: 'MFA verificado com sucesso!' })
+        const role = profile?.role
+        if (role === 'admin' || role === 'master') {
+          navigate('/admin/dashboard', { replace: true })
+        } else {
+          navigate('/client/dashboard', { replace: true })
+        }
+        return
+      }
+
+      // Método e-mail: valida o código gravado no perfil (válido por 15 min).
       const { data: profileData, error: fetchError } = await supabase
         .from('profiles')
         .select('mfa_code, mfa_code_expires_at, role')
@@ -107,6 +149,7 @@ export default function MfaVerify() {
   }
 
   const handleResend = async () => {
+    if (mfaType === 'totp') return // não há reenvio no método app
     setResending(true)
     try {
       const { error } = await supabase.functions.invoke('send-email', {
@@ -144,6 +187,8 @@ export default function MfaVerify() {
     await signOut()
     navigate('/login', { replace: true })
   }
+
+  const isTotp = mfaType === 'totp'
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -203,17 +248,19 @@ export default function MfaVerify() {
           <div className="space-y-6 animate-fade-in">
             <div className="space-y-2 text-center lg:text-left">
               <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
-                <ShieldCheck className="h-6 w-6" />
+                {isTotp ? <Smartphone className="h-6 w-6" /> : <ShieldCheck className="h-6 w-6" />}
               </div>
               <h2 className="text-3xl font-bold tracking-tight">Verificação em Duas Etapas</h2>
               <p className="text-muted-foreground">
-                Insira o código de 6 dígitos enviado para seu e-mail.
+                {isTotp
+                  ? 'Digite o código de 6 dígitos gerado pelo seu app autenticador.'
+                  : 'Insira o código de 6 dígitos enviado para seu e-mail.'}
               </p>
             </div>
 
             <div className="space-y-4 pt-4">
               <div className="space-y-2">
-                <Label>Código de Verificação</Label>
+                <Label>{isTotp ? 'Código do App' : 'Código de Verificação'}</Label>
                 <Input
                   value={mfaCode}
                   onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
@@ -241,20 +288,22 @@ export default function MfaVerify() {
                 )}
               </Button>
               <div className="flex flex-col gap-2">
-                <Button
-                  variant="ghost"
-                  className="w-full h-12"
-                  onClick={handleResend}
-                  disabled={resending}
-                >
-                  {resending ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Enviando...
-                    </>
-                  ) : (
-                    'Reenviar código'
-                  )}
-                </Button>
+                {!isTotp && (
+                  <Button
+                    variant="ghost"
+                    className="w-full h-12"
+                    onClick={handleResend}
+                    disabled={resending}
+                  >
+                    {resending ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Enviando...
+                      </>
+                    ) : (
+                      'Reenviar código'
+                    )}
+                  </Button>
+                )}
                 <Button variant="ghost" className="w-full h-12" onClick={handleCancel}>
                   Voltar ao Login
                 </Button>

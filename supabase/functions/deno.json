@@ -23,6 +23,7 @@
     "sync-google-reviews": 2,
     "create-asaas-charge": 2,
     "webhook-asaas-manual": 2,
-    "admin-update-password": 82
+    "admin-update-password": 82,
+    "mfa-totp": 1
   }
 }
