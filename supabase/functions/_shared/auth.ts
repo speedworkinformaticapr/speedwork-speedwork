@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from 'jsr:@supabase/supabase-js@2'
-import { corsHeaders } from '../cors.ts'
+import { corsHeaders } from './cors.ts'
 
 export interface AuthResult {
   ok: boolean
