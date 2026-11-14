@@ -27,6 +27,7 @@ import * as Icons from 'lucide-react'
 import { ChevronRight, LogOut, User } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuthorSessionTimeout } from '@/hooks/use-author-session-timeout'
+import ScreenHelpMenu from './ScreenHelpMenu'
 
 const renderIcon = (iconName: string, className?: string) => {
   const IconCmp = (Icons as any)[iconName] || Icons.Circle
@@ -287,6 +288,7 @@ function AdminLayoutContent({
                 {headerContent.controls}
               </div>
             ) : null}
+            <ScreenHelpMenu />
             <Button variant="ghost" size="icon" asChild className="rounded-full h-8 w-8 shrink-0">
               <Link to="/profile">
                 <Avatar className="size-8 border bg-background">

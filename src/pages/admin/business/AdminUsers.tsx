@@ -126,9 +126,11 @@ export default function AdminUsers() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Pessoas e Usuários</h1>
+        <h1 data-tour="users-title" className="text-3xl font-bold tracking-tight">
+          Pessoas e Usuários
+        </h1>
         <Link to="/admin/business/profiles/new">
-          <Button>
+          <Button data-tour="users-new-button">
             <UserPlus className="mr-2 h-4 w-4" />
             Novo Registro
           </Button>
@@ -140,7 +142,10 @@ export default function AdminUsers() {
           <CardTitle>Gestão Unificada</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col xl:flex-row gap-4 mb-6 xl:items-center xl:justify-between">
+          <div
+            data-tour="users-filters"
+            className="flex flex-col xl:flex-row gap-4 mb-6 xl:items-center xl:justify-between"
+          >
             <div className="flex-1">
               <DataTableToolbar
                 search={search}
@@ -185,7 +190,7 @@ export default function AdminUsers() {
             </div>
           </div>
 
-          <div className="rounded-md border overflow-hidden relative">
+          <div data-tour="users-table" className="rounded-md border overflow-hidden relative">
             <div className="overflow-auto max-h-[600px]">
               <Table>
                 <TableHeader className="sticky top-0 z-10 bg-background shadow-sm">
