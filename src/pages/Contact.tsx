@@ -49,10 +49,13 @@ export default function Contact() {
     const sanitize = (value: unknown, max = 500) =>
       typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').slice(0, max) : ''
 
-    const name = sanitize(form.name?.value, 120)
-    const email = sanitize(form.email?.value, 200)
-    const subject = sanitize(form.subject?.value, 200)
-    const message = sanitize(form.message?.value, 4000)
+    const field = (formName: string) =>
+      (form.elements.namedItem(formName) as HTMLInputElement | HTMLTextAreaElement | null)?.value
+
+    const name = sanitize(field('name'), 120)
+    const email = sanitize(field('email'), 200)
+    const subject = sanitize(field('subject'), 200)
+    const message = sanitize(field('message'), 4000)
 
     try {
       if (siteKey && window.grecaptcha) {
