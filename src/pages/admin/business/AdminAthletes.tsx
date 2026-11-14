@@ -29,6 +29,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Plus, Search, Edit2, Trash2, Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Ativo' },
@@ -171,13 +172,15 @@ export default function AdminAthletes() {
     }
   }
 
+  const [athleteToDelete, setAthleteToDelete] = useState<{ id: string; name: string } | null>(null)
+
   const handleDelete = async (id: string) => {
-    if (!confirm('Deseja realmente excluir este atleta?')) return
     const { error } = await supabase.from('athletes').delete().eq('id', id)
     if (error) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' })
     } else {
       toast({ title: 'Sucesso', description: 'Atleta excluído!' })
+      setAthleteToDelete(null)
       loadData()
     }
   }
@@ -274,7 +277,13 @@ export default function AdminAthletes() {
                       <Button variant="ghost" size="icon" onClick={() => openEdit(a)}>
                         <Edit2 className="w-4 h-4 text-muted-foreground" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(a.id)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                          setAthleteToDelete({ id: a.id, name: a.name || 'este atleta' })
+                        }
+                      >
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
                     </TableCell>
@@ -451,6 +460,19 @@ export default function AdminAthletes() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!athleteToDelete}
+        onOpenChange={(open) => {
+          if (!open) setAthleteToDelete(null)
+        }}
+        title="Excluir atleta"
+        description={`Tem certeza que deseja excluir o atleta ${athleteToDelete?.name ?? ''}? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={() => athleteToDelete && handleDelete(athleteToDelete.id)}
+      />
     </div>
   )
 }

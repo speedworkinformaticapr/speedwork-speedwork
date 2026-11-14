@@ -20,6 +20,7 @@ import { Edit, Trash2, Settings, Eye } from 'lucide-react'
 import { BlogAiModelSettings } from '@/components/blog/BlogAiModelSettings'
 import { InlineCellSelect } from '@/components/blog/InlineCellSelect'
 import { blogService } from '@/services/blog'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 const STATUS_OPTIONS = [
   { label: 'Publicado', value: 'published' },
@@ -100,11 +101,12 @@ export default function AdminBlogList() {
     fetchCategories()
   }, [fetchCategories])
 
+  const [postToDelete, setPostToDelete] = useState<{ id: string; name: string } | null>(null)
+
   const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir?')) {
-      await supabase.from('blog_posts').delete().eq('id', id)
-      fetchData()
-    }
+    await supabase.from('blog_posts').delete().eq('id', id)
+    setPostToDelete(null)
+    fetchData()
   }
 
   const handleInlineUpdate = async (
@@ -235,7 +237,13 @@ export default function AdminBlogList() {
                             <Edit className="h-4 w-4" />
                           </Link>
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            setPostToDelete({ id: item.id, name: item.title || 'este post' })
+                          }
+                        >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </TableCell>
@@ -247,6 +255,19 @@ export default function AdminBlogList() {
           </div>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!postToDelete}
+        onOpenChange={(open) => {
+          if (!open) setPostToDelete(null)
+        }}
+        title="Excluir postagem"
+        description={`Tem certeza que deseja excluir a postagem "${postToDelete?.name ?? ''}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={() => postToDelete && handleDelete(postToDelete.id)}
+      />
     </div>
   )
 }

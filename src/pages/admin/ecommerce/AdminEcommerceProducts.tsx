@@ -14,6 +14,7 @@ import { DataTableToolbar } from '@/components/ui/data-table/data-table-toolbar'
 import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header'
 import { Button } from '@/components/ui/button'
 import { Trash2 } from 'lucide-react'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 export default function AdminEcommerceProducts() {
   const [data, setData] = useState<any[]>([])
@@ -46,11 +47,12 @@ export default function AdminEcommerceProducts() {
     fetchData()
   }, [debouncedSearch, dateRange, sortConfig])
 
+  const [recordToDelete, setRecordToDelete] = useState<{ id: string; name: string } | null>(null)
+
   const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir?')) {
-      await supabase.from('products').delete().eq('id', id)
-      fetchData()
-    }
+    await supabase.from('products').delete().eq('id', id)
+    setRecordToDelete(null)
+    fetchData()
   }
 
   return (
@@ -120,7 +122,13 @@ export default function AdminEcommerceProducts() {
                       </TableCell>
                       <TableCell>{item.stock}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            setRecordToDelete({ id: item.id, name: item.name || 'produto' })
+                          }
+                        >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </TableCell>
@@ -132,6 +140,19 @@ export default function AdminEcommerceProducts() {
           </div>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!recordToDelete}
+        onOpenChange={(open) => {
+          if (!open) setRecordToDelete(null)
+        }}
+        title="Excluir produto"
+        description={`Tem certeza que deseja excluir o produto "${recordToDelete?.name ?? ''}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={() => recordToDelete && handleDelete(recordToDelete.id)}
+      />
     </div>
   )
 }

@@ -30,6 +30,7 @@ import { Badge } from '@/components/ui/badge'
 import { Plus, Edit2, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 export default function AdminChartOfAccounts() {
   const [accounts, setAccounts] = useState<any[]>([])
@@ -95,11 +96,13 @@ export default function AdminChartOfAccounts() {
     }
   }
 
+  const [accountToDelete, setAccountToDelete] = useState<{ id: string; name: string } | null>(null)
+
   const handleDelete = async (id: string) => {
-    if (!confirm('Deseja realmente excluir esta conta?')) return
     try {
       await supabase.from('plano_contas').delete().eq('id', id)
       toast({ title: 'Conta excluída!' })
+      setAccountToDelete(null)
       loadData()
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' })
@@ -176,7 +179,7 @@ export default function AdminChartOfAccounts() {
                       variant="ghost"
                       size="sm"
                       className="text-destructive"
-                      onClick={() => handleDelete(c.id)}
+                      onClick={() => setAccountToDelete({ id: c.id, name: c.nome || 'esta conta' })}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -269,6 +272,19 @@ export default function AdminChartOfAccounts() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!accountToDelete}
+        onOpenChange={(open) => {
+          if (!open) setAccountToDelete(null)
+        }}
+        title="Excluir conta"
+        description={`Tem certeza que deseja excluir a conta "${accountToDelete?.name ?? ''}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={() => accountToDelete && handleDelete(accountToDelete.id)}
+      />
     </div>
   )
 }

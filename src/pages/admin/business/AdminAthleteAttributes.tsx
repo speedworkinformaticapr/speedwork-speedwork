@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 export default function AdminAthleteAttributes() {
   const [attributes, setAttributes] = useState<any[]>([])
@@ -95,12 +96,14 @@ export default function AdminAthleteAttributes() {
     setIsModalOpen(true)
   }
 
+  const [recordToDelete, setRecordToDelete] = useState<{ id: string; name: string } | null>(null)
+
   const handleDelete = async (id: string) => {
-    if (!confirm('Deseja realmente excluir este atributo?')) return
     const { error } = await supabase.from('athlete_attributes').delete().eq('id', id)
     if (error) toast({ title: 'Erro', description: error.message, variant: 'destructive' })
     else {
       toast({ title: 'Excluído com sucesso!' })
+      setRecordToDelete(null)
       fetchAttributes()
     }
   }
@@ -217,7 +220,13 @@ export default function AdminAthleteAttributes() {
                         <Button variant="ghost" size="icon" onClick={() => handleEdit(attr)}>
                           <Edit className="h-4 w-4 text-primary" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(attr.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            setRecordToDelete({ id: attr.id, name: attr.name || 'este atributo' })
+                          }
+                        >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </TableCell>
@@ -316,6 +325,19 @@ export default function AdminAthleteAttributes() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!recordToDelete}
+        onOpenChange={(open) => {
+          if (!open) setRecordToDelete(null)
+        }}
+        title="Excluir atributo"
+        description={`Tem certeza que deseja excluir o atributo ${recordToDelete?.name ?? ''}? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={() => recordToDelete && handleDelete(recordToDelete.id)}
+      />
     </div>
   )
 }

@@ -15,6 +15,7 @@ import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/hooks/use-translation'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 export function DetailRecordsTable({ masterId }: { masterId: string | null }) {
   const { t } = useTranslation()
@@ -51,14 +52,15 @@ export function DetailRecordsTable({ masterId }: { masterId: string | null }) {
     if (data) setCharges(data)
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm(t('Tem certeza que deseja excluir esta parcela?'))) return
+  const [chargeToDelete, setChargeToDelete] = useState<string | null>(null)
 
+  async function handleDelete(id: string) {
     const { error } = await supabase.from('financial_charges').delete().eq('id', id)
     if (error) {
       toast.error(t('Erro ao excluir parcela'))
     } else {
       toast.success(t('Parcela excluída com sucesso'))
+      setChargeToDelete(null)
       fetchCharges()
     }
   }
@@ -162,7 +164,7 @@ export function DetailRecordsTable({ masterId }: { masterId: string | null }) {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-rose-500 hover:text-rose-400 hover:bg-rose-500/10"
-                          onClick={() => handleDelete(charge.id)}
+                          onClick={() => setChargeToDelete(charge.id)}
                         >
                           <Trash className="h-4 w-4" />
                         </Button>
@@ -207,6 +209,20 @@ export function DetailRecordsTable({ masterId }: { masterId: string | null }) {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={!!chargeToDelete}
+        onOpenChange={(open) => {
+          if (!open) setChargeToDelete(null)
+        }}
+        title={t('Excluir parcela')}
+        description={t(
+          'Tem certeza que deseja excluir esta parcela? Esta ação não pode ser desfeita.',
+        )}
+        confirmLabel={t('Excluir')}
+        cancelLabel={t('Cancelar')}
+        destructive
+        onConfirm={() => chargeToDelete && handleDelete(chargeToDelete)}
+      />
     </div>
   )
 }

@@ -17,13 +17,15 @@ import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-col
 import { fetchLeads, deleteLead, LEAD_STATUSES, type Lead } from '@/services/leads'
 import { getScoreLabel } from '@/lib/lead-scoring'
 import { Trash2, Eye, UserPlus } from 'lucide-react'
-import { toast } from '@/hooks/use-toast'
+import { useToast } from '@/hooks/use-toast'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
 export default function AdminLeads() {
   const [data, setData] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
   const { search, setSearch, debouncedSearch, status, setStatus, sortConfig, handleSort } =
     useDataTable()
 
@@ -64,10 +66,12 @@ export default function AdminLeads() {
     return String(valA).localeCompare(String(valB)) * dir
   })
 
+  const [leadToDelete, setLeadToDelete] = useState<{ id: string; name: string } | null>(null)
+
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este lead?')) return
     try {
       await deleteLead(id)
+      setLeadToDelete(null)
       setData(data.filter((l) => l.id !== id))
       toast({ title: 'Lead excluído.' })
     } catch {
@@ -186,7 +190,9 @@ export default function AdminLeads() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleDelete(lead.id)}
+                              onClick={() =>
+                                setLeadToDelete({ id: lead.id, name: lead.name || 'este lead' })
+                              }
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
@@ -201,6 +207,19 @@ export default function AdminLeads() {
           </div>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!leadToDelete}
+        onOpenChange={(open) => {
+          if (!open) setLeadToDelete(null)
+        }}
+        title="Excluir lead"
+        description={`Tem certeza que deseja excluir o lead ${leadToDelete?.name ?? ''}? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={() => leadToDelete && handleDelete(leadToDelete.id)}
+      />
     </div>
   )
 }

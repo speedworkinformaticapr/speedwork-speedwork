@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useAuth } from '@/hooks/use-auth'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 export default function AdminAthleteEvaluations() {
   const { user } = useAuth()
@@ -123,13 +124,17 @@ export default function AdminAthleteEvaluations() {
     setIsModalOpen(true)
   }
 
+  const [evaluationToDelete, setEvaluationToDelete] = useState<{ id: string; name: string } | null>(
+    null,
+  )
+
   const handleDelete = async (id: string) => {
-    if (!confirm('Deseja realmente excluir esta avaliação?')) return
     const { error } = await supabase.from('athlete_attribute_values').delete().eq('id', id)
     if (error) {
       toast({ title: 'Erro ao excluir', description: error.message, variant: 'destructive' })
     } else {
       toast({ title: 'Avaliação excluída com sucesso!' })
+      setEvaluationToDelete(null)
       fetchData()
     }
   }
@@ -202,7 +207,16 @@ export default function AdminAthleteEvaluations() {
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(ev)}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(ev.id)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        setEvaluationToDelete({
+                          id: ev.id,
+                          name: `${ev.athletes?.name ?? 'Atleta'} — ${ev.athlete_attributes?.nome ?? 'Atributo'}`,
+                        })
+                      }
+                    >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </TableCell>
@@ -303,6 +317,19 @@ export default function AdminAthleteEvaluations() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!evaluationToDelete}
+        onOpenChange={(open) => {
+          if (!open) setEvaluationToDelete(null)
+        }}
+        title="Excluir avaliação"
+        description={`Tem certeza que deseja excluir a avaliação de ${evaluationToDelete?.name ?? 'atleta'}? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={() => evaluationToDelete && handleDelete(evaluationToDelete.id)}
+      />
     </div>
   )
 }

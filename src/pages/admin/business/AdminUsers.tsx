@@ -17,6 +17,7 @@ import { Trash2, Edit, UserPlus, Shield, User, Briefcase, Truck } from 'lucide-r
 import { Badge } from '@/components/ui/badge'
 import { Link } from 'react-router-dom'
 import { useToast } from '@/hooks/use-toast'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 export default function AdminUsers() {
   const [data, setData] = useState<any[]>([])
@@ -34,6 +35,9 @@ export default function AdminUsers() {
   const { toast } = useToast()
 
   const [entityType, setEntityType] = useState<string>('all')
+  const [recordToDeactivate, setRecordToDeactivate] = useState<{ id: string; name: string } | null>(
+    null,
+  )
 
   const fetchData = async () => {
     let q = supabase.from('profiles').select('*')
@@ -45,6 +49,9 @@ export default function AdminUsers() {
     }
     if (status && status !== 'all') {
       q = q.eq('status', status)
+    } else {
+      // Filtro padrão "Todos": oculta registros desativados (soft-delete)
+      q = q.neq('status', 'inactive')
     }
 
     if (entityType === 'clients') q = q.eq('is_client', true)
@@ -72,14 +79,13 @@ export default function AdminUsers() {
   }, [debouncedSearch, status, entityType, dateRange, sortConfig])
 
   const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja desativar este registro?')) {
-      const { error } = await supabase.from('profiles').update({ status: 'inactive' }).eq('id', id)
-      if (!error) {
-        toast({ title: 'Registro desativado com sucesso.' })
-        fetchData()
-      } else {
-        toast({ title: 'Erro ao desativar', variant: 'destructive' })
-      }
+    const { error } = await supabase.from('profiles').update({ status: 'inactive' }).eq('id', id)
+    if (!error) {
+      toast({ title: 'Registro desativado com sucesso.' })
+      setRecordToDeactivate(null)
+      fetchData()
+    } else {
+      toast({ title: 'Erro ao desativar', variant: 'destructive' })
     }
   }
 
@@ -251,7 +257,13 @@ export default function AdminUsers() {
                               <Edit className="h-4 w-4" />
                             </Button>
                           </Link>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              setRecordToDeactivate({ id: item.id, name: item.name || 'Sem nome' })
+                            }
+                          >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </TableCell>
@@ -264,6 +276,19 @@ export default function AdminUsers() {
           </div>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!recordToDeactivate}
+        onOpenChange={(open) => {
+          if (!open) setRecordToDeactivate(null)
+        }}
+        title="Desativar registro"
+        description={`Tem certeza que deseja desativar o registro de ${recordToDeactivate?.name ?? ''}? Esta ação é reversível: o registro continuará acessível pelo filtro de status "Inativo".`}
+        confirmLabel="Desativar"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={() => recordToDeactivate && handleDelete(recordToDeactivate.id)}
+      />
     </div>
   )
 }

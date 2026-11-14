@@ -15,6 +15,7 @@ import { DataTableToolbar } from '@/components/ui/data-table/data-table-toolbar'
 import { DataTableColumnHeader } from '@/components/ui/data-table/data-table-column-header'
 import { Button } from '@/components/ui/button'
 import { Edit, Trash2 } from 'lucide-react'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 export default function AdminPedidosList() {
   const [data, setData] = useState<any[]>([])
@@ -59,11 +60,12 @@ export default function AdminPedidosList() {
     fetchData()
   }, [debouncedSearch, status, dateRange, sortConfig])
 
+  const [recordToDelete, setRecordToDelete] = useState<{ id: string; name: string } | null>(null)
+
   const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir?')) {
-      await supabase.from('pedidos').delete().eq('id', id)
-      fetchData()
-    }
+    await supabase.from('pedidos').delete().eq('id', id)
+    setRecordToDelete(null)
+    fetchData()
   }
 
   const statusOptions = [
@@ -159,7 +161,16 @@ export default function AdminPedidosList() {
                             <Edit className="h-4 w-4" />
                           </Link>
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            setRecordToDelete({
+                              id: item.id,
+                              name: item.numero_pedido || 'Sem número',
+                            })
+                          }
+                        >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </TableCell>
@@ -171,6 +182,19 @@ export default function AdminPedidosList() {
           </div>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!recordToDelete}
+        onOpenChange={(open) => {
+          if (!open) setRecordToDelete(null)
+        }}
+        title="Excluir pedido"
+        description={`Tem certeza que deseja excluir o pedido ${recordToDelete?.name ?? ''}? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={() => recordToDelete && handleDelete(recordToDelete.id)}
+      />
     </div>
   )
 }

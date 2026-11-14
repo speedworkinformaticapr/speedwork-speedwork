@@ -17,6 +17,7 @@ import { formatCurrency, getTypeLabel } from '@/lib/financial-utils'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { useSystemData } from '@/hooks/use-system-data'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { PaymentRegistrationModal } from '@/components/financial/PaymentRegistrationModal'
 import { SortableTableHead } from './SortableTableHead'
 import { GridPagination } from './GridPagination'
@@ -58,13 +59,15 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
     )
   }
 
+  const [recordToDelete, setRecordToDelete] = useState<{ id: string; name: string } | null>(null)
+
   const handleDelete = async (id: string) => {
-    if (!confirm('Excluir este lançamento e todas as parcelas?')) return
     const { error } = await supabase.from('financial_master_records').delete().eq('id', id)
     if (error) {
       toast.error('Erro ao excluir')
     } else {
       toast.success('Lançamento excluído')
+      setRecordToDelete(null)
       onRefresh()
     }
   }
@@ -206,7 +209,10 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
                             className="h-8 w-8 text-rose-500 hover:bg-rose-500/10"
                             onClick={(e) => {
                               e.stopPropagation()
-                              handleDelete(r.id)
+                              setRecordToDelete({
+                                id: r.id,
+                                name: r.description || 'este lançamento',
+                              })
                             }}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -242,6 +248,18 @@ export function CashFlowGrid({ records, loading, onRefresh, onEdit }: CashFlowGr
         }}
         charge={paymentCharge}
         onSuccess={onRefresh}
+      />
+      <ConfirmDialog
+        open={!!recordToDelete}
+        onOpenChange={(open) => {
+          if (!open) setRecordToDelete(null)
+        }}
+        title="Excluir lançamento"
+        description={`Tem certeza que deseja excluir "${recordToDelete?.name ?? ''}"? Todas as parcelas deste lançamento também serão excluídas.`}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={() => recordToDelete && handleDelete(recordToDelete.id)}
       />
     </>
   )

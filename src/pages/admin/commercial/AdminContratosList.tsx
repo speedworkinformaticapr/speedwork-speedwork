@@ -23,6 +23,8 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { useUserRole } from '@/hooks/use-user-role'
+import { ConfirmDialog } from '@/components/confirm-dialog'
+import { useToast } from '@/hooks/use-toast'
 
 export default function AdminContratosList({
   isDashboard = false,
@@ -63,20 +65,28 @@ export default function AdminContratosList({
     fetchData()
   }, [isAddendums])
 
+  const { toast } = useToast()
+  const [recordToDelete, setRecordToDelete] = useState<{ id: string; name: string } | null>(null)
+
   const handleDelete = async (id: string) => {
-    if (!canEdit) return alert('Sem permissão para excluir contratos.')
+    if (!canEdit) {
+      toast({ title: 'Sem permissão para excluir contratos.', variant: 'destructive' })
+      return
+    }
     const { count } = await supabase
       .from('contratos')
       .select('*', { count: 'exact', head: true })
       .eq('parent_contract_id', id)
     if (count && count > 0) {
-      alert('Não é possível excluir um contrato que possui aditivos vinculados.')
+      toast({
+        title: 'Não é possível excluir um contrato que possui aditivos vinculados.',
+        variant: 'destructive',
+      })
       return
     }
-    if (confirm('Tem certeza que deseja excluir?')) {
-      await supabase.from('contratos').delete().eq('id', id)
-      fetchData()
-    }
+    await supabase.from('contratos').delete().eq('id', id)
+    setRecordToDelete(null)
+    fetchData()
   }
 
   const filteredData = useMemo(() => {
@@ -284,7 +294,12 @@ export default function AdminContratosList({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDelete(item.id)}
+                          onClick={() =>
+                            setRecordToDelete({
+                              id: item.id,
+                              name: item.numero_contrato || 'Sem número',
+                            })
+                          }
                           title="Excluir"
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
@@ -298,6 +313,19 @@ export default function AdminContratosList({
           </div>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!recordToDelete}
+        onOpenChange={(open) => {
+          if (!open) setRecordToDelete(null)
+        }}
+        title="Excluir contrato"
+        description={`Tem certeza que deseja excluir o contrato ${recordToDelete?.name ?? ''}? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={() => recordToDelete && handleDelete(recordToDelete.id)}
+      />
     </div>
   )
 }

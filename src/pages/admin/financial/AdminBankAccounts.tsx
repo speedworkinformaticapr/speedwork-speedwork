@@ -32,6 +32,7 @@ import { Plus, Edit2, Trash2, Landmark, CreditCard, Loader2 } from 'lucide-react
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/financial-utils'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 const TIPO_LABELS: Record<string, string> = {
   conta_corrente: 'Conta Corrente',
@@ -181,11 +182,13 @@ export default function AdminBankAccounts() {
     }
   }
 
+  const [recordToDelete, setRecordToDelete] = useState<{ id: string; name: string } | null>(null)
+
   const handleDelete = async (id: string) => {
-    if (!confirm('Deseja realmente excluir este registro?')) return
     const { error } = await supabase.from('contas_bancarias').delete().eq('id', id)
     if (error) return toast.error('Erro ao excluir: ' + error.message)
     toast.success('Registro excluído!')
+    setRecordToDelete(null)
     loadData()
   }
 
@@ -291,7 +294,9 @@ export default function AdminBankAccounts() {
                           variant="ghost"
                           size="sm"
                           className="text-destructive"
-                          onClick={() => handleDelete(c.id)}
+                          onClick={() =>
+                            setRecordToDelete({ id: c.id, name: c.nome || 'este registro' })
+                          }
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -448,6 +453,19 @@ export default function AdminBankAccounts() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!recordToDelete}
+        onOpenChange={(open) => {
+          if (!open) setRecordToDelete(null)
+        }}
+        title="Excluir registro"
+        description={`Tem certeza que deseja excluir a conta "${recordToDelete?.name ?? ''}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={() => recordToDelete && handleDelete(recordToDelete.id)}
+      />
     </div>
   )
 }

@@ -26,6 +26,7 @@ import {
   type PlanServiceData,
 } from '@/pages/admin/settings/components/PlanServiceFormDialog'
 import { useToast } from '@/hooks/use-toast'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 export default function AdminServices() {
   const [data, setData] = useState<any[]>([])
@@ -70,11 +71,12 @@ export default function AdminServices() {
     }
   }
 
+  const [recordToDelete, setRecordToDelete] = useState<{ id: string; name: string } | null>(null)
+
   const handleDelete = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir?')) {
-      await supabase.from('services').delete().eq('id', id)
-      fetchData()
-    }
+    await supabase.from('services').delete().eq('id', id)
+    setRecordToDelete(null)
+    fetchData()
   }
 
   const renderPrice = (item: any, cycle: BillingCycle) => {
@@ -187,7 +189,13 @@ export default function AdminServices() {
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              setRecordToDelete({ id: item.id, name: item.title || 'este serviço' })
+                            }
+                          >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
@@ -205,6 +213,19 @@ export default function AdminServices() {
         onOpenChange={setFormOpen}
         initialData={editingItem}
         onSave={handleSave}
+      />
+
+      <ConfirmDialog
+        open={!!recordToDelete}
+        onOpenChange={(open) => {
+          if (!open) setRecordToDelete(null)
+        }}
+        title="Excluir serviço"
+        description={`Tem certeza que deseja excluir o serviço "${recordToDelete?.name ?? ''}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        destructive
+        onConfirm={() => recordToDelete && handleDelete(recordToDelete.id)}
       />
     </div>
   )

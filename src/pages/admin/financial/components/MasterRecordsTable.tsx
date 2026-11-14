@@ -54,15 +54,15 @@ export function MasterRecordsTable({
     }
   }
 
-  async function handleDelete(id: string, e: React.MouseEvent) {
-    e.stopPropagation()
-    if (!confirm(t('Tem certeza que deseja excluir?'))) return
+  const [recordToDelete, setRecordToDelete] = useState<string | null>(null)
 
+  async function handleDelete(id: string) {
     const { error } = await supabase.from('financial_master_records').delete().eq('id', id)
     if (error) {
       toast.error(t('Erro ao excluir'))
     } else {
       toast.success(t('Registro excluído com sucesso'))
+      setRecordToDelete(null)
       fetchRecords()
       if (selectedId === id) onSelect('')
     }
@@ -192,7 +192,10 @@ export function MasterRecordsTable({
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-rose-500 hover:text-rose-400 hover:bg-rose-500/10"
-                      onClick={(e) => handleDelete(record.id, e)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setRecordToDelete(record.id)
+                      }}
                     >
                       <Trash className="h-4 w-4" />
                     </Button>
@@ -240,6 +243,20 @@ export function MasterRecordsTable({
           </Button>
         </div>
       </div>
+      <ConfirmDialog
+        open={!!recordToDelete}
+        onOpenChange={(open) => {
+          if (!open) setRecordToDelete(null)
+        }}
+        title={t('Excluir registro')}
+        description={t(
+          'Tem certeza que deseja excluir este registro e todas as suas parcelas? Esta ação não pode ser desfeita.',
+        )}
+        confirmLabel={t('Excluir')}
+        cancelLabel={t('Cancelar')}
+        destructive
+        onConfirm={() => recordToDelete && handleDelete(recordToDelete)}
+      />
     </div>
   )
 }
