@@ -11,7 +11,7 @@
     "process-stripe-payment": 3,
     "registration-payment-webhook": 2,
     "request-password-reset": 2,
-    "send-email": 12,
+    "send-email": 13,
     "stripe-webhook": 2,
     "sync-google-ads": 85,
     "validar_whatsapp_config": 5,

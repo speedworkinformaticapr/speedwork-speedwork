@@ -1,5 +1,5 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,6 +10,81 @@ const corsHeaders = {
 
 const BRAND_COLOR = '#2563EB'
 const BRAND_COLOR_DARK = '#1D4ED8'
+
+/**
+ * Resolve a URL pública da logo para uso em e-mail.
+ *
+ * Clientes de e-mail (Gmail, Outlook) não renderizam imagens embutidas via
+ * "data:" URI — e elas estouram o limite de tamanho de mensagem. Um valor
+ * "data:" (ou qualquer valor que não consiga virar uma URL http(s) real)
+ * é tratado como inválido: a função retorna null e o template usa o
+ * fallback com o nome da plataforma em texto estilizado.
+ */
+function resolveLogoUrl(rawLogoUrl: string | null | undefined): string | null {
+  if (!rawLogoUrl) return null
+
+  const supabaseBaseUrl = Deno.env.get('SUPABASE_URL')?.replace(/\/$/, '') || ''
+  const publicBaseUrl = 'https://www.speedworkinformatica.com'
+  const cleanPath = (p: string) => p.split('?')[0]
+
+  // data: URIs nunca são válidos em e-mail (Gmail/Outlook quebram a imagem
+  // e o base64 embutido estoura o limite de ~102 KB do Gmail)
+  if (rawLogoUrl.startsWith('data:')) return null
+
+  let fullLogoUrl = rawLogoUrl
+
+  if (fullLogoUrl.startsWith('http://') || fullLogoUrl.startsWith('https://')) {
+    if (
+      fullLogoUrl.includes('/storage/v1/object/sign/media/') ||
+      fullLogoUrl.includes('/storage/v1/render/image/media/')
+    ) {
+      const match = fullLogoUrl.match(/\/storage\/v1\/(?:object\/sign|render\/image)\/media\/(.+)/)
+      if (match) {
+        fullLogoUrl = `${supabaseBaseUrl}/storage/v1/object/public/media/${cleanPath(match[1])}`
+      }
+    }
+    // URL http(s) válida: usar como está
+    return fullLogoUrl
+  }
+
+  if (fullLogoUrl.startsWith('/storage/v1/object/public/media/')) {
+    return `${supabaseBaseUrl}${cleanPath(fullLogoUrl)}`
+  }
+
+  if (
+    fullLogoUrl.startsWith('/storage/v1/object/sign/media/') ||
+    fullLogoUrl.startsWith('/storage/v1/render/image/media/')
+  ) {
+    const match = fullLogoUrl.match(/\/storage\/v1\/(?:object\/sign|render\/image)\/media\/(.+)/)
+    if (match) {
+      return `${supabaseBaseUrl}/storage/v1/object/public/media/${cleanPath(match[1])}`
+    }
+    return null
+  }
+
+  if (fullLogoUrl.startsWith('/storage/')) {
+    const mediaMatch = fullLogoUrl.match(/media\/(.+)/)
+    if (mediaMatch) {
+      return `${supabaseBaseUrl}/storage/v1/object/public/media/${cleanPath(mediaMatch[1])}`
+    }
+    return `${supabaseBaseUrl}${cleanPath(fullLogoUrl)}`
+  }
+
+  if (fullLogoUrl.startsWith('media/')) {
+    return `${supabaseBaseUrl}/storage/v1/object/public/${cleanPath(fullLogoUrl)}`
+  }
+
+  if (fullLogoUrl.startsWith('/')) {
+    // Caminho relativo do site público: só é válido se apontar para um
+    // arquivo estático real (ex.: /logo.png); caminhos de rota do app
+    // não existem para o cliente de e-mail.
+    return `${publicBaseUrl}${cleanPath(fullLogoUrl)}`
+  }
+
+  // Valor solto (nome de arquivo, texto colado etc.): tratar como inválido
+  // em vez de montar uma URL de storage que não existe.
+  return null
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -155,55 +230,10 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    let fullLogoUrl = sysData.logo_url
-    if (fullLogoUrl) {
-      const supabaseBaseUrl = Deno.env.get('SUPABASE_URL')?.replace(/\/$/, '') || ''
-      const publicBaseUrl = 'https://www.speedworkinformatica.com'
-      const cleanPath = (p: string) => p.split('?')[0]
-
-      if (fullLogoUrl.startsWith('http://') || fullLogoUrl.startsWith('https://')) {
-        if (
-          fullLogoUrl.includes('/storage/v1/object/sign/media/') ||
-          fullLogoUrl.includes('/storage/v1/render/image/media/')
-        ) {
-          const match = fullLogoUrl.match(
-            /\/storage\/v1\/(?:object\/sign|render\/image)\/media\/(.+)/,
-          )
-          if (match) {
-            fullLogoUrl = `${supabaseBaseUrl}/storage/v1/object/public/media/${cleanPath(match[1])}`
-          }
-        }
-      } else if (fullLogoUrl.startsWith('/storage/v1/object/public/media/')) {
-        fullLogoUrl = `${supabaseBaseUrl}${cleanPath(fullLogoUrl)}`
-      } else if (
-        fullLogoUrl.startsWith('/storage/v1/object/sign/media/') ||
-        fullLogoUrl.startsWith('/storage/v1/render/image/media/')
-      ) {
-        const match = fullLogoUrl.match(
-          /\/storage\/v1\/(?:object\/sign|render\/image)\/media\/(.+)/,
-        )
-        if (match) {
-          fullLogoUrl = `${supabaseBaseUrl}/storage/v1/object/public/media/${cleanPath(match[1])}`
-        }
-      } else if (fullLogoUrl.startsWith('/storage/')) {
-        const mediaMatch = fullLogoUrl.match(/media\/(.+)/)
-        if (mediaMatch) {
-          fullLogoUrl = `${supabaseBaseUrl}/storage/v1/object/public/media/${cleanPath(mediaMatch[1])}`
-        } else {
-          fullLogoUrl = `${supabaseBaseUrl}${cleanPath(fullLogoUrl)}`
-        }
-      } else if (fullLogoUrl.startsWith('media/')) {
-        fullLogoUrl = `${supabaseBaseUrl}/storage/v1/object/public/${cleanPath(fullLogoUrl)}`
-      } else if (fullLogoUrl.startsWith('/')) {
-        fullLogoUrl = `${publicBaseUrl}${cleanPath(fullLogoUrl)}`
-      } else {
-        fullLogoUrl = `${supabaseBaseUrl}/storage/v1/object/public/media/${cleanPath(fullLogoUrl)}`
-      }
-    }
-
-    const logoUrl = fullLogoUrl
-      ? `<img src="${fullLogoUrl}" alt="${senderName}" width="250" height="80" style="max-height: 80px; max-width: 250px; width: auto; height: auto; display: block; margin: 0 auto; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; font-family: Arial, Helvetica, sans-serif; font-size: 20px; font-weight: bold; color: ${BRAND_COLOR}; line-height: 80px; text-align: center;" />`
-      : `<h1 style="color: ${BRAND_COLOR}; margin: 0; font-size: 24px; font-family: Arial, Helvetica, sans-serif;">${senderName}</h1>`
+    const resolvedLogoUrl = resolveLogoUrl(sysData.logo_url)
+    const logoUrl = resolvedLogoUrl
+      ? `<img src="${resolvedLogoUrl}" alt="${senderName}" width="250" height="80" style="max-height: 80px; max-width: 250px; width: auto; height: auto; display: block; margin: 0 auto; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; font-family: Arial, Helvetica, sans-serif; font-size: 20px; font-weight: bold; color: ${BRAND_COLOR}; line-height: 80px; text-align: center;" />`
+      : `<h1 style="color: ${BRAND_COLOR}; margin: 0; font-size: 24px; font-family: Arial, Helvetica, sans-serif; letter-spacing: 1px; text-transform: uppercase; text-align: center;">${senderName}</h1>`
 
     let finalHtml = bodyContent
     if (!bodyContent.includes('<html')) {

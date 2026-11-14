@@ -1,5 +1,16 @@
 import * as z from 'zod'
 
+// Recusa valores "data:" (base64 colado): imagens embutidas em base64
+// quebram o logo nos e-mails de autenticação e estouram o limite de
+// tamanho do Gmail — o arquivo deve ser enviado ao Storage (Galeria).
+const nonDataImage = (label: string) =>
+  z
+    .string()
+    .optional()
+    .refine((v) => !v || !v.startsWith('data:'), {
+      message: `${label}: não é permitido colar imagem embutida (base64/data:). Use o botão "Selecionar da Galeria" para enviar o arquivo ao Storage e salvar a URL.`,
+    })
+
 export const systemDataSchema = z.object({
   platform_name: z.string().optional(),
   slogan: z.string().optional(),
@@ -7,8 +18,8 @@ export const systemDataSchema = z.object({
   login_title: z.string().optional(),
   login_subtitle: z.string().optional(),
   login_impact_text: z.string().optional(),
-  logo_url: z.string().optional(),
-  browser_icon_url: z.string().optional(),
+  logo_url: nonDataImage('URL da Logo'),
+  browser_icon_url: nonDataImage('URL do Ícone do Navegador (Favicon)'),
   menu_logo_size: z.coerce.number().optional(),
   active_theme: z.string().optional(),
   razao_social: z.string().optional(),

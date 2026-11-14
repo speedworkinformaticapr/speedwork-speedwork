@@ -89,6 +89,10 @@ export default function EmailTemplatesTab() {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, '') || ''
     const publicBaseUrl = 'https://www.speedworkinformatica.com'
     let resolvedLogoUrl = data?.logo_url || ''
+    // data: URI (base64 colado) não é válido em e-mail: usa fallback texto
+    if (resolvedLogoUrl.startsWith('data:')) {
+      resolvedLogoUrl = ''
+    }
     if (resolvedLogoUrl) {
       if (!resolvedLogoUrl.startsWith('http://') && !resolvedLogoUrl.startsWith('https://')) {
         if (resolvedLogoUrl.startsWith('/storage/')) {
