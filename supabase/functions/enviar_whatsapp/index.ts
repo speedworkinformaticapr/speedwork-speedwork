@@ -1,6 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { requireAuth } from '../_shared/auth.ts'
+import { rateLimit, clientIp } from '../_shared/auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,13 +13,30 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    // Exige JWT de usuário autenticado (uso no painel/agendamento logado)
-    const auth = await requireAuth(req)
-    if (auth.response) return auth.response
+    // Function chamada publicamente (agendamento e checkout): sem JWT.
+    // Proteção: rate limit por IP + validação estrita de payload.
+    const ip = clientIp(req)
+    if (!rateLimit(`whatsapp:${ip}`, 20, 60 * 60 * 1000).ok) {
+      return new Response(
+        JSON.stringify({
+          status: 'erro_config',
+          erro: 'Muitas solicitações. Tente novamente mais tarde.',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 429,
+        },
+      )
+    }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const supabase = createClient(supabaseUrl, supabaseKey)
+
+    const bodyRaw = await req.json().catch(() => null)
+    if (!bodyRaw || typeof bodyRaw !== 'object') {
+      throw new Error('Payload inválido.')
+    }
 
     const {
       empresa_id,
@@ -28,10 +45,31 @@ Deno.serve(async (req: Request) => {
       variaveis,
       telefone_destino,
       mensagem_customizada,
-    } = await req.json()
+    } = bodyRaw
 
-    if (!empresa_id) {
+    if (!empresa_id || typeof empresa_id !== 'string' || empresa_id.length > 100) {
       throw new Error('O ID da empresa (empresa_id) é obrigatório.')
+    }
+    if (
+      tipo_mensagem !== undefined &&
+      (typeof tipo_mensagem !== 'string' || tipo_mensagem.length > 80)
+    ) {
+      throw new Error('tipo_mensagem inválido.')
+    }
+    if (
+      telefone_destino !== undefined &&
+      (typeof telefone_destino !== 'string' || telefone_destino.length > 30)
+    ) {
+      throw new Error('telefone_destino inválido.')
+    }
+    if (
+      mensagem_customizada !== undefined &&
+      (typeof mensagem_customizada !== 'string' || mensagem_customizada.length > 2000)
+    ) {
+      throw new Error('mensagem_customizada inválida.')
+    }
+    if (variaveis !== undefined && (typeof variaveis !== 'object' || Array.isArray(variaveis))) {
+      throw new Error('variaveis inválido.')
     }
 
     const { data: config, error: configError } = await supabase

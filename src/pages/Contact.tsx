@@ -41,9 +41,18 @@ export default function Contact() {
     }
   }, [siteKey])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
+
+    const form = e.currentTarget
+    const sanitize = (value: unknown, max = 500) =>
+      typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').slice(0, max) : ''
+
+    const name = sanitize(form.name?.value, 120)
+    const email = sanitize(form.email?.value, 200)
+    const subject = sanitize(form.subject?.value, 200)
+    const message = sanitize(form.message?.value, 4000)
 
     try {
       if (siteKey && window.grecaptcha) {
@@ -62,15 +71,24 @@ export default function Contact() {
         }
       }
 
-      // Simulate API call
-      setTimeout(() => {
-        toast({
-          title: 'Mensagem enviada!',
-          description: 'Recebemos seu contato e retornaremos em breve.',
-        })
-        setLoading(false)
-        ;(e.target as HTMLFormElement).reset()
-      }, 1000)
+      // Gravação real do lead (policy leads_anon_insert: status 'Novo' + source controlado)
+      const { error: leadError } = await supabase.from('leads').insert({
+        name,
+        email,
+        status: 'Novo',
+        source: 'Contato',
+        diagnostic_data: { subject, message, form: 'contato' },
+        last_activity_at: new Date().toISOString(),
+      })
+
+      if (leadError) throw leadError
+
+      toast({
+        title: 'Mensagem enviada!',
+        description: 'Recebemos seu contato e retornaremos em breve.',
+      })
+      setLoading(false)
+      form.reset()
     } catch (error: any) {
       toast({
         title: 'Atenção',

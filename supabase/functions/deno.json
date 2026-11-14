@@ -4,7 +4,7 @@
     "cron-billing-reminders": 2,
     "cron-billing-trigger": 86,
     "delete-user-soft": 2,
-    "enviar_whatsapp": 4,
+    "enviar_whatsapp": 5,
     "generate-affiliation-billing": 1,
     "get-athlete-comparison": 1,
     "process-registration-payment": 2,
