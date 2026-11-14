@@ -191,6 +191,18 @@ export default function WhatsAppTemplates() {
             <p className="text-center text-muted-foreground">Nenhum template cadastrado.</p>
           )}
         </div>
+
+        <ConfirmDialog
+          open={!!tplToDelete}
+          onOpenChange={(open) => {
+            if (!open) setTplToDelete(null)
+          }}
+          title="Excluir template?"
+          description="Esta ação é definitiva: o template de mensagem será excluído fisicamente e não poderá ser recuperado."
+          confirmLabel="Excluir"
+          destructive
+          onConfirm={() => tplToDelete && handleDel(tplToDelete)}
+        />
       </CardContent>
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>

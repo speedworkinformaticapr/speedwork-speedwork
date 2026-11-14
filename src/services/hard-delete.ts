@@ -71,7 +71,9 @@ export async function hardDeleteUser(userId: string): Promise<{ error?: string }
  * com erro amigável quando existe referência em outras tabelas.
  */
 export async function hardDeleteRecord(table: string, id: string): Promise<{ error?: string }> {
-  const { error } = await supabase.from(table).delete().eq('id', id)
+  // table é dinâmico (chamado por ~20 telas); o cast evita a explosão de tipos
+  // do schema gerado sem afetar a checagem dos chamadores.
+  const { error } = await (supabase.from as (t: string) => any)(table).delete().eq('id', id)
   if (error) return { error: friendlyDeleteError(error) }
   return {}
 }
@@ -81,7 +83,7 @@ export async function hardDeleteRecord(table: string, id: string): Promise<{ err
  */
 export async function hardDeleteMany(table: string, ids: string[]): Promise<{ error?: string }> {
   if (!ids.length) return {}
-  const { error } = await supabase.from(table).delete().in('id', ids)
+  const { error } = await (supabase.from as (t: string) => any)(table).delete().in('id', ids)
   if (error) return { error: friendlyDeleteError(error) }
   return {}
 }

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/types'
+import { hardDeleteRecord } from '@/services/hard-delete'
 
 export type Appointment = Database['public']['Tables']['appointments']['Row']
 
@@ -40,8 +41,8 @@ export const updateAppointment = async (id: string, updates: Partial<Appointment
 }
 
 export const deleteAppointment = async (id: string) => {
-  const { error, message } = await hardDeleteRecord('appointments', id)
-  if (error) throw new Error(message || 'Erro ao excluir agendamento.')
+  const { error } = await hardDeleteRecord('appointments', id)
+  if (error) throw new Error(error)
   return true
 }
 
