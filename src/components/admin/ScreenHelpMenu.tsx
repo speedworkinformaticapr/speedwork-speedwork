@@ -19,7 +19,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { resolveScreenHelp, type TourStep } from '@/config/screenHelp'
-import { downloadAuditDocx, AUDIT_DOCX_URL } from '@/lib/audit-docx-build'
+import { downloadAuditDocx, AUDIT_DOCX_FILENAME } from '@/lib/audit-docx-download'
 
 const TOUR_SEEN_KEY = 'screen_tour_seen'
 
@@ -103,28 +103,9 @@ export default function ScreenHelpMenu() {
             <Map className="size-4" />
             Tour da tela
           </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <a
-              href={AUDIT_DOCX_URL}
-              download="prompts-auditoria-speedwork.docx"
-              onClick={(e) => {
-                // Sem o arquivo estático (gerado por script), gera o .docx em runtime.
-                fetch(AUDIT_DOCX_URL, { method: 'HEAD' })
-                  .then((res) => {
-                    if (!res.ok) {
-                      e.preventDefault()
-                      downloadAuditDocx()
-                    }
-                  })
-                  .catch(() => {
-                    e.preventDefault()
-                    downloadAuditDocx()
-                  })
-              }}
-            >
-              <FileDown className="size-4" />
-              Documentação da auditoria (.docx)
-            </a>
+          <DropdownMenuItem onSelect={downloadAuditDocx}>
+            <FileDown className="size-4" />
+            Documentação da auditoria (.docx)
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -168,28 +149,17 @@ export default function ScreenHelpMenu() {
               </ul>
             </div>
             <div className="border-t pt-3">
-              <a
-                href={AUDIT_DOCX_URL}
-                download="prompts-auditoria-speedwork.docx"
-                onClick={(e) => {
-                  // Sem o arquivo estático (gerado por script), gera o .docx em runtime.
-                  fetch(AUDIT_DOCX_URL, { method: 'HEAD' })
-                    .then((res) => {
-                      if (!res.ok) {
-                        e.preventDefault()
-                        downloadAuditDocx()
-                      }
-                    })
-                    .catch(() => {
-                      e.preventDefault()
-                      downloadAuditDocx()
-                    })
+              <Button
+                variant="link"
+                size="sm"
+                className="h-auto p-0 text-primary"
+                onClick={() => {
+                  void downloadAuditDocx()
                 }}
-                className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
               >
                 <FileDown className="size-4" />
                 Documentação da auditoria (.docx)
-              </a>
+              </Button>
             </div>
           </div>
         </DialogContent>

@@ -1,9 +1,11 @@
 // Rota /documentos/prompts-auditoria-speedwork.docx
-// Serve o arquivo estático de public/documentos quando existir (gerado por
-// scripts/generate-docx.mjs); caso contrário, gera o .docx em runtime com a
-// biblioteca docx e dispara o download.
+// Baixa o .docx da auditoria com o mesmo serviço validado do menu "?": só salva
+// a resposta do fetch se for um arquivo Word real (não o HTML da SPA que o
+// preview devolve com 200 para caminhos inexistentes); caso contrário, gera o
+// documento em runtime com a biblioteca docx.
 import { useEffect, useState } from 'react'
-import { AUDIT_DOCX_URL, buildAuditDocxBlob } from '@/lib/audit-docx-build'
+import { downloadAuditDocx, AUDIT_DOCX_FILENAME } from '@/lib/audit-docx-download'
+import { buildAuditDocxBlob } from '@/lib/audit-docx-build'
 import { Button } from '@/components/ui/button'
 import { FileDown } from 'lucide-react'
 
@@ -13,28 +15,9 @@ export default function AuditDocxDownload() {
   useEffect(() => {
     let cancelled = false
 
-    const trigger = (blob: Blob) => {
-      if (cancelled) return
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'prompts-auditoria-speedwork.docx'
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
-    }
-
-    fetch(AUDIT_DOCX_URL)
-      .then((res) => (res.ok ? res.blob() : Promise.reject(new Error('404'))))
-      .then(trigger)
-      .catch(() => {
-        buildAuditDocxBlob()
-          .then(trigger)
-          .catch(() => {
-            if (!cancelled) setStatus('erro')
-          })
-      })
+    downloadAuditDocx().catch(() => {
+      if (!cancelled) setStatus('erro')
+    })
 
     return () => {
       cancelled = true
@@ -47,7 +30,11 @@ export default function AuditDocxDownload() {
         <>
           <FileDown className="size-8 text-primary" />
           <p className="text-sm text-muted-foreground">
-            Preparando o download de prompts-auditoria-speedwork.docx…
+            Preparando o download de {AUDIT_DOCX_FILENAME}…
+          </p>
+          <p className="text-xs text-muted-foreground/70">
+            Se o navegador bloquear o download automático, abra o link do menu de ajuda "?" em
+            qualquer tela administrativa.
           </p>
         </>
       ) : (
@@ -63,7 +50,7 @@ export default function AuditDocxDownload() {
                   const url = URL.createObjectURL(blob)
                   const a = document.createElement('a')
                   a.href = url
-                  a.download = 'prompts-auditoria-speedwork.docx'
+                  a.download = AUDIT_DOCX_FILENAME
                   document.body.appendChild(a)
                   a.click()
                   a.remove()
