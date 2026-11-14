@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { HelpCircle, Map, BookOpen } from 'lucide-react'
+import { HelpCircle, Map, BookOpen, FileDown } from 'lucide-react'
 import { driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
 import {
@@ -19,6 +19,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { resolveScreenHelp, type TourStep } from '@/config/screenHelp'
+import { downloadAuditDocx, AUDIT_DOCX_URL } from '@/lib/audit-docx-build'
 
 const TOUR_SEEN_KEY = 'screen_tour_seen'
 
@@ -102,6 +103,29 @@ export default function ScreenHelpMenu() {
             <Map className="size-4" />
             Tour da tela
           </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <a
+              href={AUDIT_DOCX_URL}
+              download="prompts-auditoria-speedwork.docx"
+              onClick={(e) => {
+                // Sem o arquivo estático (gerado por script), gera o .docx em runtime.
+                fetch(AUDIT_DOCX_URL, { method: 'HEAD' })
+                  .then((res) => {
+                    if (!res.ok) {
+                      e.preventDefault()
+                      downloadAuditDocx()
+                    }
+                  })
+                  .catch(() => {
+                    e.preventDefault()
+                    downloadAuditDocx()
+                  })
+              }}
+            >
+              <FileDown className="size-4" />
+              Documentação da auditoria (.docx)
+            </a>
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -142,6 +166,30 @@ export default function ScreenHelpMenu() {
                   <li key={i}>{tip}</li>
                 ))}
               </ul>
+            </div>
+            <div className="border-t pt-3">
+              <a
+                href={AUDIT_DOCX_URL}
+                download="prompts-auditoria-speedwork.docx"
+                onClick={(e) => {
+                  // Sem o arquivo estático (gerado por script), gera o .docx em runtime.
+                  fetch(AUDIT_DOCX_URL, { method: 'HEAD' })
+                    .then((res) => {
+                      if (!res.ok) {
+                        e.preventDefault()
+                        downloadAuditDocx()
+                      }
+                    })
+                    .catch(() => {
+                      e.preventDefault()
+                      downloadAuditDocx()
+                    })
+                }}
+                className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+              >
+                <FileDown className="size-4" />
+                Documentação da auditoria (.docx)
+              </a>
             </div>
           </div>
         </DialogContent>
