@@ -170,30 +170,6 @@ export async function buildAuditDocxBlob(): Promise<Blob> {
   return Packer.toBlob(doc)
 }
 
-// Tenta baixar o arquivo estático de public/documentos; se ainda não existir
-// (gerado via `node scripts/generate-docx.mjs`), gera o .docx em runtime.
-export async function downloadAuditDocx(): Promise<void> {
-  try {
-    const res = await fetch('/documentos/prompts-auditoria-speedwork.docx')
-    if (res.ok) {
-      const staticBlob = await res.blob()
-      triggerDownload(staticBlob)
-      return
-    }
-  } catch {
-    // Arquivo estático ausente: cai para a geração em runtime.
-  }
-  const blob = await buildAuditDocxBlob()
-  triggerDownload(blob)
-}
-
-function triggerDownload(blob: Blob): void {
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = 'prompts-auditoria-speedwork.docx'
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  URL.revokeObjectURL(url)
-}
+// O download com validação (estático válido → runtime) vive em
+// src/lib/audit-docx-download.ts — usar sempre ele; nunca salvar uma resposta
+// do fetch sem checar que é um .docx real (o preview devolve HTML com 200).
