@@ -22,6 +22,7 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const MfaVerify = lazy(() => import('./pages/MfaVerify'))
 const Forbidden = lazy(() => import('./pages/Forbidden'))
 const AuditDocxDownload = lazy(() => import('./pages/AuditDocxDownload'))
+const PageBuilderDocxDownload = lazy(() => import('./pages/PageBuilderDocxDownload'))
 const Cart = lazy(() => import('./pages/store/Cart'))
 const Checkout = lazy(() => import('./pages/store/Checkout'))
 const Orders = lazy(() => import('./pages/store/Orders'))
@@ -230,6 +231,12 @@ const App = () => (
                     <Route
                       path="documentos/prompts-auditoria-speedwork.docx"
                       element={<AuditDocxDownload />}
+                    />
+
+                    {/* Download da documentação do Page Builder (.docx) */}
+                    <Route
+                      path="documentos/page-builder.docx"
+                      element={<PageBuilderDocxDownload />}
                     />
 
                     {/* Admin Routes - Evaluated second to guarantee static paths precedence */}

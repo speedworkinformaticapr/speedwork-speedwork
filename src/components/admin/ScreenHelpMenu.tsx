@@ -19,7 +19,8 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { resolveScreenHelp, type TourStep } from '@/config/screenHelp'
-import { downloadAuditDocx, AUDIT_DOCX_FILENAME } from '@/lib/audit-docx-download'
+import { downloadAuditDocx } from '@/lib/audit-docx-download'
+import { downloadPageBuilderDocx } from '@/lib/page-builder-docx-download'
 
 const TOUR_SEEN_KEY = 'screen_tour_seen'
 
@@ -107,6 +108,10 @@ export default function ScreenHelpMenu() {
             <FileDown className="size-4" />
             Documentação da auditoria (.docx)
           </DropdownMenuItem>
+          <DropdownMenuItem onSelect={downloadPageBuilderDocx}>
+            <FileDown className="size-4" />
+            Documentação do Page Builder (.docx)
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -159,6 +164,17 @@ export default function ScreenHelpMenu() {
               >
                 <FileDown className="size-4" />
                 Documentação da auditoria (.docx)
+              </Button>
+              <Button
+                variant="link"
+                size="sm"
+                className="h-auto p-0 text-primary"
+                onClick={() => {
+                  void downloadPageBuilderDocx()
+                }}
+              >
+                <FileDown className="size-4" />
+                Documentação do Page Builder (.docx)
               </Button>
             </div>
           </div>
