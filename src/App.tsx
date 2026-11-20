@@ -129,8 +129,7 @@ const AdminClauseForm = lazy(() => import('./pages/admin/contracts/ClauseForm'))
 const AdminEntitiesList = lazy(() => import('./pages/admin/contracts/EntitiesList'))
 const AdminContractReports = lazy(() => import('./pages/admin/contracts/Reports'))
 const AdminContractView = lazy(() => import('./pages/admin/contracts/ContractView'))
-const AdminAddendumsList = lazy(() => import('./pages/admin/contracts/AddendumsList'))
-const AdminAddendumForm = lazy(() => import('./pages/admin/contracts/AddendumForm'))
+const AdminAddendumsList = lazy(() => import('./pages/admin/contracts/AddendumsV2'))
 const QuoteForm = lazy(() => import('./pages/admin/quotes/QuoteForm'))
 const QuoteView = lazy(() => import('./pages/admin/quotes/QuoteView'))
 const AdminLeads = lazy(() => import('./pages/admin/commercial/AdminLeads'))
@@ -298,8 +297,6 @@ const App = () => (
                       <Route path="contracts/clauses/new" element={<AdminClauseForm />} />
                       <Route path="contracts/clauses/:id/edit" element={<AdminClauseForm />} />
                       <Route path="contracts/addendums" element={<AdminAddendumsList />} />
-                      <Route path="contracts/addendums/new" element={<AdminAddendumForm />} />
-                      <Route path="contracts/addendums/:id/edit" element={<AdminAddendumForm />} />
                       <Route path="contracts/entities" element={<AdminEntitiesList />} />
                       <Route path="contracts/reports" element={<AdminContractReports />} />
                       <Route path="contracts/:id" element={<AdminContractView />} />

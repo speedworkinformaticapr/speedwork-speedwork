@@ -20,8 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Eye, Edit, ShieldAlert } from 'lucide-react'
+import { Eye, ShieldAlert } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
+import { getContractAlerts, type AlertaContrato } from '@/lib/contract-alerts'
+import { ContractAlertsPanel } from './components/ContractAlertsPanel'
 
 export default function ContractsDashboard() {
   const { roles } = useAuth()
@@ -39,10 +41,14 @@ export default function ContractsDashboard() {
   const fetchData = async () => {
     const { data } = await supabase
       .from('contratos')
-      .select('*, profiles:cliente_id(name)')
+      .select('*, profiles:cliente_id(name), plans(name)')
       .order('created_at', { ascending: false })
     if (data) setContracts(data)
   }
+
+  const alertas: AlertaContrato[] = contracts.flatMap((c) =>
+    getContractAlerts({ ...c, cliente_nome: c.profiles?.name || null }),
+  )
 
   const getDaysToExpire = (dateStr: string) => {
     if (!dateStr) return Infinity
@@ -153,6 +159,8 @@ export default function ContractsDashboard() {
         </Card>
       </div>
 
+      <ContractAlertsPanel alertas={alertas} />
+
       <Card>
         <CardHeader>
           <CardTitle>Listagem de Contratos</CardTitle>
@@ -208,6 +216,7 @@ export default function ContractsDashboard() {
                 <TableRow>
                   <TableHead>Número</TableHead>
                   <TableHead>Parte Contratada</TableHead>
+                  <TableHead>Plano</TableHead>
                   <TableHead>Início</TableHead>
                   <TableHead>Vencimento</TableHead>
                   <TableHead>Valor</TableHead>
@@ -218,7 +227,7 @@ export default function ContractsDashboard() {
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       Nenhum contrato encontrado.
                     </TableCell>
                   </TableRow>
@@ -230,6 +239,11 @@ export default function ContractsDashboard() {
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.numero_contrato}</TableCell>
                         <TableCell>{item.profiles?.name || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="font-normal">
+                            {item.plans?.name || 'Sem plano'}
+                          </Badge>
+                        </TableCell>
                         <TableCell>
                           {item.data_inicio ? new Date(item.data_inicio).toLocaleDateString() : '-'}
                         </TableCell>

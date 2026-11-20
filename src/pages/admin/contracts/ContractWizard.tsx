@@ -1,10 +1,15 @@
-import { useEffect, useState } from 'react'
+// Wizard v2 do módulo de contratos: etapa única de seleção (cliente + plano) →
+// limites e valores preenchidos automaticamente do plano → documento gerado com
+// placeholders substituídos → preview e download .docx → salvar contrato.
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Download, FileText, Save, Sparkles } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -12,435 +17,329 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/use-auth'
-import { ArrowUp, ArrowDown, CheckCircle2 } from 'lucide-react'
+import {
+  V6_MASTER_TEMPLATE_FALLBACK,
+  fillPlaceholders,
+  formatLimites,
+  BRL,
+  DATA_BR,
+  type ContractDocData,
+  type PlanLimits,
+} from '@/lib/contract-docx'
+import { downloadContractDocx } from '@/lib/contract-docx-download'
+
+interface PlanoRow extends PlanLimits {
+  id: string
+  description?: string | null
+}
+
+interface ClienteRow {
+  id: string
+  name?: string | null
+  cpf_cnpj?: string | null
+  address?: string | null
+}
+
+const V6_TEMPLATE_NAME = 'Modelo Mestre — SGC4WEB V6'
 
 export default function ContractWizard() {
   const { roles } = useAuth()
-  const role = roles.includes('master') || roles.includes('admin') ? 'Admin' : 'Viewer'
+  const podeEditar = roles.includes('master') || roles.includes('admin')
   const navigate = useNavigate()
-  const [step, setStep] = useState(1)
 
-  // Data States
-  const [allClauses, setAllClauses] = useState<any[]>([])
-  const [clients, setClients] = useState<any[]>([])
-  const [templates, setTemplates] = useState<any[]>([])
-  const [accounts, setAccounts] = useState<any[]>([])
+  const [planos, setPlanos] = useState<PlanoRow[]>([])
+  const [clientes, setClientes] = useState<ClienteRow[]>([])
+  const [templateV6, setTemplateV6] = useState<string>('')
+  const [carregando, setCarregando] = useState(true)
+  const [gerando, setGerando] = useState(false)
 
-  // Wizard States
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
-  const [selectedClauseIds, setSelectedClauseIds] = useState<string[]>([])
-  const [variables, setVariables] = useState<Record<string, string>>({})
-  const [draggedIdx, setDraggedIdx] = useState<number | null>(null)
-  const [clientData, setClientData] = useState({
-    cliente_id: '',
-    data_inicio: new Date().toISOString().split('T')[0],
-    data_fim: '',
-    conta_id: '',
-    valor_ciclo: '',
-  })
+  const [clienteId, setClienteId] = useState<string>('')
+  const [planoId, setPlanoId] = useState<string>('')
+  const [dataInicio, setDataInicio] = useState(new Date().toISOString().split('T')[0])
+  const [vigenciaMeses, setVigenciaMeses] = useState('12')
 
   useEffect(() => {
-    supabase
-      .from('contract_clauses')
-      .select('*')
-      .eq('status', 'Ativa')
-      .then(({ data }) => setAllClauses(data || []))
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('is_client', true)
-      .then(({ data }) => setClients(data || []))
-    supabase
-      .from('contract_templates')
-      .select('*')
-      .eq('is_active', true)
-      .then(({ data }) => setTemplates(data || []))
-    supabase
-      .from('plano_contas')
-      .select('*')
-      .eq('is_active', true)
-      .then(({ data }) => setAccounts(data || []))
+    const carregar = async () => {
+      const [planosRes, clientesRes, templateRes] = await Promise.all([
+        supabase.from('plans').select('*').eq('is_active', true).order('monthly_price'),
+        supabase.from('profiles').select('id, name, cpf_cnpj, address').eq('is_client', true),
+        supabase
+          .from('contract_templates')
+          .select('content')
+          .eq('name', V6_TEMPLATE_NAME)
+          .maybeSingle(),
+      ])
+      setPlanos(planosRes.data || [])
+      setClientes(clientesRes.data || [])
+      setTemplateV6(templateRes.data?.content || V6_MASTER_TEMPLATE_FALLBACK)
+      setCarregando(false)
+    }
+    carregar()
   }, [])
 
-  if (role === 'Viewer') {
+  const cliente = clientes.find((c) => c.id === clienteId) || null
+  const plano = planos.find((p) => p.id === planoId) || null
+
+  const dataFim = useMemo(() => {
+    if (!dataInicio) return ''
+    const d = new Date(`${dataInicio}T12:00:00`)
+    d.setMonth(d.getMonth() + (parseInt(vigenciaMeses, 10) || 12))
+    return d.toISOString().split('T')[0]
+  }, [dataInicio, vigenciaMeses])
+
+  const reajusteDate = useMemo(() => {
+    if (!dataInicio) return ''
+    const d = new Date(`${dataInicio}T12:00:00`)
+    d.setMonth(d.getMonth() + 12)
+    return d.toISOString().split('T')[0]
+  }, [dataInicio])
+
+  const renewalDate = dataFim
+
+  const exportDeadline = useMemo(() => {
+    // cancelamento hoje → prazo de exportação de 30 dias (alerta no dashboard)
+    const d = new Date()
+    d.setDate(d.getDate() + 30)
+    return d.toISOString().split('T')[0]
+  }, []) // calculado no momento da geração
+
+  const numeroContrato = useMemo(
+    () => `CTR-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000 + 1000)}`,
+    [],
+  )
+
+  const docData: ContractDocData = {
+    numero_contrato: numeroContrato,
+    cliente_nome: cliente?.name || null,
+    cliente_cnpj: cliente?.cpf_cnpj || null,
+    cliente_endereco: cliente?.address || null,
+    valor_mensal: plano?.monthly_price ?? null,
+    data_inicio: dataInicio,
+    data_fim: dataFim || null,
+    reajuste_date: reajusteDate,
+    plano,
+  }
+
+  const documento = useMemo(
+    () => fillPlaceholders(templateV6 || V6_MASTER_TEMPLATE_FALLBACK, docData),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [templateV6, cliente, plano, dataInicio, dataFim, reajusteDate, numeroContrato],
+  )
+
+  const handleGerarSalvar = async (status: string) => {
+    if (!clienteId) return toast({ title: 'Selecione o cliente', variant: 'destructive' })
+    if (!planoId) return toast({ title: 'Selecione o plano', variant: 'destructive' })
+
+    setGerando(true)
+    try {
+      const { data, error } = await supabase
+        .from('contratos')
+        .insert({
+          numero_contrato: numeroContrato,
+          cliente_id: clienteId,
+          tipo_contrato: 'servico',
+          status,
+          data_inicio: dataInicio,
+          data_fim: dataFim || null,
+          valor_ciclo: plano?.monthly_price ?? null,
+          plan_id: planoId,
+          reajuste_index: plano?.reajuste_index || 'IPCA',
+          reajuste_date: reajusteDate || null,
+          renewal_date: renewalDate || null,
+          export_deadline_date: status === 'cancelado' ? exportDeadline : null,
+          content: documento,
+        })
+        .select('id')
+        .single()
+      if (error) throw error
+
+      await supabase.from('contract_annexes').insert({
+        contract_id: data.id,
+        annex_type: 'contrato_social',
+        version: 'v1',
+        content: documento,
+      })
+
+      toast({ title: `Contrato ${numeroContrato} salvo com sucesso!` })
+      navigate(`/admin/contracts/${data.id}`)
+    } catch (e) {
+      console.error('Erro ao salvar contrato:', e)
+      toast({ title: 'Erro ao salvar o contrato', variant: 'destructive' })
+    } finally {
+      setGerando(false)
+    }
+  }
+
+  const filename = `contrato-${numeroContrato.toLowerCase()}.docx`
+
+  if (!podeEditar) {
     return (
       <div className="p-6 text-center text-muted-foreground">
-        Acesso negado. Apenas Admin, Legal e Comercial podem gerar contratos.
+        Acesso negado. Apenas Admin e Master podem gerar contratos.
       </div>
     )
-  }
-
-  const orderedClauses = selectedClauseIds
-    .map((id) => allClauses.find((c) => c.id === id))
-    .filter(Boolean)
-
-  const extractVariables = () => {
-    let text = ''
-    if (selectedTemplateId) {
-      const t = templates.find((x) => x.id === selectedTemplateId)
-      text = t?.content || ''
-    } else {
-      text = orderedClauses.map((c) => c.content).join(' ')
-    }
-    const matches = text.match(/\[(.*?)\]/g) || []
-    return Array.from(new Set(matches.map((m) => m.replace(/\[|\]/g, ''))))
-  }
-
-  const getPreviewText = () => {
-    let finalHtml = ''
-    if (selectedTemplateId) {
-      const t = templates.find((x) => x.id === selectedTemplateId)
-      finalHtml = t?.content || ''
-    } else {
-      finalHtml = orderedClauses.map((c) => `<h3>${c.title}</h3>${c.content}`).join('<br/><br/>')
-    }
-
-    return extractVariables().reduce(
-      (acc, v) =>
-        acc.replaceAll(
-          `[${v}]`,
-          `<strong class="bg-yellow-100">${variables[v] || `[${v}]`}</strong>`,
-        ),
-      finalHtml,
-    )
-  }
-
-  const handleSave = async (status: string) => {
-    if (!clientData.cliente_id)
-      return toast({ title: 'Selecione a parte contratada', variant: 'destructive' })
-
-    // In a real app we'd save the compiled HTML or generate PDF. We store the raw HTML preview for demo.
-    const finalText = getPreviewText()
-
-    const payload = {
-      cliente_id: clientData.cliente_id,
-      status,
-      data_inicio: clientData.data_inicio,
-      data_fim: clientData.data_fim || null,
-      conta_id: clientData.conta_id || null,
-      valor_ciclo: clientData.valor_ciclo ? parseFloat(clientData.valor_ciclo) : null,
-      content: finalText,
-      numero_contrato: `CTR-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000)}`,
-      tipo_contrato: 'servico',
-    }
-
-    const { data, error } = await supabase.from('contratos').insert(payload).select().single()
-    if (error) {
-      console.error('Error saving contract:', error)
-      return toast({ title: 'Erro ao salvar o contrato', variant: 'destructive' })
-    }
-
-    toast({ title: 'Contrato gerado com sucesso!' })
-    navigate(`/admin/contracts/${data.id}`)
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">Assistente de Contrato</h1>
-        <div className="flex gap-2">
-          {[1, 2, 3, 4, 5].map((s) => (
-            <div
-              key={s}
-              className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${step === s ? 'bg-primary text-primary-foreground' : step > s ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground'}`}
-            >
-              {step > s ? <CheckCircle2 className="w-5 h-5" /> : s}
-            </div>
-          ))}
-        </div>
+    <div className="max-w-5xl mx-auto p-6 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Assistente de Contrato — v2</h1>
+        <p className="text-muted-foreground">
+          Escolha o cliente e o plano: limites e valores são preenchidos automaticamente e o
+          documento é gerado com os dados do contrato.
+        </p>
+      </div>
+
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Badge variant="outline">1. Cliente + Plano</Badge>
+        <span>→</span>
+        <Badge variant="outline">2. Documento gerado</Badge>
+        <span>→</span>
+        <Badge variant="outline">3. Preview .docx</Badge>
       </div>
 
       <Card>
-        <CardContent className="p-6">
-          {step === 1 && (
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Passo 1: Seleção de Modelo</h2>
-              <p className="text-muted-foreground">
-                Escolha um modelo base ou comece do zero para selecionar as cláusulas manualmente.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card
-                  className="cursor-pointer border-primary bg-primary/5 hover:bg-primary/10 transition-colors"
-                  onClick={() => {
-                    setSelectedTemplateId(null)
-                    setStep(2)
-                  }}
-                >
-                  <CardHeader>
-                    <CardTitle>Contrato em Branco</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm">Selecione cláusulas individualmente da biblioteca.</p>
-                  </CardContent>
-                </Card>
-                {templates.map((t) => (
-                  <Card
-                    key={t.id}
-                    className="cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
-                    onClick={() => {
-                      setSelectedTemplateId(t.id)
-                      setStep(3) // Pula o passo 2 ao usar um template completo
-                    }}
-                  >
-                    <CardHeader>
-                      <CardTitle>{t.name}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {t.description || 'Usar modelo pré-definido.'}
-                      </p>
-                    </CardContent>
-                  </Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" /> Seleção (etapa única)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Cliente (parte contratada) *</Label>
+            <Select value={clienteId} onValueChange={setClienteId}>
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={carregando ? 'Carregando...' : 'Selecione o cliente...'}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {clientes.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name || c.id}
+                  </SelectItem>
                 ))}
-              </div>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold">Passo 2: Seleção e Ordem das Cláusulas</h2>
-              <div className="grid grid-cols-2 gap-8">
-                <div className="space-y-4">
-                  <h3 className="font-medium">Biblioteca de Cláusulas</h3>
-                  <ScrollArea className="h-[400px] border rounded-md p-4">
-                    {allClauses.map((c) => (
-                      <div key={c.id} className="flex items-center space-x-2 py-2">
-                        <Checkbox
-                          id={`clause-${c.id}`}
-                          checked={selectedClauseIds.includes(c.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) setSelectedClauseIds([...selectedClauseIds, c.id])
-                            else setSelectedClauseIds(selectedClauseIds.filter((id) => id !== c.id))
-                          }}
-                        />
-                        <Label htmlFor={`clause-${c.id}`} className="cursor-pointer font-normal">
-                          {c.title}{' '}
-                          <span className="text-xs text-muted-foreground">({c.category})</span>
-                        </Label>
-                      </div>
-                    ))}
-                  </ScrollArea>
-                </div>
-                <div className="space-y-4">
-                  <h3 className="font-medium">Cláusulas Selecionadas (Arraste ou mova)</h3>
-                  <ScrollArea className="h-[400px] border rounded-md p-4 bg-muted/30">
-                    {selectedClauseIds.length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center mt-10">
-                        Nenhuma cláusula selecionada.
-                      </p>
-                    )}
-                    {selectedClauseIds.map((id, index) => {
-                      const clause = allClauses.find((c) => c.id === id)
-                      return (
-                        <div
-                          key={id}
-                          draggable
-                          onDragStart={() => setDraggedIdx(index)}
-                          onDragOver={(e) => e.preventDefault()}
-                          onDrop={(e) => {
-                            e.preventDefault()
-                            if (draggedIdx !== null && draggedIdx !== index) {
-                              const newArr = [...selectedClauseIds]
-                              const item = newArr.splice(draggedIdx, 1)[0]
-                              newArr.splice(index, 0, item)
-                              setSelectedClauseIds(newArr)
-                            }
-                            setDraggedIdx(null)
-                          }}
-                          className={`flex items-center justify-between bg-background border p-2 mb-2 rounded-md shadow-sm cursor-move ${draggedIdx === index ? 'opacity-50' : ''}`}
-                        >
-                          <span className="text-sm truncate mr-2">
-                            {index + 1}. {clause?.title}
-                          </span>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 cursor-pointer"
-                              disabled={index === 0}
-                              onClick={() => {
-                                const newArr = [...selectedClauseIds]
-                                ;[newArr[index - 1], newArr[index]] = [
-                                  newArr[index],
-                                  newArr[index - 1],
-                                ]
-                                setSelectedClauseIds(newArr)
-                              }}
-                            >
-                              <ArrowUp className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 cursor-pointer"
-                              disabled={index === selectedClauseIds.length - 1}
-                              onClick={() => {
-                                const newArr = [...selectedClauseIds]
-                                ;[newArr[index + 1], newArr[index]] = [
-                                  newArr[index],
-                                  newArr[index + 1],
-                                ]
-                                setSelectedClauseIds(newArr)
-                              }}
-                            >
-                              <ArrowDown className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </ScrollArea>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold">Passo 3: Preenchimento de Variáveis</h2>
-              {extractVariables().length === 0 ? (
-                <div className="p-8 text-center bg-muted rounded-lg">
-                  Nenhuma variável detectada nas cláusulas selecionadas.
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-4 bg-muted/20 p-6 rounded-lg border">
-                  {extractVariables().map((v) => (
-                    <div key={v} className="space-y-2">
-                      <Label>{v.replace(/_/g, ' ')}</Label>
-                      <Input
-                        value={variables[v] || ''}
-                        onChange={(e) => setVariables({ ...variables, [v]: e.target.value })}
-                        placeholder={`Preencha ${v}`}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {step === 4 && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold">Passo 4: Revisão do Contrato</h2>
-              <div
-                className="border rounded-lg p-8 bg-white min-h-[500px] prose max-w-none text-black"
-                dangerouslySetInnerHTML={{ __html: getPreviewText() }}
-              />
-            </div>
-          )}
-
-          {step === 5 && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold">Passo 5: Conclusão e Partes</h2>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Parte Contratada</Label>
-                    <Select
-                      value={clientData.cliente_id}
-                      onValueChange={(v) => setClientData({ ...clientData, cliente_id: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a entidade..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {clients.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {c.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Data de Início</Label>
-                      <Input
-                        type="date"
-                        value={clientData.data_inicio}
-                        onChange={(e) =>
-                          setClientData({ ...clientData, data_inicio: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Data de Vencimento</Label>
-                      <Input
-                        type="date"
-                        value={clientData.data_fim}
-                        onChange={(e) => setClientData({ ...clientData, data_fim: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Conta Financeira (Opcional)</Label>
-                      <Select
-                        value={clientData.conta_id || 'none'}
-                        onValueChange={(v) =>
-                          setClientData({ ...clientData, conta_id: v === 'none' ? '' : v })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Nenhuma</SelectItem>
-                          {accounts.map((a) => (
-                            <SelectItem key={a.id} value={a.id}>
-                              {a.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Valor do Ciclo (R$)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={clientData.valor_ciclo}
-                        onChange={(e) =>
-                          setClientData({ ...clientData, valor_ciclo: e.target.value })
-                        }
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Plano *</Label>
+            <Select value={planoId} onValueChange={setPlanoId}>
+              <SelectTrigger>
+                <SelectValue placeholder={carregando ? 'Carregando...' : 'Selecione o plano...'} />
+              </SelectTrigger>
+              <SelectContent>
+                {planos.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name} — {BRL(p.monthly_price)}/mês
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Data de início</Label>
+            <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Vigência (meses)</Label>
+            <Select value={vigenciaMeses} onValueChange={setVigenciaMeses}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {['6', '12', '24', '36'].map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {m} meses
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </CardContent>
-        <CardFooter className="flex justify-between p-6 bg-muted/50 border-t">
-          <Button variant="outline" onClick={() => (step > 1 ? setStep(step - 1) : navigate(-1))}>
-            {step === 1 ? 'Cancelar' : 'Voltar'}
-          </Button>
-          {step < 5 ? (
-            <Button
-              onClick={() => {
-                if (step === 2 && !selectedTemplateId && selectedClauseIds.length === 0)
-                  return toast({ title: 'Selecione ao menos 1 cláusula' })
-                setStep(step + 1)
-              }}
-            >
-              Avançar
-            </Button>
-          ) : (
-            <div className="flex gap-2">
-              <Button variant="secondary" onClick={() => handleSave('rascunho')}>
-                Salvar Rascunho
-              </Button>
-              <Button onClick={() => handleSave('em assinatura')}>Enviar para Assinatura</Button>
-            </div>
-          )}
-        </CardFooter>
       </Card>
+
+      {plano && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Limites e valores preenchidos do plano {plano.name}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 text-sm md:grid-cols-3">
+              <div>
+                <span className="text-muted-foreground">Valor mensal:</span>{' '}
+                <strong>{BRL(plano.monthly_price)}</strong>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Taxa de implantação:</span>{' '}
+                <strong>{BRL(plano.setup_price)}</strong>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Índice de reajuste:</span>{' '}
+                <strong>{plano.reajuste_index || 'IPCA'}</strong>
+              </div>
+              <div className="md:col-span-3">
+                <span className="text-muted-foreground">Limites:</span> {formatLimites(plano)}
+              </div>
+              <div className="md:col-span-3">
+                <span className="text-muted-foreground">SLA:</span> {plano.sla_description || '—'}
+              </div>
+              <div>
+                <span className="text-muted-foreground">Vigência:</span> {DATA_BR(dataInicio)} até{' '}
+                {DATA_BR(dataFim)}
+              </div>
+              <div>
+                <span className="text-muted-foreground">Renovação:</span> {DATA_BR(renewalDate)}
+              </div>
+              <div>
+                <span className="text-muted-foreground">Reajuste em:</span> {DATA_BR(reajusteDate)}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <FileText className="w-5 h-5 text-primary" /> Preview do documento gerado
+          </CardTitle>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => downloadContractDocx('Contrato', documento, filename)}
+            >
+              <Download className="w-4 h-4 mr-1" /> Baixar .docx
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <pre className="whitespace-pre-wrap rounded-md border bg-muted/30 p-4 text-sm leading-relaxed max-h-[420px] overflow-auto">
+            {documento}
+          </pre>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={() => navigate('/admin/contracts/dashboard')}>
+          Cancelar
+        </Button>
+        <Button
+          variant="secondary"
+          disabled={gerando}
+          onClick={() => handleGerarSalvar('rascunho')}
+        >
+          <Save className="w-4 h-4 mr-1" /> Salvar Rascunho
+        </Button>
+        <Button disabled={gerando} onClick={() => handleGerarSalvar('em assinatura')}>
+          <FileText className="w-4 h-4 mr-1" /> Enviar para Assinatura
+        </Button>
+      </div>
     </div>
   )
 }
