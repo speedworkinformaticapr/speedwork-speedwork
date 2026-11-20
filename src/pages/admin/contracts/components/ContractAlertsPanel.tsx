@@ -5,7 +5,8 @@ import { AlertTriangle, BellRing, Clock, Download, RefreshCw } from 'lucide-reac
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { DATA_BR, type AlertaContrato } from '@/lib/contract-alerts'
+import { type AlertaContrato } from '@/lib/contract-alerts'
+import { DATA_BR } from '@/lib/contract-docx'
 
 const ICONES: Record<AlertaContrato['tipo'], typeof Clock> = {
   renovacao60: Clock,

@@ -143,7 +143,7 @@ export default function ContractWizard() {
           status,
           data_inicio: dataInicio,
           data_fim: dataFim || null,
-          valor_ciclo: plano?.monthly_price ?? null,
+          valor_ciclo: Number(plano?.monthly_price ?? 0),
           plan_id: planoId,
           reajuste_index: plano?.reajuste_index || 'IPCA',
           reajuste_date: reajusteDate || null,

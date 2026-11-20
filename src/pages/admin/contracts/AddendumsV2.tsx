@@ -200,7 +200,7 @@ export default function AddendumsV2() {
     if (tipo === 'renovacao') {
       adicao = `\n\nTERMO ADITIVO DE RENOVAÇÃO. As partes renovam, por ${novaVigenciaMeses} meses, o Contrato nº ${contrato.numero_contrato}, com vigência de ${DATA_BR(dataVigencia)} a ${DATA_BR(fimNovo)}, mantidas as demais cláusulas.`
     } else if (tipo === 'reajuste') {
-      adicao = `\n\nTERMO ADITIVO DE REAJUSTE. Ficam reajustados em ${contrato.reajuste_index || planoDoc?.reajuste_index || 'IPCA'} os valores do Contrato nº ${contrato.numero_contrato} a partir de ${DATA_BR(dataVigencia)}, que passa a ser ${BRL(tipo === 'plano' ? planoNovo?.monthly_price : contrato.valor_ciclo)}.`
+      adicao = `\n\nTERMO ADITIVO DE REAJUSTE. Ficam reajustados em ${contrato.reajuste_index || planoDoc?.reajuste_index || 'IPCA'} os valores do Contrato nº ${contrato.numero_contrato} a partir de ${DATA_BR(dataVigencia)}, que passa a ser ${BRL(contrato.valor_ciclo)}.`
     } else {
       adicao = `\n\nTERMO ADITIVO DE MUDANÇA DE PLANO. A partir de ${DATA_BR(dataVigencia)}, o Contrato nº ${contrato.numero_contrato} passa a vigorar no ${planoNovo?.name || '[PLANO]'}, com limites de ${formatLimites(planoNovo)} e valor mensal de ${BRL(planoNovo?.monthly_price)}, permanecendo as demais cláusulas inalteradas.`
     }
