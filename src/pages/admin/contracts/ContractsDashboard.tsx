@@ -24,12 +24,14 @@ import { Eye, ShieldAlert } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { getContractAlerts, type AlertaContrato } from '@/lib/contract-alerts'
 import { ContractAlertsPanel } from './components/ContractAlertsPanel'
+import { CancelarContratoDialog } from './components/CancelarContratoDialog'
 
 export default function ContractsDashboard() {
   const { roles } = useAuth()
   const role = roles.includes('master') || roles.includes('admin') ? 'Admin' : 'Viewer'
   const [contracts, setContracts] = useState<any[]>([])
   const [search, setSearch] = useState('')
+  const [cancelTarget, setCancelTarget] = useState<any>(null)
   const [statusFilter, setStatusFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
   const [expiryFilter, setExpiryFilter] = useState('all')
@@ -271,11 +273,24 @@ export default function ContractsDashboard() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="icon" asChild>
-                            <Link to={`/admin/contracts/${item.id}`}>
-                              <Eye className="w-4 h-4" />
-                            </Link>
-                          </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="icon" asChild>
+                              <Link to={`/admin/contracts/${item.id}`}>
+                                <Eye className="w-4 h-4" />
+                              </Link>
+                            </Button>
+                            {role !== 'Viewer' &&
+                              (item.status === 'ativo' || item.status === 'em assinatura') && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  title="Cancelar contrato"
+                                  onClick={() => setCancelTarget(item)}
+                                >
+                                  <ShieldAlert className="w-4 h-4 text-red-500" />
+                                </Button>
+                              )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     )
@@ -286,6 +301,15 @@ export default function ContractsDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      <CancelarContratoDialog
+        contractId={cancelTarget?.id ?? ''}
+        numeroContrato={cancelTarget?.numero_contrato ?? null}
+        clienteNome={cancelTarget?.profiles?.name ?? null}
+        open={!!cancelTarget}
+        onOpenChange={(o) => !o && setCancelTarget(null)}
+        onCanceled={fetchData}
+      />
     </div>
   )
 }

@@ -59,7 +59,8 @@ Deno.serve(async (req) => {
       if (existing) return json(200, { ok: true, dedup: true })
     }
 
-    // 3) Localiza o contrato pelo publicId do documento
+    // 3) Localiza o documento pelo publicId — pode ser o contrato principal
+    //    (contract_signers/contratos) ou um termo (contract_cancel_documents).
     const docPublicId =
       payload?.document?.publicId ||
       payload?.document?.public_id ||
@@ -67,6 +68,8 @@ Deno.serve(async (req) => {
       payload?.document_id ||
       null
     let contractId: string | null = null
+    let documentType = 'contrato'
+    let documentName: string | null = null
     if (docPublicId) {
       const { data: signer } = await supabaseAdmin
         .from('contract_signers')
@@ -74,26 +77,59 @@ Deno.serve(async (req) => {
         .eq('autentique_public_id', String(docPublicId))
         .limit(1)
         .maybeSingle()
-      contractId = signer?.contract_id || null
+      if (signer) {
+        contractId = signer.contract_id || null
+      } else {
+        const { data: cancelDoc } = await supabaseAdmin
+          .from('contract_cancel_documents')
+          .select('contract_id, document_type')
+          .eq('autentique_public_id', String(docPublicId))
+          .limit(1)
+          .maybeSingle()
+        if (cancelDoc) {
+          contractId = cancelDoc.contract_id
+          documentType = cancelDoc.document_type
+        }
+      }
+      documentName =
+        (payload?.document?.name as string | undefined) ||
+        payload?.document_name ||
+        payload?.name ||
+        null
     }
 
-    // 4) Registra o evento (histórico + dedup)
+    // 4) Registra o evento (histórico + dedup), distinguindo o tipo de documento
     await supabaseAdmin.from('autentique_events').insert({
       event_id: eventId ? String(eventId) : null,
       event_type: eventType || 'UNKNOWN',
       contract_id: contractId,
+      document_type: documentType,
+      document_name: documentName,
+      status: isDocumentFinished(eventType)
+        ? 'concluido'
+        : SIGNATURE_SIGNED_TYPES.includes(eventType)
+          ? 'assinado'
+          : null,
       payload: payload as any,
     })
 
     if (!docPublicId) return json(200, { ok: true, ignored: 'sem document.publicId' })
 
-    // 5) Assinatura individual: marca o signatário
+    // 5) Assinatura individual: marca o signatário (somente no documento do contrato)
     if (SIGNATURE_SIGNED_TYPES.includes(eventType)) {
       const signPublicId =
         payload?.signature?.publicId ||
         payload?.signature?.public_id ||
         payload?.signature_id ||
         null
+      if (documentType !== 'contrato') {
+        // Termo de cancelamento/responsabilidade: apenas atualiza o status local.
+        await supabaseAdmin
+          .from('contract_cancel_documents')
+          .update({ status: 'assinado' })
+          .eq('autentique_public_id', String(docPublicId))
+        return json(200, { ok: true, handled: `assinatura registrada (${documentType})` })
+      }
       const patch: Record<string, unknown> = { status: 'Assinado', signed_at: new Date() }
       let query = supabaseAdmin.from('contract_signers').update(patch)
       query = signPublicId
@@ -104,9 +140,20 @@ Deno.serve(async (req) => {
       return json(200, { ok: true, handled: 'assinatura registrada' })
     }
 
-    // 6) DOCUMENT_FINISHED: arquiva o PDF assinado e ativa o contrato
+    // 6) DOCUMENT_FINISHED: arquiva o PDF assinado. No contrato principal, ativa
+    //    o contrato; nos termos, marca o termo como concluído.
     if (isDocumentFinished(eventType)) {
       if (!contractId) return json(200, { ok: true, ignored: 'contrato não localizado' })
+
+      if (documentType !== 'contrato') {
+        const { error: termErr } = await supabaseAdmin
+          .from('contract_cancel_documents')
+          .update({ status: 'concluido' })
+          .eq('autentique_public_id', String(docPublicId))
+        if (termErr) console.error('autentique-webhook termo:', termErr.message)
+        console.log(`autentique-webhook: termo ${documentType} concluído (contrato ${contractId})`)
+        return json(200, { ok: true, handled: `DOCUMENT_FINISHED (${documentType})` })
+      }
 
       const apiKey = Deno.env.get('AUTENTIQUE_API_KEY')
       if (!apiKey) return json(200, { ok: true, warning: 'sem AUTENTIQUE_API_KEY' })

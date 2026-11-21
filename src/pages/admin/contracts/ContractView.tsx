@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/dialog'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { useSimulatedRole } from './use-simulated-role'
+import { CancelarContratoDialog } from './components/CancelarContratoDialog'
 import {
   ArrowLeft,
   Clock,
@@ -53,6 +54,7 @@ export default function ContractView() {
   const [signers, setSigners] = useState<any[]>([])
   const [additives, setAdditives] = useState<any[]>([])
   const [profiles, setProfiles] = useState<any[]>([])
+  const [cancelOpen, setCancelOpen] = useState(false)
 
   // States for Modals
   const [newSigner, setNewSigner] = useState({ profile_id: '', role: 'Contratado' })
@@ -194,8 +196,22 @@ export default function ContractView() {
               {contract.profiles?.name} • Tipo: {contract.tipo_contrato}
             </p>
           </div>
+          {!isReadOnly && (contract.status === 'ativo' || contract.status === 'em assinatura') && (
+            <Button variant="destructive" onClick={() => setCancelOpen(true)}>
+              Cancelar Contrato
+            </Button>
+          )}
         </div>
       </div>
+
+      <CancelarContratoDialog
+        contractId={id!}
+        numeroContrato={contract.numero_contrato}
+        clienteNome={contract.profiles?.name ?? null}
+        open={cancelOpen}
+        onOpenChange={setCancelOpen}
+        onCanceled={fetchData}
+      />
 
       <Tabs defaultValue="document">
         <TabsList className="mb-4 overflow-x-auto w-full justify-start">

@@ -68,9 +68,10 @@ const DEFAULT_CONFIG: AssinaturaConfig = {
 interface AutentiqueEventRow {
   id: string
   event_id: string | null
-  event_type: string | null
+  event_type: string
   contract_id: string | null
-  documento_nome: string | null
+  document_name: string | null
+  document_type: string | null
   status: string | null
   created_at: string
 }
@@ -426,7 +427,7 @@ export default function AdminAssinaturas() {
                           ? contratos[ev.contract_id] || ev.contract_id.slice(0, 8)
                           : '—'}
                       </TableCell>
-                      <TableCell>{ev.documento_nome || '—'}</TableCell>
+                      <TableCell>{ev.document_name || '—'}</TableCell>
                       <TableCell>{ev.status || '—'}</TableCell>
                     </TableRow>
                   ))
