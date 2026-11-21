@@ -54,7 +54,6 @@ interface ServiceOption {
   id: string
   title: string
   monthly_value: number | null
-  is_active: boolean | null
 }
 
 const numberValue = (v: unknown): number | undefined =>
@@ -63,7 +62,7 @@ const numberValue = (v: unknown): number | undefined =>
 const loadServices = async (set: (rows: ServiceOption[]) => void) => {
   const { data: rows } = await supabase
     .from('services')
-    .select('id, title, monthly_value, is_active')
+    .select('id, title, monthly_value')
     .order('title')
   set((rows || []) as ServiceOption[])
 }
@@ -154,7 +153,8 @@ export function PlanFormDialog({ open, onOpenChange, initialData, onSave }: Prop
   }
 
   const handleValueChange = <K extends keyof PlanFormData>(key: K, value: PlanFormData[K]) => {
-    form.setValue(key, value, { shouldValidate: true })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    form.setValue(key, value as any, { shouldValidate: true })
   }
 
   return (
@@ -192,7 +192,6 @@ export function PlanFormDialog({ open, onOpenChange, initialData, onSave }: Prop
                           currency: 'BRL',
                         }).format(s.monthly_value)}/mês`
                       : ''}
-                    {s.is_active === false ? ' (inativo)' : ''}
                   </SelectItem>
                 ))}
               </SelectContent>
