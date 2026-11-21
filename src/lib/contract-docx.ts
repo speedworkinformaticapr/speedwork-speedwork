@@ -1,10 +1,23 @@
 // Motor de documentos do módulo de contratos (Wizard v2 e Aditivos).
-// Gera o .docx em runtime com a biblioteca `docx`, usando os mesmos helpers
-// visuais dos demais documentos do app (src/lib/docx-style.ts) e o download
-// sempre validado por src/lib/docx-download.ts (nunca salvar HTML da SPA).
+// Modelo V6: corpo (18 cláusulas) + Anexos I, II e III, importados LITERALMENTE
+// de src/lib/contract-v6-corpo.ts e contract-v6-anexos.ts — nunca reescritos aqui.
+// O .docx é gerado em runtime com a biblioteca `docx`, com cabeçalho (dados da
+// Speedwork) e rodapé com numeração de página, e o download é sempre validado
+// por src/lib/docx-download.ts (nunca salvar HTML da SPA).
 
-import { Packer, Paragraph, AlignmentType, Document } from 'docx'
+import {
+  Packer,
+  Paragraph,
+  AlignmentType,
+  Document,
+  Header,
+  Footer,
+  PageNumber,
+  TextRun,
+} from 'docx'
 import { run, para, h1, h2, FONT, PRIMARY, ACCENT, DARK, MUTED } from './docx-style'
+import { CONTRATADA, CONTRATO_PADROES } from './contract-speedwork'
+import { valorPorExtenso } from './valor-extenso'
 
 export interface PlanLimits {
   name: string
@@ -24,47 +37,17 @@ export interface ContractDocData {
   cliente_nome?: string | null
   cliente_cnpj?: string | null
   cliente_endereco?: string | null
+  cliente_representante?: string | null
+  cliente_representante_cpf?: string | null
+  cliente_email?: string | null
   valor_mensal?: number | string | null
+  valor_mensal_extenso?: string | null
+  local_data?: string | null
   data_inicio?: string | null
   data_fim?: string | null
   reajuste_date?: string | null
   plano?: PlanLimits | null
 }
-
-/** Texto completo do modelo mestre V6 (fallback quando o template não está no banco). */
-export const V6_MASTER_TEMPLATE_FALLBACK = `CONTRATO DE LICENÇA DE USO DE SOFTWARE — SGC4WEB V6
-
-Contrato nº {{numero_contrato}}. Pelo presente instrumento, de um lado {{cliente_nome}}, inscrito no CNPJ sob o nº {{cliente_cnpj}}, com sede em {{cliente_endereco}}, doravante denominada CONTRATADA, e de outro lado SPEEDWORK, doravante denominada CONTRATANTE, celebram o presente Contrato de Licença de Uso de Software, que se regerá pelas cláusulas seguintes.
-
-CLÁUSULA 1ª — OBJETO. O presente contrato tem por objeto a licença de uso do sistema SGC4WEB (CMS), na configuração do {{plano_nome}}, incluindo hospedagem, atualizações e suporte técnico, pelo valor mensal de {{valor_mensal}}.
-
-CLÁUSULA 2ª — LIMITES DO PLANO. O plano contratado compreende: {{limites}}. A ultrapassagem de quaisquer limites poderá implicar upgrade de plano ou cobrança adicional, sempre comunicada previamente.
-
-CLÁUSULA 3ª — NÍVEL DE SERVIÇO (SLA). O suporte técnico observará o seguinte compromisso: {{sla}}. O descumprimento reiterado dos níveis de serviço autoriza a CONTRATADA a exigir plano de correção.
-
-CLÁUSULA 4ª — VALOR E CONDIÇÕES DE PAGAMENTO. O valor mensal do licenciamento é de {{valor_mensal}}, vencendo-se cada competência na data de início do ciclo. Taxa de implantação conforme proposta comercial aceita.
-
-CLÁUSULA 5ª — OBRIGAÇÕES DA CONTRATANTE. Manter os pagamentos em dia; fornecer conteúdos e acessos necessários à operação; não revender, ceder ou sublicenciar o sistema; manter cópias de segurança de conteúdos próprios quando fora dos limites do plano.
-
-CLÁUSULA 6ª — OBRIGAÇÕES DA CONTRATADA. Manter o sistema disponível conforme SLA; realizar backups periódicos dentro dos limites do plano; prestar suporte na franquia contratada; garantir a confidencialidade dos dados da CONTRATADA, observada a LGPD.
-
-CLÁUSULA 7ª — VIGÊNCIA E RENOVAÇÃO. O contrato inicia-se em {{data_inicio}} e vigorará até {{data_fim}}, renovando-se automaticamente por iguais períodos, salvo denúncia por qualquer das partes com antecedência mínima de 30 (trinta) dias do termo final.
-
-CLÁUSULA 8ª — REAJUSTE. Os valores serão reajustados anualmente pelo índice {{reajuste_index}} ou, na sua falta, pelo Índice Geral de Preços do Mercado (IGP-M), na data de {{reajuste_data}}, cumulando-se os índices no período.
-
-CLÁUSULA 9ª — RESCISÃO E EXPORTAÇÃO. Rescindido o contrato por qualquer motivo, a CONTRATADA terá o prazo de exportação de seus dados e o prazo de exportação dos dados contratados será de até 30 (trinta) dias contados do cancelamento, findo o qual os dados poderão ser eliminados definitivamente, observada a legislação aplicável.
-
-CLÁUSULA 10ª — PROPRIEDADE INTELECTUAL. O sistema SGC4WEB, suas funcionalidades, códigos e melhorias permanecem de propriedade exclusiva da CONTRATANTE, sendo a licença intransferível e não exclusiva.
-
-CLÁUSULA 11ª — FORO. Fica eleito o foro da comarca de Campo Largo/PR para dirimir quaisquer controvérsias oriundas deste contrato, com renúncia a qualquer outro, por mais privilegiado que seja.
-
-E, por estarem justas e contratadas, as partes assinam o presente instrumento em 2 (duas) vias de igual teor.
-
-Campo Largo/PR, {{data_inicio}}.
-
-
-_______________________________          _______________________________
-CONTRATANTE — SPEEDWORK                   CONTRATADA — {{cliente_nome}}`
 
 export const BRL = (v: number | string | null | undefined) =>
   typeof v === 'number' && !Number.isNaN(v)
@@ -77,6 +60,18 @@ export const DATA_BR = (iso?: string | null) => {
   if (!iso) return '—'
   const d = new Date(`${iso}T12:00:00`)
   return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('pt-BR')
+}
+
+/** Local e data por extenso em português: "Campo Largo, 23 de novembro de 2026". */
+export function localDataExtenso(data?: string | null): string {
+  const base = data ? new Date(`${data}T12:00:00`) : new Date()
+  if (Number.isNaN(base.getTime())) return 'Campo Largo, ____ de ____________ de 20____.'
+  const format = new Intl.DateTimeFormat('pt-BR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(base)
+  return `Campo Largo, ${format}.`
 }
 
 /** "até 10 usuários, 50 GB de armazenamento, ..." a partir do plano. */
@@ -96,22 +91,97 @@ export function formatLimites(plano: PlanLimits | null | undefined): string {
   return partes.join(', ') || 'limites conforme proposta comercial aceita'
 }
 
-/** Substitui os placeholders {{...}} do modelo mestre pelos dados do contrato. */
+/**
+ * Substitui TODOS os placeholders {{...}} do modelo V6 (corpo + anexos) pelos
+ * dados do contrato: CONTRATADA (contract-speedwork), cliente, plano/ficha
+ * (limites + SLA + franquia), padrões do modelo e bloco de assinaturas.
+ */
 export function fillPlaceholders(template: string, data: ContractDocData): string {
   const plano = data.plano ?? null
+  const valorMensal = BRL(data.valor_mensal)
+  const valorExtenso =
+    data.valor_mensal_extenso ||
+    valorPorExtenso(
+      typeof data.valor_mensal === 'number'
+        ? data.valor_mensal
+        : parseFloat(String(data.valor_mensal ?? '')),
+    )
+
+  const blocoAssinaturas = [
+    '_______________________________',
+    `CONTRATANTE: ${data.cliente_nome || '[NOME DO CLIENTE]'}`,
+    `Representante: ${data.cliente_representante || '[nome a definir]'}`,
+    `CPF: ${data.cliente_representante_cpf || '[CPF a definir]'}`,
+    `Data: ${DATA_BR(data.data_inicio)}`,
+    '',
+    '_______________________________',
+    `CONTRATADA: ${CONTRATADA.razao}`,
+    `Representante: ${CONTRATADA.representante}`,
+    `CPF: ${CONTRATADA.cpf}`,
+    `Data: ${DATA_BR(data.data_inicio)}`,
+    '',
+    '_______________________________',
+    `TESTEMUNHA 1: ${CONTRATADA.testemunhas[0]?.nome || '[nome a definir]'}`,
+    `CPF: ${CONTRATADA.testemunhas[0]?.cpf || '[CPF a definir]'}`,
+    `Data: ${DATA_BR(data.data_inicio)}`,
+    '',
+    '_______________________________',
+    `TESTEMUNHA 2: ${CONTRATADA.testemunhas[1]?.nome || '[nome a definir]'}`,
+    `CPF: ${CONTRATADA.testemunhas[1]?.cpf || '[CPF a definir]'}`,
+    `Data: ${DATA_BR(data.data_inicio)}`,
+  ].join('\n\n')
+
   const mapa: Record<string, string> = {
+    // CONTRATADA (dados fixos da Speedwork)
+    contratada_razao: CONTRATADA.razao,
+    contratada_endereco: CONTRATADA.endereco,
+    contratada_cnpj: CONTRATADA.cnpj,
+    contratada_representante: `${CONTRATADA.representante} (${CONTRATADA.cpf})`,
+    contratada_representante_curto: CONTRATADA.representante,
+    contratada_cpf: CONTRATADA.cpf,
+    contratada_email: CONTRATADA.email,
+    // CONTRATANTE (cliente)
     numero_contrato: data.numero_contrato || 'CTR-—',
     cliente_nome: data.cliente_nome || '[NOME DO CLIENTE]',
     cliente_cnpj: data.cliente_cnpj || '[CNPJ DO CLIENTE]',
     cliente_endereco: data.cliente_endereco || '[ENDEREÇO DO CLIENTE]',
-    valor_mensal: BRL(data.valor_mensal),
+    cliente_representante: data.cliente_representante || '[nome a definir]',
+    cliente_representante_cpf: data.cliente_representante_cpf || '[CPF a definir]',
+    cliente_email: data.cliente_email || '[E-MAIL DO CLIENTE]',
+    // Valores
+    valor_mensal: valorMensal.replace('R$', '').trim(),
+    valor_mensal_extenso: valorExtenso,
     plano_nome: plano?.name || '[PLANO]',
-    limites: formatLimites(plano),
-    sla: plano?.sla_description || 'conforme SLA do plano contratado',
+    // Datas
     data_inicio: DATA_BR(data.data_inicio),
     data_fim: DATA_BR(data.data_fim),
-    reajuste_index: plano?.reajuste_index || 'IPCA',
     reajuste_data: DATA_BR(data.reajuste_date),
+    local_data: data.local_data || localDataExtenso(data.data_inicio),
+    // Limites da ficha do plano (Anexo I, item 2)
+    lim_usuarios: plano?.max_users != null ? String(plano.max_users) : '[valor a definir]',
+    lim_sessoes: plano?.max_users != null ? String(plano.max_users) : '[valor a definir]',
+    lim_armazenamento:
+      plano?.max_storage_gb != null ? String(plano.max_storage_gb) : '[valor a definir]',
+    lim_trafego: plano?.max_traffic_gb != null ? String(plano.max_traffic_gb) : '[valor a definir]',
+    lim_paginas: plano?.max_pages != null ? String(plano.max_pages) : '[valor a definir]',
+    lim_ambientes: '1',
+    lim_dominios: plano?.max_domains != null ? String(plano.max_domains) : '[valor a definir]',
+    lim_emails: plano?.max_emails != null ? String(plano.max_emails) : '[valor a definir]',
+    // SLA e franquia (Anexo I, itens 3/3.2)
+    sla_resposta: CONTRATO_PADROES.sla_resposta_horas,
+    sla_resolucao: CONTRATO_PADROES.sla_resolucao_horas,
+    franquia_chamados: CONTRATO_PADROES.franquia_chamados,
+    franquia_horas: CONTRATO_PADROES.manutencao_horas,
+    // Padrões do modelo V6
+    implantacao_dias: CONTRATO_PADROES.implantacao_dias,
+    treino_horas: CONTRATO_PADROES.treino_horas,
+    treino_participantes: CONTRATO_PADROES.treino_participantes,
+    homologacao_dias: CONTRATO_PADROES.homologacao_dias,
+    manutencao_horas: CONTRATO_PADROES.manutencao_horas,
+    seguro: CONTRATO_PADROES.seguro_cibernetico,
+    rodadas_ajuste: CONTRATO_PADROES.rodadas_ajuste,
+    // Anexos
+    bloco_assinaturas: blocoAssinaturas,
   }
   return template.replace(/\{\{(\w+)\}\}/g, (_m, chave: string) => mapa[chave] ?? `{{${chave}}}`)
 }
@@ -138,6 +208,10 @@ function textToParagraphs(text: string): Paragraph[] {
       )
       continue
     }
+    if (/^(ANEXO I{1,3})\s|^(ANEXO I{1,3})\s–/i.test(linha)) {
+      blocos.push(h1(linha))
+      continue
+    }
     if (/^CLÁUSULA/i.test(linha)) {
       const ponto = linha.indexOf('. ')
       if (ponto > 0 && ponto < 80) {
@@ -148,22 +222,39 @@ function textToParagraphs(text: string): Paragraph[] {
       }
       continue
     }
+    if (/^(CONTRATANTE|CONTRATADA)\s*[:—]/i.test(linha)) {
+      blocos.push(
+        new Paragraph({
+          spacing: { before: 0, after: 60 },
+          children: [run(linha, { bold: true, size: 21, color: DARK })],
+        }),
+      )
+      continue
+    }
+    if (/^(TESTEMUNHA|Representante|CPF|Data:)/i.test(linha)) {
+      blocos.push(
+        new Paragraph({
+          spacing: { before: 0, after: 40 },
+          children: [run(linha, { size: 20, color: MUTED })],
+        }),
+      )
+      continue
+    }
     if (/_{5,}/.test(linha)) {
       blocos.push(
         new Paragraph({
-          alignment: AlignmentType.CENTER,
           spacing: { before: 240, after: 60 },
           children: [run(linha, { size: 21 })],
         }),
       )
       continue
     }
-    if (/^(CONTRATANTE|CONTRATADA) —/i.test(linha)) {
+    if (/^Local e data:/i.test(linha)) {
       blocos.push(
         new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 0, after: 120 },
-          children: [run(linha, { bold: true, size: 20, color: MUTED })],
+          alignment: AlignmentType.RIGHT,
+          spacing: { before: 240, after: 120 },
+          children: [run(linha, { bold: true, size: 21 })],
         }),
       )
       continue
@@ -173,7 +264,56 @@ function textToParagraphs(text: string): Paragraph[] {
   return blocos
 }
 
-/** Gera o Blob .docx do contrato/aditivo já com placeholders substituídos. */
+/** Cabeçalho do .docx com os dados da Speedwork (CONTRATADA). */
+function buildHeader(): Header {
+  return new Header({
+    children: [
+      new Paragraph({
+        alignment: AlignmentType.RIGHT,
+        spacing: { after: 40 },
+        children: [run(CONTRATADA.razao, { bold: true, size: 20, color: PRIMARY })],
+      }),
+      new Paragraph({
+        alignment: AlignmentType.RIGHT,
+        spacing: { after: 40 },
+        children: [
+          run(`CNPJ: ${CONTRATADA.cnpj} · ${CONTRATADA.endereco}`, { size: 16, color: MUTED }),
+        ],
+      }),
+      new Paragraph({
+        alignment: AlignmentType.RIGHT,
+        spacing: { after: 120 },
+        border: { bottom: { style: 'single', size: 4, color: ACCENT } },
+        children: [run(`${CONTRATADA.email}`, { size: 16, color: MUTED })],
+      }),
+    ],
+  })
+}
+
+/** Rodapé do .docx com numeração de página. */
+function buildFooter(titulo: string): Footer {
+  return new Footer({
+    children: [
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 80 },
+        border: { top: { style: 'single', size: 4, color: ACCENT } },
+        children: [
+          new TextRun({ text: `${titulo} — página `, font: FONT, size: 16, color: MUTED }),
+          new TextRun({ children: [PageNumber.CURRENT], font: FONT, size: 16, color: MUTED }),
+          new TextRun({ text: ' de ', font: FONT, size: 16, color: MUTED }),
+          new TextRun({ children: [PageNumber.TOTAL_PAGES], font: FONT, size: 16, color: MUTED }),
+        ],
+      }),
+    ],
+  })
+}
+
+/**
+ * Gera o Blob .docx do contrato completo já com placeholders substituídos:
+ * corpo V6 (18 cláusulas + "Local e data" + bloco de assinaturas) e, quando o
+ * conteúdo não os traz, os Anexos I, II e III ao final.
+ */
 export async function buildContractDocxBlob(
   titulo: string,
   conteudo: string,
@@ -199,7 +339,9 @@ export async function buildContractDocxBlob(
     creator: 'Speedwork Sistema',
     title: titulo,
     styles: { default: { document: { run: { font: FONT, color: DARK } } } },
-    sections: [{ children }],
+    sections: [
+      { headers: { default: buildHeader() }, footers: { default: buildFooter(titulo) }, children },
+    ],
   })
   return Packer.toBlob(doc)
 }
