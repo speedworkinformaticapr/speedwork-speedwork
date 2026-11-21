@@ -1,11 +1,9 @@
 {
   "_versions": {
-    "cron-commercial-contracts": 4,
-    "registration-payment-webhook": 3,
     "generate-affiliation-billing": 2,
     "stripe-webhook": 3,
     "get-athlete-comparison": 2,
-    "autentique-create-document": 1,
+    "autentique-create-document": 2,
     "sync-google-reviews": 3,
     "sync-google-ads": 86,
     "webhook-asaas-manual": 3,
@@ -27,6 +25,8 @@
     "process-registration-payment": 4,
     "translate-text": 2,
     "delete-user": 1,
-    "enviar_whatsapp": 6
+    "enviar_whatsapp": 6,
+    "cron-commercial-contracts": 4,
+    "registration-payment-webhook": 3
   }
 }

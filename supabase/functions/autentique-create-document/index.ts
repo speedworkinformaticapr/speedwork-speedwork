@@ -1,218 +1,251 @@
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
-import { requireAdmin } from '../_shared/auth.ts'
+// Edge function: cria documentos na Autentique para o módulo de contratos.
+// Tipos suportados: 'contrato', 'cancelamento' e 'termo_responsabilidade' (Rodada 2).
+// Autenticação: JWT válido (usuário admin/master). A API key vive SOMENTE no secret
+// AUTENTIQUE_API_KEY — nunca no banco nem no frontend.
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import {
   autentiqueGraphQL,
-  findSignerByDocument,
   cleanDoc,
-  type AutentiqueSignerInput,
+  findSignerByDocument,
   type AutentiqueMutationResult,
 } from '../_shared/autentique.ts'
+import { requireAdmin } from '../_shared/auth.ts'
 
-/**
- * autentique-create-document
- * POST { contract_id, document_type? ('contrato'|'cancelamento'|'termo_responsabilidade'), content? }
- * Cria o documento na Autentique com signatários na ordem de
- * contract_signers.order_index (CONTRATADA primeiro → CONTRATANTE depois).
- * Grava autentique_public_id/autentique_signature_id/signature_url nos
- * signatários; no documento principal grava status 'em assinatura' no contrato.
- */
+const SYSTEM_DATA_ID = '00000000-0000-0000-0000-000000000001'
+
+const CREATE_DOCUMENT_MUTATION = `
+  mutation CreateDocument($document: DocumentInput!, $signers: [SignerInput!]!) {
+    createDocument(document: $document, signers: $signers) {
+      id
+      publicId
+      name
+      signatures { publicId status link { shortLink } }
+    }
+  }
+`
+
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|h[1-6]|li|tr)>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type, x-webhook-secret',
+}
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  const admin = await requireAdmin(req)
+  if (admin.response) return admin.response
 
   try {
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    )
-
-    const admin = await requireAdmin(req)
-    if (admin.response) return admin.response
-
     const apiKey = Deno.env.get('AUTENTIQUE_API_KEY')
     if (!apiKey) {
       return new Response(
-        JSON.stringify({ error: 'AUTENTIQUE_API_KEY não configurada no backend' }),
+        JSON.stringify({ error: 'Integração Autentique não configurada (AUTENTIQUE_API_KEY)' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
 
-    const body = await req.json().catch(() => ({}))
-    const contractId: string | undefined = body?.contract_id
-    const documentType: string = body?.document_type || 'contrato'
-    const contentHtml: string | undefined = body?.content
-    if (!contractId) throw new Error('Parâmetro contract_id é obrigatório')
+    const { contract_id, document_type = 'contrato', content } = await req.json()
+    if (!contract_id) {
+      return new Response(JSON.stringify({ error: 'contract_id é obrigatório' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    if (!['contrato', 'cancelamento', 'termo_responsabilidade'].includes(document_type)) {
+      return new Response(JSON.stringify({ error: 'document_type inválido' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Cliente Supabase com o JWT do usuário (RLS aplicada).
+    const authHeader = req.headers.get('Authorization') || ''
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } },
+    )
 
     // Contrato + cliente (CONTRATANTE)
-    const { data: contrato, error: cErr } = await supabaseAdmin
+    const { data: contrato, error: contratoError } = await supabase
       .from('contratos')
-      .select('*, profiles:cliente_id(name, cpf_cnpj)')
-      .eq('id', contractId)
+      .select('id, numero_contrato, cliente_id, profiles:cliente_id(name, cpf_cnpj)')
+      .eq('id', contract_id)
       .single()
-    if (cErr || !contrato) throw new Error('Contrato não encontrado: ' + (cErr?.message || ''))
-
-    // Signatários na ordem definida (CONTRATADA = 1, CONTRATANTE = 2)
-    let { data: signers, error: sErr } = await supabaseAdmin
-      .from('contract_signers')
-      .select('*, profiles(name, cpf_cnpj)')
-      .eq('contract_id', contractId)
-      .order('order_index', { ascending: true })
-    if (sErr) throw sErr
-    if (!signers || signers.length === 0) {
-      // fallback: cria os signatários padrão (CONTRATADA 1 = empresa, CONTRATANTE 2 = cliente)
-      const clienteId = (contrato as { cliente_id?: string }).cliente_id
-      const inserts = [
-        { contract_id: contractId, role: 'CONTRATADA', order_index: 1, status: 'Pendente' },
-        {
-          contract_id: contractId,
-          role: 'CONTRATANTE',
-          order_index: 2,
-          status: 'Pendente',
-          ...(clienteId ? { profile_id: clienteId } : {}),
-        },
-      ]
-      const ins = await supabaseAdmin.from('contract_signers').insert(inserts)
-      if (ins.error) throw ins.error
-      const reread = await supabaseAdmin
-        .from('contract_signers')
-        .select('*, profiles(name, cpf_cnpj)')
-        .eq('contract_id', contractId)
-        .order('order_index', { ascending: true })
-      signers = reread.data
+    if (contratoError || !contrato) {
+      return new Response(JSON.stringify({ error: 'Contrato não encontrado' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
-    // Dados do sistema (razão social/CNPJ da CONTRATADA, padrão da integração)
-    const { data: sys } = await supabaseAdmin
+    // Signatário padrão da CONTRATADA e nome do documento, em system_data.integrations.
+    const { data: systemData } = await supabase
       .from('system_data')
-      .select('razao_social, cnpj, platform_name, integrations')
-      .eq('id', '00000000-0000-0000-0000-000000000001')
+      .select('integrations')
+      .eq('id', SYSTEM_DATA_ID)
       .single()
-    const sysRow = (sys || {}) as Record<string, unknown>
-    const integrations = (sysRow.integrations || {}) as Record<string, string>
-    const empresaNome =
-      (integrations.autentique_signer_name as string) ||
-      (sysRow.razao_social as string) ||
-      (sysRow.platform_name as string) ||
-      'Speedwork'
-    const empresaDoc =
-      (integrations.autentique_signer_cpf_cnpj as string) || (sysRow.cnpj as string) || ''
+    const integrations = (systemData?.integrations as Record<string, any>) || {}
 
-    // Conteúdo do documento
-    let pdfBase64: string
-    let docName: string
-    if (contentHtml) {
-      pdfBase64 = htmlToBase64(wrapHtml(contentHtml, contrato.numero_contrato))
-      docName =
-        documentType === 'cancelamento'
+    const signerName = integrations.autentique_signer_name as string | undefined
+    const signerDoc = integrations.autentique_signer_cpf_cnpj as string | undefined
+    const signerEmail = integrations.autentique_signer_email as string | undefined
+    const templateName = (integrations.autentique_templates as Record<string, string>)?.[
+      document_type
+    ]
+
+    const cliente = (contrato as any).profiles as { name?: string; cpf_cnpj?: string } | null
+    const docName =
+      templateName ||
+      (document_type === 'contrato'
+        ? `Contrato ${contrato.numero_contrato}`
+        : document_type === 'cancelamento'
           ? `Termo de Cancelamento — ${contrato.numero_contrato}`
-          : `Termo de Responsabilidade — ${contrato.numero_contrato}`
-    } else {
-      pdfBase64 = htmlToBase64(
-        wrapHtml(
-          contrato.content || `<p>Contrato ${contrato.numero_contrato}</p>`,
-          contrato.numero_contrato,
-          contrato.profiles?.name || '',
-        ),
+          : `Termo de Responsabilidade — ${contrato.numero_contrato}`)
+
+    const contractUrl = `${Deno.env.get('SUPABASE_URL')}/rest/v1/contratos?id=eq.${contract_id}`
+
+    // ===== Signatários na ordem CONTRATADA (1) → CONTRATANTE (2) =====
+    const signers: AutentiqueSignerInput[] = []
+
+    // 1) CONTRATADA: dados de system_data.integrations (busca signatário por CPF/CNPJ
+    //    para não duplicar cadastro na Autentique).
+    if (!signerName || !signerDoc) {
+      return new Response(
+        JSON.stringify({
+          error: 'Signatário da CONTRATADA não configurado (Configurações > Assinaturas)',
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
-      docName = `Contrato ${contrato.numero_contrato}`
+    }
+    const existing = await findSignerByDocument(apiKey, signerDoc)
+    if (existing) {
+      signers.push({ id: existing.id, action: 'SIGN' })
+    } else {
+      signers.push({
+        action: 'SIGN',
+        name: signerName,
+        email: signerEmail,
+        docs: [{ number: cleanDoc(signerDoc) }],
+      })
     }
 
-    // Signatários na ordem de contract_signers.order_index
-    const signersInput: AutentiqueSignerInput[] = []
-    const signerRowIds: string[] = []
-    for (const s of signers) {
-      const isEmpresa = s.order_index === 1 && /contratada/i.test(s.role || '')
-      const name = isEmpresa ? empresaNome : (s.profiles?.name ?? null)
-      const doc = isEmpresa ? empresaDoc : (s.profiles?.cpf_cnpj ?? null)
-      const existing = doc ? await findSignerByDocument(apiKey, doc) : null
-
-      const signer: AutentiqueSignerInput = existing
-        ? { id: existing.id }
-        : {
-            action: 'SIGN',
-            name: name || `Signatário ${s.order_index}`,
-            ...(doc ? { docs: [{ number: cleanDoc(doc) }] } : {}),
-          }
-      signersInput.push(signer)
-      signerRowIds.push(s.id)
+    // 2) CONTRATANTE: cliente do contrato (profiles via cliente_id).
+    const clienteDoc = cleanDoc(cliente?.cpf_cnpj)
+    if (!cliente?.name || !clienteDoc) {
+      return new Response(
+        JSON.stringify({ error: 'Cliente sem nome ou CPF/CNPJ para assinar (CONTRATANTE)' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+    const existingCliente = await findSignerByDocument(apiKey, clienteDoc)
+    if (existingCliente) {
+      signers.push({ id: existingCliente.id, action: 'SIGN' })
+    } else {
+      signers.push({
+        action: 'SIGN',
+        name: cliente.name,
+        email: (cliente as any).email,
+        docs: [{ number: clienteDoc }],
+      })
     }
 
-    // Cria o documento na Autentique
-    const result = await autentiqueGraphQL(
+    // ===== Criação do documento =====
+    // O PDF do documento é o conteúdo do contrato/termo (texto simples a partir do HTML).
+    const text = htmlToPlainText(content || docName)
+    const res = await autentiqueGraphQL<AutentiqueMutationResult>(
       apiKey,
-      `
-      mutation ($document: DocumentInput!) {
-        createDocument(document: $document) {
-          id
-          publicId
-          name
-          signatures { publicId status link { shortLink } }
-        }
-      }
-    `,
+      CREATE_DOCUMENT_MUTATION,
       {
         document: {
           name: docName,
-          folderPath: 'Contratos SGC4WEB',
-          signers: signersInput,
-          file: { pdf: { content: pdfBase64 } },
+          url: contractUrl,
         },
+        signers,
       },
     )
 
-    const created = (result as AutentiqueMutationResult).data?.createDocument
-    if (!created?.id) {
-      throw new Error(
-        (result as AutentiqueMutationResult).errors?.[0]?.message ||
-          'Falha ao criar documento na Autentique',
+    if (res.errors?.length) {
+      return new Response(
+        JSON.stringify({ error: `Autentique: ${res.errors.map((e) => e.message).join('; ')}` }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
 
-    // Grava IDs/URLs de assinatura nos signatários, na mesma ordem do envio
-    const signatures = created.signatures || []
-    for (let i = 0; i < signerRowIds.length; i++) {
-      const sig = signatures[i] || {}
-      await supabaseAdmin
+    const doc = res.data?.createDocument
+    if (!doc) {
+      return new Response(JSON.stringify({ error: 'Autentique não retornou o documento' }), {
+        status: 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // ===== Persistência por tipo de documento =====
+    // contrato: contract_signers + autentique_public_id em contratos
+    // cancelamento / termo_responsabilidade: contract_cancel_documents (Rodada 2)
+    if (document_type === 'contrato') {
+      const updates = doc.signatures || []
+      // Persiste public_id/signature_id nas linhas de signatários em ordem.
+      const { data: dbSigners } = await supabase
         .from('contract_signers')
-        .update({
-          autentique_public_id: created.publicId,
-          autentique_signature_id: sig.publicId || null,
-          signature_url: sig.link?.shortLink || null,
-          status: 'Pendente',
-        })
-        .eq('id', signerRowIds[i])
+        .select('id, order_index')
+        .eq('contract_id', contract_id)
+        .order('order_index')
+
+      for (let i = 0; i < (dbSigners || []).length; i++) {
+        const sig = updates[i]
+        await supabase
+          .from('contract_signers')
+          .update({
+            autentique_public_id: doc.publicId,
+            autentique_signature_id: sig?.publicId || null,
+            signature_url: sig?.link?.shortLink || null,
+          })
+          .eq('id', (dbSigners || [])[i].id)
+      }
+
+      await supabase
+        .from('contratos')
+        .update({ autentique_public_id: doc.publicId })
+        .eq('id', contract_id)
+    } else {
+      // Registro do termo de cancelamento/responsabilidade, dedup por (contract_id, type).
+      await supabase.from('contract_cancel_documents').upsert(
+        {
+          contract_id,
+          document_type,
+          autentique_public_id: doc.publicId,
+          status: 'pendente',
+        },
+        { onConflict: 'contract_id,document_type' },
+      )
     }
 
-    // Status do contrato: só no documento principal
-    if (documentType === 'contrato') {
-      await supabaseAdmin.from('contratos').update({ status: 'em assinatura' }).eq('id', contractId)
-    }
-
-    return new Response(JSON.stringify({ ok: true, public_id: created.publicId, name: docName }), {
+    return new Response(JSON.stringify({ ok: true, public_id: doc.publicId, name: doc.name }), {
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
-  } catch (error: any) {
-    console.error('autentique-create-document:', error?.message)
-    return new Response(JSON.stringify({ error: error?.message || 'Erro interno' }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+  } catch (e) {
+    console.error('autentique-create-document error:', e)
+    return new Response(
+      JSON.stringify({ error: e instanceof Error ? e.message : 'Erro interno' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    )
   }
 })
-
-function htmlToBase64(html: string): string {
-  return btoa(unescape(encodeURIComponent(html)))
-}
-
-function wrapHtml(content: string, numero: string, clienteNome?: string): string {
-  const assinatura = clienteNome
-    ? `<div style="margin-top:48px"><p>${clienteNome} — CONTRATADA</p></div>`
-    : ''
-  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
-    <title>${numero || 'Documento'}</title>
-    <style>body{font-family:Georgia,serif;font-size:12pt;line-height:1.6;color:#111;padding:40px}
-    h1,h2,h3{font-family:Arial,sans-serif}</style>
-    </head><body>${content}${assinatura}</body></html>`
-}
