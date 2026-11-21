@@ -277,8 +277,135 @@ function runsFromMarkdownBold(linha: string, base: { size?: number; color?: stri
     )
 }
 
-/** Converte o texto do contrato (parágrafos separados por linha em branco) em blocos docx. */
+/** Resolve a **cor** herdada de um nó HTML pelo estilo inline (color: #RRGGBB). */
+function corDoEstilo(el: Element): string | undefined {
+  const cor = (el as HTMLElement).style?.color
+  if (!cor) return undefined
+  const m = cor.trim().match(/^#([0-9a-f]{6})$/i)
+  return m ? m[1].toUpperCase() : undefined
+}
+
+/**
+ * Converte um fragmento de HTML do editor em TextRuns do docx, preservando
+ * <strong>/<b>, <em>/<i>, <u> e <span style="color: ...">. Usado pelo
+ * textToParagraphs quando o conteúdo salvo veio do RichTextEditor (HTML).
+ */
+function htmlToRuns(html: string, base: { size?: number; color?: string } = {}): TextRun[] {
+  const runs: TextRun[] = []
+  const pushTexto = (
+    texto: string,
+    fmt: { bold: boolean; italics: boolean; underline: boolean; color?: string },
+  ) => {
+    if (!texto) return
+    runs.push(
+      run(texto, {
+        size: base.size ?? 21,
+        bold: fmt.bold,
+        italics: fmt.italics,
+        underline: fmt.underline ? {} : undefined,
+        color: fmt.color ?? base.color ?? DARK,
+      }),
+    )
+  }
+  const percorre = (
+    no: Node,
+    fmt: { bold: boolean; italics: boolean; underline: boolean; color?: string },
+  ) => {
+    if (no.nodeType === Node.TEXT_NODE) {
+      pushTexto(no.textContent || '', fmt)
+      return
+    }
+    if (no.nodeType !== Node.ELEMENT_NODE) return
+    const el = no as Element
+    const tag = el.tagName.toLowerCase()
+    if (tag === 'br') return
+    const proximo = {
+      bold: fmt.bold || tag === 'strong' || tag === 'b',
+      italics: fmt.italics || tag === 'em' || tag === 'i',
+      underline: fmt.underline || tag === 'u',
+      color: corDoEstilo(el) ?? fmt.color,
+    }
+    el.childNodes.forEach((filho) => percorre(filho, proximo))
+  }
+  const contêiner = document.createElement('div')
+  contêiner.innerHTML = html
+  contêiner.childNodes.forEach((no) =>
+    percorre(no, { bold: false, italics: false, underline: false }),
+  )
+  return runs
+}
+
+/** Parágrafo docx a partir de HTML (preserva alinhamento inline e formatação). */
+function paragraphFromHtml(html: string, opts: { after?: number } = {}): Paragraph {
+  const contêiner = document.createElement('div')
+  contêiner.innerHTML = html
+  const primeiro = contêiner.firstElementChild as HTMLElement | null
+  const style = primeiro?.style
+  let alignment: (typeof AlignmentType)[keyof typeof AlignmentType] | undefined
+  const ta = style?.textAlign
+  if (ta === 'center') alignment = AlignmentType.CENTER
+  else if (ta === 'right' || ta === 'end') alignment = AlignmentType.RIGHT
+  else if (ta === 'justify') alignment = AlignmentType.JUSTIFIED
+  return new Paragraph({
+    alignment,
+    spacing: { before: 0, after: opts.after ?? 140 },
+    children: htmlToRuns(html),
+  })
+}
+
+/** Um item de lista (UL/OL) vira parágrafo com marcador ou numeração. */
+function paragraphsFromList(
+  list: Element,
+  ordered: boolean,
+  nivel: number,
+  contadores: number[],
+): Paragraph[] {
+  const resultado: Paragraph[] = []
+  if (ordered) contadores[nivel] = (contadores[nivel] || 0) + 1
+  let idxItem = 0
+  Array.from(list.children).forEach((filho) => {
+    const tag = filho.tagName.toLowerCase()
+    if (tag !== 'li') return
+    idxItem += 1
+    const numero = ordered ? contadores[nivel] : 0
+    const rotulo = ordered ? `${numero}.` : '•'
+    const prefixo = nivel === 0 ? rotulo : `${'    '.repeat(nivel)}${rotulo}`
+    const filhosHtml = Array.from(filho.childNodes)
+      .map((n) => (n.nodeType === Node.TEXT_NODE ? n.textContent || '' : (n as Element).outerHTML))
+      .join('')
+    const runs = [run(`${prefixo} `, { size: 21, color: DARK }), ...htmlToRuns(filhosHtml)]
+    resultado.push(
+      new Paragraph({
+        spacing: { before: 0, after: 100 },
+        indent: nivel === 0 ? { left: 360 } : undefined,
+        children: runs,
+      }),
+    )
+    // Sub-listas aninhadas
+    Array.from(filho.children).forEach((neto) => {
+      const tagNeto = neto.tagName.toLowerCase()
+      if (tagNeto === 'ul')
+        resultado.push(...paragraphsFromList(neto, false, nivel + 1, contadores))
+      if (tagNeto === 'ol') resultado.push(...paragraphsFromList(neto, true, nivel + 1, contadores))
+    })
+    if (ordered) contadores[nivel] = numero // próximo irmão continua a contagem
+    void idxItem
+  })
+  return resultado
+}
+
+/** Heurística: o conteúdo veio do RichTextEditor (HTML) em vez do texto V6 puro. */
+function pareceHtml(text: string): boolean {
+  return /<(p|div|ul|ol|li|strong|b|em|i|br|h[1-6]|span)\b/i.test(text)
+}
+
+/**
+ * Converte o conteúdo do contrato em blocos docx. Quando o conteúdo veio do
+ * editor rico (HTML), preserva formatação (listas, negrito, itálico); quando
+ * veio do texto V6, aplica os estilos por seção (título, cláusulas, anexos).
+ */
 function textToParagraphs(text: string): Paragraph[] {
+  if (pareceHtml(text)) return htmlToParagraphs(text)
   const blocos: Paragraph[] = []
   const linhas = text.split('\n')
   let tituloImpresso = false
