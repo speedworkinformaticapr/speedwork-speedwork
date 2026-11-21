@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation, Navigate, useParams } from 'react-router-dom'
 import { useEffect, lazy, Suspense } from 'react'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
@@ -148,6 +148,14 @@ function AuthorSessionGuard() {
   return null
 }
 
+/** Redireciona /admin/commercial/contratos/:id(/editar) para a rota real em inglês, preservando o id */
+function RedirectContratoSub({ rota }: { rota: 'view' | 'edit' }) {
+  const { id } = useParams()
+  const to =
+    rota === 'edit' ? `/admin/commercial/contracts/${id}/edit` : `/admin/commercial/contracts/${id}`
+  return <Navigate to={to} replace />
+}
+
 function ScrollToHash() {
   const location = useLocation()
 
@@ -282,6 +290,23 @@ const App = () => (
                       <Route path="commercial/orders/:id/edit" element={<AdminPedidoForm />} />
                       <Route path="commercial/orders/:id" element={<AdminPedidoView />} />
                       <Route path="commercial/contracts" element={<AdminContratosList />} />
+                      {/* Redirects: grafia em português "contratos" → rota real em inglês */}
+                      <Route
+                        path="commercial/contratos"
+                        element={<Navigate to="/admin/commercial/contracts" replace />}
+                      />
+                      <Route
+                        path="commercial/contratos/novo"
+                        element={<Navigate to="/admin/commercial/contracts/new" replace />}
+                      />
+                      <Route
+                        path="commercial/contratos/:id/editar"
+                        element={<RedirectContratoSub rota="edit" />}
+                      />
+                      <Route
+                        path="commercial/contratos/:id"
+                        element={<RedirectContratoSub rota="view" />}
+                      />
                       <Route path="commercial/contracts/new" element={<AdminContratoForm />} />
                       <Route path="commercial/contracts/:id/edit" element={<AdminContratoForm />} />
                       <Route path="commercial/contracts/:id" element={<AdminContratoView />} />
