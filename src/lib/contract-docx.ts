@@ -104,7 +104,11 @@ export function formatLimites(plano: PlanLimits | null | undefined): string {
  * dados do contrato: CONTRATADA (contract-speedwork), cliente, plano/ficha
  * (limites + SLA + franquia), padrões do modelo e bloco de assinaturas.
  */
-export function fillPlaceholders(template: string, data: ContractDocData): string {
+export function fillPlaceholders(
+  template: string,
+  data: ContractDocData,
+  opts?: { boldValues?: boolean },
+): string {
   const plano = data.plano ?? null
   const valorMensal = BRL(data.valor_mensal)
   const valorExtenso =
@@ -237,7 +241,40 @@ export function fillPlaceholders(template: string, data: ContractDocData): strin
     local_data_anexo: localDataAnexo,
     assinaturas_anexo_i: assinaturasAnexoI,
   }
-  return template.replace(/\{\{(\w+)\}\}/g, (_m, chave: string) => mapa[chave] ?? `{{${chave}}}`)
+  // Blocos multilinha (assinaturas) não recebem marcador de negrito.
+  const semNegrito = new Set(['bloco_assinaturas', 'assinaturas_anexo_i'])
+  return template.replace(/\{\{(\w+)\}\}/g, (_m, chave: string) => {
+    const valor = mapa[chave]
+    if (valor === undefined) return `{{${chave}}}`
+    if (!opts?.boldValues || semNegrito.has(chave)) return valor
+    return `**${valor}**`
+  })
+}
+
+/**
+ * Texto integral do contrato V6 com os valores preenchidos marcados em
+ * **negrito** (marcador convertido em <strong> no editor HTML e em TextRun
+ * bold no .docx). Usado pelo AdminContratoForm para montar o documento.
+ */
+export function contratoV6Texto(data: ContractDocData): string {
+  const fill = (tpl: string) => fillPlaceholders(tpl, data, { boldValues: true })
+  return [fill(CONTRATO_V6_CORPO), fill(ANEXO_I_V6), fill(ANEXO_II_V6), fill(ANEXO_III_V6)].join(
+    '\n\n',
+  )
+}
+
+/** Converte **negrito** do texto em TextRun bold no .docx. */
+function runsFromMarkdownBold(linha: string, base: { size?: number; color?: string } = {}) {
+  const partes = linha.split(/\*\*(.+?)\*\*/g)
+  return partes
+    .filter((p) => p !== '')
+    .map((p, i) =>
+      run(p, {
+        size: base.size ?? 21,
+        bold: i % 2 === 1,
+        color: i % 2 === 1 ? DARK : (base.color ?? DARK),
+      }),
+    )
 }
 
 /** Converte o texto do contrato (parágrafos separados por linha em branco) em blocos docx. */
@@ -270,7 +307,12 @@ function textToParagraphs(text: string): Paragraph[] {
       const ponto = linha.indexOf('. ')
       if (ponto > 0 && ponto < 80) {
         blocos.push(h2(linha.slice(0, ponto)))
-        blocos.push(para(linha.slice(ponto + 2), { size: 21, after: 160 }))
+        blocos.push(
+          new Paragraph({
+            spacing: { before: 0, after: 160 },
+            children: runsFromMarkdownBold(linha.slice(ponto + 2)),
+          }),
+        )
       } else {
         blocos.push(h2(linha))
       }
@@ -313,13 +355,18 @@ function textToParagraphs(text: string): Paragraph[] {
       )
       continue
     }
-    blocos.push(para(linha, { size: 21, after: 140 }))
+    blocos.push(
+      new Paragraph({
+        spacing: { before: 0, after: 140 },
+        children: runsFromMarkdownBold(linha),
+      }),
+    )
   }
   return blocos
 }
 
 /** Cabeçalho do .docx com os dados da Speedwork (CONTRATADA). */
-function buildHeader(): Header {
+export function buildHeader(): Header {
   return new Header({
     children: [
       new Paragraph({
@@ -345,7 +392,7 @@ function buildHeader(): Header {
 }
 
 /** Rodapé do .docx com numeração de página. */
-function buildFooter(titulo: string): Footer {
+export function buildFooter(titulo: string): Footer {
   return new Footer({
     children: [
       new Paragraph({
