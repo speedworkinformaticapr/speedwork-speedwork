@@ -35,7 +35,7 @@ begin
         exists (
           select 1 from public.profiles p
           where p.id = auth.uid()
-            and (p.role in ('admin','master') or p.is_master_user = true)
+            and (p.role in ('admin','master') or public.is_master_user())
         )
       );
   end if;
@@ -49,7 +49,7 @@ begin
         exists (
           select 1 from public.profiles p
           where p.id = auth.uid()
-            and (p.role in ('admin','master') or p.is_master_user = true)
+            and (p.role in ('admin','master') or public.is_master_user())
         )
       );
   end if;
@@ -72,7 +72,7 @@ begin
         and exists (
           select 1 from public.profiles p
           where p.id = auth.uid()
-            and (p.role in ('admin','master') or p.is_master_user = true)
+            and (p.role in ('admin','master') or public.is_master_user())
         )
       );
   end if;
@@ -87,7 +87,7 @@ begin
         and exists (
           select 1 from public.profiles p
           where p.id = auth.uid()
-            and (p.role in ('admin','master') or p.is_master_user = true)
+            and (p.role in ('admin','master') or public.is_master_user())
         )
       );
   end if;
@@ -158,4 +158,3 @@ set integrations = jsonb_set(
 where id = '00000000-0000-0000-0000-000000000001'
   and not coalesce(integrations, '{}'::jsonb) ? 'autentique_webhook_secret';
 -- fim
-=======
