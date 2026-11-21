@@ -234,29 +234,6 @@ export const SCREEN_HELP: Record<string, ScreenHelp> = {
       },
     ],
   },
-  '/admin/services': {
-    title: 'Serviços',
-    description:
-      'Catálogo de serviços prestados pela empresa, com preços e configuração de avaliações.',
-    actions: [
-      'Cadastrar e editar os serviços oferecidos.',
-      'Definir preços, prazos e descrições.',
-      'Configurar questionários de avaliação por serviço.',
-    ],
-    tips: ['Serviços desativados saem do site público, mas ficam no histórico dos orçamentos.'],
-    tour: [
-      {
-        element: 'main h1',
-        title: 'Serviços',
-        text: 'Catálogo de serviços da plataforma.',
-      },
-      {
-        element: 'main table',
-        title: 'Lista de Serviços',
-        text: 'Cada linha traz o serviço, o preço e as ações de edição.',
-      },
-    ],
-  },
   '/admin/services/questionnaires': {
     title: 'Questionários',
     description: 'Montagem dos questionários usados nas avaliações de clientes (diagnósticos).',
