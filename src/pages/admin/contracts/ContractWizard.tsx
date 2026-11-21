@@ -3,7 +3,7 @@
 // placeholders substituídos → preview e download .docx → salvar contrato.
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, FileText, Save, Sparkles } from 'lucide-react'
+import { Download, FileText, PenLine, Save, Sparkles } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { toast } from '@/hooks/use-toast'
+import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/use-auth'
 import {
   V6_MASTER_TEMPLATE_FALLBACK,
@@ -29,6 +29,7 @@ import {
   type PlanLimits,
 } from '@/lib/contract-docx'
 import { downloadContractDocx } from '@/lib/contract-docx-download'
+import { criarDocumentoAutentique } from '@/services/autentique'
 
 interface PlanoRow extends PlanLimits {
   id: string
@@ -98,13 +99,6 @@ export default function ContractWizard() {
 
   const renewalDate = dataFim
 
-  const exportDeadline = useMemo(() => {
-    // cancelamento hoje → prazo de exportação de 30 dias (alerta no dashboard)
-    const d = new Date()
-    d.setDate(d.getDate() + 30)
-    return d.toISOString().split('T')[0]
-  }, []) // calculado no momento da geração
-
   const numeroContrato = useMemo(
     () => `CTR-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000 + 1000)}`,
     [],
@@ -128,45 +122,93 @@ export default function ContractWizard() {
     [templateV6, cliente, plano, dataInicio, dataFim, reajusteDate, numeroContrato],
   )
 
+  const { toast } = useToast()
+
+  const salvarContrato = async (status: string) => {
+    const { data, error } = await supabase
+      .from('contratos')
+      .insert({
+        numero_contrato: numeroContrato,
+        cliente_id: clienteId,
+        tipo_contrato: 'servico',
+        status,
+        data_inicio: dataInicio,
+        data_fim: dataFim || null,
+        valor_ciclo: Number(plano?.monthly_price ?? 0),
+        plan_id: planoId,
+        reajuste_index: plano?.reajuste_index || 'IPCA',
+        reajuste_date: reajusteDate || null,
+        renewal_date: renewalDate || null,
+        content: documento,
+      })
+      .select('id')
+      .single()
+    if (error) throw error
+    if (!data?.id) throw new Error('Contrato salvo sem identificação')
+
+    await supabase.from('contract_annexes').insert({
+      contract_id: data.id,
+      annex_type: 'contrato_social',
+      version: 'v1',
+      content: documento,
+    })
+    return data.id as string
+  }
+
+  /** Garante os signatários: CONTRATADA (1) = empresa (system_data), CONTRATANTE (2) = cliente. */
+  const garantirSignatarios = async (contractId: string) => {
+    const { data: existentes } = await supabase
+      .from('contract_signers')
+      .select('id')
+      .eq('contract_id', contractId)
+    if (existentes && existentes.length > 0) return
+
+    const { error } = await supabase.from('contract_signers').insert([
+      {
+        contract_id: contractId,
+        role: 'CONTRATADA',
+        order_index: 1,
+        status: 'Pendente',
+      },
+      {
+        contract_id: contractId,
+        role: 'CONTRATANTE',
+        order_index: 2,
+        status: 'Pendente',
+        profile_id: clienteId,
+      },
+    ])
+    if (error) throw new Error('Falha ao criar signatários: ' + error.message)
+  }
+
+  /** Envia o contrato salvo para assinatura na Autentique (CONTRATADA → CONTRATANTE). */
   const handleGerarSalvar = async (status: string) => {
     if (!clienteId) return toast({ title: 'Selecione o cliente', variant: 'destructive' })
     if (!planoId) return toast({ title: 'Selecione o plano', variant: 'destructive' })
 
     setGerando(true)
+    let contractId = ''
     try {
-      const { data, error } = await supabase
-        .from('contratos')
-        .insert({
-          numero_contrato: numeroContrato,
-          cliente_id: clienteId,
-          tipo_contrato: 'servico',
-          status,
-          data_inicio: dataInicio,
-          data_fim: dataFim || null,
-          valor_ciclo: Number(plano?.monthly_price ?? 0),
-          plan_id: planoId,
-          reajuste_index: plano?.reajuste_index || 'IPCA',
-          reajuste_date: reajusteDate || null,
-          renewal_date: renewalDate || null,
-          export_deadline_date: status === 'cancelado' ? exportDeadline : null,
-          content: documento,
-        })
-        .select('id')
-        .single()
-      if (error) throw error
-
-      await supabase.from('contract_annexes').insert({
-        contract_id: data.id,
-        annex_type: 'contrato_social',
-        version: 'v1',
-        content: documento,
+      contractId = await salvarContrato(status)
+      if (status === 'em assinatura') {
+        // Cria os signatários na ordem CONTRATADA (1) → CONTRATANTE (2)
+        await garantirSignatarios(contractId)
+        await criarDocumentoAutentique(contractId, 'contrato')
+      }
+      toast({
+        title: `Contrato ${numeroContrato} salvo com sucesso!`,
+        description:
+          status === 'em assinatura' ? 'Enviado para assinatura na Autentique.' : undefined,
       })
-
-      toast({ title: `Contrato ${numeroContrato} salvo com sucesso!` })
-      navigate(`/admin/contracts/${data.id}`)
+      navigate(`/admin/contracts/${contractId}`)
     } catch (e) {
       console.error('Erro ao salvar contrato:', e)
-      toast({ title: 'Erro ao salvar o contrato', variant: 'destructive' })
+      toast({
+        title: 'Erro no fluxo do contrato',
+        description: e instanceof Error ? e.message : 'Tente novamente.',
+        variant: 'destructive',
+      })
+      if (contractId) navigate(`/admin/contracts/${contractId}`)
     } finally {
       setGerando(false)
     }
