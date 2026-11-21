@@ -5,9 +5,7 @@ export function ContractsNav() {
   const location = useLocation()
 
   const navItems = [
-    { name: 'Dashboard', path: '/admin/commercial/contracts/dashboard' },
     { name: 'Contratos', path: '/admin/commercial/contracts' },
-    { name: 'Nova Minuta (Wizard)', path: '/admin/commercial/contracts/wizard' },
     { name: 'Biblioteca de Cláusulas', path: '/admin/commercial/contracts/clauses' },
     { name: 'Aditivos', path: '/admin/commercial/contracts/addendums' },
     { name: 'Relatórios', path: '/admin/commercial/contracts/reports' },

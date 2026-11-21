@@ -59,9 +59,7 @@ export const DEFAULT_MENU_CONFIG: MenuConfig[] = [
     label: 'Contratos',
     icon: 'FileText',
     submenus: [
-      { id: 'contracts-dashboard', label: 'Dashboard', url: '/admin/contracts/dashboard' },
       { id: 'contracts-list', label: 'Contratos', url: '/admin/commercial/contracts' },
-      { id: 'contracts-wizard', label: 'Novo Contrato', url: '/admin/contracts/wizard' },
       { id: 'contracts-templates', label: 'Modelos', url: '/admin/contracts/templates' },
       {
         id: 'contracts-clauses',

@@ -209,7 +209,7 @@ export default function AdminContratosList({
               </SelectContent>
             </Select>
             <Button asChild>
-              <Link to={isAddendums ? '/admin/contracts/wizard' : 'new'}>
+              <Link to={isAddendums ? '/admin/contracts/addendums' : 'new'}>
                 Novo {isAddendums ? 'Aditivo' : 'Contrato'}
               </Link>
             </Button>

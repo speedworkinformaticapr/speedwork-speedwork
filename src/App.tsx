@@ -121,8 +121,6 @@ const AdminContratoView = lazy(() => import('./pages/admin/commercial/AdminContr
 const AdminCommercialDashboard = lazy(
   () => import('./pages/admin/commercial/AdminCommercialDashboard'),
 )
-const AdminContractsDashboard = lazy(() => import('./pages/admin/contracts/ContractsDashboard'))
-const AdminContractWizard = lazy(() => import('./pages/admin/contracts/ContractWizard'))
 const AdminTemplateList = lazy(() => import('./pages/admin/contracts/TemplateList'))
 const AdminTemplateForm = lazy(() => import('./pages/admin/contracts/TemplateForm'))
 const AdminClausesList = lazy(() => import('./pages/admin/contracts/ClausesList'))
@@ -312,10 +310,17 @@ const App = () => (
                       <Route path="commercial/contracts/:id" element={<AdminContratoView />} />
                       <Route
                         path="contracts"
-                        element={<Navigate to="/admin/contracts/dashboard" replace />}
+                        element={<Navigate to="/admin/commercial/contracts" replace />}
                       />
-                      <Route path="contracts/dashboard" element={<AdminContractsDashboard />} />
-                      <Route path="contracts/wizard" element={<AdminContractWizard />} />
+                      {/* Rotas removidas (Dashboard e Wizard) → listagem de contratos */}
+                      <Route
+                        path="contracts/dashboard"
+                        element={<Navigate to="/admin/commercial/contracts" replace />}
+                      />
+                      <Route
+                        path="contracts/wizard"
+                        element={<Navigate to="/admin/commercial/contracts/new" replace />}
+                      />
                       <Route path="contracts/templates" element={<AdminTemplateList />} />
                       <Route path="contracts/templates/new" element={<AdminTemplateForm />} />
                       <Route path="contracts/templates/:id/edit" element={<AdminTemplateForm />} />

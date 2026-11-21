@@ -54,7 +54,7 @@ export default function AdminContratoView() {
 
   useEffect(() => {
     if (id === 'wizard') {
-      navigate('/admin/contracts/wizard', { replace: true })
+      navigate('/admin/commercial/contracts/new', { replace: true })
       return
     }
 
@@ -166,7 +166,7 @@ export default function AdminContratoView() {
           {contrato.status === 'ativo' && (
             <>
               <Button variant="secondary" asChild>
-                <Link to="/admin/contracts/wizard">
+                <Link to="/admin/contracts/addendums">
                   <Plus className="w-4 h-4 mr-2" /> Criar Aditivo
                 </Link>
               </Button>

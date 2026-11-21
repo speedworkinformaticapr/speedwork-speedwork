@@ -280,11 +280,11 @@ export const SCREEN_HELP: Record<string, ScreenHelp> = {
     ],
     tips: ['Pedidos podem vir de orçamentos aprovados — o histórico mantém a ligação.'],
   },
-  '/admin/contracts/dashboard': {
+  '/admin/commercial/contracts': {
     title: 'Contratos',
     description: 'Central de contratos: modelos, cláusulas, aditivos e relatórios.',
     actions: [
-      'Criar contratos a partir do assistente (wizard).',
+      'Criar e editar contratos (inclusive aditivos) no formulário de contrato.',
       'Gerenciar modelos e cláusulas reutilizáveis.',
       'Emitir aditivos e gerar relatórios de contratos.',
     ],

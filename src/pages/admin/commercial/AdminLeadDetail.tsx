@@ -323,7 +323,7 @@ export default function AdminLeadDetail() {
               <Link to="/admin/commercial/quotes/new">Criar Orçamento</Link>
             </Button>
             <Button asChild variant="outline" className="flex-1">
-              <Link to="/admin/contracts/wizard">Criar Contrato</Link>
+              <Link to="/admin/commercial/contracts/new">Criar Contrato</Link>
             </Button>
           </div>
         </div>
