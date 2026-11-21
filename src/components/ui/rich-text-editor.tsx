@@ -15,6 +15,8 @@ import {
   AlignCenter,
   AlignRight,
   AlignJustify,
+  List,
+  ListOrdered,
   Palette,
   Sparkles,
   Loader2,
@@ -180,6 +182,35 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
             title="Itálico"
           >
             <Italic className="h-4 w-4" />
+          </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={(e) => {
+              e.preventDefault()
+              execCommand('insertUnorderedList')
+            }}
+            disabled={disabled}
+            title="Lista com marcadores"
+          >
+            <List className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={(e) => {
+              e.preventDefault()
+              execCommand('insertOrderedList')
+            }}
+            disabled={disabled}
+            title="Lista numerada"
+          >
+            <ListOrdered className="h-4 w-4" />
           </Button>
 
           <div className="w-px h-6 bg-border mx-1" />

@@ -394,6 +394,77 @@ function paragraphsFromList(
   return resultado
 }
 
+/**
+ * Converte o texto do contrato V6 (parágrafos separados por linha, valores em
+ * **negrito**) em HTML para exibição e impressão no navegador. Conteúdo que já
+ * é HTML (vindo do RichTextEditor) volta intacto.
+ */
+export function contractTextoParaHtml(texto: string): string {
+  if (!texto) return ''
+  if (pareceHtml(texto)) return texto
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return texto
+    .split('\n')
+    .map((bruta) => {
+      const linha = bruta.trim()
+      if (!linha) return ''
+      const comBold = esc(linha).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      if (/^CLÁUSULA/i.test(linha) || /^ANEXO\sI{1,3}\b/i.test(linha)) return `<h2>${comBold}</h2>`
+      if (/^(CONTRATANTE|CONTRATADA)\s*[:—]/i.test(linha))
+        return `<p><strong>${esc(linha)}</strong></p>`
+      return `<p>${comBold}</p>`
+    })
+    .filter(Boolean)
+    .join('\n')
+}
+
+/**
+ * Converte o HTML do RichTextEditor em blocos docx: parágrafos (com
+ * negrito/itálico/sublinhado/cor), listas ordenadas e não ordenadas e títulos.
+ * Usado por textToParagraphs quando o conteúdo salvo veio do editor.
+ */
+export function htmlToParagraphs(html: string): Paragraph[] {
+  const contêiner = document.createElement('div')
+  contêiner.innerHTML = html
+  const resultado: Paragraph[] = []
+  Array.from(contêiner.childNodes).forEach((no) => {
+    if (no.nodeType === Node.TEXT_NODE) {
+      const texto = (no.textContent || '').trim()
+      if (texto)
+        resultado.push(
+          new Paragraph({
+            spacing: { before: 0, after: 140 },
+            children: htmlToRuns(texto),
+          }),
+        )
+      return
+    }
+    if (no.nodeType !== Node.ELEMENT_NODE) return
+    const el = no as Element
+    const tag = el.tagName.toLowerCase()
+    if (tag === 'ul') {
+      resultado.push(...paragraphsFromList(el, false, 0, []))
+      return
+    }
+    if (tag === 'ol') {
+      resultado.push(...paragraphsFromList(el, true, 0, []))
+      return
+    }
+    const conteudo = el.innerHTML
+    const texto = el.textContent || ''
+    if (!texto.trim() && !/<img/i.test(conteudo)) {
+      resultado.push(new Paragraph({ spacing: { before: 0, after: 80 }, children: [] }))
+      return
+    }
+    if (/^h[1-6]$/.test(tag)) {
+      resultado.push(h1(texto.trim()))
+      return
+    }
+    resultado.push(paragraphFromHtml(conteudo))
+  })
+  return resultado
+}
+
 /** Heurística: o conteúdo veio do RichTextEditor (HTML) em vez do texto V6 puro. */
 function pareceHtml(text: string): boolean {
   return /<(p|div|ul|ol|li|strong|b|em|i|br|h[1-6]|span)\b/i.test(text)

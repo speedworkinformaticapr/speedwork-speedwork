@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
+import { downloadContractDocx } from '@/lib/contract-docx-download'
+import { imprimirContrato, contractConteudoParaHtml } from '@/lib/contract-print'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/hooks/use-toast'
 import {
   Printer,
+  FileDown,
   FileSignature,
   RefreshCcw,
   Plus,
@@ -74,10 +77,11 @@ export default function AdminContratoView() {
     setContrato(data)
 
     if (data) {
-      const { data: sigs } = await (supabase.from as any)('contract_signatories')
+      const { data: sigs } = await supabase
+        .from('contract_signers')
         .select('*, profiles(name, email)')
         .eq('contract_id', id)
-        .order('created_at')
+        .order('order_index')
       setSignatories(sigs || [])
 
       const { data: adds } = await supabase
@@ -99,14 +103,26 @@ export default function AdminContratoView() {
 
   const addSignatory = async () => {
     if (!sigForm.profile_id) return
-    await (supabase.from as any)('contract_signatories').insert([{ contract_id: id, ...sigForm }])
+    const { count } = await supabase
+      .from('contract_signers')
+      .select('id', { count: 'exact', head: true })
+      .eq('contract_id', id)
+    await supabase.from('contract_signers').insert([
+      {
+        contract_id: id,
+        profile_id: sigForm.profile_id,
+        role: sigForm.role,
+        order_index: count ?? 0,
+        status: 'Pendente',
+      },
+    ])
     toast({ title: 'Signatário adicionado' })
     setSigOpen(false)
     load()
   }
 
   const removeSignatory = async (sigId: string) => {
-    await (supabase.from as any)('contract_signatories').delete().eq('id', sigId)
+    await supabase.from('contract_signers').delete().eq('id', sigId)
     load()
   }
 
@@ -175,8 +191,28 @@ export default function AdminContratoView() {
               </Button>
             </>
           )}
-          <Button variant="outline" onClick={() => window.print()}>
-            <Printer className="w-4 h-4 mr-2" /> Imprimir
+          <Button
+            variant="outline"
+            onClick={() =>
+              downloadContractDocx(
+                contrato.numero_contrato || 'Contrato Speedwork',
+                contrato.content || contrato.observacoes || '',
+                `contrato-${contrato.numero_contrato || id}.docx`,
+              )
+            }
+          >
+            <FileDown className="w-4 h-4 mr-2" /> Baixar .docx
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() =>
+              imprimirContrato(
+                contrato.numero_contrato || 'Contrato Speedwork',
+                contrato.content || contrato.observacoes || '',
+              )
+            }
+          >
+            <Printer className="w-4 h-4 mr-2" /> Imprimir / PDF
           </Button>
         </div>
       </div>
@@ -231,12 +267,16 @@ export default function AdminContratoView() {
               )}
             </div>
 
-            {contrato.observacoes && (
+            {(contrato.content || contrato.observacoes) && (
               <div className="border-t pt-4">
                 <h4 className="font-semibold mb-2">Conteúdo / Cláusulas</h4>
                 <div
                   className="bg-muted/20 p-4 rounded-md text-sm prose dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: contrato.observacoes }}
+                  dangerouslySetInnerHTML={{
+                    __html: contractConteudoParaHtml(
+                      contrato.content || contrato.observacoes || '',
+                    ),
+                  }}
                 ></div>
               </div>
             )}

@@ -5,7 +5,6 @@ import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import {
   Select,
@@ -24,7 +23,17 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
 import { formatCurrencyInput, parseCurrencyInput } from '@/lib/utils'
-import { ArrowLeft, Plus } from 'lucide-react'
+import { ArrowLeft, FileDown, Plus, Trash2, FileText } from 'lucide-react'
+import { contratoV6Texto } from '@/lib/contract-docx'
+import { downloadContractDocx } from '@/lib/contract-docx-download'
+import { imprimirContrato } from '@/lib/contract-print'
+import {
+  fetchClienteDocInfo,
+  fetchPlanLimits,
+  montarContractDocData,
+  type ClienteDocInfo,
+} from '@/lib/contract-form-doc'
+import { fetchSigners, saveSigners, type SignerRow } from '@/lib/contract-signers'
 
 export default function AdminContratoForm() {
   const { id } = useParams()
@@ -50,6 +59,9 @@ export default function AdminContratoForm() {
     cliente_email_notificacao: '',
     observacoes: '',
   })
+  // Conteúdo integral (corpo V6 + anexos) persistido em contratos.content.
+  const [content, setContent] = useState('')
+  const [contentEditada, setContentEditada] = useState(false)
 
   // Quick Add States
   const [newClientOpen, setNewClientOpen] = useState(false)
@@ -63,7 +75,11 @@ export default function AdminContratoForm() {
 
   const [services, setServices] = useState<any[]>([])
   const [selectedServices, setSelectedServices] = useState<string[]>([])
-  const [templates, setTemplates] = useState<any[]>([])
+  const [signatarios, setSignatarios] = useState<SignerRow[]>([])
+  const [novoSig, setNovoSig] = useState({ profile_id: '', role: 'Contratante' })
+
+  const [gerando, setGerando] = useState(false)
+  const [clienteInfo, setClienteInfo] = useState<ClienteDocInfo | null>(null)
 
   useEffect(() => {
     supabase
@@ -88,12 +104,6 @@ export default function AdminContratoForm() {
       .select('id, title, monthly_value, semiannual_value, annual_value, avulso_value')
       .order('title')
       .then(({ data }) => setServices(data || []))
-    supabase
-      .from('contract_templates')
-      .select('id, name, description, content')
-      .eq('is_active', true)
-      .order('name')
-      .then(({ data }) => setTemplates(data || []))
 
     if (id) {
       const isUuidValid =
@@ -104,7 +114,11 @@ export default function AdminContratoForm() {
           .select('*')
           .eq('id', id)
           .single()
-          .then(({ data }) => data && setForm((prev) => ({ ...prev, ...data })))
+          .then(({ data }) => {
+            if (!data) return
+            setForm((prev) => ({ ...prev, ...data }))
+            setContent(data.content || '')
+          })
         supabase
           .from('contract_services')
           .select('service_id')
@@ -112,11 +126,97 @@ export default function AdminContratoForm() {
           .then(({ data }) => {
             if (data) setSelectedServices(data.map((d: any) => d.service_id))
           })
+        fetchSigners(id).then(setSignatarios)
       }
     }
   }, [id])
 
-  const handleSave = async (status: string) => {
+  /** Busca os dados do cliente quando ele é selecionado (para o documento). */
+  useEffect(() => {
+    if (!form.cliente_id) {
+      setClienteInfo(null)
+      return
+    }
+    fetchClienteDocInfo(form.cliente_id).then(setClienteInfo)
+  }, [form.cliente_id])
+
+  /**
+   * Gera o conteúdo V6 (18 cláusulas + Anexos I/II/III) com os valores do
+   * formulário em **negrito**. Substitui o carregamento antigo de
+   * contract_templates, que injetava as 11 cláusulas com {{placeholders}}.
+   */
+  const gerarConteudoV6 = async (): Promise<string> => {
+    if (!form.cliente_id) {
+      toast({
+        title: 'Erro',
+        description: 'Selecione o cliente antes de gerar',
+        variant: 'destructive',
+      })
+      return ''
+    }
+    setGerando(true)
+    try {
+      const cliente = clienteInfo || (await fetchClienteDocInfo(form.cliente_id))
+      const plano = await fetchPlanLimits(selectedServices)
+      const data = montarContractDocData({
+        cliente,
+        numeroContrato: (form as any).numero_contrato,
+        representanteNome: form.cliente_representante_nome,
+        representanteCpf: form.cliente_representante_cpf,
+        emailNotificacao: form.cliente_email_notificacao,
+        valorCiclo: form.valor_ciclo,
+        duracaoCiclo: form.duracao_ciclo,
+        dataInicio: form.data_inicio,
+        dataFim: form.data_fim,
+        plano,
+      })
+      return contratoV6Texto(data)
+    } finally {
+      setGerando(false)
+    }
+  }
+
+  const handleGerar = async () => {
+    const texto = await gerarConteudoV6()
+    if (!texto) return
+    setContent(texto)
+    setContentEditada(true)
+    toast({
+      title: 'Contrato V6 gerado',
+      description: '18 cláusulas + Anexos I, II e III com os dados preenchidos em negrito.',
+    })
+  }
+
+  const handleGerarSalvar = async (status: string) => {
+    const texto = contentEditada ? content : await gerarConteudoV6()
+    if (!texto) return
+    setContent(texto)
+    setContentEditada(true)
+    await handleSave(status, texto)
+  }
+
+  const handleDownloadDocx = async () => {
+    const texto = contentEditada ? content : await gerarConteudoV6()
+    if (!texto) return
+    const numero = (form as any).numero_contrato || `CTR-${Date.now()}`
+    await downloadContractDocx(
+      `Contrato ${numero}`,
+      texto,
+      `${numero.replace(/[^\w-]/g, '')}-contrato.docx`,
+      false,
+    )
+  }
+
+  const handleImprimir = () => {
+    if (!content) {
+      toast({ title: 'Gere o contrato antes de imprimir', variant: 'destructive' })
+      return
+    }
+    const numero = (form as any).numero_contrato || 'contrato'
+    imprimirContrato(`Contrato ${numero}`, content)
+  }
+
+  const handleSave = async (status: string, conteudoFinal?: string) => {
     if (!form.cliente_id)
       return toast({ title: 'Erro', description: 'Cliente obrigatório', variant: 'destructive' })
 
@@ -132,14 +232,16 @@ export default function AdminContratoForm() {
       }
     }
 
+    const numeroContrato = (form as any).numero_contrato || `CTR-${Date.now()}`
     const payload: any = {
       ...form,
       status,
       user_id: user?.id,
       responsavel_id,
-      numero_contrato: (form as any).numero_contrato || `CTR-${Date.now()}`,
+      numero_contrato: numeroContrato,
       data_proxima_cobranca: (form as any).data_proxima_cobranca || form.data_inicio,
     }
+    if (conteudoFinal) payload.content = conteudoFinal
     if (!payload.conta_id) payload.conta_id = null
     if (!payload.sla_id) payload.sla_id = null
     if (!payload.data_fim) payload.data_fim = null
@@ -151,11 +253,19 @@ export default function AdminContratoForm() {
     if (id) {
       await supabase.from('contratos').update(payload).eq('id', id)
     } else {
-      const { data: newContract } = await supabase
+      const { data: newContract, error } = await supabase
         .from('contratos')
         .insert([payload])
         .select('id')
         .single()
+      if (error) {
+        toast({
+          title: 'Erro ao salvar contrato',
+          description: error.message,
+          variant: 'destructive',
+        })
+        return
+      }
       contractId = newContract?.id
     }
 
@@ -169,6 +279,11 @@ export default function AdminContratoForm() {
           })),
         )
       }
+      // Signatários na tabela REAL contract_signers (não contract_signatories).
+      await saveSigners(
+        contractId,
+        signatarios.map((s) => ({ profile_id: s.profile_id, role: s.role })),
+      )
     }
 
     toast({ title: 'Contrato salvo com sucesso' })
@@ -223,13 +338,36 @@ export default function AdminContratoForm() {
     }
   }
 
-  const handleTemplateSelect = (templateId: string) => {
-    const template = templates.find((t) => t.id === templateId)
-    if (template?.content) {
-      setForm((prev) => ({ ...prev, observacoes: template.content }))
-      toast({ title: 'Modelo carregado', description: template.name })
+  const addSignatario = () => {
+    if (!novoSig.profile_id || !id) return
+    if (signatarios.some((s) => s.profile_id === novoSig.profile_id)) {
+      toast({ title: 'Signatário já adicionado', variant: 'destructive' })
+      return
     }
+    setSignatarios([
+      ...signatarios,
+      {
+        id: `novo-${signatarios.length}`,
+        profile_id: novoSig.profile_id,
+        role: novoSig.role,
+        order_index: signatarios.length,
+        status: 'Pendente',
+        profiles: null,
+      },
+    ])
+    setNovoSig({ profile_id: '', role: 'Contratante' })
+    toast({
+      title: 'Signatário adicionado à lista',
+      description: 'Salve o contrato para persistir.',
+    })
   }
+
+  const removeSignatario = (pid: string) => {
+    setSignatarios(signatarios.filter((s) => s.profile_id !== pid))
+  }
+
+  const nomeSignatario = (s: SignerRow) =>
+    s.profiles?.name || clientes.find((c) => c.id === s.profile_id)?.nome || '—'
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
@@ -241,11 +379,12 @@ export default function AdminContratoForm() {
       </div>
 
       <Tabs defaultValue="cliente" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-6">
+        <TabsList className="grid w-full grid-cols-5 mb-6">
           <TabsTrigger value="cliente">Cliente e Tipo</TabsTrigger>
           <TabsTrigger value="faturamento">Faturamento</TabsTrigger>
           <TabsTrigger value="servicos">Serviços</TabsTrigger>
-          <TabsTrigger value="sla">SLA e Termos</TabsTrigger>
+          <TabsTrigger value="signatarios">Signatários</TabsTrigger>
+          <TabsTrigger value="contrato">Contrato e Termos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="cliente" className="space-y-4 bg-card p-6 border rounded-xl">
@@ -321,24 +460,10 @@ export default function AdminContratoForm() {
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label>Modelo de Contrato (Template)</Label>
-            <Select onValueChange={(v) => handleTemplateSelect(v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um modelo para preencher automaticamente" />
-              </SelectTrigger>
-              <SelectContent>
-                {templates.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Ao selecionar um modelo, o conteúdo será carregado na aba SLA e Termos.
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            O conteúdo do documento é gerado a partir do modelo V6 da Speedwork (aba Contrato e
+            Termos) — não é mais carregado de modelos antigos com placeholders.
+          </p>
         </TabsContent>
 
         <TabsContent value="faturamento" className="space-y-4 bg-card p-6 border rounded-xl">
@@ -420,7 +545,8 @@ export default function AdminContratoForm() {
           <div className="space-y-2">
             <Label>Serviços Vinculados</Label>
             <p className="text-sm text-muted-foreground">
-              Selecione os serviços comerciais que fazem parte deste contrato.
+              Selecione os serviços comerciais que fazem parte deste contrato. A ficha de limites do
+              plano (Anexo I) vem do serviço selecionado.
             </p>
             <div className="border rounded-md divide-y max-h-[300px] overflow-y-auto">
               {services.length === 0 ? (
@@ -462,36 +588,113 @@ export default function AdminContratoForm() {
           </div>
         </TabsContent>
 
-        <TabsContent value="sla" className="space-y-4 bg-card p-6 border rounded-xl">
+        <TabsContent value="signatarios" className="space-y-4 bg-card p-6 border rounded-xl">
           <div className="space-y-2">
-            <Label>SLA Associado</Label>
-            <div className="flex gap-2">
-              <Select
-                value={form.sla_id || ''}
-                onValueChange={(v) => setForm({ ...form, sla_id: v })}
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Nenhum SLA selecionado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Nenhum SLA</SelectItem>
-                  {slas.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => setNewSlaOpen(true)}
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
+            <Label>Signatários do Contrato</Label>
+            <p className="text-sm text-muted-foreground">
+              Adicione quem assina o documento (CONTRATANTE, CONTRATADA, testemunhas). A ordem
+              define a sequência de assinatura.
+            </p>
+            {id && (
+              <div className="flex gap-2 items-end">
+                <div className="flex-1 space-y-1">
+                  <Label className="text-xs">Perfil</Label>
+                  <Select
+                    value={novoSig.profile_id}
+                    onValueChange={(v) => setNovoSig({ ...novoSig, profile_id: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o perfil" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clientes.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-48 space-y-1">
+                  <Label className="text-xs">Papel</Label>
+                  <Select
+                    value={novoSig.role}
+                    onValueChange={(v) => setNovoSig({ ...novoSig, role: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Contratante">Contratante</SelectItem>
+                      <SelectItem value="Contratado">Contratado</SelectItem>
+                      <SelectItem value="Interveniente Anuente">Interveniente Anuente</SelectItem>
+                      <SelectItem value="Testemunha">Testemunha</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button type="button" variant="outline" onClick={addSignatario}>
+                  <Plus className="w-4 h-4 mr-1" /> Adicionar
+                </Button>
+              </div>
+            )}
+            <div className="space-y-2 mt-2">
+              {signatarios.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum signatário adicionado.</p>
+              ) : (
+                signatarios.map((s) => (
+                  <div
+                    key={s.profile_id}
+                    className="flex items-center justify-between bg-muted/30 p-2 rounded-md"
+                  >
+                    <div>
+                      <p className="font-medium text-sm">
+                        {nomeSignatario(s)}{' '}
+                        <span className="text-xs text-muted-foreground">({s.role})</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Ordem {s.order_index + 1} · {s.status || 'Pendente'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => removeSignatario(s.profile_id)}
+                      className="text-red-500 hover:text-red-700 p-1"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="contrato" className="space-y-4 bg-card p-6 border rounded-xl">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" onClick={handleGerar} disabled={gerando}>
+              <FileText className="w-4 h-4 mr-2" />
+              {gerando ? 'Gerando…' : 'Gerar contrato V6'}
+            </Button>
+            <Button type="button" variant="outline" onClick={handleDownloadDocx} disabled={gerando}>
+              <FileDown className="w-4 h-4 mr-2" /> Baixar .docx
+            </Button>
+            <Button type="button" variant="outline" onClick={handleImprimir} disabled={!content}>
+              Imprimir / PDF
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            "Gerar contrato V6" monta as 18 cláusulas + Anexos I, II e III com os dados do
+            formulário em negrito. Ajuste manualmente pelo editor (negrito, itálico, listas) antes
+            de salvar.
+          </p>
+          <RichTextEditor
+            value={content}
+            onChange={(v) => {
+              setContent(v)
+              setContentEditada(true)
+            }}
+            minHeight="500px"
+            aiContext="Cláusulas contratuais e anexos de um contrato de serviço Speedwork"
+          />
           <div className="space-y-2">
             <Label>Observações e Termos Adicionais</Label>
             <RichTextEditor
@@ -508,10 +711,16 @@ export default function AdminContratoForm() {
         <Button variant="outline" onClick={() => navigate(-1)}>
           Cancelar
         </Button>
-        <Button variant="secondary" onClick={() => handleSave('rascunho')}>
+        <Button
+          variant="secondary"
+          onClick={() => handleGerarSalvar('rascunho')}
+          disabled={gerando}
+        >
           Salvar Rascunho
         </Button>
-        <Button onClick={() => handleSave('ativo')}>Ativar Contrato</Button>
+        <Button onClick={() => handleGerarSalvar('ativo')} disabled={gerando}>
+          Ativar Contrato
+        </Button>
       </div>
 
       {/* Quick Add Modals */}
