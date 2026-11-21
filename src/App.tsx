@@ -104,6 +104,7 @@ const SupportTickets = lazy(() => import('./pages/admin/support/SupportTickets')
 const SupportSlaConfig = lazy(() => import('./pages/admin/support/SupportSlaConfig'))
 const AdminAnalytics = lazy(() => import('./pages/admin/settings/AdminAnalytics'))
 const AdminPublishLogs = lazy(() => import('./pages/admin/settings/AdminPublishLogs'))
+const AdminAssinaturas = lazy(() => import('./pages/admin/settings/AdminAssinaturas'))
 const AdminWhatsApp = lazy(() => import('./pages/admin/whatsapp/AdminWhatsApp'))
 const AdminEmail = lazy(() => import('./pages/admin/email/AdminEmail'))
 const AdminQuotes = lazy(() => import('./pages/admin/quotes/AdminQuotes'))
@@ -339,6 +340,7 @@ const App = () => (
                       <Route path="settings/media" element={<AdminMedia />} />
                       <Route path="settings/analytics" element={<AdminAnalytics />} />
                       <Route path="settings/publish-logs" element={<AdminPublishLogs />} />
+                      <Route path="settings/assinaturas" element={<AdminAssinaturas />} />
                       <Route path="users" element={<AdminUsers />} />
                       <Route path="users/new" element={<AdminProfileForm />} />
                       <Route path="users/:id/edit" element={<AdminProfileForm />} />

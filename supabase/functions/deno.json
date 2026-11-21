@@ -1,5 +1,8 @@
 {
   "_versions": {
+    "cron-commercial-contracts": 4,
+    "registration-payment-webhook": 3,
+    "generate-affiliation-billing": 2,
     "stripe-webhook": 3,
     "get-athlete-comparison": 2,
     "autentique-create-document": 1,
@@ -13,6 +16,7 @@
     "admin-update-password": 83,
     "autentique-webhook": 1,
     "mfa-totp": 3,
+    "autentique-status": 1,
     "verify-recaptcha": 3,
     "validar_whatsapp_config": 7,
     "cron-billing-reminders": 3,
@@ -23,9 +27,6 @@
     "process-registration-payment": 4,
     "translate-text": 2,
     "delete-user": 1,
-    "enviar_whatsapp": 6,
-    "cron-commercial-contracts": 4,
-    "registration-payment-webhook": 3,
-    "generate-affiliation-billing": 2
+    "enviar_whatsapp": 6
   }
 }
