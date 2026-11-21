@@ -18,6 +18,10 @@ import {
 import { run, para, h1, h2, FONT, PRIMARY, ACCENT, DARK, MUTED } from './docx-style'
 import { CONTRATADA, CONTRATO_PADROES } from './contract-speedwork'
 import { valorPorExtenso } from './valor-extenso'
+import { CONTRATO_V6_CORPO } from './contract-v6-corpo'
+import { ANEXO_I_V6, ANEXO_II_V6, ANEXO_III_V6 } from './contract-v6-anexos'
+
+export { CONTRATO_V6_CORPO, ANEXO_I_V6, ANEXO_II_V6, ANEXO_III_V6 }
 
 export interface PlanLimits {
   name: string
@@ -35,11 +39,15 @@ export interface PlanLimits {
 export interface ContractDocData {
   numero_contrato?: string | null
   cliente_nome?: string | null
+  /** Razão social da CONTRATANTE; quando ausente, usa cliente_nome. */
+  cliente_razao?: string | null
   cliente_cnpj?: string | null
   cliente_endereco?: string | null
   cliente_representante?: string | null
   cliente_representante_cpf?: string | null
   cliente_email?: string | null
+  /** E-mail de notificação (cláusula 18.6); quando ausente, usa cliente_email. */
+  cliente_email_notificacao?: string | null
   valor_mensal?: number | string | null
   valor_mensal_extenso?: string | null
   local_data?: string | null
@@ -131,7 +139,48 @@ export function fillPlaceholders(template: string, data: ContractDocData): strin
     `Data: ${DATA_BR(data.data_inicio)}`,
   ].join('\n\n')
 
+  const razaoCliente = data.cliente_razao || data.cliente_nome || '[RAZÃO SOCIAL DO CLIENTE]'
+  const emailNotificacao =
+    data.cliente_email_notificacao || data.cliente_email || '[E-MAIL DO CLIENTE]'
+  // "Local e data" do Anexo I usa o padrão do modelo quando não há data.
+  const localDataAnexo = data.local_data || localDataExtenso(data.data_inicio)
+  // Assinaturas do Anexo I (mesmos dados do bloco do corpo, formato do modelo V6).
+  const assinaturasAnexoI = [
+    'Local e data: Campo Largo, ____ de ______________ de 20____.',
+    '',
+    'Assinatura da CONTRATANTE',
+    '',
+    '______________________________________',
+    '',
+    razaoCliente,
+    '',
+    `CNPJ: ${data.cliente_cnpj || '[CNPJ DO CLIENTE]'}`,
+    '',
+    `Responsável: ${data.cliente_representante || '[nome a definir]'}`,
+    '',
+    `CPF: ${data.cliente_representante_cpf || '[CPF a definir]'}`,
+    '',
+    'Data: ____/____/______',
+    '',
+    'Assinatura da CONTRATADA',
+    '',
+    '______________________________________',
+    '',
+    CONTRATADA.razao,
+    '',
+    `CNPJ: ${CONTRATADA.cnpj}`,
+    '',
+    `Responsável: ${CONTRATADA.representante}`,
+    '',
+    `CPF: ${CONTRATADA.cpf}`,
+    '',
+    'Data: ____/____/______',
+  ].join('\n')
+
   const mapa: Record<string, string> = {
+    // Aliases usados no Anexo I do modelo V6
+    representante_nome: data.cliente_representante || '[nome a definir]',
+    representante_cpf: data.cliente_representante_cpf || '[CPF a definir]',
     // CONTRATADA (dados fixos da Speedwork)
     contratada_razao: CONTRATADA.razao,
     contratada_endereco: CONTRATADA.endereco,
@@ -143,11 +192,13 @@ export function fillPlaceholders(template: string, data: ContractDocData): strin
     // CONTRATANTE (cliente)
     numero_contrato: data.numero_contrato || 'CTR-—',
     cliente_nome: data.cliente_nome || '[NOME DO CLIENTE]',
+    cliente_razao: razaoCliente,
     cliente_cnpj: data.cliente_cnpj || '[CNPJ DO CLIENTE]',
     cliente_endereco: data.cliente_endereco || '[ENDEREÇO DO CLIENTE]',
     cliente_representante: data.cliente_representante || '[nome a definir]',
     cliente_representante_cpf: data.cliente_representante_cpf || '[CPF a definir]',
-    cliente_email: data.cliente_email || '[E-MAIL DO CLIENTE]',
+    cliente_email: emailNotificacao,
+    cliente_email_notificacao: emailNotificacao,
     // Valores
     valor_mensal: valorMensal.replace('R$', '').trim(),
     valor_mensal_extenso: valorExtenso,
@@ -182,6 +233,9 @@ export function fillPlaceholders(template: string, data: ContractDocData): strin
     rodadas_ajuste: CONTRATO_PADROES.rodadas_ajuste,
     // Anexos
     bloco_assinaturas: blocoAssinaturas,
+    // Assinaturas literais do Anexo I (modelo V6)
+    local_data_anexo: localDataAnexo,
+    assinaturas_anexo_i: assinaturasAnexoI,
   }
   return template.replace(/\{\{(\w+)\}\}/g, (_m, chave: string) => mapa[chave] ?? `{{${chave}}}`)
 }
@@ -307,6 +361,18 @@ function buildFooter(titulo: string): Footer {
       }),
     ],
   })
+}
+
+/**
+ * Monta o texto integral do contrato V6: corpo (18 cláusulas) + Anexos I, II e
+ * III literais, com todos os placeholders substituídos. Usado pelo Wizard v2
+ * para gerar o documento e gravar o conteúdo integral em contratos.content.
+ */
+export function contratoV6Completo(data: ContractDocData): string {
+  const fill = (tpl: string) => fillPlaceholders(tpl, data)
+  return [fill(CONTRATO_V6_CORPO), fill(ANEXO_I_V6), fill(ANEXO_II_V6), fill(ANEXO_III_V6)].join(
+    '\n\n',
+  )
 }
 
 /**

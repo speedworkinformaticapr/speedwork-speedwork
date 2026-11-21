@@ -1,6 +1,9 @@
 // Wizard v2 do módulo de contratos: etapa única de seleção (cliente + plano) →
-// limites e valores preenchidos automaticamente do plano → documento gerado com
-// placeholders substituídos → preview e download .docx → salvar contrato.
+// limites e valores preenchidos automaticamente do plano → documento gerado pelo
+// modelo V6 REAL (corpo com 18 cláusulas + Anexos I, II e III literais) →
+// preview e download .docx → salvar contrato. Os campos do representante da
+// CONTRATANTE e o e-mail de notificação entram no documento e são persistidos
+// em contratos (cliente_representante_nome/cpf, cliente_email_notificacao).
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Download, FileText, PenLine, Save, Sparkles } from 'lucide-react'
@@ -20,11 +23,12 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/use-auth'
 import {
-  V6_MASTER_TEMPLATE_FALLBACK,
+  contratoV6Completo,
   fillPlaceholders,
   formatLimites,
   BRL,
   DATA_BR,
+  ANEXO_I_V6,
   type ContractDocData,
   type PlanLimits,
 } from '@/lib/contract-docx'
@@ -40,29 +44,12 @@ import {
 
 type PlanoRow = PlanCatalogRow
 
-/** Anexo I — ficha técnica do plano: preço do serviço vinculado + limites da ficha. */
-function anexoIContent(plano: PlanCatalogRow | null): string {
-  if (!plano) return 'ANEXO I — FICHA TÉCNICA DO PLANO: dados não disponíveis.'
-  return [
-    `ANEXO I — FICHA TÉCNICA DO PLANO ${plano.name}`,
-    '',
-    `Serviço vinculado: ${plano.services?.title || plano.name}`,
-    `Valor mensal: ${BRL(planMonthlyValue(plano))}`,
-    `Taxa de implantação: ${BRL(planSetupValue(plano))}`,
-    `Índice de reajuste: ${plano.reajuste_index || 'IPCA'}`,
-    `Limites: ${formatLimites(plano)}`,
-    `SLA: ${plano.sla_description || '—'}`,
-  ].join('\n')
-}
-
 interface ClienteRow {
   id: string
   name?: string | null
   cpf_cnpj?: string | null
   address?: string | null
 }
-
-const V6_TEMPLATE_NAME = 'Modelo Mestre — SGC4WEB V6'
 
 export default function ContractWizard() {
   const { roles } = useAuth()
@@ -71,7 +58,6 @@ export default function ContractWizard() {
 
   const [planos, setPlanos] = useState<PlanoRow[]>([])
   const [clientes, setClientes] = useState<ClienteRow[]>([])
-  const [templateV6, setTemplateV6] = useState<string>('')
   const [carregando, setCarregando] = useState(true)
   const [gerando, setGerando] = useState(false)
 
@@ -80,20 +66,20 @@ export default function ContractWizard() {
   const [dataInicio, setDataInicio] = useState(new Date().toISOString().split('T')[0])
   const [vigenciaMeses, setVigenciaMeses] = useState('12')
 
+  // Representante da CONTRATANTE e e-mail de notificação (vão para o documento
+  // e para as colunas cliente_representante_nome/cpf e cliente_email_notificacao)
+  const [repNome, setRepNome] = useState('')
+  const [repCpf, setRepCpf] = useState('')
+  const [emailNotificacao, setEmailNotificacao] = useState('')
+
   useEffect(() => {
     const carregar = async () => {
-      const [planosRes, clientesRes, templateRes] = await Promise.all([
+      const [planosRes, clientesRes] = await Promise.all([
         fetchPlanCatalog(true),
         supabase.from('profiles').select('id, name, cpf_cnpj, address').eq('is_client', true),
-        supabase
-          .from('contract_templates')
-          .select('content')
-          .eq('name', V6_TEMPLATE_NAME)
-          .maybeSingle(),
       ])
       setPlanos(planosRes || [])
       setClientes(clientesRes.data || [])
-      setTemplateV6(templateRes.data?.content || V6_MASTER_TEMPLATE_FALLBACK)
       setCarregando(false)
     }
     carregar()
@@ -126,8 +112,13 @@ export default function ContractWizard() {
   const docData: ContractDocData = {
     numero_contrato: numeroContrato,
     cliente_nome: cliente?.name || null,
+    cliente_razao: cliente?.name || null,
     cliente_cnpj: cliente?.cpf_cnpj || null,
     cliente_endereco: cliente?.address || null,
+    cliente_representante: repNome || null,
+    cliente_representante_cpf: repCpf || null,
+    cliente_email: emailNotificacao || null,
+    cliente_email_notificacao: emailNotificacao || null,
     valor_mensal: planMonthlyValue(plano),
     data_inicio: dataInicio,
     data_fim: dataFim || null,
@@ -135,10 +126,28 @@ export default function ContractWizard() {
     plano,
   }
 
+  /** Documento integral V6: corpo + Anexos I, II e III, já preenchidos. */
   const documento = useMemo(
-    () => fillPlaceholders(templateV6 || V6_MASTER_TEMPLATE_FALLBACK, docData),
+    () => contratoV6Completo(docData),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [templateV6, cliente, plano, dataInicio, dataFim, reajusteDate, numeroContrato],
+    [
+      cliente,
+      plano,
+      dataInicio,
+      dataFim,
+      reajusteDate,
+      numeroContrato,
+      repNome,
+      repCpf,
+      emailNotificacao,
+    ],
+  )
+
+  /** Anexo I estruturado (ficha do plano), preenchido pelo mesmo motor V6. */
+  const anexoIPreenchido = useMemo(
+    () => (plano ? fillPlaceholders(ANEXO_I_V6, docData) : ''),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [plano, cliente, repNome, repCpf, emailNotificacao, dataInicio],
   )
 
   const { toast } = useToast()
@@ -159,6 +168,9 @@ export default function ContractWizard() {
         reajuste_date: reajusteDate || null,
         renewal_date: renewalDate || null,
         content: documento,
+        cliente_representante_nome: repNome || null,
+        cliente_representante_cpf: repCpf || null,
+        cliente_email_notificacao: emailNotificacao || null,
       })
       .select('id')
       .single()
@@ -176,13 +188,13 @@ export default function ContractWizard() {
         contract_id: data.id,
         annex_type: 'anexo_i',
         version: 'v1',
-        content: anexoIContent(plano),
+        content: anexoIPreenchido || fillPlaceholders(ANEXO_I_V6, docData),
       },
     ])
     return data.id as string
   }
 
-  /** Garante os signatários: CONTRATADA (1) = empresa (system_data), CONTRATANTE (2) = cliente. */
+  /** Garante os signatários: CONTRATADA (1) = empresa, CONTRATANTE (2) = cliente. */
   const garantirSignatarios = async (contractId: string) => {
     const { data: existentes } = await supabase
       .from('contract_signers')
@@ -257,7 +269,7 @@ export default function ContractWizard() {
         <h1 className="text-3xl font-bold">Assistente de Contrato — v2</h1>
         <p className="text-muted-foreground">
           Escolha o cliente e o plano: limites e valores são preenchidos automaticamente e o
-          documento é gerado com os dados do contrato.
+          documento é gerado no modelo SGC4WEB V6 (18 cláusulas + Anexos I, II e III).
         </p>
       </div>
 
@@ -277,7 +289,7 @@ export default function ContractWizard() {
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label>Cliente (parte contratada) *</Label>
+            <Label>Cliente (parte contratante) *</Label>
             <Select value={clienteId} onValueChange={setClienteId}>
               <SelectTrigger>
                 <SelectValue
@@ -326,6 +338,31 @@ export default function ContractWizard() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Representante da CONTRATANTE</Label>
+            <Input
+              value={repNome}
+              onChange={(e) => setRepNome(e.target.value)}
+              placeholder="Nome do representante legal"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>CPF do representante</Label>
+            <Input
+              value={repCpf}
+              onChange={(e) => setRepCpf(e.target.value)}
+              placeholder="000.000.000-00"
+            />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>E-mail de notificação da CONTRATANTE</Label>
+            <Input
+              type="email"
+              value={emailNotificacao}
+              onChange={(e) => setEmailNotificacao(e.target.value)}
+              placeholder="E-mail para notificações do contrato"
+            />
           </div>
         </CardContent>
       </Card>

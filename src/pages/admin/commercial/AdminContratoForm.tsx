@@ -45,6 +45,9 @@ export default function AdminContratoForm() {
     duracao_ciclo: 'mensal',
     valor_ciclo: 0,
     renovacao_automatica: true,
+    cliente_representante_nome: '',
+    cliente_representante_cpf: '',
+    cliente_email_notificacao: '',
     observacoes: '',
   })
 
@@ -140,6 +143,9 @@ export default function AdminContratoForm() {
     if (!payload.conta_id) payload.conta_id = null
     if (!payload.sla_id) payload.sla_id = null
     if (!payload.data_fim) payload.data_fim = null
+    if (!payload.cliente_representante_nome) payload.cliente_representante_nome = null
+    if (!payload.cliente_representante_cpf) payload.cliente_representante_cpf = null
+    if (!payload.cliente_email_notificacao) payload.cliente_email_notificacao = null
 
     let contractId = id
     if (id) {
@@ -287,6 +293,33 @@ export default function AdminContratoForm() {
                 <SelectItem value="consultoria">Consultoria</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label>Representante da CONTRATANTE</Label>
+              <Input
+                placeholder="Nome do representante legal"
+                value={form.cliente_representante_nome || ''}
+                onChange={(e) => setForm({ ...form, cliente_representante_nome: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>CPF do representante</Label>
+              <Input
+                placeholder="000.000.000-00"
+                value={form.cliente_representante_cpf || ''}
+                onChange={(e) => setForm({ ...form, cliente_representante_cpf: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>E-mail de notificação</Label>
+              <Input
+                type="email"
+                placeholder="notificacoes@cliente.com.br"
+                value={form.cliente_email_notificacao || ''}
+                onChange={(e) => setForm({ ...form, cliente_email_notificacao: e.target.value })}
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <Label>Modelo de Contrato (Template)</Label>

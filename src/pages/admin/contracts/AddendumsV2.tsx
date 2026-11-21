@@ -1,8 +1,7 @@
 // Tela de Aditivos do módulo de contratos: lista por contrato e criação de
-// aditivo (renovação, reajuste, mudança de plano) gerado pelo mesmo motor de
-// documentos do Wizard v2 (src/lib/contract-docx.ts + download validado).
+// aditivo (renovação, reajuste, mudança de plano) gerado pelo mesmo motor V6
+// do Wizard v2 (src/lib/contract-docx.ts + download validado).
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { Download, FileText, Plus } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -37,11 +36,12 @@ import { useAuth } from '@/hooks/use-auth'
 import {
   BRL,
   DATA_BR,
-  V6_MASTER_TEMPLATE_FALLBACK,
+  buildContractDocxBlob,
   fillPlaceholders,
   formatLimites,
   type ContractDocData,
 } from '@/lib/contract-docx'
+import { CONTRATO_V6_CORPO } from '@/lib/contract-v6-corpo'
 import { downloadContractDocx } from '@/lib/contract-docx-download'
 import { fetchPlanCatalog, planMonthlyValue, type PlanCatalogRow } from '@/services/plan-catalog'
 
@@ -57,6 +57,9 @@ interface ContratoRow {
   reajuste_index?: string | null
   renewal_date?: string | null
   status?: string | null
+  cliente_representante_nome?: string | null
+  cliente_representante_cpf?: string | null
+  cliente_email_notificacao?: string | null
   profiles?: { name?: string | null } | null
 }
 
@@ -106,7 +109,6 @@ export default function AddendumsV2() {
   const [contratos, setContratos] = useState<ContratoRow[]>([])
   const [clientes, setClientes] = useState<ClienteRow[]>([])
   const [planos, setPlanos] = useState<PlanoRow[]>([])
-  const [templateV6, setTemplateV6] = useState('')
   const [loading, setLoading] = useState(true)
   const [salvando, setSalvando] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -121,7 +123,7 @@ export default function AddendumsV2() {
 
   const carregar = useCallback(async () => {
     setLoading(true)
-    const [aditivosRes, contratosRes, clientesRes, planosRes, templateRes] = await Promise.all([
+    const [aditivosRes, contratosRes, clientesRes, planosRes] = await Promise.all([
       supabase
         .from('contract_additives')
         .select('*, contratos(numero_contrato)')
@@ -132,17 +134,11 @@ export default function AddendumsV2() {
         .order('created_at', { ascending: false }),
       supabase.from('profiles').select('id, name, cpf_cnpj, address').eq('is_client', true),
       fetchPlanCatalog(false),
-      supabase
-        .from('contract_templates')
-        .select('content')
-        .eq('name', 'Modelo Mestre — SGC4WEB V6')
-        .maybeSingle(),
     ])
     setAditivos(aditivosRes.data || [])
     setContratos(contratosRes.data || [])
     setClientes(clientesRes.data || [])
     setPlanos(planosRes || [])
-    setTemplateV6(templateRes.data?.content || V6_MASTER_TEMPLATE_FALLBACK)
     setLoading(false)
   }, [])
 
@@ -169,6 +165,9 @@ export default function AddendumsV2() {
       cliente_nome: cliente?.name || null,
       cliente_cnpj: cliente?.cpf_cnpj || null,
       cliente_endereco: cliente?.address || null,
+      cliente_representante: contrato.cliente_representante_nome || null,
+      cliente_representante_cpf: contrato.cliente_representante_cpf || null,
+      cliente_email_notificacao: contrato.cliente_email_notificacao || null,
       valor_mensal:
         tipo === 'plano'
           ? (planMonthlyValue(planoNovo) ?? contrato.valor_ciclo)
@@ -178,7 +177,9 @@ export default function AddendumsV2() {
       reajuste_date: contrato.reajuste_date,
       plano: planoDoc,
     }
-    const corpo = fillPlaceholders(templateV6 || V6_MASTER_TEMPLATE_FALLBACK, data)
+    // Aditivo usa o preâmbulo + cláusulas do V6 preenchidos (sem anexos, que
+    // permanecem os do contrato vigente), e o termo aditivo ao final.
+    const corpo = fillPlaceholders(CONTRATO_V6_CORPO, data)
     let adicao = ''
     if (tipo === 'renovacao') {
       adicao = `\n\nTERMO ADITIVO DE RENOVAÇÃO. As partes renovam, por ${novaVigenciaMeses} meses, o Contrato nº ${contrato.numero_contrato}, com vigência de ${DATA_BR(dataVigencia)} a ${DATA_BR(fimNovo)}, mantidas as demais cláusulas.`
@@ -188,17 +189,8 @@ export default function AddendumsV2() {
       adicao = `\n\nTERMO ADITIVO DE MUDANÇA DE PLANO. A partir de ${DATA_BR(dataVigencia)}, o Contrato nº ${contrato.numero_contrato} passa a vigorar no ${planoNovo?.name || '[PLANO]'}, com limites de ${formatLimites(planoNovo)} e valor mensal de ${BRL(planMonthlyValue(planoNovo))}, permanecendo as demais cláusulas inalteradas.`
     }
     return corpo + adicao
-  }, [
-    contrato,
-    tipo,
-    cliente,
-    planoAtual,
-    planoNovo,
-    planoDoc,
-    dataVigencia,
-    novaVigenciaMeses,
-    templateV6,
-  ])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contrato, tipo, cliente, planoAtual, planoNovo, planoDoc, dataVigencia, novaVigenciaMeses])
 
   const handleSalvar = async () => {
     if (!contratoId) return toast({ title: 'Selecione o contrato', variant: 'destructive' })
@@ -226,12 +218,10 @@ export default function AddendumsV2() {
           .update({ renewal_date: fimNovo, data_fim: fimNovo })
           .eq('id', contratoId)
       } else if (tipo === 'reajuste') {
-        const novoValor = contrato?.valor_ciclo
         await supabase
           .from('contratos')
           .update({ reajuste_date: addMeses(dataVigencia, 12) })
           .eq('id', contratoId)
-        void novoValor
       } else if (tipo === 'plano' && novoPlanoId) {
         await supabase
           .from('contratos')
@@ -256,6 +246,21 @@ export default function AddendumsV2() {
     }
   }
 
+  const downloadAditivo = async (titulo: string, content: string, nomeArquivo: string) => {
+    try {
+      const blob = await buildContractDocxBlob(titulo, content, false)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = nomeArquivo
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      console.error('Erro ao gerar o .docx do aditivo:', e)
+      toast({ title: 'Erro ao gerar o .docx', variant: 'destructive' })
+    }
+  }
+
   const listaFiltrada =
     filtroContrato === 'all' ? aditivos : aditivos.filter((a) => a.contract_id === filtroContrato)
 
@@ -273,7 +278,7 @@ export default function AddendumsV2() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Aditivos de Contrato</h1>
           <p className="text-muted-foreground">
-            Renovação, reajuste e mudança de plano, gerados pelo mesmo motor de documentos.
+            Renovação, reajuste e mudança de plano, gerados pelo mesmo motor de documentos V6.
           </p>
         </div>
         <Button onClick={() => setDialogOpen(true)}>
@@ -346,7 +351,7 @@ export default function AddendumsV2() {
                             variant="ghost"
                             size="sm"
                             onClick={() =>
-                              downloadContractDocx(
+                              downloadAditivo(
                                 a.title || 'Aditivo',
                                 a.content as string,
                                 `aditivo-${(a.contratos?.numero_contrato || 'contrato').toLowerCase()}.docx`,
@@ -461,7 +466,7 @@ export default function AddendumsV2() {
                 size="sm"
                 className="mt-2"
                 onClick={() =>
-                  downloadContractDocx(
+                  downloadAditivo(
                     'Aditivo',
                     conteudo,
                     `aditivo-${(contrato.numero_contrato || 'contrato').toLowerCase()}.docx`,
