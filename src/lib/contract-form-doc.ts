@@ -14,14 +14,15 @@ export interface ClienteDocInfo {
 
 /** Busca os dados do cliente (profiles) usados no documento. */
 export async function fetchClienteDocInfo(clienteId: string): Promise<ClienteDocInfo> {
+  // profiles não tem company_name: a razão social do CONTRATANTE é o próprio name.
   const { data } = await supabase
     .from('profiles')
-    .select('name, company_name, cpf_cnpj, address, email')
+    .select('name, cpf_cnpj, address, email')
     .eq('id', clienteId)
     .maybeSingle()
   return {
     nome: data?.name || '',
-    razao: data?.company_name || null,
+    razao: data?.name || null,
     cnpj: data?.cpf_cnpj || null,
     endereco: [data?.address].filter(Boolean).join(', ') || null,
     email: data?.email || null,
