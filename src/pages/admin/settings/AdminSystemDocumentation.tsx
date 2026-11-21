@@ -135,12 +135,14 @@ export default function AdminSystemDocumentation() {
               </span>
               <Sliders className="size-4 text-emerald-600" />
             </div>
-            <CardTitle className="text-base font-bold">Serviços para Planos</CardTitle>
+            <CardTitle className="text-base font-bold">Serviços & Planos</CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-1 text-xs text-muted-foreground space-y-2">
-            <p>4 modalidades (Avulso..Anual), descontos cumulativos e calculatePrice.</p>
+            <p>
+              4 modalidades (Avulso..Anual), descontos cumulativos, aba Planos e calculatePrice.
+            </p>
             <Link
-              to="/admin/settings/plan-services"
+              to="/admin/services"
               className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
             >
               Acessar Tela <ExternalLink className="size-3" />
@@ -587,15 +589,11 @@ export default function AdminSystemDocumentation() {
             <CardHeader>
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                  <CardTitle className="text-xl">
-                    Capítulo 3: Cadastro de Serviços para Planos
-                  </CardTitle>
+                  <CardTitle className="text-xl">Capítulo 3: Serviços & Planos</CardTitle>
                   <CardDescription>
                     Rota:{' '}
-                    <code className="text-primary font-mono font-semibold">
-                      /admin/settings/plan-services
-                    </code>{' '}
-                    • Tabelas: <code className="font-mono">services</code>,{' '}
+                    <code className="text-primary font-mono font-semibold">/admin/services</code> •
+                    Tabelas: <code className="font-mono">services</code>,{' '}
                     <code className="font-mono">plan_categories</code>
                   </CardDescription>
                 </div>
@@ -625,7 +623,7 @@ export default function AdminSystemDocumentation() {
                 </h3>
                 <div className="border-2 border-dashed rounded-lg p-4 bg-muted/20 space-y-3">
                   <div className="flex items-center justify-between bg-card p-3 rounded border text-xs font-medium">
-                    <span className="font-bold text-primary">Cadastro de Serviços para Planos</span>
+                    <span className="font-bold text-primary">Serviços (aba Planos)</span>
                     <span className="bg-primary text-primary-foreground px-3 py-1 rounded font-medium">
                       + Novo Serviço
                     </span>

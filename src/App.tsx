@@ -89,7 +89,7 @@ const AdminAbandonedCarts = lazy(() => import('./pages/admin/ecommerce/AdminAban
 const AdminCheckoutConfig = lazy(() => import('./pages/admin/ecommerce/AdminCheckoutConfig'))
 const AdminOrders = lazy(() => import('./pages/admin/ecommerce/AdminOrders'))
 const AdminLogistics = lazy(() => import('./pages/admin/ecommerce/AdminLogistics'))
-const AdminPlanServices = lazy(() => import('./pages/admin/settings/AdminPlanServices'))
+
 const CustomerFeedbackDashboard = lazy(
   () => import('./pages/admin/feedback/CustomerFeedbackDashboard'),
 )
@@ -335,7 +335,10 @@ const App = () => (
                         element={<Navigate to="/admin/settings/system" replace />}
                       />
                       <Route path="settings/menu" element={<AdminMenuConfig />} />
-                      <Route path="settings/plan-services" element={<AdminPlanServices />} />
+                      <Route
+                        path="settings/plan-services"
+                        element={<Navigate to="/admin/services" replace />}
+                      />
                       <Route path="settings/sla-types" element={<AdminSlaTypes />} />
                       <Route path="settings/media" element={<AdminMedia />} />
                       <Route path="settings/analytics" element={<AdminAnalytics />} />

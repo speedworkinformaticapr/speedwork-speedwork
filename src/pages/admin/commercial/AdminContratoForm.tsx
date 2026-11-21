@@ -392,7 +392,7 @@ export default function AdminContratoForm() {
             <div className="border rounded-md divide-y max-h-[300px] overflow-y-auto">
               {services.length === 0 ? (
                 <p className="p-4 text-sm text-muted-foreground text-center">
-                  Nenhum serviço cadastrado. Cadastre serviços em Planos/Serviços.
+                  Nenhum serviço cadastrado. Cadastre serviços em Serviços (/admin/services).
                 </p>
               ) : (
                 services.map((svc) => (

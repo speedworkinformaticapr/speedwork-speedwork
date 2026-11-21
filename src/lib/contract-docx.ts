@@ -16,8 +16,6 @@ export interface PlanLimits {
   max_domains?: number | null
   support_hours?: number | null
   sla_description?: string | null
-  monthly_price?: number | string | null
-  setup_price?: number | string | null
   reajuste_index?: string | null
 }
 
@@ -106,7 +104,7 @@ export function fillPlaceholders(template: string, data: ContractDocData): strin
     cliente_nome: data.cliente_nome || '[NOME DO CLIENTE]',
     cliente_cnpj: data.cliente_cnpj || '[CNPJ DO CLIENTE]',
     cliente_endereco: data.cliente_endereco || '[ENDEREÇO DO CLIENTE]',
-    valor_mensal: BRL(data.valor_mensal ?? plano?.monthly_price),
+    valor_mensal: BRL(data.valor_mensal),
     plano_nome: plano?.name || '[PLANO]',
     limites: formatLimites(plano),
     sla: plano?.sla_description || 'conforme SLA do plano contratado',

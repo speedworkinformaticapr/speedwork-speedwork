@@ -30,10 +30,29 @@ import {
 } from '@/lib/contract-docx'
 import { downloadContractDocx } from '@/lib/contract-docx-download'
 import { criarDocumentoAutentique } from '@/services/autentique'
+import {
+  fetchPlanCatalog,
+  planDisplayTitle,
+  planMonthlyValue,
+  planSetupValue,
+  type PlanCatalogRow,
+} from '@/services/plan-catalog'
 
-interface PlanoRow extends PlanLimits {
-  id: string
-  description?: string | null
+type PlanoRow = PlanCatalogRow
+
+/** Anexo I — ficha técnica do plano: preço do serviço vinculado + limites da ficha. */
+function anexoIContent(plano: PlanCatalogRow | null): string {
+  if (!plano) return 'ANEXO I — FICHA TÉCNICA DO PLANO: dados não disponíveis.'
+  return [
+    `ANEXO I — FICHA TÉCNICA DO PLANO ${plano.name}`,
+    '',
+    `Serviço vinculado: ${plano.services?.title || plano.name}`,
+    `Valor mensal: ${BRL(planMonthlyValue(plano))}`,
+    `Taxa de implantação: ${BRL(planSetupValue(plano))}`,
+    `Índice de reajuste: ${plano.reajuste_index || 'IPCA'}`,
+    `Limites: ${formatLimites(plano)}`,
+    `SLA: ${plano.sla_description || '—'}`,
+  ].join('\n')
 }
 
 interface ClienteRow {
@@ -64,7 +83,7 @@ export default function ContractWizard() {
   useEffect(() => {
     const carregar = async () => {
       const [planosRes, clientesRes, templateRes] = await Promise.all([
-        supabase.from('plans').select('*').eq('is_active', true).order('monthly_price'),
+        fetchPlanCatalog(true),
         supabase.from('profiles').select('id, name, cpf_cnpj, address').eq('is_client', true),
         supabase
           .from('contract_templates')
@@ -72,7 +91,7 @@ export default function ContractWizard() {
           .eq('name', V6_TEMPLATE_NAME)
           .maybeSingle(),
       ])
-      setPlanos(planosRes.data || [])
+      setPlanos(planosRes || [])
       setClientes(clientesRes.data || [])
       setTemplateV6(templateRes.data?.content || V6_MASTER_TEMPLATE_FALLBACK)
       setCarregando(false)
@@ -109,7 +128,7 @@ export default function ContractWizard() {
     cliente_nome: cliente?.name || null,
     cliente_cnpj: cliente?.cpf_cnpj || null,
     cliente_endereco: cliente?.address || null,
-    valor_mensal: plano?.monthly_price ?? null,
+    valor_mensal: planMonthlyValue(plano),
     data_inicio: dataInicio,
     data_fim: dataFim || null,
     reajuste_date: reajusteDate,
@@ -134,7 +153,7 @@ export default function ContractWizard() {
         status,
         data_inicio: dataInicio,
         data_fim: dataFim || null,
-        valor_ciclo: Number(plano?.monthly_price ?? 0),
+        valor_ciclo: Number(planMonthlyValue(plano) ?? 0),
         plan_id: planoId,
         reajuste_index: plano?.reajuste_index || 'IPCA',
         reajuste_date: reajusteDate || null,
@@ -146,12 +165,20 @@ export default function ContractWizard() {
     if (error) throw error
     if (!data?.id) throw new Error('Contrato salvo sem identificação')
 
-    await supabase.from('contract_annexes').insert({
-      contract_id: data.id,
-      annex_type: 'contrato_social',
-      version: 'v1',
-      content: documento,
-    })
+    await supabase.from('contract_annexes').insert([
+      {
+        contract_id: data.id,
+        annex_type: 'contrato_social',
+        version: 'v1',
+        content: documento,
+      },
+      {
+        contract_id: data.id,
+        annex_type: 'anexo_i',
+        version: 'v1',
+        content: anexoIContent(plano),
+      },
+    ])
     return data.id as string
   }
 
@@ -275,7 +302,7 @@ export default function ContractWizard() {
               <SelectContent>
                 {planos.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
-                    {p.name} — {BRL(p.monthly_price)}/mês
+                    {planDisplayTitle(p)} — {BRL(planMonthlyValue(p))}/mês
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -314,11 +341,11 @@ export default function ContractWizard() {
             <div className="grid gap-3 text-sm md:grid-cols-3">
               <div>
                 <span className="text-muted-foreground">Valor mensal:</span>{' '}
-                <strong>{BRL(plano.monthly_price)}</strong>
+                <strong>{BRL(planMonthlyValue(plano))}</strong>
               </div>
               <div>
                 <span className="text-muted-foreground">Taxa de implantação:</span>{' '}
-                <strong>{BRL(plano.setup_price)}</strong>
+                <strong>{BRL(planSetupValue(plano))}</strong>
               </div>
               <div>
                 <span className="text-muted-foreground">Índice de reajuste:</span>{' '}

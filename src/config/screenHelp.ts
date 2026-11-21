@@ -360,25 +360,25 @@ export const SCREEN_HELP: Record<string, ScreenHelp> = {
       },
     ],
   },
-  '/admin/settings/plan-services': {
-    title: 'Serviços do Plano',
-    description: 'Configuração dos serviços incluídos em cada plano comercial da plataforma.',
+  '/admin/services': {
+    title: 'Serviços',
+    description: 'Catálogo de serviços comercializados e fichas de planos (aba Planos).',
     actions: [
-      'Editar os serviços inclusos por plano.',
-      'Definir limites e destaques exibidos na página de planos.',
+      'Cadastrar e editar serviços com valores avulso/mensal/semestral/anual.',
+      'Gerenciar as fichas dos planos na aba Planos.',
       'Salvar para atualizar o site público.',
     ],
-    tips: ['Alterações aqui refletem na página de planos do site público.'],
+    tips: ['O preço de cada plano vem do serviço vinculado a ele (service_id).'],
     tour: [
       {
         element: 'main h1',
-        title: 'Serviços do Plano',
-        text: 'Serviços inclusos em cada plano comercial.',
+        title: 'Serviços',
+        text: 'Catálogo de serviços comercializados.',
       },
       {
         element: 'main table',
         title: 'Tabela de Serviços',
-        text: 'Marque os itens que aparecem em cada plano e salve ao final.',
+        text: 'Edite valores e categoria de cada serviço.',
       },
     ],
   },

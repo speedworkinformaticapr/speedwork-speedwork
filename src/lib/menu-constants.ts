@@ -137,7 +137,6 @@ export const DEFAULT_MENU_CONFIG: MenuConfig[] = [
       { id: 'blog', label: 'Posts do Blog', url: '/admin/settings/blog' },
       { id: 'maintenance', label: 'Página de Manutenção', url: '/admin/settings/maintenance' },
       { id: 'menu-config', label: 'Gestão de Menus', url: '/admin/settings/menu' },
-      { id: 'plan-services', label: 'Planos/Serviços', url: '/admin/settings/plan-services' },
       { id: 'questionnaires', label: 'Questionários', url: '/admin/services/questionnaires' },
       { id: 'sla-types', label: 'Tipos de SLA', url: '/admin/settings/sla-types' },
       { id: 'analytics', label: 'Analytics', url: '/admin/settings/analytics' },

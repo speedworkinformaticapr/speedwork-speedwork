@@ -533,12 +533,7 @@ export async function generateSystemDocumentationDocx(imagesMap?: SectionImagesM
                 '/admin/settings/blog/novo',
                 'Cap. 2',
               ],
-              [
-                'Capítulo 3',
-                'Cadastro de Serviços para Planos',
-                '/admin/settings/plan-services',
-                'Cap. 3',
-              ],
+              ['Capítulo 3', 'Serviços & Planos (aba Planos)', '/admin/services', 'Cap. 3'],
               ['Capítulo 4', 'Menu "Páginas" / Page Builder', '/admin/settings/pages', 'Cap. 4'],
             ],
             [15, 40, 30, 15],
@@ -1222,19 +1217,19 @@ export async function generateSystemDocumentationDocx(imagesMap?: SectionImagesM
           // ==========================================
           // CAPÍTULO 3: CADASTRO DE SERVIÇOS
           // ==========================================
-          createHeading1('CAPÍTULO 3: TELA "CADASTRO DE SERVIÇOS PARA PLANOS"'),
+          createHeading1('CAPÍTULO 3: TELA "SERVIÇOS & PLANOS"'),
           createHeading2('3.1 Visão Geral e Modelo de Negócio'),
           createParagraph(
-            'A tela "Cadastro de Serviços para Planos" (/admin/settings/plan-services) gerencia os serviços comercializados avulsamente ou agrupados em planos de assinatura. Cada serviço possui 4 modalidades de cobrança independentes: Avulso, Mensal, Semestral e Anual.',
+            'A tela "Serviços" (/admin/services) gerencia os serviços comercializados avulsamente ou agrupados em planos de assinatura (fichas na aba Planos). Cada serviço possui 4 modalidades de cobrança independentes: Avulso, Mensal, Semestral e Anual.',
           ),
           createParagraph(
-            'Para cada modalidade, a plataforma suporta simultaneamente valor base, desconto permanente e desconto promocional com data/hora exata de expiração. Os dados são persistidos na tabela services e suas categorias na tabela plan_categories.',
+            'Para cada modalidade, a plataforma suporta simultaneamente valor base, desconto permanente e desconto promocional com data/hora exata de expiração. Os dados são persistidos na tabela services e suas categorias na tabela plan_categories. Cada plano (tabela plans) referencia seu serviço pelo service_id, e o preço do plano vem exclusivamente do services.monthly_value do serviço vinculado.',
           ),
 
-          ...createSchematicBox('Tela de Serviços (/admin/settings/plan-services)', [
+          ...createSchematicBox('Tela de Serviços (/admin/services)', [
             [
               {
-                label: 'Título: "Cadastro de Serviços para Planos"',
+                label: 'Título: "Serviços" (com aba Planos para as fichas)',
                 desc: 'Subtítulo e Indicadores de Total de Serviços',
                 colSpan: 2,
                 bg: 'E2E8F0',

@@ -43,6 +43,7 @@ import {
   type ContractDocData,
 } from '@/lib/contract-docx'
 import { downloadContractDocx } from '@/lib/contract-docx-download'
+import { fetchPlanCatalog, planMonthlyValue, type PlanCatalogRow } from '@/services/plan-catalog'
 
 interface ContratoRow {
   id: string
@@ -57,11 +58,6 @@ interface ContratoRow {
   renewal_date?: string | null
   status?: string | null
   profiles?: { name?: string | null } | null
-  plans?: {
-    name?: string | null
-    monthly_price?: number | null
-    reajuste_index?: string | null
-  } | null
 }
 
 interface AditivoRow {
@@ -84,20 +80,7 @@ interface ClienteRow {
   address?: string | null
 }
 
-interface PlanoRow {
-  id: string
-  name: string
-  monthly_price?: number | null
-  reajuste_index?: string | null
-  sla_description?: string | null
-  max_users?: number | null
-  max_storage_gb?: number | null
-  max_traffic_gb?: number | null
-  max_pages?: number | null
-  max_emails?: number | null
-  max_domains?: number | null
-  support_hours?: number | null
-}
+type PlanoRow = PlanCatalogRow
 
 const TIPOS: Record<string, string> = {
   renovacao: 'Renovação',
@@ -145,10 +128,10 @@ export default function AddendumsV2() {
         .order('created_at', { ascending: false }),
       supabase
         .from('contratos')
-        .select('*, profiles(name), plans(name, monthly_price, reajuste_index)')
+        .select('*, profiles(name)')
         .order('created_at', { ascending: false }),
       supabase.from('profiles').select('id, name, cpf_cnpj, address').eq('is_client', true),
-      supabase.from('plans').select('*').eq('is_active', true).order('monthly_price'),
+      fetchPlanCatalog(false),
       supabase
         .from('contract_templates')
         .select('content')
@@ -158,7 +141,7 @@ export default function AddendumsV2() {
     setAditivos(aditivosRes.data || [])
     setContratos(contratosRes.data || [])
     setClientes(clientesRes.data || [])
-    setPlanos(planosRes.data || [])
+    setPlanos(planosRes || [])
     setTemplateV6(templateRes.data?.content || V6_MASTER_TEMPLATE_FALLBACK)
     setLoading(false)
   }, [])
@@ -188,7 +171,7 @@ export default function AddendumsV2() {
       cliente_endereco: cliente?.address || null,
       valor_mensal:
         tipo === 'plano'
-          ? (planoNovo?.monthly_price ?? contrato.valor_ciclo)
+          ? (planMonthlyValue(planoNovo) ?? contrato.valor_ciclo)
           : contrato.valor_ciclo,
       data_inicio: dataVigencia,
       data_fim: fimNovo,
@@ -202,7 +185,7 @@ export default function AddendumsV2() {
     } else if (tipo === 'reajuste') {
       adicao = `\n\nTERMO ADITIVO DE REAJUSTE. Ficam reajustados em ${contrato.reajuste_index || planoDoc?.reajuste_index || 'IPCA'} os valores do Contrato nº ${contrato.numero_contrato} a partir de ${DATA_BR(dataVigencia)}, que passa a ser ${BRL(contrato.valor_ciclo)}.`
     } else {
-      adicao = `\n\nTERMO ADITIVO DE MUDANÇA DE PLANO. A partir de ${DATA_BR(dataVigencia)}, o Contrato nº ${contrato.numero_contrato} passa a vigorar no ${planoNovo?.name || '[PLANO]'}, com limites de ${formatLimites(planoNovo)} e valor mensal de ${BRL(planoNovo?.monthly_price)}, permanecendo as demais cláusulas inalteradas.`
+      adicao = `\n\nTERMO ADITIVO DE MUDANÇA DE PLANO. A partir de ${DATA_BR(dataVigencia)}, o Contrato nº ${contrato.numero_contrato} passa a vigorar no ${planoNovo?.name || '[PLANO]'}, com limites de ${formatLimites(planoNovo)} e valor mensal de ${BRL(planMonthlyValue(planoNovo))}, permanecendo as demais cláusulas inalteradas.`
     }
     return corpo + adicao
   }, [
@@ -254,7 +237,7 @@ export default function AddendumsV2() {
           .from('contratos')
           .update({
             plan_id: novoPlanoId,
-            valor_ciclo: planoNovo?.monthly_price ?? null,
+            valor_ciclo: planMonthlyValue(planoNovo) ?? null,
             reajuste_index: planoNovo?.reajuste_index || 'IPCA',
           })
           .eq('id', contratoId)
@@ -458,7 +441,7 @@ export default function AddendumsV2() {
                       .filter((p) => p.id !== contrato?.plan_id)
                       .map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          {p.name} — {BRL(p.monthly_price)}/mês
+                          {p.name} — {BRL(planMonthlyValue(p))}/mês
                         </SelectItem>
                       ))}
                   </SelectContent>
