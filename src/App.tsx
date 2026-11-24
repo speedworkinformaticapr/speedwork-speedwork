@@ -23,6 +23,7 @@ const MfaVerify = lazy(() => import('./pages/MfaVerify'))
 const Forbidden = lazy(() => import('./pages/Forbidden'))
 const AuditDocxDownload = lazy(() => import('./pages/AuditDocxDownload'))
 const PageBuilderDocxDownload = lazy(() => import('./pages/PageBuilderDocxDownload'))
+const BlogDocxDownload = lazy(() => import('./pages/BlogDocxDownload'))
 const Cart = lazy(() => import('./pages/store/Cart'))
 const Checkout = lazy(() => import('./pages/store/Checkout'))
 const Orders = lazy(() => import('./pages/store/Orders'))
@@ -244,6 +245,9 @@ const App = () => (
                       path="documentos/page-builder.docx"
                       element={<PageBuilderDocxDownload />}
                     />
+
+                    {/* Download da documentação do Blog (.docx) */}
+                    <Route path="documentos/blog.docx" element={<BlogDocxDownload />} />
 
                     {/* Admin Routes - Evaluated second to guarantee static paths precedence */}
                     <Route

@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import { resolveScreenHelp, type TourStep } from '@/config/screenHelp'
 import { downloadAuditDocx } from '@/lib/audit-docx-download'
 import { downloadPageBuilderDocx } from '@/lib/page-builder-docx-download'
+import { downloadBlogDocx } from '@/lib/blog-docx-download'
 
 const TOUR_SEEN_KEY = 'screen_tour_seen'
 
@@ -112,6 +113,10 @@ export default function ScreenHelpMenu() {
             <FileDown className="size-4" />
             Documentação do Page Builder (.docx)
           </DropdownMenuItem>
+          <DropdownMenuItem onSelect={downloadBlogDocx}>
+            <FileDown className="size-4" />
+            Documentação do Blog (.docx)
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -175,6 +180,17 @@ export default function ScreenHelpMenu() {
               >
                 <FileDown className="size-4" />
                 Documentação do Page Builder (.docx)
+              </Button>
+              <Button
+                variant="link"
+                size="sm"
+                className="h-auto p-0 text-primary"
+                onClick={() => {
+                  void downloadBlogDocx()
+                }}
+              >
+                <FileDown className="size-4" />
+                Documentação do Blog (.docx)
               </Button>
             </div>
           </div>
