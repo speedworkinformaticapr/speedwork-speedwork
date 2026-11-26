@@ -37,9 +37,30 @@ export function ehSubalinea(linha: string): boolean {
 export function quebrarSubalineas(linha: string): string[] | null {
   const m = linha.match(/^(.{4,600}?:)\s*((?:\(?[a-z]\)|\(?[ivx]+\)|[ivx]+\.))\s*(.+)$/i)
   if (!m) return null
-  const partes = `${m[2]} ${m[3]}`.split(/;\s+(?=(?:\(?[a-z]\)|\(?[ivx]+\)|[ivx]+\.))/i)
+  const partes = `${m[2]} ${m[3]}`
+    .split(/;\s+(?:e\s+)?(?=(?:\(?[a-z]\)|\(?[ivx]+\)|[ivx]+\.))/i)
+    .map((p) => p.trim())
   if (partes.length < 2) return null
-  return [m[1], ...partes.map((p) => p.trim())]
+  return [m[1], ...partes]
+}
+
+/** Linha "1.2. ESCOPO FUNCIONAL DO CMS. O plano compreende..." com liderança maiúscula. */
+const RE_LIDER_ITEM = /^(\d+(?:\.\d+)*\.?\s+[A-ZÀ-Ý][A-ZÀ-Ý\s,–()ºª\-/&%.]{2,120}?)\.\s+(\S.*)$/
+
+/**
+ * Separa o "título de item" em maiúsculas — "2. LIMITES DE USO. Estão
+ * incluídos..." — do restante do parágrafo, para ser impresso em negrito.
+ * Devolve [liderSemPonto, restante] ou null quando a linha não tem liderança.
+ */
+export function dividirLiderItem(linha: string): [string, string] | null {
+  if (/^(CLÁUSULA|ANEXO)/i.test(linha)) return null
+  const m = linha.match(RE_LIDER_ITEM)
+  return m ? [m[1], m[2]] : null
+}
+
+/** Linha que é apenas o título numerado de uma seção — "1. SERVIÇOS INCLUSOS NO PLANO". */
+export function ehTituloSecao(linha: string): boolean {
+  return /^\d+\.\s+[A-ZÀ-Ý][A-ZÀ-Ý\s,–()ºª\-/&%.]+$/.test(linha)
 }
 
 /** Parágrafo justificado do corpo do contrato (texto corrido e subalíneas). */
