@@ -11,6 +11,7 @@ import {
   Footer,
   PageNumber,
   TextRun,
+  UnderlineType,
 } from 'docx'
 import { run, h1, FONT, DARK } from './docx-style'
 import { CONTRATADA, CONTRATO_PADROES } from './contract-speedwork'
@@ -289,15 +290,31 @@ function paragrafoHtml(linha: string): string {
 // HTML → Paragraph[] do .docx
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface RunStyle {
+// Type alias (e não interface) para ser atribuível a Record<string, unknown>
+// na assinatura do helper run() de docx-style.ts.
+type RunStyle = {
   bold?: boolean
   italics?: boolean
+  underline?: boolean
+}
+
+/** Run de corpo com o estilo acumulado (negrito, itálico, sublinhado). */
+function runEstilo(texto: string, estilo: RunStyle): TextRun {
+  return new TextRun({
+    text: texto,
+    bold: estilo.bold,
+    italics: estilo.italics,
+    underline: estilo.underline ? { type: UnderlineType.SINGLE } : undefined,
+    size: 22,
+    color: DARK,
+    font: FONT,
+  })
 }
 
 function runsDeNo(node: Node, estilo: RunStyle, runs: TextRun[]): void {
   if (node.nodeType === Node.TEXT_NODE) {
     const texto = (node.textContent || '').replace(/\s+/g, ' ')
-    if (texto) runs.push(run(texto, estilo))
+    if (texto) runs.push(runEstilo(texto, estilo))
     return
   }
   if (node.nodeType !== Node.ELEMENT_NODE) return
@@ -311,6 +328,7 @@ function runsDeNo(node: Node, estilo: RunStyle, runs: TextRun[]): void {
     ...estilo,
     bold: estilo.bold || tag === 'strong' || tag === 'b',
     italics: estilo.italics || tag === 'em' || tag === 'i',
+    underline: estilo.underline || tag === 'u' || tag === 'ins',
   }
   el.childNodes.forEach((filho) => runsDeNo(filho, proximo, runs))
 }
@@ -325,11 +343,17 @@ function runsDeElemento(el: HTMLElement, negrito = false): TextRun[] {
 /** Parágrafo justificado do corpo, com recuo opcional e quebra de página. */
 function paragrafoComRuns(
   runs: TextRun[],
-  o: { indent?: number; pageBreakBefore?: boolean; after?: number } = {},
+  o: {
+    indent?: number
+    pageBreakBefore?: boolean
+    after?: number
+    before?: number
+    alignment?: (typeof AlignmentType)[keyof typeof AlignmentType]
+  } = {},
 ): Paragraph {
   return new Paragraph({
-    alignment: AlignmentType.JUSTIFIED,
-    spacing: { after: o.after ?? ESPACO_APOS_PARAGRAFO, line: 276 },
+    alignment: o.alignment ?? AlignmentType.JUSTIFIED,
+    spacing: { before: o.before ?? 0, after: o.after ?? ESPACO_APOS_PARAGRAFO, line: 276 },
     indent: o.indent ? { left: o.indent, hanging: RECUO_PENDURADO } : undefined,
     pageBreakBefore: o.pageBreakBefore,
     children: runs.length > 0 ? runs : [run('', {})],
@@ -350,6 +374,21 @@ function recuoDoStyle(el: HTMLElement): number | undefined {
   return Math.round(n) // já em twips
 }
 
+/** Alinhamento horizontal declarado no style/align de um bloco do editor. */
+const MAPA_ALINHAMENTO: Record<string, (typeof AlignmentType)[keyof typeof AlignmentType]> = {
+  left: AlignmentType.LEFT,
+  center: AlignmentType.CENTER,
+  right: AlignmentType.RIGHT,
+  justify: AlignmentType.JUSTIFIED,
+}
+
+function alinhamentoDo(
+  el: HTMLElement,
+): (typeof AlignmentType)[keyof typeof AlignmentType] | undefined {
+  const bruto = (el.style?.textAlign || el.getAttribute('align') || '').toLowerCase()
+  return MAPA_ALINHAMENTO[bruto]
+}
+
 const TAGS_BLOCO = new Set(['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL'])
 
 function tituloNegrito(el: HTMLElement, pageBreakBefore = false): Paragraph {
@@ -357,7 +396,7 @@ function tituloNegrito(el: HTMLElement, pageBreakBefore = false): Paragraph {
   if (runs.length === 0) runs.push(run(el.textContent || '', { bold: true }))
   const tag = el.tagName.toLowerCase()
   return new Paragraph({
-    alignment: tag === 'h1' ? AlignmentType.CENTER : AlignmentType.LEFT,
+    alignment: alinhamentoDo(el) ?? (tag === 'h1' ? AlignmentType.CENTER : AlignmentType.LEFT),
     spacing: { before: tag === 'h2' ? 240 : 300, after: 160, line: 276 },
     pageBreakBefore,
     children: runs,
@@ -451,10 +490,16 @@ export function htmlToParagraphs(html: string): Paragraph[] {
         return
       }
       if (tag === 'p') {
+        // Títulos gerados (titulo-clausula/titulo-secao) e os do editor ganham
+        // respiro maior antes; o alinhamento do editor é preservado.
+        const classes = el.getAttribute('class') || ''
+        const ehTitulo = /titulo-(clausula|secao)/.test(classes)
         paragrafos.push(
           paragrafoComRuns(runsDeElemento(el), {
             indent: recuoDoStyle(el),
             pageBreakBefore: quebraPendente,
+            before: ehTitulo ? 300 : undefined,
+            alignment: alinhamentoDo(el),
           }),
         )
         quebraPendente = false

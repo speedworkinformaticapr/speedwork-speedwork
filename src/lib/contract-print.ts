@@ -34,6 +34,12 @@ export function imprimirContrato(titulo: string, conteudo: string): void {
   p { margin: 0 0 10px; text-align: justify; }
   ul, ol { margin: 0 0 10px; padding-left: 28px; }
   li { margin-bottom: 4px; text-align: justify; }
+  /* Padrão visual do .docx (contract-format): títulos com respiro e anexos em página nova. */
+  .titulo-clausula, .titulo-secao { font-weight: bold; margin-top: 18px; }
+  h2 { font-size: 12.5pt; font-weight: bold; margin: 20px 0 10px; }
+  h2:first-of-type { page-break-before: avoid; }
+  p[data-contract-section^="anexo:"]:not(:first-child) { page-break-before: always; }
+  [data-page-break] { page-break-before: always; }
 </style>
 </head>
 <body>
