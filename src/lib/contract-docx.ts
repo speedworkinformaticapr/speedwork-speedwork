@@ -14,6 +14,7 @@ import {
   Footer,
   PageNumber,
   TextRun,
+  PageBreak,
 } from 'docx'
 import { run, para, h1, h2, FONT, PRIMARY, ACCENT, DARK, MUTED } from './docx-style'
 import { CONTRATADA, CONTRATO_PADROES } from './contract-speedwork'
@@ -621,16 +622,51 @@ export function contratoV6Completo(data: ContractDocData): string {
 }
 
 /**
+ * Converte o conteúdo integral do contrato (corpo + anexos) em blocos docx.
+ * Quando o conteúdo veio do editor de seções (marcado com data-contract-section),
+ * cada bloco "anexo:N" começa em página nova (quebra de página) no .docx.
+ */
+export function contentToDocxParagraphs(conteudo: string): Paragraph[] {
+  const RE_SECAO = /<p data-contract-section="([^"]*)">([\s\S]*?)<\/p>/g
+  const secoes = [...conteudo.matchAll(RE_SECAO)]
+  if (secoes.length === 0) return textToParagraphs(conteudo)
+
+  const children: Paragraph[] = []
+  secoes.forEach((m, i) => {
+    const [key, tituloAnexo = ''] = m[1].split('|')
+    const isAnexo = key.startsWith('anexo:')
+    const htmlSecao = m[2]
+    if (isAnexo) {
+      // Quebra de página: cada anexo começa em página nova no .docx. Quando o
+      // anexo vem logo após o corpo, também há quebra (o corpo termina antes).
+      if (i > 0) children.push(new Paragraph({ children: [new PageBreak()] }))
+      // Título do anexo em destaque no topo da página (vindo da aba do editor).
+      if (tituloAnexo)
+        children.push(
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 0, after: 200 },
+            children: [run(tituloAnexo, { bold: true, size: 28, color: PRIMARY })],
+          }),
+        )
+    }
+    children.push(...textToParagraphs(htmlSecao))
+  })
+  return children
+}
+
+/**
  * Gera o Blob .docx do contrato completo já com placeholders substituídos:
  * corpo V6 (18 cláusulas + "Local e data" + bloco de assinaturas) e, quando o
- * conteúdo não os traz, os Anexos I, II e III ao final.
+ * conteúdo não os traz, os Anexos I, II e III ao final. Conteúdo salvo pelo
+ * editor de seções (data-contract-section) tem cada anexo em página separada.
  */
 export async function buildContractDocxBlob(
   titulo: string,
   conteudo: string,
   rodapeAssinaturas = true,
 ): Promise<Blob> {
-  const children: Paragraph[] = [...textToParagraphs(conteudo)]
+  const children: Paragraph[] = [...contentToDocxParagraphs(conteudo)]
   if (rodapeAssinaturas && !/_{5,}/.test(conteudo)) {
     children.push(
       new Paragraph({

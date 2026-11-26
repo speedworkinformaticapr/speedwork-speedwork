@@ -85,6 +85,11 @@ export function joinContractSections(secoes: ContractSection[]): string {
     .join('\n')
 }
 
+/** Constrói o HTML de uma seção marcada (uma aba do editor de modelo). */
+export function secaoMarcada(key: string, title: string, html: string): string {
+  return `<p data-contract-section="${key}|${escAttr(title)}">${html}</p>`
+}
+
 function escAttr(texto: string): string {
   return texto.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
 }
