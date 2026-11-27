@@ -22,8 +22,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
-import { formatCurrencyInput, parseCurrencyInput } from '@/lib/utils'
-import { ArrowLeft, FileDown, Plus, Trash2, FileText, PenLine } from 'lucide-react'
+import { ArrowLeft, FileDown, Plus, FileText, PenLine } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import {
   CONTRACT_STATUS,
@@ -34,13 +33,24 @@ import { contratoV6Texto } from '@/lib/contract-docx'
 import { downloadContractDocx } from '@/lib/contract-docx-download'
 import { contractConteudoParaHtml, imprimirContrato } from '@/lib/contract-print'
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
+import {
+  ClienteSectionFields,
+  FaturamentoSectionFields,
+  ServicosSectionFields,
+} from './components/ContratoGuiasFields'
+import { SignatariosSectionFields } from './components/SignatariosSectionFields'
+import {
   fetchClienteDocInfo,
   fetchPlanLimits,
   montarContractDocData,
   type ClienteDocInfo,
 } from '@/lib/contract-form-doc'
-import { fetchSigners, saveSigners, SIGNER_ROLES, type SignerRow } from '@/lib/contract-signers'
-import { maskDocument } from '@/lib/cpf-cnpj'
+import { fetchSigners, saveSigners, type SignerRow } from '@/lib/contract-signers'
 
 export default function AdminContratoForm() {
   const { id } = useParams()
@@ -177,6 +187,7 @@ export default function AdminContratoForm() {
         return Number(svc.monthly_value ?? 0)
     }
   }
+  // valorCampoPorCiclo também vive em ContratoGuiasFields.tsx (ServicosSectionFields)
 
   /** Total dos serviços selecionados para o ciclo escolhido (mostrado na tela). */
   const totalServicos = services
@@ -519,8 +530,8 @@ export default function AdminContratoForm() {
     }
   }
 
-  const nomeSignatario = (s: SignerRow) =>
-    s.profiles?.name || clientes.find((c) => c.id === s.profile_id)?.nome || '—'
+  /** patch genérico do formulário, compartilhado pelas seções extraídas */
+  const updateForm = (patch: Record<string, unknown>) => setForm((prev) => ({ ...prev, ...patch }))
 
   const statusAtual = ((form as any).status as string | undefined) || null
   // Botão Coletar Assinaturas: contrato com signatários, ainda não enviado
@@ -559,427 +570,49 @@ export default function AdminContratoForm() {
         </TabsList>
 
         <TabsContent value="cliente" className="space-y-4 bg-card p-6 border rounded-xl">
-          <fieldset className="space-y-4">
-            <legend className="text-sm font-medium mb-2">Contratante</legend>
-            <div className="space-y-2">
-              <Label htmlFor="contrato-cliente">Cliente *</Label>
-              <div className="flex gap-2">
-                <Select
-                  value={form.cliente_id}
-                  onValueChange={(v) => setForm({ ...form, cliente_id: v })}
-                >
-                  <SelectTrigger id="contrato-cliente" className="flex-1">
-                    <SelectValue placeholder="Selecione o cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clientes.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  aria-label="Adicionar novo cliente"
-                  onClick={() => setNewClientOpen(true)}
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </fieldset>
-          <p className="text-xs text-muted-foreground">
-            O conteúdo do documento é gerado a partir do modelo V6 da Speedwork (aba Contratos e
-            Aditivos) — não é mais carregado de modelos antigos com placeholders. Os dados do
-            representante da CONTRATANTE ficam na aba Signatários, junto da pessoa selecionada.
-          </p>
+          <ClienteSectionFields
+            form={form}
+            update={updateForm}
+            clientes={clientes}
+            onAddCliente={() => setNewClientOpen(true)}
+          />
         </TabsContent>
 
         <TabsContent value="faturamento" className="space-y-6 bg-card p-6 border rounded-xl">
-          <fieldset className="space-y-4">
-            <legend className="text-sm font-medium mb-2">Vigência e ciclo</legend>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="contrato-data-inicio">Data Início</Label>
-                <Input
-                  id="contrato-data-inicio"
-                  type="date"
-                  value={form.data_inicio}
-                  onChange={(e) => setForm({ ...form, data_inicio: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="contrato-data-fim">Data Fim</Label>
-                <Input
-                  id="contrato-data-fim"
-                  type="date"
-                  value={form.data_fim || ''}
-                  onChange={(e) => setForm({ ...form, data_fim: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="contrato-ciclo">Duração do Ciclo</Label>
-                <Select
-                  value={form.duracao_ciclo}
-                  onValueChange={(v) => {
-                    setValorManual(false)
-                    setForm({ ...form, duracao_ciclo: v })
-                  }}
-                >
-                  <SelectTrigger id="contrato-ciclo">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mensal">Mensal</SelectItem>
-                    <SelectItem value="trimestral">Trimestral</SelectItem>
-                    <SelectItem value="semestral">Semestral</SelectItem>
-                    <SelectItem value="anual">Anual</SelectItem>
-                    <SelectItem value="avulso">Avulso</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </fieldset>
-
-          <fieldset className="space-y-4">
-            <legend className="text-sm font-medium mb-2">Valores</legend>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="contrato-desconto">% Desconto Adicional</Label>
-                <Input
-                  id="contrato-desconto"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  max={100}
-                  step={0.5}
-                  value={descontoPercentual === 0 ? '' : descontoPercentual}
-                  placeholder="0"
-                  onChange={(e) => {
-                    const v = e.target.value === '' ? 0 : Number(e.target.value)
-                    setValorManual(false)
-                    setDescontoPercentual(Number.isNaN(v) ? 0 : v)
-                  }}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Desconto aplicado sobre a soma dos serviços do ciclo.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label>Valor do Contrato (por ciclo)</Label>
-                <p className="text-2xl font-bold tabular-nums" aria-live="polite">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                    form.valor_ciclo,
-                  )}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {descontoPercentual > 0 ? (
-                    <>
-                      Total dos serviços ({formatCurrencyInput(totalServicos)}) −{' '}
-                      {descontoPercentual}% de desconto
-                    </>
-                  ) : (
-                    <>Soma dos serviços selecionados para o ciclo.</>
-                  )}
-                </p>
-              </div>
-            </div>
-            <div className="rounded-lg border bg-muted/20 p-3 flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">Total dos Serviços</p>
-                <p className="text-sm font-semibold tabular-nums">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                    totalServicos,
-                  )}
-                </p>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Soma dos serviços selecionados conforme o ciclo. O valor do contrato (e das parcelas
-                do financeiro) é essa soma menos o % de desconto adicional.
-              </p>
-            </div>
-          </fieldset>
-
-          <fieldset className="space-y-4">
-            <legend className="text-sm font-medium mb-2">Renovação</legend>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2 max-w-md">
-                <Label htmlFor="contrato-renovacao">Renovação automática</Label>
-                <Select
-                  value={form.renovacao_automatica ? 'sim' : 'nao'}
-                  onValueChange={(v) => setForm({ ...form, renovacao_automatica: v === 'sim' })}
-                >
-                  <SelectTrigger id="contrato-renovacao">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sim">Sim</SelectItem>
-                    <SelectItem value="nao">Não</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </fieldset>
-
-          <fieldset className="space-y-4">
-            <legend className="text-sm font-medium mb-2">Financeiro</legend>
-            <div className="space-y-2 max-w-md">
-              <Label htmlFor="contrato-conta">Conta Financeira (DRE)</Label>
-              <div className="flex gap-2">
-                <Select
-                  value={form.conta_id || ''}
-                  onValueChange={(v) => setForm({ ...form, conta_id: v })}
-                >
-                  <SelectTrigger id="contrato-conta" className="flex-1">
-                    <SelectValue placeholder="Selecione a conta" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {planoContas.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.codigo_estrutural} - {c.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  aria-label="Adicionar nova conta financeira"
-                  onClick={() => setNewContaOpen(true)}
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </fieldset>
+          <FaturamentoSectionFields
+            form={form}
+            update={updateForm}
+            totalServicos={totalServicos}
+            descontoPercentual={descontoPercentual}
+            setDescontoPercentual={setDescontoPercentual}
+            setValorManual={setValorManual}
+            planoContas={planoContas}
+            onAddConta={() => setNewContaOpen(true)}
+          />
         </TabsContent>
 
         <TabsContent value="servicos" className="space-y-4 bg-card p-6 border rounded-xl">
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium mb-2">Serviços Vinculados</legend>
-            <p className="text-sm text-muted-foreground">
-              Selecione os serviços comerciais que fazem parte deste contrato. A ficha de limites do
-              plano (Anexo I) vem do serviço selecionado. Os preços somados na guia Faturamento
-              seguem o ciclo escolhido lá.
-            </p>
-            <div className="border rounded-md divide-y max-h-[300px] overflow-y-auto">
-              {services.length === 0 ? (
-                <p className="p-4 text-sm text-muted-foreground text-center">
-                  Nenhum serviço cadastrado. Cadastre serviços em Serviços (/admin/services).
-                </p>
-              ) : (
-                services.map((svc) => (
-                  <label
-                    key={svc.id}
-                    className="flex items-center gap-3 p-3 hover:bg-muted/50 cursor-pointer transition-colors"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedServices.includes(svc.id)}
-                      onChange={(e) => {
-                        setValorManual(false)
-                        if (e.target.checked) {
-                          setSelectedServices([...selectedServices, svc.id])
-                        } else {
-                          setSelectedServices(selectedServices.filter((s) => s !== svc.id))
-                        }
-                      }}
-                      className="size-4 rounded border-border"
-                    />
-                    <div className="flex-1">
-                      <span className="font-medium text-sm">{svc.title}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {new Intl.NumberFormat('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL',
-                      }).format(valorCampoPorCiclo(svc, form.duracao_ciclo))}
-                      /{form.duracao_ciclo}
-                    </span>
-                  </label>
-                ))
-              )}
-            </div>
-            {selectedServices.length > 0 && (
-              <p className="text-sm text-right tabular-nums">
-                {selectedServices.length} serviço(s) · Total:{' '}
-                <span className="font-semibold">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                    totalServicos,
-                  )}
-                </span>{' '}
-                <span className="text-xs text-muted-foreground">
-                  (ciclo {form.duracao_ciclo}, antes do desconto da guia Faturamento)
-                </span>
-              </p>
-            )}
-          </fieldset>
+          <ServicosSectionFields
+            form={form}
+            services={services}
+            selectedServices={selectedServices}
+            setSelectedServices={setSelectedServices}
+            setValorManual={setValorManual}
+            totalServicos={totalServicos}
+          />
         </TabsContent>
 
         <TabsContent value="signatarios" className="space-y-4 bg-card p-6 border rounded-xl">
-          <div className="space-y-2">
-            <Label>Signatários do Contrato</Label>
-            <p className="text-sm text-muted-foreground">
-              Adicione quem assina o documento (CONTRATANTE, CONTRATADA, testemunhas). A ordem
-              define a sequência de assinatura. Em contrato novo, o contrato é salvo na hora (status
-              CRIADO) quando o primeiro signatário é adicionado.
-            </p>
-            <div className="flex gap-2 items-end">
-              <div className="flex-1 space-y-1">
-                <Label className="text-xs">Perfil</Label>
-                <Select
-                  value={novoSig.profile_id}
-                  onValueChange={(v) => setNovoSig({ ...novoSig, profile_id: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o perfil" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clientes.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="w-48 space-y-1">
-                <Label className="text-xs">Papel</Label>
-                <Select
-                  value={novoSig.role}
-                  onValueChange={(v) => setNovoSig({ ...novoSig, role: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SIGNER_ROLES.map((r) => (
-                      <SelectItem key={r} value={r}>
-                        {r}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button type="button" variant="outline" onClick={addSignatario}>
-                <Plus className="w-4 h-4 mr-1" /> Adicionar
-              </Button>
-            </div>
-            {novoSig.profile_id && (
-              <div className="rounded-md border bg-muted/20 px-3 py-2 space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-muted-foreground">
-                    Representa no contrato:
-                  </span>
-                  <Badge
-                    variant="outline"
-                    className={
-                      novoSig.role === 'Contratante'
-                        ? 'bg-blue-500/10 text-blue-600 border-blue-500/30'
-                        : novoSig.role === 'Contratado'
-                          ? 'bg-purple-500/10 text-purple-600 border-purple-500/30'
-                          : ''
-                    }
-                  >
-                    {novoSig.role}
-                  </Badge>
-                </div>
-                {novoSig.role === 'Contratante' && (
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Representante da CONTRATANTE</Label>
-                      <Input
-                        placeholder="Nome do representante legal"
-                        autoComplete="off"
-                        className="h-8 text-xs"
-                        value={form.cliente_representante_nome || ''}
-                        onChange={(e) =>
-                          setForm({ ...form, cliente_representante_nome: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">CPF do representante</Label>
-                      <Input
-                        inputMode="numeric"
-                        placeholder="000.000.000-00"
-                        autoComplete="off"
-                        className="h-8 text-xs"
-                        value={form.cliente_representante_cpf || ''}
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            cliente_representante_cpf: maskDocument(e.target.value),
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">E-mail de notificação</Label>
-                      <Input
-                        type="email"
-                        placeholder="notificacoes@cliente.com.br"
-                        autoComplete="off"
-                        className="h-8 text-xs"
-                        value={form.cliente_email_notificacao || ''}
-                        onChange={(e) =>
-                          setForm({ ...form, cliente_email_notificacao: e.target.value })
-                        }
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-            <div className="space-y-2 mt-2">
-              {signatarios.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhum signatário adicionado.</p>
-              ) : (
-                signatarios.map((s) => (
-                  <div
-                    key={s.profile_id}
-                    className="flex items-center justify-between gap-2 bg-muted/30 p-2 rounded-md"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-medium text-sm truncate">{nomeSignatario(s)}</p>
-                        <Badge variant="outline">{s.role}</Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Ordem {(s.order_index ?? 0) + 1} ·{' '}
-                        <Badge
-                          variant="outline"
-                          className={
-                            s.status === 'Assinado' || s.status === 'signed'
-                              ? 'bg-green-500/10 text-green-600 border-green-500/30'
-                              : 'bg-amber-500/10 text-amber-600 border-amber-500/30'
-                          }
-                        >
-                          {s.status === 'Assinado' || s.status === 'signed'
-                            ? 'Assinado'
-                            : 'Pendente'}
-                        </Badge>
-                      </p>
-                    </div>
-                    {s.status === 'Assinado' || s.status === 'signed' ? null : (
-                      <button
-                        type="button"
-                        aria-label={`Remover signatário ${nomeSignatario(s)}`}
-                        onClick={() => removeSignatario(s.profile_id)}
-                        className="text-red-500 hover:text-red-700 p-1 shrink-0"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          <SignatariosSectionFields
+            clientes={clientes}
+            novoSig={novoSig}
+            setNovoSig={setNovoSig}
+            signatarios={signatarios}
+            addSignatario={addSignatario}
+            removeSignatario={removeSignatario}
+            update={updateForm}
+            form={form}
+          />
         </TabsContent>
 
         <TabsContent value="contrato" className="space-y-4 bg-card p-4 md:p-6 border rounded-xl">
@@ -1057,6 +690,78 @@ export default function AdminContratoForm() {
               </div>
             </div>
           </fieldset>
+
+          {/* CAMPOS DAS DEMAIS GUIAS, abaixo do contrato: seções compactas e
+              colapsáveis para consulta/edição sem trocar de guia. A navegação
+              por guias continua intacta — isso é um espelho dos mesmos campos. */}
+          <div className="border-t pt-4 mt-6">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              Demais campos do formulário
+            </h3>
+            <Accordion type="multiple" className="w-full">
+              <AccordionItem value="secao-cliente">
+                <AccordionTrigger className="text-sm py-3">Cliente</AccordionTrigger>
+                <AccordionContent className="pt-2 pb-4">
+                  <ClienteSectionFields
+                    form={form}
+                    update={updateForm}
+                    clientes={clientes}
+                    onAddCliente={() => setNewClientOpen(true)}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="secao-servicos">
+                <AccordionTrigger className="text-sm py-3">
+                  Serviços ({selectedServices.length})
+                </AccordionTrigger>
+                <AccordionContent className="pt-2 pb-4">
+                  <ServicosSectionFields
+                    form={form}
+                    services={services}
+                    selectedServices={selectedServices}
+                    setSelectedServices={setSelectedServices}
+                    setValorManual={setValorManual}
+                    totalServicos={totalServicos}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="secao-faturamento">
+                <AccordionTrigger className="text-sm py-3">Faturamento</AccordionTrigger>
+                <AccordionContent className="pt-2 pb-4">
+                  <FaturamentoSectionFields
+                    form={form}
+                    update={updateForm}
+                    totalServicos={totalServicos}
+                    descontoPercentual={descontoPercentual}
+                    setDescontoPercentual={setDescontoPercentual}
+                    setValorManual={setValorManual}
+                    planoContas={planoContas}
+                    onAddConta={() => setNewContaOpen(true)}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="secao-signatarios">
+                <AccordionTrigger className="text-sm py-3">
+                  Signatários ({signatarios.length})
+                </AccordionTrigger>
+                <AccordionContent className="pt-2 pb-4">
+                  <SignatariosSectionFields
+                    clientes={clientes}
+                    novoSig={novoSig}
+                    setNovoSig={setNovoSig}
+                    signatarios={signatarios}
+                    addSignatario={addSignatario}
+                    removeSignatario={removeSignatario}
+                    update={updateForm}
+                    form={form}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
         </TabsContent>
       </Tabs>
 
