@@ -1,7 +1,8 @@
 // Modelo V6 do contrato SGC4WEB — Anexo I (8 seções), Anexo II (LGPD) e Anexo III (módulos).
-// Texto literal do arquivo "Contrato_SGC4WEB_V6_Anexo-I" e do corpo do V6. Limites e prazos
-// vêm da ficha do plano e viram placeholders {{...}} (ver fillPlaceholders em contract-docx.ts).
-// Valores "[valor a definir]" e "[região a indicar...]" permanecem como marcador no documento.
+// Texto literal do arquivo "Contrato_SGC4WEB_V6_Anexo-I" e do corpo do V6. Limites, prazos,
+// valores opcionais e região dos suboperadores viram placeholders {{...}} (ver
+// fillPlaceholders em contract-docx.ts). Nenhum colchete literal resta aqui:
+// campo sem dado no banco renderiza [preencher: …] em negrito no documento.
 
 export const ANEXO_I_V6 = `ANEXO I – SERVIÇOS INCLUSOS, LIMITES DE USO, NÍVEL DE SERVIÇO E SERVIÇOS OPCIONAIS DE CONTEÚDO
 
@@ -25,7 +26,7 @@ Este anexo integra o contrato para todos os efeitos, na forma do item 1.8 e do i
 
 2. LIMITES DE USO. Estão incluídos no {{plano_nome}}: (i) {{lim_usuarios}} usuários cadastrados na plataforma, sendo até {{lim_sessoes}} sessões simultâneas — consideram-se sessões simultâneas os acessos autenticados no mesmo instante, não o total de usuários cadastrados; (ii) {{lim_armazenamento}} GB de armazenamento total; (iii) {{lim_trafego}} GB de tráfego mensal, com aviso à CONTRATANTE ao atingir 80% da franquia, nos termos do item 5.5 do contrato; (iv) {{lim_paginas}} páginas publicadas; (v) {{lim_ambientes}} ambiente de produção; e (vi) {{lim_dominios}} domínio principal e até {{lim_emails}} contas de e-mail. Não está incluída API pública de integração nem ambiente dedicado exclusivo.
 
-3. CANAIS, HORÁRIOS E FRANQUIA DE SUPORTE. Atendimento por e-mail e WhatsApp, em dias úteis, das 8h às 18h, para solicitações de suporte corretivo e dúvidas de uso. Prazo de primeira resposta: até {{sla_resposta}} horas úteis. Prazo de resolução: até {{sla_resolucao}} horas úteis para incidente crítico (indisponibilidade ou erro que impeça o uso) e até [5] dias úteis para incidente não crítico.
+3. CANAIS, HORÁRIOS E FRANQUIA DE SUPORTE. Atendimento por e-mail e WhatsApp, em dias úteis, das 8h às 18h, para solicitações de suporte corretivo e dúvidas de uso. Prazo de primeira resposta: até {{sla_resposta}} horas úteis. Prazo de resolução: até {{sla_resolucao}} horas úteis para incidente crítico (indisponibilidade ou erro que impeça o uso) e até {{sla_resolucao_nao_critico}} dias úteis para incidente não crítico.
 
 3.1. PLANTÃO 24x7. Para indisponibilidade total do serviço, a CONTRATADA mantém plantão em regime 24x7, inclusive sábados, domingos e feriados, acessível pelo mesmo canal de e-mail de suporte, com prazo máximo de primeira resposta de 2 (duas) horas corridas e início de atuação imediato. O plantão não cobre solicitações de melhoria, dúvidas de uso, incidentes não críticos, gestão de domínio ou de e-mail.
 
@@ -57,7 +58,7 @@ Este anexo integra o contrato para todos os efeitos, na forma do item 1.8 e do i
 
 7.8. PRAZOS. Os prazos de entrega serão definidos na proposta específica e contarão do recebimento do briefing completo e dos materiais necessários. Atrasos imputáveis à CONTRATANTE prorrogam os prazos na mesma proporção.
 
-7.9. PREÇOS. Os valores dos serviços de conteúdo são os seguintes: (i) texto, artigo ou post até 1.000 caracteres: R$ [valor a definir]; (ii) texto, artigo ou post acima de 1.000 caracteres: R$ [valor a definir]; (iii) imagem ou peça gráfica: R$ [valor a definir]; (iv) vídeo de até 60 segundos, incluindo roteiro e edição: R$ [valor a definir]; (v) vídeo acima de 60 segundos: R$ [valor a definir]; (vi) áudio ou locução de até 60 segundos: R$ [valor a definir]; e (vii) pacote mensal de gestão de conteúdo, com [valor a definir] peças por mês: R$ [valor a definir]. Os valores serão reajustados na forma do item 6.2 do contrato.
+7.9. PREÇOS. Os valores dos serviços de conteúdo são os seguintes: (i) texto, artigo ou post até 1.000 caracteres: R$ {{valor_conteudo_curto}}; (ii) texto, artigo ou post acima de 1.000 caracteres: R$ {{valor_conteudo_longo}}; (iii) imagem ou peça gráfica: R$ {{valor_conteudo_imagem}}; (iv) vídeo de até 60 segundos, incluindo roteiro e edição: R$ {{valor_conteudo_video_curto}}; (v) vídeo acima de 60 segundos: R$ {{valor_conteudo_video_longo}}; (vi) áudio ou locução de até 60 segundos: R$ {{valor_conteudo_audio}}; e (vii) pacote mensal de gestão de conteúdo, com {{valor_pacote_pecas}} peças por mês: R$ {{valor_conteudo_pacote}}. Os valores serão reajustados na forma do item 6.2 do contrato.
 
 7.10. NÃO INCLUÍDO NOS SERVIÇOS DE CONTEÚDO. Aquisição de licenças de banco de imagens em nome da CONTRATANTE; produção audiovisual com equipe externa, locação, elenco ou deslocamento; gestão de tráfego pago e campanhas de mídia; assessoria de imprensa; tradução para outros idiomas; e adequação do material a normas regulatórias específicas da atividade da CONTRATANTE, que permanece sob sua responsabilidade.
 
@@ -79,9 +80,9 @@ ______________________________________
 
 CNPJ: {{cliente_cnpj}}
 
-Responsável: {{representante_nome}}
+Responsável: {{cliente_representante}}
 
-CPF: {{representante_cpf}}
+CPF: {{cliente_representante_cpf}}
 
 Data: ____/____/______
 
@@ -111,13 +112,13 @@ export const ANEXO_II_V6 = `ANEXO II – ACORDO DE TRATAMENTO DE DADOS PESSOAIS
 
 5. SUBOPERADORES. A CONTRATADA utiliza os seguintes suboperadores, todos vinculados a obrigações de proteção de dados equivalentes às deste anexo:
 
-5.1. Hospedagem da aplicação: infraestrutura em nuvem contratada pela CONTRATADA junto à Adapta, com armazenamento em [região a indicar antes da assinatura].
+5.1. Hospedagem da aplicação: infraestrutura em nuvem contratada pela CONTRATADA junto à Adapta, com armazenamento em {{foro_regiao}}.
 
-5.2. Banco de dados e backup: Supabase, com armazenamento na região [região a indicar antes da assinatura] e retenção de 30 (trinta) dias.
+5.2. Banco de dados e backup: Supabase, com armazenamento na região {{foro_regiao}} e retenção de 30 (trinta) dias.
 
-5.3. Versionamento de código: GitHub, com armazenamento na região [região a indicar antes da assinatura], destinado exclusivamente ao código-fonte, sem armazenamento de dados pessoais de titulares nem de bases de dados da CONTRATANTE.
+5.3. Versionamento de código: GitHub, com armazenamento na região {{foro_regiao}}, destinado exclusivamente ao código-fonte, sem armazenamento de dados pessoais de titulares nem de bases de dados da CONTRATANTE.
 
-5.4. E-mail transacional: SMTP2GO, com processamento na região [região a indicar antes da assinatura].
+5.4. E-mail transacional: SMTP2GO, com processamento na região {{foro_regiao}}.
 
 5.5. A substituição ou inclusão de suboperador será comunicada à CONTRATANTE com antecedência mínima de 30 (trinta) dias, faculdade à CONTRATANTE opor-se por motivo justificado.
 
@@ -125,7 +126,7 @@ export const ANEXO_II_V6 = `ANEXO II – ACORDO DE TRATAMENTO DE DADOS PESSOAIS
 
 6. MEDIDAS DE SEGURANÇA. Controle de acesso por perfil, autenticação, registro de logs, criptografia em trânsito, segregação de ambientes e rotinas de backup.
 
-7. ENCARREGADO PELO TRATAMENTO DE DADOS (art. 41 da LGPD). CONTRATADA: Iverson A. de Souza, contato: {{contratada_email}}. CONTRATANTE: [nome/e-mail do encarregado], contato: [nome/e-mail do encarregado]. As partes comunicarão eventuais alterações de encarregado em até 10 (dez) dias.
+7. ENCARREGADO PELO TRATAMENTO DE DADOS (art. 41 da LGPD). CONTRATADA: {{dpo_nome_contratada}}, contato: {{contratada_email}}. CONTRATANTE: {{dpo_nome}}, contato: {{dpo_email}}. As partes comunicarão eventuais alterações de encarregado em até 10 (dez) dias.
 
 8. TRANSFERÊNCIA INTERNACIONAL DE DADOS. A CONTRATANTE é informada de que a hospedagem, o banco de dados, o backup, o versionamento de código e o e-mail transacional podem envolver tratamento em servidores localizados fora do território nacional, nos termos do item 11.8 do contrato. A transferência observará os arts. 33 a 36 da LGPD, com base em cláusulas contratuais específicas, normas corporativas globais ou outra hipótese legal admitida, e a CONTRATADA informará à CONTRATANTE, mediante solicitação, o país de destino e o fundamento legal aplicável a cada suboperador.
 
@@ -145,7 +146,7 @@ export const ANEXO_III_V6 = `ANEXO III – SERVIÇOS ADICIONAIS E TABELA DE PRE�
 
 4. IMPLANTAÇÃO DOS MÓDULOS. A implantação de cada módulo, incluindo parametrização, migração de dados e treinamento, será definida em proposta específica, com escopo, prazo e valor próprios.
 
-5. PREÇOS DOS MÓDULOS. Os valores mensais de cada módulo são os seguintes: (i) Gestão Empresarial: R$ [valor a definir]; (ii) Gestão Básica Financeira: R$ [valor a definir]; (iii) Controle Operacional: R$ [valor a definir]; (iv) Gestão Básica de Estoque: R$ [valor a definir]; (v) Gestão de Documentos Fiscais: R$ [valor a definir]; e (vi) Gestão do PCP: R$ [valor a definir]. Os valores serão reajustados na forma do item 6.2 do contrato.
+5. PREÇOS DOS MÓDULOS. Os valores mensais de cada módulo são os seguintes: (i) Gestão Empresarial: R$ {{valor_modulo_empresarial}}; (ii) Gestão Básica Financeira: R$ {{valor_modulo_financeira}}; (iii) Controle Operacional: R$ {{valor_modulo_operacional}}; (iv) Gestão Básica de Estoque: R$ {{valor_modulo_estoque}}; (v) Gestão de Documentos Fiscais: R$ {{valor_modulo_fiscal}}; e (vi) Gestão do PCP: R$ {{valor_modulo_pcp}}. Os valores serão reajustados na forma do item 6.2 do contrato.
 
 6. USUÁRIOS E LIMITES DOS MÓDULOS. O número de usuários e os limites de cada módulo serão os definidos na proposta específica de cada contratação, aplicando-se, no que couber, as regras de excedente do item 5.5 do contrato.
 
