@@ -32,7 +32,7 @@ import {
 } from '@/lib/contract-status'
 import { contratoV6Texto } from '@/lib/contract-docx'
 import { downloadContractDocx } from '@/lib/contract-docx-download'
-import { imprimirContrato } from '@/lib/contract-print'
+import { contractConteudoParaHtml, imprimirContrato } from '@/lib/contract-print'
 import {
   fetchClienteDocInfo,
   fetchPlanLimits,
@@ -137,7 +137,9 @@ export default function AdminContratoForm() {
             const { desconto_adicional: _desconto, ...resto } = data
             setForm((prev) => ({ ...prev, ...resto }))
             setDescontoPercentual(Number(_desconto ?? 0))
-            setContent(data.content || '')
+            // Texto cru (gerador V6 com **negrito**) vira HTML formatado; HTML
+            // já salvo pelo editor passa intacto.
+            setContent(contractConteudoParaHtml(data.content || ''))
             // Valor salvo no banco prevalece sobre a soma automática dos serviços.
             if (data.valor_ciclo) setValorManual(true)
           })
@@ -197,7 +199,7 @@ export default function AdminContratoForm() {
     let ativo = true
     gerarConteudoV6().then((texto) => {
       if (ativo && texto) {
-        setContent(texto)
+        setContent(contractConteudoParaHtml(texto))
         setContentEditada(false)
       }
     })
@@ -246,7 +248,8 @@ export default function AdminContratoForm() {
   const handleGerar = async () => {
     const texto = await gerarConteudoV6()
     if (!texto) return
-    setContent(texto)
+    // Converte os marcadores ** do texto cru no mesmo HTML da tela do modelo.
+    setContent(contractConteudoParaHtml(texto))
     setContentEditada(true)
     toast({
       title: 'Contrato V6 gerado',
@@ -256,7 +259,10 @@ export default function AdminContratoForm() {
 
   /** Salva mantendo o status atual (CRIADO quando o contrato é novo). */
   const handleSalvarAtual = async () => {
-    const texto = contentEditada ? content : await gerarConteudoV6()
+    // Conteúdo existente (carregado do banco ou editado) prevalece; só gera
+    // quando o contrato ainda não tem documento. Sempre gravado como HTML.
+    const texto =
+      contentEditada || content ? content : contractConteudoParaHtml(await gerarConteudoV6())
     if (!texto) return
     setContent(texto)
     setContentEditada(true)
@@ -264,7 +270,8 @@ export default function AdminContratoForm() {
   }
 
   const handleDownloadDocx = async () => {
-    const texto = contentEditada ? content : await gerarConteudoV6()
+    const texto =
+      contentEditada || content ? content : contractConteudoParaHtml(await gerarConteudoV6())
     if (!texto) return
     const numero = (form as any).numero_contrato || `CTR-${Date.now()}`
     await downloadContractDocx(
@@ -392,7 +399,8 @@ export default function AdminContratoForm() {
   const handleColetarAssinaturas = async () => {
     setColetando(true)
     try {
-      const texto = contentEditada || content ? content : await gerarConteudoV6()
+      const texto =
+        contentEditada || content ? content : contractConteudoParaHtml(await gerarConteudoV6())
       if (!texto) return
       const salvoId = await persistContrato(CONTRACT_STATUS.CRIADO, texto)
       if (!salvoId) return

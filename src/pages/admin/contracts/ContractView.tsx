@@ -45,6 +45,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { SIGNER_ROLES } from '@/lib/contract-signers'
+import { contractConteudoParaHtml } from '@/lib/contract-print'
 
 export default function ContractView() {
   const { id } = useParams()
@@ -239,7 +240,8 @@ export default function ContractView() {
               <div
                 className="border rounded-lg p-8 bg-white min-h-[500px] prose max-w-none text-black"
                 dangerouslySetInnerHTML={{
-                  __html: contract.content || 'Nenhum conteúdo disponível.',
+                  __html:
+                    contractConteudoParaHtml(contract.content) || 'Nenhum conteúdo disponível.',
                 }}
               />
             </CardContent>
@@ -506,7 +508,9 @@ export default function ContractView() {
                       )}
                       <div
                         className="text-sm bg-muted/50 p-3 rounded prose max-w-none"
-                        dangerouslySetInnerHTML={{ __html: add.content }}
+                        dangerouslySetInnerHTML={{
+                          __html: contractConteudoParaHtml(add.content || ''),
+                        }}
                       />
                     </div>
                   ))}

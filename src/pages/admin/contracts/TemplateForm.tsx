@@ -20,6 +20,7 @@ import {
   saveContractAnnexes,
   tituloAbaAnexo,
 } from '@/lib/contract-annex-sections'
+import { contractConteudoParaHtml } from '@/lib/contract-print'
 
 interface AnexoLocal {
   title: string
@@ -58,7 +59,9 @@ export default function AdminTemplateForm() {
         if (data) {
           setName(data.name || '')
           setDescription(data.description || '')
-          setContratoHtml(data.content || '')
+          // Texto cru com marcadores ** vira HTML formatado; HTML já salvo
+          // pelo editor passa intacto, sem reprocessar.
+          setContratoHtml(contractConteudoParaHtml(data.content || ''))
           // Anexos persistidos na própria tabela de anexos do modelo (mesma
           // estrutura de contract_annexes, com contract_id = id do modelo).
           const linhas = await fetchContractAnnexes(id)

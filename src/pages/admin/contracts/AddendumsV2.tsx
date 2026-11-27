@@ -43,6 +43,7 @@ import {
 } from '@/lib/contract-docx'
 import { CONTRATO_V6_CORPO } from '@/lib/contract-v6-corpo'
 import { downloadContractDocx } from '@/lib/contract-docx-download'
+import { contractConteudoParaHtml } from '@/lib/contract-print'
 import { fetchPlanCatalog, planMonthlyValue, type PlanCatalogRow } from '@/services/plan-catalog'
 
 interface ContratoRow {
@@ -458,9 +459,10 @@ export default function AddendumsV2() {
           {contrato && (
             <div>
               <Label className="mb-2 block">Preview do documento</Label>
-              <pre className="whitespace-pre-wrap rounded-md border bg-muted/30 p-4 text-sm leading-relaxed max-h-[320px] overflow-auto">
-                {conteudo}
-              </pre>
+              <div
+                className="rounded-md border bg-muted/30 p-4 text-sm leading-relaxed max-h-[320px] overflow-auto prose prose-sm max-w-none dark:prose-invert break-words"
+                dangerouslySetInnerHTML={{ __html: contractConteudoParaHtml(conteudo) }}
+              />
               <Button
                 variant="outline"
                 size="sm"
