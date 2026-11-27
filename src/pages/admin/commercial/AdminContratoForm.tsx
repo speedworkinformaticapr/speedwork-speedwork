@@ -547,7 +547,7 @@ export default function AdminContratoForm() {
           <TabsTrigger value="servicos">Serviços</TabsTrigger>
           <TabsTrigger value="faturamento">Faturamento</TabsTrigger>
           <TabsTrigger value="signatarios">Signatários</TabsTrigger>
-          <TabsTrigger value="contrato">Contrato e Termos</TabsTrigger>
+          <TabsTrigger value="contrato">Contratos e Aditivos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="cliente" className="space-y-4 bg-card p-6 border rounded-xl">
@@ -582,56 +582,10 @@ export default function AdminContratoForm() {
                 </Button>
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="contrato-sla">SLA</Label>
-                <div className="flex gap-2">
-                  <Select
-                    value={form.sla_id || ''}
-                    onValueChange={(v) => setForm({ ...form, sla_id: v })}
-                  >
-                    <SelectTrigger id="contrato-sla" className="flex-1">
-                      <SelectValue placeholder="Selecione o SLA" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {slas.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    aria-label="Adicionar novo SLA"
-                    onClick={() => setNewSlaOpen(true)}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="contrato-renovacao">Renovação automática</Label>
-                <Select
-                  value={form.renovacao_automatica ? 'sim' : 'nao'}
-                  onValueChange={(v) => setForm({ ...form, renovacao_automatica: v === 'sim' })}
-                >
-                  <SelectTrigger id="contrato-renovacao">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sim">Sim</SelectItem>
-                    <SelectItem value="nao">Não</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
           </fieldset>
           <p className="text-xs text-muted-foreground">
-            O conteúdo do documento é gerado a partir do modelo V6 da Speedwork (aba Contrato e
-            Termos) — não é mais carregado de modelos antigos com placeholders. Os dados do
+            O conteúdo do documento é gerado a partir do modelo V6 da Speedwork (aba Contratos e
+            Aditivos) — não é mais carregado de modelos antigos com placeholders. Os dados do
             representante da CONTRATANTE ficam na aba Signatários, junto da pessoa selecionada.
           </p>
         </TabsContent>
@@ -738,6 +692,27 @@ export default function AdminContratoForm() {
                 Soma dos serviços selecionados conforme o ciclo. O valor do contrato (e das parcelas
                 do financeiro) é essa soma menos o % de desconto adicional.
               </p>
+            </div>
+          </fieldset>
+
+          <fieldset className="space-y-4">
+            <legend className="text-sm font-medium mb-2">Renovação</legend>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2 max-w-md">
+                <Label htmlFor="contrato-renovacao">Renovação automática</Label>
+                <Select
+                  value={form.renovacao_automatica ? 'sim' : 'nao'}
+                  onValueChange={(v) => setForm({ ...form, renovacao_automatica: v === 'sim' })}
+                >
+                  <SelectTrigger id="contrato-renovacao">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sim">Sim</SelectItem>
+                    <SelectItem value="nao">Não</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </fieldset>
 
@@ -1035,6 +1010,38 @@ export default function AdminContratoForm() {
               aiContext="Termos contratuais adicionais e observações para um contrato de serviço"
             />
           </div>
+          <fieldset className="space-y-4">
+            <legend className="text-sm font-medium mb-2">Nível de Serviço (SLA)</legend>
+            <div className="space-y-2 max-w-md">
+              <Label htmlFor="contrato-sla">SLA</Label>
+              <div className="flex gap-2">
+                <Select
+                  value={form.sla_id || ''}
+                  onValueChange={(v) => setForm({ ...form, sla_id: v })}
+                >
+                  <SelectTrigger id="contrato-sla" className="flex-1">
+                    <SelectValue placeholder="Selecione o SLA" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {slas.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Adicionar novo SLA"
+                  onClick={() => setNewSlaOpen(true)}
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </fieldset>
         </TabsContent>
       </Tabs>
 
