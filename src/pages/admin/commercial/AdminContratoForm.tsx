@@ -40,6 +40,7 @@ import {
   type ClienteDocInfo,
 } from '@/lib/contract-form-doc'
 import { fetchSigners, saveSigners, type SignerRow } from '@/lib/contract-signers'
+import { maskDocument } from '@/lib/cpf-cnpj'
 
 export default function AdminContratoForm() {
   const { id } = useParams()
@@ -587,36 +588,10 @@ export default function AdminContratoForm() {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label>Representante da CONTRATANTE</Label>
-              <Input
-                placeholder="Nome do representante legal"
-                value={form.cliente_representante_nome || ''}
-                onChange={(e) => setForm({ ...form, cliente_representante_nome: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>CPF do representante</Label>
-              <Input
-                placeholder="000.000.000-00"
-                value={form.cliente_representante_cpf || ''}
-                onChange={(e) => setForm({ ...form, cliente_representante_cpf: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>E-mail de notificação</Label>
-              <Input
-                type="email"
-                placeholder="notificacoes@cliente.com.br"
-                value={form.cliente_email_notificacao || ''}
-                onChange={(e) => setForm({ ...form, cliente_email_notificacao: e.target.value })}
-              />
-            </div>
-          </div>
           <p className="text-xs text-muted-foreground">
             O conteúdo do documento é gerado a partir do modelo V6 da Speedwork (aba Contrato e
-            Termos) — não é mais carregado de modelos antigos com placeholders.
+            Termos) — não é mais carregado de modelos antigos com placeholders. Os dados do
+            representante da CONTRATANTE ficam na aba Signatários, junto da pessoa selecionada.
           </p>
         </TabsContent>
 
@@ -812,6 +787,61 @@ export default function AdminContratoForm() {
                 <Plus className="w-4 h-4 mr-1" /> Adicionar
               </Button>
             </div>
+            {novoSig.profile_id && (
+              <div className="rounded-md border bg-muted/20 px-3 py-2 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Representa no contrato:
+                  </span>
+                  <Badge variant="outline">{novoSig.role}</Badge>
+                </div>
+                {novoSig.role === 'Contratante' && (
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Representante da CONTRATANTE</Label>
+                      <Input
+                        placeholder="Nome do representante legal"
+                        autoComplete="off"
+                        className="h-8 text-xs"
+                        value={form.cliente_representante_nome || ''}
+                        onChange={(e) =>
+                          setForm({ ...form, cliente_representante_nome: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">CPF do representante</Label>
+                      <Input
+                        inputMode="numeric"
+                        placeholder="000.000.000-00"
+                        autoComplete="off"
+                        className="h-8 text-xs"
+                        value={form.cliente_representante_cpf || ''}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            cliente_representante_cpf: maskDocument(e.target.value),
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">E-mail de notificação</Label>
+                      <Input
+                        type="email"
+                        placeholder="notificacoes@cliente.com.br"
+                        autoComplete="off"
+                        className="h-8 text-xs"
+                        value={form.cliente_email_notificacao || ''}
+                        onChange={(e) =>
+                          setForm({ ...form, cliente_email_notificacao: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="space-y-2 mt-2">
               {signatarios.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Nenhum signatário adicionado.</p>
@@ -819,13 +849,13 @@ export default function AdminContratoForm() {
                 signatarios.map((s) => (
                   <div
                     key={s.profile_id}
-                    className="flex items-center justify-between bg-muted/30 p-2 rounded-md"
+                    className="flex items-center justify-between gap-2 bg-muted/30 p-2 rounded-md"
                   >
-                    <div>
-                      <p className="font-medium text-sm">
-                        {nomeSignatario(s)}{' '}
-                        <span className="text-xs text-muted-foreground">({s.role})</span>
-                      </p>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-medium text-sm truncate">{nomeSignatario(s)}</p>
+                        <Badge variant="outline">{s.role}</Badge>
+                      </div>
                       <p className="text-xs text-muted-foreground">
                         Ordem {(s.order_index ?? 0) + 1} ·{' '}
                         <Badge
@@ -847,7 +877,7 @@ export default function AdminContratoForm() {
                         type="button"
                         aria-label={`Remover signatário ${nomeSignatario(s)}`}
                         onClick={() => removeSignatario(s.profile_id)}
-                        className="text-red-500 hover:text-red-700 p-1"
+                        className="text-red-500 hover:text-red-700 p-1 shrink-0"
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
