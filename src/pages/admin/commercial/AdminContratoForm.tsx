@@ -535,7 +535,7 @@ export default function AdminContratoForm() {
 
       <Tabs defaultValue="cliente" className="w-full">
         <TabsList className="grid w-full grid-cols-5 mb-6">
-          <TabsTrigger value="cliente">Cliente e Tipo</TabsTrigger>
+          <TabsTrigger value="cliente">Cliente</TabsTrigger>
           <TabsTrigger value="faturamento">Faturamento</TabsTrigger>
           <TabsTrigger value="servicos">Serviços</TabsTrigger>
           <TabsTrigger value="signatarios">Signatários</TabsTrigger>
@@ -570,23 +570,6 @@ export default function AdminContratoForm() {
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Tipo de Contrato</Label>
-            <Select
-              value={form.tipo_contrato}
-              onValueChange={(v) => setForm({ ...form, tipo_contrato: v })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="assinatura">Assinatura</SelectItem>
-                <SelectItem value="manutencao">Manutenção</SelectItem>
-                <SelectItem value="suporte">Suporte</SelectItem>
-                <SelectItem value="consultoria">Consultoria</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
           <p className="text-xs text-muted-foreground">
             O conteúdo do documento é gerado a partir do modelo V6 da Speedwork (aba Contrato e
@@ -778,7 +761,6 @@ export default function AdminContratoForm() {
                   <SelectContent>
                     <SelectItem value="Contratante">Contratante</SelectItem>
                     <SelectItem value="Contratado">Contratado</SelectItem>
-                    <SelectItem value="Interveniente Anuente">Interveniente Anuente</SelectItem>
                     <SelectItem value="Testemunha">Testemunha</SelectItem>
                   </SelectContent>
                 </Select>

@@ -354,7 +354,6 @@ export default function ContractView() {
                       <SelectContent>
                         <SelectItem value="Contratante">Contratante</SelectItem>
                         <SelectItem value="Contratado">Contratado</SelectItem>
-                        <SelectItem value="Interveniente Anuente">Interveniente Anuente</SelectItem>
                         <SelectItem value="Testemunha">Testemunha</SelectItem>
                       </SelectContent>
                     </Select>
