@@ -1,8 +1,10 @@
-// Tela Editar Modelo (contrato): nome + descrição, guias (Contrato) (Anexo 1)
-// (Anexo 2)... com editor WYSIWYG (RichTextEditor) e painel de variáveis em
-// cada aba, botão "Adicionar Anexo" e remoção de anexo. Persistência: o corpo
-// fica em contract_templates.content; os anexos, em contract_annexes
-// (contract_id = id do modelo, annex_type = título, version = "vN").
+// Tela Editar Modelo (contrato): nome + descrição, depois o conteúdo em
+// SEÇÕES SEQUENCIAIS na mesma ordem da Visualizar Modelo do documento —
+// primeiro o corpo do Contrato, depois cada anexo (Anexo 1, Anexo 2, ...)
+// — cada um com editor WYSIWYG (RichTextEditor) e painel de variáveis,
+// botão "Adicionar Anexo" e remoção de anexo no próprio cartão do anexo.
+// Persistência: o corpo fica em contract_templates.content; os anexos, em
+// contract_annexes (contract_id = id do modelo, annex_type = título, version = "vN").
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
@@ -10,7 +12,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2, Plus, Trash2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -41,7 +42,6 @@ export default function AdminTemplateForm() {
   const [description, setDescription] = useState('')
   const [contratoHtml, setContratoHtml] = useState('')
   const [anexos, setAnexos] = useState<AnexoLocal[]>([])
-  const [aba, setAba] = useState('contrato')
   const [confirmAnexo, setConfirmAnexo] = useState<number | null>(null)
   const editorRef = useRef<{ insertHtml: (html: string) => void } | null>(null)
 
@@ -90,12 +90,10 @@ export default function AdminTemplateForm() {
       return
     }
     setAnexos((prev) => [...prev, { title: tituloAbaAnexo(prev.length + 1), html: '' }])
-    setAba(`anexo:${anexos.length + 1}`)
   }
 
   const removerAnexo = (indice: number) => {
     setAnexos((prev) => prev.filter((_, i) => i !== indice))
-    setAba(indice === 0 ? 'contrato' : `anexo:${Math.max(1, indice)}`)
   }
 
   const atualizarAnexo = (indice: number, html: string) => {
@@ -149,8 +147,6 @@ export default function AdminTemplateForm() {
     }
   }, [anexos, contratoHtml, description, id, isEditing, name, navigate, toast])
 
-  const abaAtiva = aba.startsWith('anexo:') ? Number(aba.split(':')[1]) : null
-
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div>
@@ -158,7 +154,8 @@ export default function AdminTemplateForm() {
           {isEditing ? 'Editar Modelo' : 'Novo Modelo de Contrato'}
         </h1>
         <p className="text-muted-foreground">
-          Crie ou edite um modelo de contrato com variáveis dinâmicas e anexos.
+          Crie ou edite um modelo de contrato com variáveis dinâmicas e anexos — as seções seguem a
+          mesma ordem da visualização do documento: corpo do contrato e, na sequência, cada anexo.
         </p>
       </div>
 
@@ -197,74 +194,69 @@ export default function AdminTemplateForm() {
             </CardContent>
           </Card>
 
-          <Tabs value={aba} onValueChange={setAba} className="w-full">
-            <div className="flex flex-wrap items-center gap-2">
-              <TabsList className="flex-wrap h-auto">
-                <TabsTrigger value="contrato">Contrato</TabsTrigger>
-                {anexos.map((a, i) => (
-                  <TabsTrigger key={i} value={`anexo:${i + 1}`}>
-                    {a.title || tituloAbaAnexo(i + 1)}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              <Button type="button" variant="outline" size="sm" onClick={adicionarAnexo}>
-                <Plus className="h-4 w-4 mr-1" />
-                Adicionar Anexo
-              </Button>
-            </div>
-          </Tabs>
-
+          {/* ORDEM DA VISUALIZAÇÃO: 1º o corpo do Contrato, depois cada anexo
+              na sequência em que aparecem no documento (.docx/impressão). */}
           <Card>
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <CardTitle id="conteudo-titulo">
-                    {abaAtiva != null
-                      ? `Conteúdo do ${anexos[abaAtiva - 1]?.title || tituloAbaAnexo(abaAtiva)}`
-                      : 'Conteúdo do Contrato'}
-                  </CardTitle>
-                  <CardDescription>
-                    {abaAtiva != null
-                      ? 'Este anexo é gerado como página separada no .docx.'
-                      : 'Corpo principal do contrato — gerado com os placeholders substituídos.'}
-                  </CardDescription>
-                </div>
-                {abaAtiva != null && (
+              <CardTitle id="conteudo-titulo">Conteúdo do Contrato</CardTitle>
+              <CardDescription>
+                Corpo principal do contrato — gerado com os placeholders substituídos.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ContractSectionEditor
+                ref={editorRef}
+                value={contratoHtml}
+                onChange={setContratoHtml}
+                minHeight="500px"
+                label="Conteúdo do Contrato"
+                labelId="conteudo-titulo"
+              />
+            </CardContent>
+          </Card>
+
+          {anexos.map((anexo, i) => (
+            <Card key={i}>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <CardTitle id={`conteudo-anexo-${i + 1}`}>
+                      Conteúdo do {anexo.title || tituloAbaAnexo(i + 1)}
+                    </CardTitle>
+                    <CardDescription>
+                      Este anexo é gerado como página separada no .docx.
+                    </CardDescription>
+                  </div>
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     className="text-destructive hover:text-destructive"
-                    onClick={() => setConfirmAnexo(abaAtiva - 1)}
+                    onClick={() => setConfirmAnexo(i)}
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
                     Remover anexo
                   </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              {abaAtiva != null ? (
+                </div>
+              </CardHeader>
+              <CardContent>
                 <ContractSectionEditor
-                  ref={editorRef}
-                  value={anexos[abaAtiva - 1]?.html || ''}
-                  onChange={(html) => atualizarAnexo(abaAtiva - 1, html)}
+                  value={anexo.html}
+                  onChange={(html) => atualizarAnexo(i, html)}
                   minHeight="500px"
-                  label={`Conteúdo do ${anexos[abaAtiva - 1]?.title || tituloAbaAnexo(abaAtiva)}`}
-                  labelId="conteudo-titulo"
+                  label={`Conteúdo do ${anexo.title || tituloAbaAnexo(i + 1)}`}
+                  labelId={`conteudo-anexo-${i + 1}`}
                 />
-              ) : (
-                <ContractSectionEditor
-                  ref={editorRef}
-                  value={contratoHtml}
-                  onChange={setContratoHtml}
-                  minHeight="500px"
-                  label="Conteúdo do Contrato"
-                  labelId="conteudo-titulo"
-                />
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ))}
+
+          <div>
+            <Button type="button" variant="outline" size="sm" onClick={adicionarAnexo}>
+              <Plus className="h-4 w-4 mr-1" />
+              Adicionar Anexo
+            </Button>
+          </div>
 
           <div className="flex items-center justify-end gap-3 pt-2 pb-6 border-t">
             <Button
