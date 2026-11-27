@@ -151,11 +151,11 @@ CLÁUSULA 7 – VIGÊNCIA, RENOVAÇÃO E RESCISÃO
 
 CLÁUSULA 8 – IMPLANTAÇÃO, TREINAMENTO E ACEITE
 
-8.1. A implantação inicial compreende a configuração do ambiente, a configuração de domínio e de e-mail, a parametrização básica e a publicação do CMS, no escopo do Anexo I, em até [{{implantacao_dias}}] dias úteis contados da assinatura e do recebimento dos acessos, conteúdos e informações necessários.
+8.1. A implantação inicial compreende a configuração do ambiente, a configuração de domínio e de e-mail, a parametrização básica e a publicação do CMS, no escopo do Anexo I, em até {{implantacao_dias}} dias úteis contados da assinatura e do recebimento dos acessos, conteúdos e informações necessários.
 
 8.2. A CONTRATANTE indicará um responsável técnico e fornecerá, em até 10 (dez) dias, os dados, acessos e conteúdos necessários à implantação, inclusive o acesso ao registro do domínio quando já existente. Atrasos imputáveis à CONTRATANTE prorrogam os prazos na mesma proporção, inclusive o período gratuito do item 6.5.
 
-8.3. Está incluído treinamento remoto de [{{treino_horas}}] horas para até [{{treino_participantes}}] participantes, realizado na fase de implantação, sem custo adicional. Treinamentos adicionais ou presenciais serão orçados.
+8.3. Está incluído treinamento remoto de {{treino_horas}} horas para até {{treino_participantes}} participantes, realizado na fase de implantação, sem custo adicional. Treinamentos adicionais ou presenciais serão orçados.
 
 8.4. Concluída a implantação, a CONTRATANTE terá 10 (dez) dias corridos para homologar o serviço, registrando por escrito eventuais não conformidades. O silêncio nesse prazo implica aceite tácito, que produz os efeitos dos itens 6.5 e 9.4. As não conformidades serão sanadas pela CONTRATADA e submetidas a novo prazo de 10 (dez) dias para homologação.
 
@@ -175,7 +175,7 @@ CLÁUSULA 9 – SUPORTE TÉCNICO, DISPONIBILIDADE E ATUALIZAÇÕES
 
 9.6. A CONTRATADA compromete-se a restaurar o serviço em até 8 (oito) horas contadas do conhecimento de indisponibilidade ou de perda de dados, e a manter perda máxima aceitável de dados de 24 (vinte e quatro) horas, compatível com a rotina de backup diária da Cláusula 14. O descumprimento do prazo de restauração sujeita a CONTRATADA aos créditos do item 9.5, calculados uma única vez por evento e sem cumulação com o crédito por disponibilidade.
 
-9.7. A manutenção programada ocorrerá preferencialmente entre 23h e 6h, com aviso de 48 (quarenta e oito) horas quando implicar indisponibilidade, limitada a [{{manutencao_horas}}] horas por mês.
+9.7. A manutenção programada ocorrerá preferencialmente entre 23h e 6h, com aviso de 48 (quarenta e oito) horas quando implicar indisponibilidade, limitada a {{manutencao_horas}} horas por mês.
 
 9.8. A CONTRATADA poderá atualizar, corrigir e aprimorar o CMS a qualquer tempo. Quando a atualização suprimir funcionalidade em uso efetivo pela CONTRATANTE, haverá aviso prévio de 30 (trinta) dias. Sendo a supressão relevante e inexistindo funcionalidade equivalente, a CONTRATANTE poderá rescindir o contrato sem multa, em 30 (trinta) dias.
 
@@ -263,7 +263,7 @@ CLÁUSULA 15 – RESPONSABILIDADE
 
 15.6. A CONTRATANTE responde integralmente pelo Conteúdo que insere ou faz publicar no CMS, na forma da Cláusula 3, e por eventual reclamação de terceiro decorrente desse Conteúdo, obrigando-se a manter a CONTRATADA indene, bem como pelas decisões de negócio adotadas com base em informações geradas pelos módulos do Anexo III.
 
-15.7. A CONTRATADA manterá apólice de seguro de riscos cibernéticos com cobertura mínima de R$ [{{seguro}}], cuja comprovação de vigência será disponibilizada à CONTRATANTE mediante solicitação escrita, no máximo uma vez por ano.
+15.7. A CONTRATADA manterá apólice de seguro de riscos cibernéticos com cobertura mínima de R$ {{seguro}}, cuja comprovação de vigência será disponibilizada à CONTRATANTE mediante solicitação escrita, no máximo uma vez por ano.
 
 CLÁUSULA 16 – TRIBUTOS, DOCUMENTOS FISCAIS E CUSTOS ACESSÓRIOS
 
