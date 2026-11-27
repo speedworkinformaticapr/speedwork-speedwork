@@ -218,6 +218,31 @@ export default function AdminContratoView() {
         </div>
       </div>
 
+      {/* CONTEÚDO EM LARGURA TOTAL: o texto do contrato fica FORA do grid
+          md:grid-cols-3 — dentro dele o Card md:col-span-2 espremia o texto
+          para ~2/3 da página e deixava a direita vazia. Mesma largura do
+          contêiner externo (max-w-7xl). */}
+      {(contrato.content || contrato.observacoes) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Conteúdo / Cláusulas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* ROLAGEM SÓ NO TEXTO: quem rola é a área do contrato, com altura
+              controlada pela janela (calc(100dvh - 320px)), como no editor do
+              formulário. Cabeçalho e botões da página permanecem visíveis.
+              .contract-doc-editor = mesmo padrão visual do .docx (V6). */}
+            <div
+              className="bg-muted/20 p-4 rounded-md border prose prose-sm dark:prose-invert max-w-none break-words overflow-y-auto contract-doc-editor"
+              style={{ minHeight: '320px', maxHeight: 'calc(100dvh - 320px)' }}
+              dangerouslySetInnerHTML={{
+                __html: contractConteudoParaHtml(contrato.content || contrato.observacoes || ''),
+              }}
+            ></div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid md:grid-cols-3 gap-6">
         <Card className="md:col-span-2">
           <CardHeader>
@@ -267,25 +292,6 @@ export default function AdminContratoView() {
                 </Badge>
               )}
             </div>
-
-            {(contrato.content || contrato.observacoes) && (
-              <div className="border-t pt-4">
-                <h4 className="font-semibold mb-2">Conteúdo / Cláusulas</h4>
-                {/* ROLAGEM SÓ NO TEXTO: quem rola é a área do contrato, com altura
-                  controlada pela janela (calc(100dvh - 320px)), como no editor do
-                  formulário. Cabeçalho e botões da página permanecem visíveis.
-                  .contract-doc-editor = mesmo padrão visual do .docx (V6). */}
-                <div
-                  className="bg-muted/20 p-4 rounded-md border prose prose-sm dark:prose-invert max-w-none break-words overflow-y-auto contract-doc-editor"
-                  style={{ minHeight: '320px', maxHeight: 'calc(100dvh - 320px)' }}
-                  dangerouslySetInnerHTML={{
-                    __html: contractConteudoParaHtml(
-                      contrato.content || contrato.observacoes || '',
-                    ),
-                  }}
-                ></div>
-              </div>
-            )}
           </CardContent>
         </Card>
 
