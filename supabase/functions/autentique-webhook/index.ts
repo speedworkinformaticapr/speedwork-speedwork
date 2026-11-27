@@ -7,7 +7,10 @@ import {
   isDocumentFinished,
   SIGNATURE_SIGNED_TYPES,
 } from '../_shared/autentique.ts'
-import { gerarMensalidadesParaContrato } from '../_shared/contract-financeiro.ts'
+import {
+  gerarMensalidadesContrato,
+  type ContratoFinanceiroInput,
+} from '../_shared/contract-financeiro.ts'
 
 /**
  * autentique-webhook
@@ -187,7 +190,30 @@ Deno.serve(async (req) => {
       // Etapa 5: gera as mensalidades (previsão de fluxo de caixa) e vira FINANCEIRO.
       // Falha deixa o contrato em ASSINADO com log do erro — nunca silenciosamente.
       try {
-        await gerarMensalidadesParaContrato(supabaseAdmin, contractId)
+        const { data: contratoRow, error: cFetchErr } = await supabaseAdmin
+          .from('contratos')
+          .select(
+            'id, numero_contrato, cliente_id, valor_ciclo, duracao_ciclo, data_inicio, conta_id, cliente:profiles(name)',
+          )
+          .eq('id', contractId)
+          .single()
+        if (cFetchErr || !contratoRow) {
+          throw new Error(
+            `Contrato não localizado ao gerar mensalidades: ${cFetchErr?.message || 'linha ausente'}`,
+          )
+        }
+        const contratoFinanceiro: ContratoFinanceiroInput = {
+          id: contratoRow.id,
+          numero_contrato: contratoRow.numero_contrato,
+          cliente_id: contratoRow.cliente_id,
+          clienteNome: contratoRow.cliente?.name ?? null,
+          valor_ciclo: contratoRow.valor_ciclo,
+          duracao_ciclo: contratoRow.duracao_ciclo,
+          data_inicio: contratoRow.data_inicio,
+          conta_id: contratoRow.conta_id,
+        }
+        const resultado = await gerarMensalidadesContrato(supabaseAdmin, contratoFinanceiro)
+        if (!resultado.ok) throw new Error(resultado.message || 'Falha ao gerar mensalidades')
         const { error: fErr } = await supabaseAdmin
           .from('contratos')
           .update({ status: 'FINANCEIRO' })
