@@ -61,14 +61,7 @@ export const DEFAULT_MENU_CONFIG: MenuConfig[] = [
     submenus: [
       { id: 'contracts-list', label: 'Contratos', url: '/admin/commercial/contracts' },
       { id: 'contracts-templates', label: 'Modelos', url: '/admin/contracts/templates' },
-      {
-        id: 'contracts-clauses',
-        label: 'Biblioteca de Cláusulas',
-        url: '/admin/contracts/clauses',
-      },
       { id: 'contracts-addendums', label: 'Aditivos', url: '/admin/contracts/addendums' },
-      { id: 'contracts-entities', label: 'Entidades', url: '/admin/contracts/entities' },
-      { id: 'contracts-reports', label: 'Relatórios', url: '/admin/contracts/reports' },
     ],
   },
   {

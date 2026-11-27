@@ -29,6 +29,13 @@ import { supabase } from '@/lib/supabase/client'
 import { useAuthorSessionTimeout } from '@/hooks/use-author-session-timeout'
 import ScreenHelpMenu from './ScreenHelpMenu'
 
+/** Itens do menu de Contratos descontinuados — filtrados também da config salva no banco */
+const RETIRED_MENU_ITEMS = new Set([
+  '/admin/contracts/clauses',
+  '/admin/contracts/entities',
+  '/admin/contracts/reports',
+])
+
 const renderIcon = (iconName: string, className?: string) => {
   const IconCmp = (Icons as any)[iconName] || Icons.Circle
   return <IconCmp className={className || 'size-4'} />
@@ -46,10 +53,15 @@ export default function AdminLayout() {
   useAuthorSessionTimeout()
 
   const rawMenuConfig = systemData?.admin_menu_config as any[] | undefined
-  const menuConfig: MenuConfig[] = useMemo(
-    () => (rawMenuConfig?.length ? normalizeMenuConfig(rawMenuConfig) : DEFAULT_MENU_CONFIG),
-    [rawMenuConfig],
-  )
+  const menuConfig: MenuConfig[] = useMemo(() => {
+    const base = rawMenuConfig?.length ? normalizeMenuConfig(rawMenuConfig) : DEFAULT_MENU_CONFIG
+    // Remove itens descontinuados que ainda estejam salvos na config do banco
+    return base.map((group) =>
+      group.submenus?.length
+        ? { ...group, submenus: group.submenus.filter((sub) => !RETIRED_MENU_ITEMS.has(sub.url)) }
+        : group,
+    )
+  }, [rawMenuConfig])
 
   const isAuthor = roles.some((r) => r.toLowerCase() === 'autor')
 

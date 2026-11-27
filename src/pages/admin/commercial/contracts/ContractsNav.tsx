@@ -4,12 +4,7 @@ import { cn } from '@/lib/utils'
 export function ContractsNav() {
   const location = useLocation()
 
-  const navItems = [
-    { name: 'Contratos', path: '/admin/commercial/contracts' },
-    { name: 'Biblioteca de Cláusulas', path: '/admin/commercial/contracts/clauses' },
-    { name: 'Aditivos', path: '/admin/commercial/contracts/addendums' },
-    { name: 'Relatórios', path: '/admin/commercial/contracts/reports' },
-  ]
+  const navItems = [{ name: 'Contratos', path: '/admin/commercial/contracts' }]
 
   return (
     <nav className="flex items-center space-x-4 mb-6 overflow-x-auto pb-2 border-b">

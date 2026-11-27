@@ -124,10 +124,6 @@ const AdminCommercialDashboard = lazy(
 )
 const AdminTemplateList = lazy(() => import('./pages/admin/contracts/TemplateList'))
 const AdminTemplateForm = lazy(() => import('./pages/admin/contracts/TemplateForm'))
-const AdminClausesList = lazy(() => import('./pages/admin/contracts/ClausesList'))
-const AdminClauseForm = lazy(() => import('./pages/admin/contracts/ClauseForm'))
-const AdminEntitiesList = lazy(() => import('./pages/admin/contracts/EntitiesList'))
-const AdminContractReports = lazy(() => import('./pages/admin/contracts/Reports'))
 const AdminContractView = lazy(() => import('./pages/admin/contracts/ContractView'))
 const AdminAddendumsList = lazy(() => import('./pages/admin/contracts/AddendumsV2'))
 const QuoteForm = lazy(() => import('./pages/admin/quotes/QuoteForm'))
@@ -328,12 +324,21 @@ const App = () => (
                       <Route path="contracts/templates" element={<AdminTemplateList />} />
                       <Route path="contracts/templates/new" element={<AdminTemplateForm />} />
                       <Route path="contracts/templates/:id/edit" element={<AdminTemplateForm />} />
-                      <Route path="contracts/clauses" element={<AdminClausesList />} />
-                      <Route path="contracts/clauses/new" element={<AdminClauseForm />} />
-                      <Route path="contracts/clauses/:id/edit" element={<AdminClauseForm />} />
+                      {/* Telas descontinuadas (Biblioteca de Cláusulas, Entidades, Relatórios)
+                          → redirecionam para a listagem de contratos; dados intactos */}
+                      <Route
+                        path="contracts/clauses/*"
+                        element={<Navigate to="/admin/commercial/contracts" replace />}
+                      />
+                      <Route
+                        path="contracts/entities"
+                        element={<Navigate to="/admin/commercial/contracts" replace />}
+                      />
+                      <Route
+                        path="contracts/reports"
+                        element={<Navigate to="/admin/commercial/contracts" replace />}
+                      />
                       <Route path="contracts/addendums" element={<AdminAddendumsList />} />
-                      <Route path="contracts/entities" element={<AdminEntitiesList />} />
-                      <Route path="contracts/reports" element={<AdminContractReports />} />
                       <Route path="contracts/:id" element={<AdminContractView />} />
                       <Route path="services" element={<AdminServices />} />
                       <Route path="whatsapp" element={<AdminWhatsApp />} />
