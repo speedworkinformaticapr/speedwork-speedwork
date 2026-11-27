@@ -148,7 +148,7 @@ export default function AdminContratoView() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in pb-10">
+    <div className="w-full max-w-7xl mx-auto space-y-6 animate-fade-in pb-10">
       <ContractsNav />
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -271,8 +271,13 @@ export default function AdminContratoView() {
             {(contrato.content || contrato.observacoes) && (
               <div className="border-t pt-4">
                 <h4 className="font-semibold mb-2">Conteúdo / Cláusulas</h4>
+                {/* ROLAGEM SÓ NO TEXTO: quem rola é a área do contrato, com altura
+                  controlada pela janela (calc(100dvh - 320px)), como no editor do
+                  formulário. Cabeçalho e botões da página permanecem visíveis.
+                  .contract-doc-editor = mesmo padrão visual do .docx (V6). */}
                 <div
-                  className="bg-muted/20 p-4 rounded-md text-sm prose dark:prose-invert max-w-none"
+                  className="bg-muted/20 p-4 rounded-md border prose prose-sm dark:prose-invert max-w-none break-words overflow-y-auto contract-doc-editor"
+                  style={{ minHeight: '320px', maxHeight: 'calc(100dvh - 320px)' }}
                   dangerouslySetInnerHTML={{
                     __html: contractConteudoParaHtml(
                       contrato.content || contrato.observacoes || '',

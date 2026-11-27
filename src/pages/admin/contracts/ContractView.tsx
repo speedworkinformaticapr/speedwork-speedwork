@@ -180,8 +180,9 @@ export default function ContractView() {
 
   const vigency = getVigencyStats()
 
+  // Mesma largura do formulário de edição (v0.0.567): ~80 rem
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={() => navigate(-1)}>
@@ -237,8 +238,13 @@ export default function ContractView() {
               <CardTitle>Conteúdo do Contrato</CardTitle>
             </CardHeader>
             <CardContent>
+              {/* ROLAGEM SÓ NO TEXTO: quem rola é a área do contrato, com altura
+                  controlada pela janela (calc(100dvh - 320px)), como o editor do
+                  formulário. Cabeçalho e botões da página permanecem visíveis.
+                  .contract-doc-editor = mesmo padrão visual do .docx (V6). */}
               <div
-                className="border rounded-lg p-8 bg-white min-h-[500px] prose max-w-none text-black"
+                className="border rounded-lg p-8 bg-white prose prose-sm max-w-none break-words overflow-y-auto contract-doc-editor"
+                style={{ minHeight: '480px', maxHeight: 'calc(100dvh - 320px)' }}
                 dangerouslySetInnerHTML={{
                   __html:
                     contractConteudoParaHtml(contract.content) || 'Nenhum conteúdo disponível.',
@@ -507,7 +513,7 @@ export default function ContractView() {
                         </p>
                       )}
                       <div
-                        className="text-sm bg-muted/50 p-3 rounded prose max-w-none"
+                        className="bg-muted/50 p-3 rounded prose prose-sm max-w-none contract-doc-editor"
                         dangerouslySetInnerHTML={{
                           __html: contractConteudoParaHtml(add.content || ''),
                         }}
