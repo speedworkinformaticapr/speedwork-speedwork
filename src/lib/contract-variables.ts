@@ -259,6 +259,124 @@ export const CONTRACT_VARIABLES: ContractVariable[] = [
     descricao: 'Rodadas de ajuste inclusas',
     exemplo: CONTRATO_PADROES.rodadas_ajuste,
   },
+  // SLA não crítico (sla_types via contratos.sla_id)
+  {
+    chave: 'sla_resolucao_nao_critico',
+    grupo: 'Plano e limites',
+    descricao: 'Prazo de resolução de incidente NÃO crítico (dias úteis)',
+    exemplo: CONTRATO_PADROES.sla_resolucao_nao_critico_dias,
+  },
+  // LGPD — encarregados (DPO) e região dos suboperadores (Anexo II)
+  {
+    chave: 'dpo_nome_contratada',
+    grupo: 'LGPD (Anexo II)',
+    descricao: 'Encarregado (DPO) da CONTRATADA',
+    exemplo: CONTRATADA.representante,
+  },
+  {
+    chave: 'dpo_nome',
+    grupo: 'LGPD (Anexo II)',
+    descricao: 'Encarregado (DPO) da CONTRATANTE',
+    exemplo: 'Ana de Oliveira',
+  },
+  {
+    chave: 'dpo_email',
+    grupo: 'LGPD (Anexo II)',
+    descricao: 'E-mail do encarregado (DPO) da CONTRATANTE',
+    exemplo: 'dpo@cliente.com.br',
+  },
+  {
+    chave: 'foro_regiao',
+    grupo: 'LGPD (Anexo II)',
+    descricao: 'Região de armazenamento dos suboperadores (usada 4x)',
+    exemplo: 'São Paulo, SP, Brasil',
+  },
+  // Serviços opcionais de conteúdo (Anexo I, item 7.9)
+  {
+    chave: 'valor_conteudo_curto',
+    grupo: 'Valores de conteúdo (Anexo I)',
+    descricao: 'Texto/artigo/post até 1.000 caracteres (R$)',
+    exemplo: '80,00',
+  },
+  {
+    chave: 'valor_conteudo_longo',
+    grupo: 'Valores de conteúdo (Anexo I)',
+    descricao: 'Texto/artigo/post acima de 1.000 caracteres (R$)',
+    exemplo: '150,00',
+  },
+  {
+    chave: 'valor_conteudo_imagem',
+    grupo: 'Valores de conteúdo (Anexo I)',
+    descricao: 'Imagem ou peça gráfica (R$)',
+    exemplo: '60,00',
+  },
+  {
+    chave: 'valor_conteudo_video_curto',
+    grupo: 'Valores de conteúdo (Anexo I)',
+    descricao: 'Vídeo de até 60 segundos, com roteiro e edição (R$)',
+    exemplo: '400,00',
+  },
+  {
+    chave: 'valor_conteudo_video_longo',
+    grupo: 'Valores de conteúdo (Anexo I)',
+    descricao: 'Vídeo acima de 60 segundos (R$)',
+    exemplo: '750,00',
+  },
+  {
+    chave: 'valor_conteudo_audio',
+    grupo: 'Valores de conteúdo (Anexo I)',
+    descricao: 'Áudio ou locução de até 60 segundos (R$)',
+    exemplo: '120,00',
+  },
+  {
+    chave: 'valor_pacote_pecas',
+    grupo: 'Valores de conteúdo (Anexo I)',
+    descricao: 'Quantidade de peças do pacote mensal',
+    exemplo: '4',
+  },
+  {
+    chave: 'valor_conteudo_pacote',
+    grupo: 'Valores de conteúdo (Anexo I)',
+    descricao: 'Pacote mensal de gestão de conteúdo (R$)',
+    exemplo: '450,00',
+  },
+  // Módulos adicionais (Anexo III, item 5)
+  {
+    chave: 'valor_modulo_empresarial',
+    grupo: 'Valores de módulos (Anexo III)',
+    descricao: 'Módulo Gestão Empresarial (R$/mês)',
+    exemplo: '290,00',
+  },
+  {
+    chave: 'valor_modulo_financeira',
+    grupo: 'Valores de módulos (Anexo III)',
+    descricao: 'Módulo Gestão Básica Financeira (R$/mês)',
+    exemplo: '190,00',
+  },
+  {
+    chave: 'valor_modulo_operacional',
+    grupo: 'Valores de módulos (Anexo III)',
+    descricao: 'Módulo Controle Operacional (R$/mês)',
+    exemplo: '170,00',
+  },
+  {
+    chave: 'valor_modulo_estoque',
+    grupo: 'Valores de módulos (Anexo III)',
+    descricao: 'Módulo Gestão Básica de Estoque (R$/mês)',
+    exemplo: '210,00',
+  },
+  {
+    chave: 'valor_modulo_fiscal',
+    grupo: 'Valores de módulos (Anexo III)',
+    descricao: 'Módulo Gestão de Documentos Fiscais (R$/mês)',
+    exemplo: '230,00',
+  },
+  {
+    chave: 'valor_modulo_pcp',
+    grupo: 'Valores de módulos (Anexo III)',
+    descricao: 'Módulo Gestão do PCP (R$/mês)',
+    exemplo: '350,00',
+  },
   // Blocos compostos
   {
     chave: 'bloco_assinaturas',

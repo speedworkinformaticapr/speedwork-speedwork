@@ -67,6 +67,42 @@ export interface ContractDocData {
   data_fim?: string | null
   reajuste_date?: string | null
   plano?: PlanLimits | null
+  /** SLA (sla_types via contratos.sla_id) — prazos numéricos em horas/dias. */
+  sla_resposta_horas?: string | null
+  sla_resolucao_horas?: string | null
+  sla_resolucao_nao_critico?: string | null
+  /** Encarregados pelo tratamento de dados (Anexo II, item 7). */
+  dpo_nome_contratada?: string | null
+  dpo_nome?: string | null
+  dpo_email?: string | null
+  /** Região de armazenamento dos suboperadores (Anexo II, item 5). */
+  foro_regiao?: string | null
+  /** Preços dos serviços opcionais de conteúdo (Anexo I, item 7.9). */
+  valores_conteudo?: ValoresConteudo | null
+  /** Preços mensais dos módulos adicionais (Anexo III, item 5). */
+  valores_modulo?: ValoresModulo | null
+}
+
+/** Preços dos serviços opcionais de produção de conteúdo (Anexo I, item 7.9). */
+export interface ValoresConteudo {
+  curto?: string | number | null
+  longo?: string | number | null
+  imagem?: string | number | null
+  video_curto?: string | number | null
+  video_longo?: string | number | null
+  audio?: string | number | null
+  pacote?: string | number | null
+  pacote_pecas?: string | number | null
+}
+
+/** Preços mensais dos módulos do Anexo III (item 5). */
+export interface ValoresModulo {
+  empresarial?: string | number | null
+  financeira?: string | number | null
+  operacional?: string | number | null
+  estoque?: string | number | null
+  fiscal?: string | number | null
+  pcp?: string | number | null
 }
 
 /** Valor monetário em R$ (pt-BR). */
@@ -127,6 +163,22 @@ function blocoAssinaturasTexto(data: ContractDocData): string {
   return linhas.filter((l) => l !== undefined).join('\n')
 }
 
+/** Número em pt-BR com 2 casas, para os "R$ {{...}}" do modelo. */
+function moeda(valor: string | number | null | undefined): string | null {
+  if (valor == null || String(valor).trim() === '') return null
+  if (typeof valor === 'number')
+    return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return String(valor).trim()
+}
+
+/** Só aceita prazos numéricos ("8", "8,5"): sla_types pode trazer texto livre
+ * ("Variável por prioridade"), que não serve no meio da frase do contrato. */
+function numOuNull(valor: string | number | null | undefined): string | null {
+  if (valor == null) return null
+  const s = String(valor).trim()
+  return /^\d+([.,]\d+)?$/.test(s) ? s : null
+}
+
 /**
  * Substitui os {{placeholders}} do modelo V6 pelos dados do contrato.
  * Com negrito=true (gerador do formulário), os valores variáveis saem
@@ -172,8 +224,13 @@ export function fillPlaceholders(texto: string, data: ContractDocData, negrito =
     lim_ambientes: '1',
     lim_dominios: wrap(d(String(plano.max_domains ?? ''), '[a definir]')),
     lim_emails: wrap(d(String(plano.max_emails ?? ''), '[a definir]')),
-    sla_resposta: wrap(CONTRATO_PADROES.sla_resposta_horas),
-    sla_resolucao: wrap(CONTRATO_PADROES.sla_resolucao_horas),
+    sla_resposta: wrap(d(numOuNull(data.sla_resposta_horas), CONTRATO_PADROES.sla_resposta_horas)),
+    sla_resolucao: wrap(
+      d(numOuNull(data.sla_resolucao_horas), CONTRATO_PADROES.sla_resolucao_horas),
+    ),
+    sla_resolucao_nao_critico: wrap(
+      d(numOuNull(data.sla_resolucao_nao_critico), '[preencher: prazo não crítico (dias úteis)]'),
+    ),
     franquia_chamados: wrap(CONTRATO_PADROES.franquia_chamados),
     franquia_horas: wrap(d(String(plano.support_hours ?? ''), CONTRATO_PADROES.manutencao_horas)),
     // Padrões fixos do modelo
@@ -184,6 +241,67 @@ export function fillPlaceholders(texto: string, data: ContractDocData, negrito =
     manutencao_horas: CONTRATO_PADROES.manutencao_horas,
     seguro: CONTRATO_PADROES.seguro_cibernetico,
     rodadas_ajuste: CONTRATO_PADROES.rodadas_ajuste,
+    // LGPD / Anexo II (DPOs e região dos suboperadores)
+    dpo_nome_contratada: d(data.dpo_nome_contratada, CONTRATADA.representante),
+    dpo_nome: wrap(d(data.dpo_nome, '[preencher: encarregado (DPO) da CONTRATANTE]')),
+    dpo_email: wrap(d(data.dpo_email, '[preencher: e-mail do encarregado (DPO) da CONTRATANTE]')),
+    foro_regiao: wrap(d(data.foro_regiao, '[preencher: região de armazenamento]')),
+    // Anexo I, item 7.9 — serviços opcionais de produção de conteúdo
+    valor_conteudo_curto: wrap(
+      d(moeda(data.valores_conteudo?.curto), '[preencher: valor do texto/post curto]'),
+    ),
+    valor_conteudo_longo: wrap(
+      d(moeda(data.valores_conteudo?.longo), '[preencher: valor do texto/post longo]'),
+    ),
+    valor_conteudo_imagem: wrap(
+      d(moeda(data.valores_conteudo?.imagem), '[preencher: valor da imagem/peça gráfica]'),
+    ),
+    valor_conteudo_video_curto: wrap(
+      d(moeda(data.valores_conteudo?.video_curto), '[preencher: valor do vídeo curto]'),
+    ),
+    valor_conteudo_video_longo: wrap(
+      d(moeda(data.valores_conteudo?.video_longo), '[preencher: valor do vídeo longo]'),
+    ),
+    valor_conteudo_audio: wrap(
+      d(moeda(data.valores_conteudo?.audio), '[preencher: valor do áudio/locução]'),
+    ),
+    valor_conteudo_pacote: wrap(
+      d(moeda(data.valores_conteudo?.pacote), '[preencher: valor do pacote mensal]'),
+    ),
+    valor_pacote_pecas: wrap(
+      d(moeda(data.valores_conteudo?.pacote_pecas), '[preencher: peças do pacote mensal]'),
+    ),
+    // Anexo III, item 5 — módulos adicionais
+    valor_modulo_empresarial: wrap(
+      d(moeda(data.valores_modulo?.empresarial), '[preencher: valor do módulo Gestão Empresarial]'),
+    ),
+    valor_modulo_financeira: wrap(
+      d(
+        moeda(data.valores_modulo?.financeira),
+        '[preencher: valor do módulo Gestão Básica Financeira]',
+      ),
+    ),
+    valor_modulo_operacional: wrap(
+      d(
+        moeda(data.valores_modulo?.operacional),
+        '[preencher: valor do módulo Controle Operacional]',
+      ),
+    ),
+    valor_modulo_estoque: wrap(
+      d(
+        moeda(data.valores_modulo?.estoque),
+        '[preencher: valor do módulo Gestão Básica de Estoque]',
+      ),
+    ),
+    valor_modulo_fiscal: wrap(
+      d(
+        moeda(data.valores_modulo?.fiscal),
+        '[preencher: valor do módulo Gestão de Documentos Fiscais]',
+      ),
+    ),
+    valor_modulo_pcp: wrap(
+      d(moeda(data.valores_modulo?.pcp), '[preencher: valor do módulo Gestão do PCP]'),
+    ),
     // Datas e bloco de assinaturas
     numero_contrato: d(data.numero_contrato, '[número do contrato]'),
     data_inicio: DATA_BR(data.data_inicio),
