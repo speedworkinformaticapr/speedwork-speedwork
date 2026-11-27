@@ -36,6 +36,10 @@ export interface RichTextEditorProps extends Omit<
   name?: string
   minHeight?: string
   variables?: { label: string; value: string }[]
+  /** Altura máxima da área de texto; com ela a rolagem passa a ser interna. */
+  maxHeight?: string
+  /** Classe extra para a área de texto (defaultEditorStyles do contrato). */
+  contentClassName?: string
 }
 
 export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorProps>(
@@ -49,6 +53,8 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
       disabled,
       name,
       minHeight,
+      maxHeight,
+      contentClassName,
       variables,
       ...props
     },
@@ -154,7 +160,9 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
           className,
         )}
       >
-        <div className="flex flex-wrap items-center gap-1 border-b bg-muted/30 p-1">
+        {/* Barra de formatação fixa: sticky dentro do próprio componente, no
+            topo da área de texto — a rolagem não a esconde. */}
+        <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1 border-b bg-muted/30 p-1 backdrop-blur-sm">
           <Button
             type="button"
             variant="ghost"
@@ -344,10 +352,11 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
           contentEditable={!disabled}
           onInput={handleInput}
           onBlur={handleInput}
-          style={{ minHeight: minHeight || undefined }}
+          style={{ minHeight: minHeight || undefined, maxHeight: maxHeight || undefined }}
           className={cn(
-            'p-3 min-h-[150px] outline-none prose prose-sm max-w-none dark:prose-invert break-words',
+            'p-3 min-h-[150px] outline-none prose prose-sm max-w-none dark:prose-invert break-words overflow-y-auto',
             disabled && 'opacity-50 cursor-not-allowed bg-muted',
+            contentClassName,
           )}
           {...props}
         />

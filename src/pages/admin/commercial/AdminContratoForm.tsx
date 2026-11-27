@@ -534,7 +534,7 @@ export default function AdminContratoForm() {
       statusAtual === 'ativo')
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6">
       <div className="flex items-center gap-4 mb-6">
         <Button variant="ghost" onClick={() => navigate(-1)}>
           <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
@@ -982,7 +982,7 @@ export default function AdminContratoForm() {
           </div>
         </TabsContent>
 
-        <TabsContent value="contrato" className="space-y-4 bg-card p-6 border rounded-xl">
+        <TabsContent value="contrato" className="space-y-4 bg-card p-4 md:p-6 border rounded-xl">
           <div className="flex flex-wrap items-center gap-2">
             <Button type="button" onClick={handleGerar} disabled={gerando}>
               <FileText className="w-4 h-4 mr-2" />
@@ -1000,13 +1000,18 @@ export default function AdminContratoForm() {
             formulário em negrito. Ajuste manualmente pelo editor (negrito, itálico, listas) antes
             de salvar.
           </p>
+          {/* ROLAGEM SÓ NO TEXTO: quem rola é a área do contrato (maxHeight no
+              editor). A barra de botões é sticky no topo do editor e não é
+              escondida pela rolagem; o restante da página permanece visível. */}
           <RichTextEditor
             value={content}
             onChange={(v) => {
               setContent(v)
               setContentEditada(true)
             }}
-            minHeight="500px"
+            minHeight="480px"
+            maxHeight="calc(100dvh - 320px)"
+            contentClassName="contract-doc-editor"
             aiContext="Cláusulas contratuais e anexos de um contrato de serviço Speedwork"
           />
           <div className="space-y-2">
@@ -1014,6 +1019,8 @@ export default function AdminContratoForm() {
             <RichTextEditor
               value={form.observacoes || ''}
               onChange={(v) => setForm({ ...form, observacoes: v })}
+              minHeight="160px"
+              maxHeight="240px"
               withAi
               aiContext="Termos contratuais adicionais e observações para um contrato de serviço"
             />

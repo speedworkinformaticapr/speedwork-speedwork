@@ -166,6 +166,32 @@
   main h1.text-3xl {
     @apply text-primary tracking-tight !important;
   }
+
+  /* Editor de contrato: mesmo padrão visual do .docx do modelo SGC4WEB - V6
+     (contract-docx.ts/docx-style.ts): Segoe UI 11pt, cor #1F2937, parágrafos
+     justificados com line-height 1,5. Alinhamento declarado no HTML (center/
+     right) e outros estilos inline do texto colado continuam valendo. */
+  .contract-doc-editor {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.5;
+    color: #1f2937;
+  }
+  .contract-doc-editor p,
+  .contract-doc-editor li {
+    text-align: justify;
+  }
+  .contract-doc-editor h1 {
+    text-align: center;
+    font-size: 14pt;
+    font-weight: bold;
+    margin-top: 18px;
+  }
+  .contract-doc-editor h2 {
+    font-size: 12.5pt;
+    font-weight: bold;
+    margin-top: 20px;
+  }
 }
 
 @media print {
