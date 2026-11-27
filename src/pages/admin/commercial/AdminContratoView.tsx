@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Progress } from '@/components/ui/progress'
+import { SIGNER_ROLES } from '@/lib/contract-signers'
 
 export default function AdminContratoView() {
   const { id } = useParams()
@@ -400,9 +401,11 @@ export default function AdminContratoView() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Contratante">Contratante</SelectItem>
-                  <SelectItem value="Contratado">Contratado</SelectItem>
-                  <SelectItem value="Testemunha">Testemunha</SelectItem>
+                  {SIGNER_ROLES.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {r}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

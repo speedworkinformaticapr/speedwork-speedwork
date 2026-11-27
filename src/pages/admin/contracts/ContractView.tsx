@@ -44,6 +44,7 @@ import {
   Plus,
   Trash2,
 } from 'lucide-react'
+import { SIGNER_ROLES } from '@/lib/contract-signers'
 
 export default function ContractView() {
   const { id } = useParams()
@@ -352,9 +353,11 @@ export default function ContractView() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Contratante">Contratante</SelectItem>
-                        <SelectItem value="Contratado">Contratado</SelectItem>
-                        <SelectItem value="Testemunha">Testemunha</SelectItem>
+                        {SIGNER_ROLES.map((r) => (
+                          <SelectItem key={r} value={r}>
+                            {r}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>

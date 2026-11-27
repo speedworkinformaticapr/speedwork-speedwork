@@ -3,6 +3,15 @@
 // contract_signatories: ela não existe no banco.
 import { supabase } from '@/lib/supabase/client'
 
+/** Papéis disponíveis no seletor de signatário (pedido do Iverson). */
+export const SIGNER_ROLES = [
+  'Contratante',
+  'Contratado',
+  'Testemunha',
+  'Testemunha Contratante',
+  'Testemunha Contratada',
+] as const
+
 export interface SignerRow {
   id: string
   profile_id: string

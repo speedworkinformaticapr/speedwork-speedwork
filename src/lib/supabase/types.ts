@@ -1415,6 +1415,7 @@ export type Database = {
           conta_id: string | null
           content: string | null
           created_at: string | null
+          desconto_adicional: number | null
           data_cancelamento: string | null
           data_fim: string | null
           data_inicio: string | null
@@ -1451,6 +1452,7 @@ export type Database = {
           conta_id?: string | null
           content?: string | null
           created_at?: string | null
+          desconto_adicional?: number | null
           data_cancelamento?: string | null
           data_fim?: string | null
           data_inicio?: string | null
@@ -1487,6 +1489,7 @@ export type Database = {
           conta_id?: string | null
           content?: string | null
           created_at?: string | null
+          desconto_adicional?: number | null
           data_cancelamento?: string | null
           data_fim?: string | null
           data_inicio?: string | null

@@ -39,7 +39,7 @@ import {
   montarContractDocData,
   type ClienteDocInfo,
 } from '@/lib/contract-form-doc'
-import { fetchSigners, saveSigners, type SignerRow } from '@/lib/contract-signers'
+import { fetchSigners, saveSigners, SIGNER_ROLES, type SignerRow } from '@/lib/contract-signers'
 import { maskDocument } from '@/lib/cpf-cnpj'
 
 export default function AdminContratoForm() {
@@ -60,6 +60,7 @@ export default function AdminContratoForm() {
     data_fim: '',
     duracao_ciclo: 'mensal',
     valor_ciclo: 0,
+    desconto_adicional: 0,
     renovacao_automatica: true,
     cliente_representante_nome: '',
     cliente_representante_cpf: '',
@@ -84,6 +85,8 @@ export default function AdminContratoForm() {
   const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [signatarios, setSignatarios] = useState<SignerRow[]>([])
   const [novoSig, setNovoSig] = useState({ profile_id: '', role: 'Contratante' })
+  // % Desconto Adicional: substitui o campo de valor na guia Faturamento.
+  const [descontoPercentual, setDescontoPercentual] = useState(0)
   // id do contrato em edição — passa a valer também quando um contrato novo é
   // salvo na hora (guia Signatários), sem depender do parâmetro da rota.
   const [contractId, setContractId] = useState<string | null>(
@@ -131,7 +134,9 @@ export default function AdminContratoForm() {
           .single()
           .then(({ data }) => {
             if (!data) return
-            setForm((prev) => ({ ...prev, ...data }))
+            const { desconto_adicional: _desconto, ...resto } = data
+            setForm((prev) => ({ ...prev, ...resto }))
+            setDescontoPercentual(Number(_desconto ?? 0))
             setContent(data.content || '')
             // Valor salvo no banco prevalece sobre a soma automática dos serviços.
             if (data.valor_ciclo) setValorManual(true)
@@ -171,17 +176,19 @@ export default function AdminContratoForm() {
     }
   }
 
-  // Valor do ciclo: soma automática dos serviços selecionados conforme o ciclo
-  // (mensal → monthly_value, semestral → semiannual_value, anual → annual_value,
-  // avulso → avulso_value). Editável manualmente — nesse caso o cálculo para.
+  /** Total dos serviços selecionados para o ciclo escolhido (mostrado na tela). */
+  const totalServicos = services
+    .filter((s) => selectedServices.includes(s.id))
+    .reduce((acc, s) => acc + valorCampoPorCiclo(s, form.duracao_ciclo), 0)
+
+  // Valor do ciclo = soma dos serviços do ciclo − % de desconto adicional.
+  // Gravado em valor_ciclo: as parcelas do financeiro já nascem com desconto.
   useEffect(() => {
     if (valorManual) return
-    const soma = services
-      .filter((s) => selectedServices.includes(s.id))
-      .reduce((acc, s) => acc + valorCampoPorCiclo(s, form.duracao_ciclo), 0)
-    setForm((prev) => ({ ...prev, valor_ciclo: soma }))
+    const valor = totalServicos * (1 - Math.min(Math.max(descontoPercentual, 0), 100) / 100)
+    setForm((prev) => ({ ...prev, valor_ciclo: Math.round(valor * 100) / 100 }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedServices, form.duracao_ciclo, services, valorManual])
+  }, [selectedServices, form.duracao_ciclo, services, descontoPercentual, valorManual])
 
   // Ao abrir um contrato salvo sem conteúdo persistido, gera o V6 na carga:
   // o editor já abre com o contrato formatado, sem precisar clicar em "Gerar".
@@ -326,6 +333,7 @@ export default function AdminContratoForm() {
       (contractId && (form as any).status ? (form as any).status : CONTRACT_STATUS.CRIADO)
     const payload: any = {
       ...form,
+      desconto_adicional: Math.min(Math.max(descontoPercentual, 0), 100),
       status: statusFinal,
       user_id: user?.id,
       responsavel_id,
@@ -536,41 +544,91 @@ export default function AdminContratoForm() {
       <Tabs defaultValue="cliente" className="w-full">
         <TabsList className="grid w-full grid-cols-5 mb-6">
           <TabsTrigger value="cliente">Cliente</TabsTrigger>
-          <TabsTrigger value="faturamento">Faturamento</TabsTrigger>
           <TabsTrigger value="servicos">Serviços</TabsTrigger>
+          <TabsTrigger value="faturamento">Faturamento</TabsTrigger>
           <TabsTrigger value="signatarios">Signatários</TabsTrigger>
           <TabsTrigger value="contrato">Contrato e Termos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="cliente" className="space-y-4 bg-card p-6 border rounded-xl">
-          <div className="space-y-2">
-            <Label>Cliente *</Label>
-            <div className="flex gap-2">
-              <Select
-                value={form.cliente_id}
-                onValueChange={(v) => setForm({ ...form, cliente_id: v })}
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Selecione o cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clientes.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => setNewClientOpen(true)}
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
+          <fieldset className="space-y-4">
+            <legend className="text-sm font-medium mb-2">Contratante</legend>
+            <div className="space-y-2">
+              <Label htmlFor="contrato-cliente">Cliente *</Label>
+              <div className="flex gap-2">
+                <Select
+                  value={form.cliente_id}
+                  onValueChange={(v) => setForm({ ...form, cliente_id: v })}
+                >
+                  <SelectTrigger id="contrato-cliente" className="flex-1">
+                    <SelectValue placeholder="Selecione o cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clientes.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Adicionar novo cliente"
+                  onClick={() => setNewClientOpen(true)}
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
-          </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="contrato-sla">SLA</Label>
+                <div className="flex gap-2">
+                  <Select
+                    value={form.sla_id || ''}
+                    onValueChange={(v) => setForm({ ...form, sla_id: v })}
+                  >
+                    <SelectTrigger id="contrato-sla" className="flex-1">
+                      <SelectValue placeholder="Selecione o SLA" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {slas.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Adicionar novo SLA"
+                    onClick={() => setNewSlaOpen(true)}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="contrato-renovacao">Renovação automática</Label>
+                <Select
+                  value={form.renovacao_automatica ? 'sim' : 'nao'}
+                  onValueChange={(v) => setForm({ ...form, renovacao_automatica: v === 'sim' })}
+                >
+                  <SelectTrigger id="contrato-renovacao">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sim">Sim</SelectItem>
+                    <SelectItem value="nao">Não</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </fieldset>
           <p className="text-xs text-muted-foreground">
             O conteúdo do documento é gerado a partir do modelo V6 da Speedwork (aba Contrato e
             Termos) — não é mais carregado de modelos antigos com placeholders. Os dados do
@@ -578,79 +636,121 @@ export default function AdminContratoForm() {
           </p>
         </TabsContent>
 
-        <TabsContent value="faturamento" className="space-y-4 bg-card p-6 border rounded-xl">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Data Início</Label>
-              <Input
-                type="date"
-                value={form.data_inicio}
-                onChange={(e) => setForm({ ...form, data_inicio: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Data Fim</Label>
-              <Input
-                type="date"
-                value={form.data_fim || ''}
-                onChange={(e) => setForm({ ...form, data_fim: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Duração do Ciclo</Label>
-              <Select
-                value={form.duracao_ciclo}
-                onValueChange={(v) => {
-                  setValorManual(false)
-                  setForm({ ...form, duracao_ciclo: v })
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="mensal">Mensal</SelectItem>
-                  <SelectItem value="trimestral">Trimestral</SelectItem>
-                  <SelectItem value="semestral">Semestral</SelectItem>
-                  <SelectItem value="anual">Anual</SelectItem>
-                  <SelectItem value="avulso">Avulso</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Valor do Ciclo (R$)</Label>
-                {valorManual && (
-                  <button
-                    type="button"
-                    className="text-xs text-muted-foreground underline hover:text-foreground"
-                    onClick={() => setValorManual(false)}
-                  >
-                    recalcular dos serviços
-                  </button>
-                )}
+        <TabsContent value="faturamento" className="space-y-6 bg-card p-6 border rounded-xl">
+          <fieldset className="space-y-4">
+            <legend className="text-sm font-medium mb-2">Vigência e ciclo</legend>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="contrato-data-inicio">Data Início</Label>
+                <Input
+                  id="contrato-data-inicio"
+                  type="date"
+                  value={form.data_inicio}
+                  onChange={(e) => setForm({ ...form, data_inicio: e.target.value })}
+                />
               </div>
-              <Input
-                value={formatCurrencyInput(form.valor_ciclo)}
-                onChange={(e) => {
-                  setValorManual(true)
-                  setForm({ ...form, valor_ciclo: parseCurrencyInput(e.target.value) })
-                }}
-              />
-              {!valorManual && (
-                <p className="text-xs text-muted-foreground">
-                  Soma automática dos serviços selecionados para o ciclo escolhido.
-                </p>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="contrato-data-fim">Data Fim</Label>
+                <Input
+                  id="contrato-data-fim"
+                  type="date"
+                  value={form.data_fim || ''}
+                  onChange={(e) => setForm({ ...form, data_fim: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="contrato-ciclo">Duração do Ciclo</Label>
+                <Select
+                  value={form.duracao_ciclo}
+                  onValueChange={(v) => {
+                    setValorManual(false)
+                    setForm({ ...form, duracao_ciclo: v })
+                  }}
+                >
+                  <SelectTrigger id="contrato-ciclo">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mensal">Mensal</SelectItem>
+                    <SelectItem value="trimestral">Trimestral</SelectItem>
+                    <SelectItem value="semestral">Semestral</SelectItem>
+                    <SelectItem value="anual">Anual</SelectItem>
+                    <SelectItem value="avulso">Avulso</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>Conta Financeira (DRE)</Label>
+          </fieldset>
+
+          <fieldset className="space-y-4">
+            <legend className="text-sm font-medium mb-2">Valores</legend>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="contrato-desconto">% Desconto Adicional</Label>
+                <Input
+                  id="contrato-desconto"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  value={descontoPercentual === 0 ? '' : descontoPercentual}
+                  placeholder="0"
+                  onChange={(e) => {
+                    const v = e.target.value === '' ? 0 : Number(e.target.value)
+                    setValorManual(false)
+                    setDescontoPercentual(Number.isNaN(v) ? 0 : v)
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Desconto aplicado sobre a soma dos serviços do ciclo.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Valor do Contrato (por ciclo)</Label>
+                <p className="text-2xl font-bold tabular-nums" aria-live="polite">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                    form.valor_ciclo,
+                  )}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {descontoPercentual > 0 ? (
+                    <>
+                      Total dos serviços ({formatCurrencyInput(totalServicos)}) −{' '}
+                      {descontoPercentual}% de desconto
+                    </>
+                  ) : (
+                    <>Soma dos serviços selecionados para o ciclo.</>
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="rounded-lg border bg-muted/20 p-3 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Total dos Serviços</p>
+                <p className="text-sm font-semibold tabular-nums">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                    totalServicos,
+                  )}
+                </p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Soma dos serviços selecionados conforme o ciclo. O valor do contrato (e das parcelas
+                do financeiro) é essa soma menos o % de desconto adicional.
+              </p>
+            </div>
+          </fieldset>
+
+          <fieldset className="space-y-4">
+            <legend className="text-sm font-medium mb-2">Financeiro</legend>
+            <div className="space-y-2 max-w-md">
+              <Label htmlFor="contrato-conta">Conta Financeira (DRE)</Label>
               <div className="flex gap-2">
                 <Select
                   value={form.conta_id || ''}
                   onValueChange={(v) => setForm({ ...form, conta_id: v })}
                 >
-                  <SelectTrigger className="flex-1">
+                  <SelectTrigger id="contrato-conta" className="flex-1">
                     <SelectValue placeholder="Selecione a conta" />
                   </SelectTrigger>
                   <SelectContent>
@@ -665,21 +765,23 @@ export default function AdminContratoForm() {
                   type="button"
                   variant="outline"
                   size="icon"
+                  aria-label="Adicionar nova conta financeira"
                   onClick={() => setNewContaOpen(true)}
                 >
                   <Plus className="w-4 h-4" />
                 </Button>
               </div>
             </div>
-          </div>
+          </fieldset>
         </TabsContent>
 
         <TabsContent value="servicos" className="space-y-4 bg-card p-6 border rounded-xl">
-          <div className="space-y-2">
-            <Label>Serviços Vinculados</Label>
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium mb-2">Serviços Vinculados</legend>
             <p className="text-sm text-muted-foreground">
               Selecione os serviços comerciais que fazem parte deste contrato. A ficha de limites do
-              plano (Anexo I) vem do serviço selecionado.
+              plano (Anexo I) vem do serviço selecionado. Os preços somados na guia Faturamento
+              seguem o ciclo escolhido lá.
             </p>
             <div className="border rounded-md divide-y max-h-[300px] overflow-y-auto">
               {services.length === 0 ? (
@@ -712,14 +814,27 @@ export default function AdminContratoForm() {
                       {new Intl.NumberFormat('pt-BR', {
                         style: 'currency',
                         currency: 'BRL',
-                      }).format(svc.monthly_value || 0)}
-                      /mês
+                      }).format(valorCampoPorCiclo(svc, form.duracao_ciclo))}
+                      /{form.duracao_ciclo}
                     </span>
                   </label>
                 ))
               )}
             </div>
-          </div>
+            {selectedServices.length > 0 && (
+              <p className="text-sm text-right tabular-nums">
+                {selectedServices.length} serviço(s) · Total:{' '}
+                <span className="font-semibold">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                    totalServicos,
+                  )}
+                </span>{' '}
+                <span className="text-xs text-muted-foreground">
+                  (ciclo {form.duracao_ciclo}, antes do desconto da guia Faturamento)
+                </span>
+              </p>
+            )}
+          </fieldset>
         </TabsContent>
 
         <TabsContent value="signatarios" className="space-y-4 bg-card p-6 border rounded-xl">
@@ -759,9 +874,11 @@ export default function AdminContratoForm() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Contratante">Contratante</SelectItem>
-                    <SelectItem value="Contratado">Contratado</SelectItem>
-                    <SelectItem value="Testemunha">Testemunha</SelectItem>
+                    {SIGNER_ROLES.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {r}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -775,7 +892,18 @@ export default function AdminContratoForm() {
                   <span className="text-xs font-medium text-muted-foreground">
                     Representa no contrato:
                   </span>
-                  <Badge variant="outline">{novoSig.role}</Badge>
+                  <Badge
+                    variant="outline"
+                    className={
+                      novoSig.role === 'Contratante'
+                        ? 'bg-blue-500/10 text-blue-600 border-blue-500/30'
+                        : novoSig.role === 'Contratado'
+                          ? 'bg-purple-500/10 text-purple-600 border-purple-500/30'
+                          : ''
+                    }
+                  >
+                    {novoSig.role}
+                  </Badge>
                 </div>
                 {novoSig.role === 'Contratante' && (
                   <div className="grid gap-2 sm:grid-cols-3">
