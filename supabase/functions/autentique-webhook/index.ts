@@ -7,14 +7,19 @@ import {
   isDocumentFinished,
   SIGNATURE_SIGNED_TYPES,
 } from '../_shared/autentique.ts'
+import { gerarMensalidadesParaContrato } from '../_shared/contract-financeiro.ts'
 
 /**
  * autentique-webhook
  * Rota pública. Autentica pelo header x-webhook-secret comparado com
  * autentique_webhook_secret em system_data.integrations.
  * Dedup por event_id em autentique_events. Em cada assinatura atualiza
- * contract_signers; em DOCUMENT_FINISHED baixa o PDF final, arquiva no bucket
- * 'contratos', grava contratos.signed_pdf_url + signed_at e ativa o contrato.
+ * contract_signers; em DOCUMENT_FINISHED do contrato principal:
+ *  1. baixa o PDF final e arquiva no bucket 'contratos';
+ *  2. status ASSINADO + signed_at + signed_pdf_url;
+ *  3. gera as mensalidades (financial_charges + financial_master_records) —
+ *     falha deixa o contrato em ASSINADO com log do erro;
+ *  4. com as parcelas gravadas, status FINANCEIRO.
  */
 
 Deno.serve(async (req) => {
@@ -140,8 +145,8 @@ Deno.serve(async (req) => {
       return json(200, { ok: true, handled: 'assinatura registrada' })
     }
 
-    // 6) DOCUMENT_FINISHED: arquiva o PDF assinado. No contrato principal, ativa
-    //    o contrato; nos termos, marca o termo como concluído.
+    // 6) DOCUMENT_FINISHED: arquiva o PDF assinado. No contrato principal, roda o
+    //    fluxo ASSINADO → mensalidades → FINANCEIRO; nos termos, marca concluído.
     if (isDocumentFinished(eventType)) {
       if (!contractId) return json(200, { ok: true, ignored: 'contrato não localizado' })
 
@@ -171,13 +176,31 @@ Deno.serve(async (req) => {
         .upload(path, bytes, { contentType: 'application/pdf', upsert: false })
       if (upErr) throw upErr
 
-      // bucket privado: grava o path interno (acesso futuro via Storage signed URL)
+      // Etapa 4 do fluxo: ASSINADO com PDF e data de assinatura.
       const { error: cErr } = await supabaseAdmin
         .from('contratos')
-        .update({ status: 'ativo', signed_at: new Date(), signed_pdf_url: path })
+        .update({ status: 'ASSINADO', signed_at: new Date(), signed_pdf_url: path })
         .eq('id', contractId)
       if (cErr) throw cErr
-      console.log(`autentique-webhook: contrato ${contractId} ativado, PDF ${path}`)
+      console.log(`autentique-webhook: contrato ${contractId} ASSINADO, PDF ${path}`)
+
+      // Etapa 5: gera as mensalidades (previsão de fluxo de caixa) e vira FINANCEIRO.
+      // Falha deixa o contrato em ASSINADO com log do erro — nunca silenciosamente.
+      try {
+        await gerarMensalidadesParaContrato(supabaseAdmin, contractId)
+        const { error: fErr } = await supabaseAdmin
+          .from('contratos')
+          .update({ status: 'FINANCEIRO' })
+          .eq('id', contractId)
+        if (fErr) throw fErr
+        console.log(`autentique-webhook: contrato ${contractId} FINANCEIRO (mensalidades geradas)`)
+      } catch (finErr: any) {
+        console.error(
+          `autentique-webhook: falha ao gerar mensalidades do contrato ${contractId}:`,
+          finErr?.message,
+        )
+      }
+
       return json(200, { ok: true, handled: 'DOCUMENT_FINISHED' })
     }
 

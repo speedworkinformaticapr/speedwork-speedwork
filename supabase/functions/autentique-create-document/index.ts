@@ -81,11 +81,16 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: authHeader } } },
     )
+    // Cliente com service role para gravar status/amarração e invocar send-email.
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    )
 
     // Contrato + cliente (CONTRATANTE)
     const { data: contrato, error: contratoError } = await supabase
       .from('contratos')
-      .select('id, numero_contrato, cliente_id, profiles:cliente_id(name, cpf_cnpj)')
+      .select('id, numero_contrato, cliente_id, profiles:cliente_id(name, email, cpf_cnpj)')
       .eq('id', contract_id)
       .single()
     if (contratoError || !contrato) {
@@ -122,48 +127,57 @@ Deno.serve(async (req) => {
     const contractUrl = `${Deno.env.get('SUPABASE_URL')}/rest/v1/contratos?id=eq.${contract_id}`
 
     // ===== Signatários na ordem CONTRATADA (1) → CONTRATANTE (2) =====
-    const signers: AutentiqueSignerInput[] = []
-
     // 1) CONTRATADA: dados de system_data.integrations (busca signatário por CPF/CNPJ
     //    para não duplicar cadastro na Autentique).
-    if (!signerName || !signerDoc) {
-      return new Response(
-        JSON.stringify({
-          error: 'Signatário da CONTRATADA não configurado (Configurações > Assinaturas)',
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
-    }
-    const existing = await findSignerByDocument(apiKey, signerDoc)
-    if (existing) {
-      signers.push({ id: existing.id, action: 'SIGN' })
-    } else {
-      signers.push({
-        action: 'SIGN',
-        name: signerName,
-        email: signerEmail,
-        docs: [{ number: cleanDoc(signerDoc) }],
-      })
+    const montarSigner = async (nome: string, email: string | undefined, doc: string) => {
+      if (doc) {
+        const existente = await findSignerByDocument(apiKey, doc)
+        if (existente) return { id: existente.id, action: 'SIGN' as const }
+        return { action: 'SIGN' as const, name: nome, email, docs: [{ number: doc }] }
+      }
+      // Sem CPF/CNPJ: cria signatário novo identificado por nome + e-mail.
+      return { action: 'SIGN' as const, name: nome, email }
     }
 
-    // 2) CONTRATANTE: cliente do contrato (profiles via cliente_id).
-    const clienteDoc = cleanDoc(cliente?.cpf_cnpj)
-    if (!cliente?.name || !clienteDoc) {
-      return new Response(
-        JSON.stringify({ error: 'Cliente sem nome ou CPF/CNPJ para assinar (CONTRATANTE)' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
+    // Signatários do contrato: a fonte é a guia Signatários (contract_signers,
+    // com profiles). Fallback (legado): CONTRATADA de system_data + CONTRATANTE.
+    const { data: dbSigners } = await supabase
+      .from('contract_signers')
+      .select('id, order_index, profiles(name, email, cpf_cnpj)')
+      .eq('contract_id', contract_id)
+      .order('order_index')
+
+    const signers: AutentiqueSignerInput[] = []
+    if ((dbSigners || []).length > 0) {
+      for (const row of dbSigners || []) {
+        const p = (row as any).profiles as {
+          name?: string
+          email?: string
+          cpf_cnpj?: string
+        } | null
+        if (!p?.name) continue
+        signers.push(await montarSigner(p.name, p.email, cleanDoc(p.cpf_cnpj)))
+      }
     }
-    const existingCliente = await findSignerByDocument(apiKey, clienteDoc)
-    if (existingCliente) {
-      signers.push({ id: existingCliente.id, action: 'SIGN' })
-    } else {
-      signers.push({
-        action: 'SIGN',
-        name: cliente.name,
-        email: (cliente as any).email,
-        docs: [{ number: clienteDoc }],
-      })
+    if (signers.length === 0) {
+      // Fallback legado — comportamento anterior à guia Signatários.
+      if (!signerName || !signerDoc) {
+        return new Response(
+          JSON.stringify({
+            error: 'Signatário da CONTRATADA não configurado (Configurações > Assinaturas)',
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
+      }
+      signers.push(await montarSigner(signerName, signerEmail, signerDoc))
+      const clienteDoc = cleanDoc(cliente?.cpf_cnpj)
+      if (!cliente?.name || !clienteDoc) {
+        return new Response(
+          JSON.stringify({ error: 'Cliente sem nome ou CPF/CNPJ para assinar (CONTRATANTE)' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
+      }
+      signers.push(await montarSigner(cliente.name, (cliente as any).email, clienteDoc))
     }
 
     // ===== Criação do documento =====
@@ -201,29 +215,69 @@ Deno.serve(async (req) => {
     // cancelamento / termo_responsabilidade: contract_cancel_documents (Rodada 2)
     if (document_type === 'contrato') {
       const updates = doc.signatures || []
-      // Persiste public_id/signature_id nas linhas de signatários em ordem.
-      const { data: dbSigners } = await supabase
+      // Persiste public_id/signature_id nas linhas de signatários em ordem
+      // (com o perfil, para o envio dos e-mails de assinatura).
+      const { data: rows } = await supabaseAdmin
         .from('contract_signers')
-        .select('id, order_index')
+        .select('id, order_index, profile_id, profiles(name, email)')
         .eq('contract_id', contract_id)
         .order('order_index')
 
-      for (let i = 0; i < (dbSigners || []).length; i++) {
+      for (let i = 0; i < (rows || []).length; i++) {
         const sig = updates[i]
-        await supabase
+        await supabaseAdmin
           .from('contract_signers')
           .update({
             autentique_public_id: doc.publicId,
             autentique_signature_id: sig?.publicId || null,
             signature_url: sig?.link?.shortLink || null,
           })
-          .eq('id', (dbSigners || [])[i].id)
+          .eq('id', (rows || [])[i].id)
       }
 
-      await supabase
+      // Etapas 2–3 do fluxo: amarração para o webhook + status ASSINATURAS.
+      await supabaseAdmin
         .from('contratos')
-        .update({ autentique_public_id: doc.publicId })
+        .update({
+          autentique_public_id: doc.publicId,
+          pending_autentique_docs: {
+            docs: [
+              {
+                public_id: doc.publicId,
+                name: doc.name,
+                document_type,
+                created_at: new Date().toISOString(),
+              },
+            ],
+          },
+          status: 'ASSINATURAS',
+        })
         .eq('id', contract_id)
+
+      // E-mails com o link de assinatura para cada signatário da guia
+      // (falha de envio não desfaz a coleta — loga e segue).
+      const emailsFalha: string[] = []
+      for (let i = 0; i < (rows || []).length; i++) {
+        const link = updates[i]?.link?.shortLink
+        if (!link) continue
+        const row: any = (rows || [])[i] as any
+        const p = row.profiles || {}
+        const email =
+          p.email || (row.profile_id === (cliente as any)?.id ? (cliente as any)?.email : null)
+        if (!email) continue
+        const { error: sendErr } = await supabaseAdmin.functions.invoke('send-email', {
+          body: {
+            type: 'custom',
+            email,
+            subject: `Assinatura pendente — ${doc.name}`,
+            html: `<p>Olá <strong>${p.name || ''}</strong>,</p><p>Você tem um documento para assinar: <strong>${doc.name}</strong>.</p><p>Acesse o link da Autentique para assinar:</p><p style="text-align:center;margin:24px 0;"><a href="${link}" style="background-color:#4f46e5;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Assinar documento</a></p><p>Se o botão não funcionar, copie e cole este endereço no navegador:<br>${link}</p>`,
+          },
+        })
+        if (sendErr) emailsFalha.push(email)
+      }
+      if (emailsFalha.length) {
+        console.error('autentique-create-document: falha ao enviar e-mails para', emailsFalha)
+      }
     } else {
       // Registro do termo de cancelamento/responsabilidade, dedup por (contract_id, type).
       await supabase.from('contract_cancel_documents').upsert(

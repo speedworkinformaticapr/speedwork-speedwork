@@ -23,7 +23,13 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from '@/hooks/use-toast'
 import { formatCurrencyInput, parseCurrencyInput } from '@/lib/utils'
-import { ArrowLeft, FileDown, Plus, Trash2, FileText } from 'lucide-react'
+import { ArrowLeft, FileDown, Plus, Trash2, FileText, PenLine } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import {
+  CONTRACT_STATUS,
+  CONTRACT_STATUS_LABEL,
+  contractStatusBadgeClass,
+} from '@/lib/contract-status'
 import { contratoV6Texto } from '@/lib/contract-docx'
 import { downloadContractDocx } from '@/lib/contract-docx-download'
 import { imprimirContrato } from '@/lib/contract-print'
@@ -77,6 +83,14 @@ export default function AdminContratoForm() {
   const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [signatarios, setSignatarios] = useState<SignerRow[]>([])
   const [novoSig, setNovoSig] = useState({ profile_id: '', role: 'Contratante' })
+  // id do contrato em edição — passa a valer também quando um contrato novo é
+  // salvo na hora (guia Signatários), sem depender do parâmetro da rota.
+  const [contractId, setContractId] = useState<string | null>(
+    id && /^[0-9a-f-]{36}$/i.test(id) ? id : null,
+  )
+  // Valor do ciclo: soma automática dos serviços; vira manual quando o usuário digita.
+  const [valorManual, setValorManual] = useState(false)
+  const [coletando, setColetando] = useState(false)
 
   const [gerando, setGerando] = useState(false)
   const [clienteInfo, setClienteInfo] = useState<ClienteDocInfo | null>(null)
@@ -118,6 +132,8 @@ export default function AdminContratoForm() {
             if (!data) return
             setForm((prev) => ({ ...prev, ...data }))
             setContent(data.content || '')
+            // Valor salvo no banco prevalece sobre a soma automática dos serviços.
+            if (data.valor_ciclo) setValorManual(true)
           })
         supabase
           .from('contract_services')
@@ -139,6 +155,49 @@ export default function AdminContratoForm() {
     }
     fetchClienteDocInfo(form.cliente_id).then(setClienteInfo)
   }, [form.cliente_id])
+
+  /** Campo de preço do serviço conforme o ciclo escolhido. */
+  const valorCampoPorCiclo = (svc: any, ciclo: string): number => {
+    switch (ciclo) {
+      case 'semestral':
+        return Number(svc.semiannual_value ?? 0)
+      case 'anual':
+        return Number(svc.annual_value ?? 0)
+      case 'avulso':
+        return Number(svc.avulso_value ?? 0)
+      default:
+        return Number(svc.monthly_value ?? 0)
+    }
+  }
+
+  // Valor do ciclo: soma automática dos serviços selecionados conforme o ciclo
+  // (mensal → monthly_value, semestral → semiannual_value, anual → annual_value,
+  // avulso → avulso_value). Editável manualmente — nesse caso o cálculo para.
+  useEffect(() => {
+    if (valorManual) return
+    const soma = services
+      .filter((s) => selectedServices.includes(s.id))
+      .reduce((acc, s) => acc + valorCampoPorCiclo(s, form.duracao_ciclo), 0)
+    setForm((prev) => ({ ...prev, valor_ciclo: soma }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedServices, form.duracao_ciclo, services, valorManual])
+
+  // Ao abrir um contrato salvo sem conteúdo persistido, gera o V6 na carga:
+  // o editor já abre com o contrato formatado, sem precisar clicar em "Gerar".
+  useEffect(() => {
+    if (!id || content || gerando || !form.cliente_id) return
+    let ativo = true
+    gerarConteudoV6().then((texto) => {
+      if (ativo && texto) {
+        setContent(texto)
+        setContentEditada(false)
+      }
+    })
+    return () => {
+      ativo = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, content, form.cliente_id])
 
   /**
    * Gera o conteúdo V6 (18 cláusulas + Anexos I/II/III) com os valores do
@@ -187,12 +246,13 @@ export default function AdminContratoForm() {
     })
   }
 
-  const handleGerarSalvar = async (status: string) => {
+  /** Salva mantendo o status atual (CRIADO quando o contrato é novo). */
+  const handleSalvarAtual = async () => {
     const texto = contentEditada ? content : await gerarConteudoV6()
     if (!texto) return
     setContent(texto)
     setContentEditada(true)
-    await handleSave(status, texto)
+    await handleSave(undefined, texto)
   }
 
   const handleDownloadDocx = async () => {
@@ -216,9 +276,36 @@ export default function AdminContratoForm() {
     imprimirContrato(`Contrato ${numero}`, content)
   }
 
-  const handleSave = async (status: string, conteudoFinal?: string) => {
-    if (!form.cliente_id)
-      return toast({ title: 'Erro', description: 'Cliente obrigatório', variant: 'destructive' })
+  /** Grava contract_services e contract_signers do formulário (tabela REAL contract_signers). */
+  const sincronizarServicosESignatarios = async (cid: string) => {
+    await supabase.from('contract_services').delete().eq('contract_id', cid)
+    if (selectedServices.length > 0) {
+      await supabase.from('contract_services').insert(
+        selectedServices.map((serviceId) => ({
+          contract_id: cid,
+          service_id: serviceId,
+        })),
+      )
+    }
+    await saveSigners(
+      cid,
+      signatarios.map((s) => ({ profile_id: s.profile_id, role: s.role })),
+    )
+  }
+
+  /**
+   * Persiste o contrato e devolve o id. Contrato novo nasce com status CRIADO
+   * (etapa 1 do fluxo, CONTRACT_STATUS); em edição mantém o status gravado,
+   * salvo quando um status explícito é passado.
+   */
+  const persistContrato = async (
+    statusParam?: string,
+    conteudoFinal?: string,
+  ): Promise<string | null> => {
+    if (!form.cliente_id) {
+      toast({ title: 'Erro', description: 'Cliente obrigatório', variant: 'destructive' })
+      return null
+    }
 
     let responsavel_id = user?.id
     if (user?.id) {
@@ -233,9 +320,12 @@ export default function AdminContratoForm() {
     }
 
     const numeroContrato = (form as any).numero_contrato || `CTR-${Date.now()}`
+    const statusFinal =
+      statusParam ||
+      (contractId && (form as any).status ? (form as any).status : CONTRACT_STATUS.CRIADO)
     const payload: any = {
       ...form,
-      status,
+      status: statusFinal,
       user_id: user?.id,
       responsavel_id,
       numero_contrato: numeroContrato,
@@ -249,45 +339,72 @@ export default function AdminContratoForm() {
     if (!payload.cliente_representante_cpf) payload.cliente_representante_cpf = null
     if (!payload.cliente_email_notificacao) payload.cliente_email_notificacao = null
 
-    let contractId = id
-    if (id) {
-      await supabase.from('contratos').update(payload).eq('id', id)
-    } else {
-      const { data: newContract, error } = await supabase
-        .from('contratos')
-        .insert([payload])
-        .select('id')
-        .single()
+    if (contractId) {
+      const { error } = await supabase.from('contratos').update(payload).eq('id', contractId)
       if (error) {
         toast({
           title: 'Erro ao salvar contrato',
           description: error.message,
           variant: 'destructive',
         })
-        return
+        return null
       }
-      contractId = newContract?.id
+      await sincronizarServicosESignatarios(contractId)
+      return contractId
     }
 
-    if (contractId) {
-      await supabase.from('contract_services').delete().eq('contract_id', contractId)
-      if (selectedServices.length > 0) {
-        await supabase.from('contract_services').insert(
-          selectedServices.map((serviceId) => ({
-            contract_id: contractId,
-            service_id: serviceId,
-          })),
-        )
-      }
-      // Signatários na tabela REAL contract_signers (não contract_signatories).
-      await saveSigners(
-        contractId,
-        signatarios.map((s) => ({ profile_id: s.profile_id, role: s.role })),
-      )
+    const { data: newContract, error } = await supabase
+      .from('contratos')
+      .insert([payload])
+      .select('id')
+      .single()
+    if (error || !newContract) {
+      toast({
+        title: 'Erro ao salvar contrato',
+        description: error?.message,
+        variant: 'destructive',
+      })
+      return null
     }
+    const novoId = newContract.id
+    setContractId(novoId)
+    await sincronizarServicosESignatarios(novoId)
+    return novoId
+  }
 
+  const handleSave = async (statusParam?: string, conteudoFinal?: string) => {
+    const salvoId = await persistContrato(statusParam, conteudoFinal)
+    if (!salvoId) return
     toast({ title: 'Contrato salvo com sucesso' })
     navigate('/admin/commercial/contratos')
+  }
+
+  /** Etapa 2 do fluxo: envia o contrato para assinatura na Autentique. */
+  const handleColetarAssinaturas = async () => {
+    setColetando(true)
+    try {
+      const texto = contentEditada || content ? content : await gerarConteudoV6()
+      if (!texto) return
+      const salvoId = await persistContrato(CONTRACT_STATUS.CRIADO, texto)
+      if (!salvoId) return
+      const { error } = await supabase.functions.invoke('autentique-create-document', {
+        body: { contract_id: salvoId, document_type: 'contrato', content: texto },
+      })
+      if (error) throw new Error(error.message)
+      toast({
+        title: 'Coleta de assinaturas iniciada',
+        description: 'Os signatários receberão o e-mail com o link de assinatura da Autentique.',
+      })
+      navigate('/admin/commercial/contratos')
+    } catch (e: any) {
+      toast({
+        title: 'Erro ao coletar assinaturas',
+        description: e?.message || 'Tente novamente',
+        variant: 'destructive',
+      })
+    } finally {
+      setColetando(false)
+    }
   }
 
   const handleQuickAddClient = async () => {
@@ -338,13 +455,13 @@ export default function AdminContratoForm() {
     }
   }
 
-  const addSignatario = () => {
-    if (!novoSig.profile_id || !id) return
+  const addSignatario = async () => {
+    if (!novoSig.profile_id) return
     if (signatarios.some((s) => s.profile_id === novoSig.profile_id)) {
       toast({ title: 'Signatário já adicionado', variant: 'destructive' })
       return
     }
-    setSignatarios([
+    const novaLista: SignerRow[] = [
       ...signatarios,
       {
         id: `novo-${signatarios.length}`,
@@ -354,20 +471,50 @@ export default function AdminContratoForm() {
         status: 'Pendente',
         profiles: null,
       },
-    ])
+    ]
+    setSignatarios(novaLista)
     setNovoSig({ profile_id: '', role: 'Contratante' })
-    toast({
-      title: 'Signatário adicionado à lista',
-      description: 'Salve o contrato para persistir.',
-    })
+    // Contrato novo: salva na hora (status CRIADO) para persistir o signatário.
+    if (!contractId) {
+      const salvoId = await persistContrato(CONTRACT_STATUS.CRIADO)
+      if (salvoId) {
+        toast({
+          title: 'Contrato criado (status CRIADO) e signatário salvo',
+          description: 'Continue preenchendo o contrato e salve ao final.',
+        })
+      }
+      return
+    }
+    await saveSigners(
+      contractId,
+      novaLista.map((s) => ({ profile_id: s.profile_id, role: s.role })),
+    )
   }
 
-  const removeSignatario = (pid: string) => {
-    setSignatarios(signatarios.filter((s) => s.profile_id !== pid))
+  const removeSignatario = async (pid: string) => {
+    const novaLista = signatarios.filter((s) => s.profile_id !== pid)
+    setSignatarios(novaLista)
+    if (contractId) {
+      await saveSigners(
+        contractId,
+        novaLista.map((s) => ({ profile_id: s.profile_id, role: s.role })),
+      )
+    }
   }
 
   const nomeSignatario = (s: SignerRow) =>
     s.profiles?.name || clientes.find((c) => c.id === s.profile_id)?.nome || '—'
+
+  const statusAtual = ((form as any).status as string | undefined) || null
+  // Botão Coletar Assinaturas: contrato com signatários, ainda não enviado
+  // (CRIADO) ou em status legado anterior ao fluxo.
+  const podeColetar =
+    signatarios.length > 0 &&
+    !!form.cliente_id &&
+    (!statusAtual ||
+      statusAtual === CONTRACT_STATUS.CRIADO ||
+      statusAtual === 'rascunho' ||
+      statusAtual === 'ativo')
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
@@ -375,7 +522,14 @@ export default function AdminContratoForm() {
         <Button variant="ghost" onClick={() => navigate(-1)}>
           <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
         </Button>
-        <h1 className="text-2xl font-bold">{id ? 'Editar Contrato' : 'Novo Contrato'}</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">{contractId ? 'Editar Contrato' : 'Novo Contrato'}</h1>
+          {statusAtual && (
+            <Badge className={contractStatusBadgeClass(statusAtual)}>
+              {CONTRACT_STATUS_LABEL[statusAtual] || statusAtual}
+            </Badge>
+          )}
+        </div>
       </div>
 
       <Tabs defaultValue="cliente" className="w-full">
@@ -488,7 +642,10 @@ export default function AdminContratoForm() {
               <Label>Duração do Ciclo</Label>
               <Select
                 value={form.duracao_ciclo}
-                onValueChange={(v) => setForm({ ...form, duracao_ciclo: v })}
+                onValueChange={(v) => {
+                  setValorManual(false)
+                  setForm({ ...form, duracao_ciclo: v })
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -498,17 +655,35 @@ export default function AdminContratoForm() {
                   <SelectItem value="trimestral">Trimestral</SelectItem>
                   <SelectItem value="semestral">Semestral</SelectItem>
                   <SelectItem value="anual">Anual</SelectItem>
+                  <SelectItem value="avulso">Avulso</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Valor do Ciclo (R$)</Label>
+              <div className="flex items-center justify-between">
+                <Label>Valor do Ciclo (R$)</Label>
+                {valorManual && (
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground underline hover:text-foreground"
+                    onClick={() => setValorManual(false)}
+                  >
+                    recalcular dos serviços
+                  </button>
+                )}
+              </div>
               <Input
                 value={formatCurrencyInput(form.valor_ciclo)}
-                onChange={(e) =>
+                onChange={(e) => {
+                  setValorManual(true)
                   setForm({ ...form, valor_ciclo: parseCurrencyInput(e.target.value) })
-                }
+                }}
               />
+              {!valorManual && (
+                <p className="text-xs text-muted-foreground">
+                  Soma automática dos serviços selecionados para o ciclo escolhido.
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Conta Financeira (DRE)</Label>
@@ -563,6 +738,7 @@ export default function AdminContratoForm() {
                       type="checkbox"
                       checked={selectedServices.includes(svc.id)}
                       onChange={(e) => {
+                        setValorManual(false)
                         if (e.target.checked) {
                           setSelectedServices([...selectedServices, svc.id])
                         } else {
@@ -593,50 +769,49 @@ export default function AdminContratoForm() {
             <Label>Signatários do Contrato</Label>
             <p className="text-sm text-muted-foreground">
               Adicione quem assina o documento (CONTRATANTE, CONTRATADA, testemunhas). A ordem
-              define a sequência de assinatura.
+              define a sequência de assinatura. Em contrato novo, o contrato é salvo na hora (status
+              CRIADO) quando o primeiro signatário é adicionado.
             </p>
-            {id && (
-              <div className="flex gap-2 items-end">
-                <div className="flex-1 space-y-1">
-                  <Label className="text-xs">Perfil</Label>
-                  <Select
-                    value={novoSig.profile_id}
-                    onValueChange={(v) => setNovoSig({ ...novoSig, profile_id: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o perfil" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clientes.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="w-48 space-y-1">
-                  <Label className="text-xs">Papel</Label>
-                  <Select
-                    value={novoSig.role}
-                    onValueChange={(v) => setNovoSig({ ...novoSig, role: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Contratante">Contratante</SelectItem>
-                      <SelectItem value="Contratado">Contratado</SelectItem>
-                      <SelectItem value="Interveniente Anuente">Interveniente Anuente</SelectItem>
-                      <SelectItem value="Testemunha">Testemunha</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button type="button" variant="outline" onClick={addSignatario}>
-                  <Plus className="w-4 h-4 mr-1" /> Adicionar
-                </Button>
+            <div className="flex gap-2 items-end">
+              <div className="flex-1 space-y-1">
+                <Label className="text-xs">Perfil</Label>
+                <Select
+                  value={novoSig.profile_id}
+                  onValueChange={(v) => setNovoSig({ ...novoSig, profile_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o perfil" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clientes.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            )}
+              <div className="w-48 space-y-1">
+                <Label className="text-xs">Papel</Label>
+                <Select
+                  value={novoSig.role}
+                  onValueChange={(v) => setNovoSig({ ...novoSig, role: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Contratante">Contratante</SelectItem>
+                    <SelectItem value="Contratado">Contratado</SelectItem>
+                    <SelectItem value="Interveniente Anuente">Interveniente Anuente</SelectItem>
+                    <SelectItem value="Testemunha">Testemunha</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button type="button" variant="outline" onClick={addSignatario}>
+                <Plus className="w-4 h-4 mr-1" /> Adicionar
+              </Button>
+            </div>
             <div className="space-y-2 mt-2">
               {signatarios.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Nenhum signatário adicionado.</p>
@@ -652,15 +827,31 @@ export default function AdminContratoForm() {
                         <span className="text-xs text-muted-foreground">({s.role})</span>
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Ordem {s.order_index + 1} · {s.status || 'Pendente'}
+                        Ordem {(s.order_index ?? 0) + 1} ·{' '}
+                        <Badge
+                          variant="outline"
+                          className={
+                            s.status === 'Assinado' || s.status === 'signed'
+                              ? 'bg-green-500/10 text-green-600 border-green-500/30'
+                              : 'bg-amber-500/10 text-amber-600 border-amber-500/30'
+                          }
+                        >
+                          {s.status === 'Assinado' || s.status === 'signed'
+                            ? 'Assinado'
+                            : 'Pendente'}
+                        </Badge>
                       </p>
                     </div>
-                    <button
-                      onClick={() => removeSignatario(s.profile_id)}
-                      className="text-red-500 hover:text-red-700 p-1"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+                    {s.status === 'Assinado' || s.status === 'signed' ? null : (
+                      <button
+                        type="button"
+                        aria-label={`Remover signatário ${nomeSignatario(s)}`}
+                        onClick={() => removeSignatario(s.profile_id)}
+                        className="text-red-500 hover:text-red-700 p-1"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
                   </div>
                 ))
               )}
@@ -711,15 +902,14 @@ export default function AdminContratoForm() {
         <Button variant="outline" onClick={() => navigate(-1)}>
           Cancelar
         </Button>
-        <Button
-          variant="secondary"
-          onClick={() => handleGerarSalvar('rascunho')}
-          disabled={gerando}
-        >
-          Salvar Rascunho
-        </Button>
-        <Button onClick={() => handleGerarSalvar('ativo')} disabled={gerando}>
-          Ativar Contrato
+        {podeColetar && (
+          <Button onClick={handleColetarAssinaturas} disabled={coletando || gerando}>
+            <PenLine className="w-4 h-4 mr-2" />
+            {coletando ? 'Enviando…' : 'Coletar Assinaturas'}
+          </Button>
+        )}
+        <Button variant="secondary" onClick={handleSalvarAtual} disabled={gerando}>
+          Salvar Contrato
         </Button>
       </div>
 
