@@ -1,8 +1,8 @@
 // Tela Editar Modelo (contrato): nome + descrição, depois o conteúdo em
-// SEÇÕES SEQUENCIAIS na mesma ordem da Visualizar Modelo do documento —
-// primeiro o corpo do Contrato, depois cada anexo (Anexo 1, Anexo 2, ...)
-// — cada um com editor WYSIWYG (RichTextEditor) e painel de variáveis,
-// botão "Adicionar Anexo" e remoção de anexo no próprio cartão do anexo.
+// GUIAS (abas) na mesma ordem da Visualizar Modelo do documento — primeira
+// aba o corpo do Contrato, depois uma aba por anexo (Anexo 1, Anexo 2, ...)
+// — cada uma com editor WYSIWYG (RichTextEditor) e painel de variáveis,
+// botão "Adicionar Anexo" e remoção de anexo no cabeçalho da própria aba.
 // Persistência: o corpo fica em contract_templates.content; os anexos, em
 // contract_annexes (contract_id = id do modelo, annex_type = título, version = "vN").
 import { useState, useEffect, useRef, useCallback } from 'react'
@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2, Plus, Trash2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -29,6 +30,7 @@ interface AnexoLocal {
 }
 
 const ANEXOS_MAX = 20
+const ABA_CORPO = 'corpo'
 
 export default function AdminTemplateForm() {
   const { id } = useParams()
@@ -43,6 +45,8 @@ export default function AdminTemplateForm() {
   const [contratoHtml, setContratoHtml] = useState('')
   const [anexos, setAnexos] = useState<AnexoLocal[]>([])
   const [confirmAnexo, setConfirmAnexo] = useState<number | null>(null)
+  // Guia ativa: 'corpo' ou 'anexo-N' (N = índice do anexo, base 0).
+  const [abaAtiva, setAbaAtiva] = useState<string>(ABA_CORPO)
   const editorRef = useRef<{ insertHtml: (html: string) => void } | null>(null)
 
   useEffect(() => {
@@ -90,10 +94,13 @@ export default function AdminTemplateForm() {
       return
     }
     setAnexos((prev) => [...prev, { title: tituloAbaAnexo(prev.length + 1), html: '' }])
+    // Abre a guia do anexo recém-criado.
+    setAbaAtiva(`anexo-${anexos.length}`)
   }
 
   const removerAnexo = (indice: number) => {
     setAnexos((prev) => prev.filter((_, i) => i !== indice))
+    setAbaAtiva(ABA_CORPO)
   }
 
   const atualizarAnexo = (indice: number, html: string) => {
@@ -154,7 +161,7 @@ export default function AdminTemplateForm() {
           {isEditing ? 'Editar Modelo' : 'Novo Modelo de Contrato'}
         </h1>
         <p className="text-muted-foreground">
-          Crie ou edite um modelo de contrato com variáveis dinâmicas e anexos — as seções seguem a
+          Crie ou edite um modelo de contrato com variáveis dinâmicas e anexos — as guias seguem a
           mesma ordem da visualização do documento: corpo do contrato e, na sequência, cada anexo.
         </p>
       </div>
@@ -194,70 +201,80 @@ export default function AdminTemplateForm() {
             </CardContent>
           </Card>
 
-          {/* ORDEM DA VISUALIZAÇÃO: 1º o corpo do Contrato, depois cada anexo
-              na sequência em que aparecem no documento (.docx/impressão). */}
+          {/* GUIAS NA ORDEM DA VISUALIZAÇÃO: 1ª o corpo do Contrato, depois cada
+              anexo na sequência em que aparecem no documento (.docx/impressão). */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle id="conteudo-titulo">Conteúdo do Contrato</CardTitle>
               <CardDescription>
-                Corpo principal do contrato — gerado com os placeholders substituídos.
+                Corpo principal do contrato e anexos — cada um em uma guia, com os placeholders
+                substituídos na geração.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {/* ROLAGEM SÓ NO TEXTO (padrão v0.0.567 do formulário de
-                  contratos): quem rola é a área do contrato (maxHeight no
-                  editor). A barra de botões é sticky no topo do editor; o
-                  painel de variáveis ao lado permanece visível. */}
-              <ContractSectionEditor
-                ref={editorRef}
-                value={contratoHtml}
-                onChange={setContratoHtml}
-                minHeight="480px"
-                maxHeight="calc(100dvh - 380px)"
-                contentClassName="contract-doc-editor"
-                label="Conteúdo do Contrato"
-                labelId="conteudo-titulo"
-              />
+              <Tabs value={abaAtiva} onValueChange={setAbaAtiva} className="w-full">
+                <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
+                  <TabsTrigger value={ABA_CORPO}>Corpo do Contrato</TabsTrigger>
+                  {anexos.map((anexo, i) => (
+                    <TabsTrigger key={i} value={`anexo-${i}`}>
+                      {anexo.title || tituloAbaAnexo(i + 1)}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+
+                {/* ROLAGEM SÓ NO TEXTO (padrão v0.0.567 do formulário de
+                    contratos): quem rola é a área do conteúdo (maxHeight no
+                    editor). A barra de formatação é sticky no topo do editor; o
+                    painel de variáveis ao lado permanece visível. */}
+                <TabsContent value={ABA_CORPO} className="mt-4">
+                  <ContractSectionEditor
+                    ref={editorRef}
+                    value={contratoHtml}
+                    onChange={setContratoHtml}
+                    minHeight="480px"
+                    maxHeight="calc(100dvh - 380px)"
+                    contentClassName="contract-doc-editor"
+                    label="Conteúdo do Contrato"
+                    labelId="conteudo-titulo"
+                  />
+                </TabsContent>
+
+                {anexos.map((anexo, i) => (
+                  <TabsContent key={i} value={`anexo-${i}`} className="mt-4">
+                    <div className="mb-4 flex items-center justify-between gap-4">
+                      <div>
+                        <h3 id={`conteudo-anexo-${i + 1}`} className="text-base font-semibold">
+                          Conteúdo do {anexo.title || tituloAbaAnexo(i + 1)}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          Este anexo é gerado como página separada no .docx.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setConfirmAnexo(i)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Remover anexo
+                      </Button>
+                    </div>
+                    <ContractSectionEditor
+                      value={anexo.html}
+                      onChange={(html) => atualizarAnexo(i, html)}
+                      minHeight="480px"
+                      maxHeight="calc(100dvh - 380px)"
+                      contentClassName="contract-doc-editor"
+                      label={`Conteúdo do ${anexo.title || tituloAbaAnexo(i + 1)}`}
+                      labelId={`conteudo-anexo-${i + 1}`}
+                    />
+                  </TabsContent>
+                ))}
+              </Tabs>
             </CardContent>
           </Card>
-
-          {anexos.map((anexo, i) => (
-            <Card key={i}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <CardTitle id={`conteudo-anexo-${i + 1}`}>
-                      Conteúdo do {anexo.title || tituloAbaAnexo(i + 1)}
-                    </CardTitle>
-                    <CardDescription>
-                      Este anexo é gerado como página separada no .docx.
-                    </CardDescription>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => setConfirmAnexo(i)}
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Remover anexo
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ContractSectionEditor
-                  value={anexo.html}
-                  onChange={(html) => atualizarAnexo(i, html)}
-                  minHeight="480px"
-                  maxHeight="calc(100dvh - 380px)"
-                  contentClassName="contract-doc-editor"
-                  label={`Conteúdo do ${anexo.title || tituloAbaAnexo(i + 1)}`}
-                  labelId={`conteudo-anexo-${i + 1}`}
-                />
-              </CardContent>
-            </Card>
-          ))}
 
           <div>
             <Button type="button" variant="outline" size="sm" onClick={adicionarAnexo}>
