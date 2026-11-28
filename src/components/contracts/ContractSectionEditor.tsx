@@ -12,6 +12,10 @@ export interface ContractSectionEditorProps {
   onChange?: (value: string) => void
   disabled?: boolean
   minHeight?: string
+  /** Altura máxima da área de texto; com ela a rolagem fica interna no corpo. */
+  maxHeight?: string
+  /** Classe extra para a área de texto (ex.: contract-doc-editor do contrato). */
+  contentClassName?: string
   /** Rótulo acessível do campo de conteúdo para esta seção/aba. */
   label: string
   /** ID opcional para o aria-labelledby do editor. */
@@ -29,7 +33,7 @@ export interface ContractSectionEditorHandle {
 export const ContractSectionEditor = React.forwardRef<
   ContractSectionEditorHandle,
   ContractSectionEditorProps
->(({ value, onChange, disabled, minHeight, label, labelId }, ref) => {
+>(({ value, onChange, disabled, minHeight, maxHeight, contentClassName, label, labelId }, ref) => {
   const editorRef = React.useRef<HTMLDivElement | null>(null)
 
   React.useImperativeHandle(ref, () => ({
@@ -51,12 +55,14 @@ export const ContractSectionEditor = React.forwardRef<
           onChange={onChange}
           disabled={disabled}
           minHeight={minHeight}
+          maxHeight={maxHeight}
+          contentClassName={contentClassName}
           aria-label={label}
           aria-labelledby={labelId}
         />
       </div>
       <ContractVariablesPanel
-        className="xl:w-80 w-full shrink-0"
+        className="xl:w-80 w-full shrink-0 xl:max-h-[calc(100dvh-380px)]"
         texto={value || ''}
         onInserir={(ph) => {
           editorRef.current?.focus()

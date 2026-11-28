@@ -204,11 +204,17 @@ export default function AdminTemplateForm() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* ROLAGEM SÓ NO TEXTO (padrão v0.0.567 do formulário de
+                  contratos): quem rola é a área do contrato (maxHeight no
+                  editor). A barra de botões é sticky no topo do editor; o
+                  painel de variáveis ao lado permanece visível. */}
               <ContractSectionEditor
                 ref={editorRef}
                 value={contratoHtml}
                 onChange={setContratoHtml}
-                minHeight="500px"
+                minHeight="480px"
+                maxHeight="calc(100dvh - 380px)"
+                contentClassName="contract-doc-editor"
                 label="Conteúdo do Contrato"
                 labelId="conteudo-titulo"
               />
@@ -243,7 +249,9 @@ export default function AdminTemplateForm() {
                 <ContractSectionEditor
                   value={anexo.html}
                   onChange={(html) => atualizarAnexo(i, html)}
-                  minHeight="500px"
+                  minHeight="480px"
+                  maxHeight="calc(100dvh - 380px)"
+                  contentClassName="contract-doc-editor"
                   label={`Conteúdo do ${anexo.title || tituloAbaAnexo(i + 1)}`}
                   labelId={`conteudo-anexo-${i + 1}`}
                 />
