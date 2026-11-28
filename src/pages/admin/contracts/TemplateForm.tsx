@@ -6,6 +6,7 @@
 // no cabeçalho da própria aba.
 // Persistência: o corpo fica em contract_templates.content; os anexos, em
 // contract_annexes (contract_id = id do modelo, annex_type = título, version = "vN").
+// Anexos vazios salvos no banco não geram guia: são descartados ao carregar.
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase/client'
@@ -32,6 +33,17 @@ interface AnexoLocal {
 
 const ANEXOS_MAX = 20
 const ABA_CORPO = 'corpo'
+
+// Anexo com dados: tem algum texto ou elemento de conteúdo (imagem, tabela, linha).
+function anexoTemDados(html: string): boolean {
+  if (/<(img|table|hr)\b/i.test(html)) return true
+  return (
+    html
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/gi, ' ')
+      .trim().length > 0
+  )
+}
 
 export default function AdminTemplateForm() {
   const { id } = useParams()
@@ -69,12 +81,15 @@ export default function AdminTemplateForm() {
           setContratoHtml(contractConteudoParaHtml(data.content || ''))
           // Anexos persistidos na própria tabela de anexos do modelo (mesma
           // estrutura de contract_annexes, com contract_id = id do modelo).
+          // Só entram os que têm conteúdo: anexo vazio não vira guia.
           const linhas = await fetchContractAnnexes(id)
           setAnexos(
-            linhas.map((r) => ({
-              title: r.annex_type || '',
-              html: r.content || '',
-            })),
+            linhas
+              .map((r) => ({
+                title: r.annex_type || '',
+                html: r.content || '',
+              }))
+              .filter((a) => anexoTemDados(a.html)),
           )
         }
       } catch (error: any) {
@@ -95,7 +110,7 @@ export default function AdminTemplateForm() {
       return
     }
     setAnexos((prev) => [...prev, { title: tituloAbaAnexo(prev.length + 1), html: '' }])
-    // Abre a guia do anexo recém-criado.
+    // Abre a guia do anexo recém-criado (sempre visível enquanto estiver na lista).
     setAbaAtiva(`anexo-${anexos.length}`)
   }
 

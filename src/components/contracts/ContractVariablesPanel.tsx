@@ -30,10 +30,8 @@ export function ContractVariablesPanel({
   className,
 }: ContractVariablesPanelProps) {
   const [busca, setBusca] = useState('')
-  const [abertos, setAbertos] = useState<Record<string, boolean>>(() => ({
-    Contrato: true,
-    CONTRATANTE: true,
-  }))
+  // Todos os grupos começam fechados ao abrir a tela; o clique alterna cada um.
+  const [abertos, setAbertos] = useState<Record<string, boolean>>({})
 
   const usadas = useMemo(() => variaveisUsadas(texto || ''), [texto])
 
