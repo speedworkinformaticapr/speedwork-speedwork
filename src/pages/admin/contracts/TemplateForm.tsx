@@ -1,8 +1,9 @@
 // Tela Editar Modelo (contrato): nome + descrição, depois o conteúdo em
 // GUIAS (abas) na mesma ordem da Visualizar Modelo do documento — primeira
 // aba o corpo do Contrato, depois uma aba por anexo (Anexo 1, Anexo 2, ...)
-// — cada uma com editor WYSIWYG (RichTextEditor) e painel de variáveis,
-// botão "Adicionar Anexo" e remoção de anexo no cabeçalho da própria aba.
+// — cada uma com editor WYSIWYG (RichTextEditor) e painel de variáveis.
+// O botão "Adicionar Anexo" fica na linha das guias; a remoção de anexo fica
+// no cabeçalho da própria aba.
 // Persistência: o corpo fica em contract_templates.content; os anexos, em
 // contract_annexes (contract_id = id do modelo, annex_type = título, version = "vN").
 import { useState, useEffect, useRef, useCallback } from 'react'
@@ -213,14 +214,28 @@ export default function AdminTemplateForm() {
             </CardHeader>
             <CardContent>
               <Tabs value={abaAtiva} onValueChange={setAbaAtiva} className="w-full">
-                <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
-                  <TabsTrigger value={ABA_CORPO}>Corpo do Contrato</TabsTrigger>
-                  {anexos.map((anexo, i) => (
-                    <TabsTrigger key={i} value={`anexo-${i}`}>
-                      {anexo.title || tituloAbaAnexo(i + 1)}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
+                {/* Linha das guias com o botão "Adicionar Anexo" sempre visível
+                    no alto, ao lado das abas. */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <TabsList className="flex h-auto min-w-0 flex-1 flex-wrap justify-start gap-1">
+                    <TabsTrigger value={ABA_CORPO}>Corpo do Contrato</TabsTrigger>
+                    {anexos.map((anexo, i) => (
+                      <TabsTrigger key={i} value={`anexo-${i}`}>
+                        {anexo.title || tituloAbaAnexo(i + 1)}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={adicionarAnexo}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Adicionar Anexo
+                  </Button>
+                </div>
 
                 {/* ROLAGEM SÓ NO TEXTO (padrão v0.0.567 do formulário de
                     contratos): quem rola é a área do conteúdo (maxHeight no
@@ -275,13 +290,6 @@ export default function AdminTemplateForm() {
               </Tabs>
             </CardContent>
           </Card>
-
-          <div>
-            <Button type="button" variant="outline" size="sm" onClick={adicionarAnexo}>
-              <Plus className="h-4 w-4 mr-1" />
-              Adicionar Anexo
-            </Button>
-          </div>
 
           <div className="flex items-center justify-end gap-3 pt-2 pb-6 border-t">
             <Button
