@@ -62,7 +62,7 @@ export const ContractSectionEditor = React.forwardRef<
         />
       </div>
       <ContractVariablesPanel
-        className="xl:w-80 w-full shrink-0 xl:max-h-[calc(100dvh-380px)]"
+        className="xl:w-80 w-full shrink-0"
         texto={value || ''}
         onInserir={(ph) => {
           editorRef.current?.focus()

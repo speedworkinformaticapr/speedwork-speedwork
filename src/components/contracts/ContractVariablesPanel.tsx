@@ -80,7 +80,9 @@ export function ContractVariablesPanel({
           aria-label="Buscar variável"
         />
       </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto pt-0 space-y-1">
+      {/* Sem max-h/overflow: o painel cresce com o conteúdo; se a lista passar
+          da tela, a rolagem fica na própria página. */}
+      <CardContent className="flex-1 pt-0 space-y-1">
         {grupos.length === 0 && (
           <p className="text-sm text-muted-foreground py-4 text-center">
             Nenhuma variável encontrada.
